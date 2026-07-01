@@ -1,0 +1,162 @@
+name: forum-digest
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Run mode"
+        required: false
+        default: "digest"
+        type: choice
+        options:
+          - digest
+          - snapshot
+      target_date:
+        description: "Target date in Asia/Shanghai, YYYY-MM-DD"
+        required: false
+        type: string
+  schedule:
+    # HN snapshots: every 2 hours, deliberately away from minute 0.
+    - cron: "37 1-23/2 * * *"
+    # Daily digest: 00:17 Asia/Shanghai, after the previous day has closed.
+    - cron: "17 16 * * *"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: forum-digest-pages
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  snapshot-hn:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '37 1-23/2 * * *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'snapshot')
+    runs-on: ubuntu-latest
+    env:
+      HN_SNAPSHOT_STORY_LIMIT: "120"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Capture HN snapshot
+        shell: bash
+        run: |
+          TARGET_DATE="${{ inputs.target_date }}"
+          if [ -n "$TARGET_DATE" ]; then
+            npm run snapshot:hn -- --mode manual --target-date "$TARGET_DATE"
+          else
+            npm run snapshot:hn -- --mode manual
+          fi
+
+      - name: Commit snapshot state
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "state/hn-snapshots"
+          if git diff --cached --quiet; then
+            echo "No HN snapshot changes to commit."
+          else
+            git commit -m "chore(hn): capture ranking snapshot"
+            git push
+          fi
+
+  build:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '17 16 * * *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.action != 'snapshot')
+    runs-on: ubuntu-latest
+    env:
+      QWEN_API_KEY: ${{ secrets.QWEN_API_KEY || secrets.OPENAI_API_KEY }}
+      QWEN_BASE_URL: ${{ vars.QWEN_BASE_URL || vars.MKT_LLM_TRANSLATE_BASE_URL || vars.OPENAI_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1' }}
+      QWEN_MODEL: ${{ vars.QWEN_MODEL || vars.MKT_LLM_TRANSLATE_MODEL || vars.OPENAI_MODEL || 'qwen3.6-plus' }}
+      SITE_BASE_URL: ${{ vars.SITE_BASE_URL }}
+      LIST_URL: https://news.ycombinator.com/best?h=24
+      HISTORY_DAYS: "14"
+      ARTICLE_SUMMARY_MAX_PARAGRAPHS: "5"
+      COMMENT_TRANSLATION_CHAR_BUDGET: "320000"
+      CANDIDATE_LIMIT_PER_SOURCE: "80"
+      MAX_COMMENTS_PER_STORY: "1000"
+      HN_DAILY_STORY_LIMIT: "20"
+      HN_PUBLIC_COMMENTS_PER_STORY: "8"
+      HN_SNAPSHOT_STORY_LIMIT: "120"
+      LLM_CLASSIFY_ENABLED: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build daily digest
+        shell: bash
+        run: |
+          TARGET_DATE="${{ inputs.target_date }}"
+          if [ -n "$TARGET_DATE" ]; then
+            npm run sync -- --mode manual --target-date "$TARGET_DATE" --skip-push
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm run sync -- --mode manual --skip-push
+          else
+            npm run sync -- --mode scheduled --skip-push
+          fi
+
+      - name: Commit generated dist and state
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "dist" "state"
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+          else
+            git commit -m "chore(forum): refresh digest artifacts"
+            git push
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    if: needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
