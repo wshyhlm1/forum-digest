@@ -1,5 +1,6 @@
 import type { AppEnv, StoryRecord } from "../shared/types.js";
 import { plainTextFromHtml } from "../fetch/source-utils.js";
+import { isReasoningOptionError, withQwenReasoningOptions } from "../shared/reasoning.js";
 
 export interface RelevanceDecision {
   isRelevant: boolean;
@@ -221,7 +222,7 @@ async function classifyWithQwen(story: StoryRecord, env: AppEnv, heuristic: Rele
     text: storyTextForJudgement(story)
   };
 
-  const body = {
+  const baseBody = {
     model: env.openAiModel,
     temperature: 0.1,
     response_format: { type: "json_object" },
@@ -230,37 +231,44 @@ async function classifyWithQwen(story: StoryRecord, env: AppEnv, heuristic: Rele
       { role: "user", content: JSON.stringify(userPayload, null, 2) }
     ]
   };
+  const body = withQwenReasoningOptions(baseBody, env.openAiReasoningEffort);
+  const requestBodies = body === baseBody ? [baseBody] : [body, baseBody];
 
   for (const url of chatCompletionUrls(env.openAiBaseUrl)) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${env.openAiApiKey}`
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30_000)
-    }).catch(() => null);
+    for (const requestBody of requestBodies) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.openAiApiKey}`
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(30_000)
+      }).catch(() => null);
 
-    if (!response?.ok) {
-      continue;
+      if (!response?.ok) {
+        if (requestBody !== baseBody && response && !isReasoningOptionError(response.status)) {
+          break;
+        }
+        continue;
+      }
+
+      const payload = (await response.json().catch(() => null)) as unknown;
+      const content = extractResponseText(payload);
+      const parsed = content ? parseJsonObject(content) : null;
+      if (!parsed) {
+        continue;
+      }
+
+      return {
+        isRelevant: Boolean(parsed.isRelevant),
+        category: typeof parsed.category === "string" && parsed.category.trim() ? parsed.category.trim() : heuristic.category,
+        reason: typeof parsed.reason === "string" && parsed.reason.trim() ? parsed.reason.trim() : heuristic.reason,
+        priority: clampPriority(parsed.priority, heuristic.priority),
+        summaryZh: asStringArray(parsed.summaryZh).length > 0 ? asStringArray(parsed.summaryZh) : heuristic.summaryZh,
+        highlightsZh: asStringArray(parsed.highlightsZh)
+      };
     }
-
-    const payload = (await response.json().catch(() => null)) as unknown;
-    const content = extractResponseText(payload);
-    const parsed = content ? parseJsonObject(content) : null;
-    if (!parsed) {
-      continue;
-    }
-
-    return {
-      isRelevant: Boolean(parsed.isRelevant),
-      category: typeof parsed.category === "string" && parsed.category.trim() ? parsed.category.trim() : heuristic.category,
-      reason: typeof parsed.reason === "string" && parsed.reason.trim() ? parsed.reason.trim() : heuristic.reason,
-      priority: clampPriority(parsed.priority, heuristic.priority),
-      summaryZh: asStringArray(parsed.summaryZh).length > 0 ? asStringArray(parsed.summaryZh) : heuristic.summaryZh,
-      highlightsZh: asStringArray(parsed.highlightsZh)
-    };
   }
 
   return heuristic;

@@ -170,7 +170,8 @@ async function translateCachedText(
   const translated = await translateTextWithFallback(rawText, {
     apiKey: env.openAiApiKey,
     baseUrl: env.openAiBaseUrl,
-    model: env.openAiModel || "gpt-5.3"
+    model: env.openAiModel || "qwen3.7-plus",
+    reasoningEffort: env.openAiReasoningEffort
   });
 
   state.translationCache.entries[cacheKey] = {

@@ -21,6 +21,7 @@ export interface AppEnv {
   openAiApiKey: string;
   openAiBaseUrl: string;
   openAiModel: string;
+  openAiReasoningEffort: string;
   llmClassifyEnabled: boolean;
   siteBaseUrl: string;
   barkServer: string;

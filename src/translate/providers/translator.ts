@@ -1,4 +1,5 @@
 import { restoreText, protectText } from "../protect.js";
+import { isReasoningOptionError, withQwenReasoningOptions } from "../../shared/reasoning.js";
 
 export interface ProviderResult {
   text: string;
@@ -30,7 +31,7 @@ function buildChatCompletionUrls(baseUrl: string): string[] {
 
 async function translateWithOpenAi(
   text: string,
-  options: { apiKey: string; baseUrl: string; model: string }
+  options: { apiKey: string; baseUrl: string; model: string; reasoningEffort?: string }
 ): Promise<string> {
   if (!options.apiKey) {
     throw new Error("OPENAI_API_KEY is empty");
@@ -38,34 +39,46 @@ async function translateWithOpenAi(
 
   let response: Response | null = null;
   let lastStatus = "";
-  for (const url of buildChatCompletionUrls(options.baseUrl)) {
-    response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${options.apiKey}`
+  const baseBody = {
+    model: options.model || "qwen3.7-plus",
+    temperature: 0,
+    messages: [
+      {
+        role: "system",
+        content:
+          "Translate user text into Simplified Chinese. Keep placeholders like __PH_0__ unchanged. Preserve HTML tags when present. Do not add explanations."
       },
-      body: JSON.stringify({
-        model: options.model || "qwen3.6-plus",
-        temperature: 0,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Translate user text into Simplified Chinese. Keep placeholders like __PH_0__ unchanged. Preserve HTML tags when present. Do not add explanations."
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ]
-      }),
-      signal: AbortSignal.timeout(45_000)
-    });
-    if (response.ok) {
+      {
+        role: "user",
+        content: text
+      }
+    ]
+  };
+  const body = withQwenReasoningOptions(baseBody, options.reasoningEffort);
+  const requestBodies = body === baseBody ? [baseBody] : [body, baseBody];
+
+  for (const url of buildChatCompletionUrls(options.baseUrl)) {
+    for (const requestBody of requestBodies) {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${options.apiKey}`
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(45_000)
+      });
+      if (response.ok) {
+        break;
+      }
+      lastStatus = `${response.status} ${response.statusText}`;
+      if (requestBody !== baseBody && !isReasoningOptionError(response.status)) {
+        break;
+      }
+    }
+    if (response?.ok) {
       break;
     }
-    lastStatus = `${response.status} ${response.statusText}`;
   }
 
   if (!response?.ok) {
@@ -203,7 +216,7 @@ function toErrorMessage(error: unknown): string {
 
 export async function translateTextWithFallback(
   raw: string,
-  options: { apiKey: string; baseUrl: string; model: string }
+  options: { apiKey: string; baseUrl: string; model: string; reasoningEffort?: string }
 ): Promise<ProviderResult> {
   const trimmed = raw.trim();
   if (!trimmed) {

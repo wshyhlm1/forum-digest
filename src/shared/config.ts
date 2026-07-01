@@ -173,7 +173,8 @@ export function loadAppEnv(): AppEnv {
     openAiApiKey: readFirstEnv("QWEN_API_KEY", "MKT_LLM_TRANSLATE_API_KEY", "OPENAI_API_KEY"),
     openAiBaseUrl: readFirstEnv("QWEN_BASE_URL", "MKT_LLM_TRANSLATE_BASE_URL", "OPENAI_BASE_URL")
       || "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    openAiModel: readFirstEnv("QWEN_MODEL", "MKT_LLM_TRANSLATE_MODEL", "OPENAI_MODEL") || "qwen3.6-plus",
+    openAiModel: readFirstEnv("QWEN_MODEL", "MKT_LLM_TRANSLATE_MODEL", "OPENAI_MODEL") || "qwen3.7-plus",
+    openAiReasoningEffort: readFirstEnv("QWEN_EFFORT", "OPENAI_REASONING_EFFORT") || "high",
     llmClassifyEnabled: parseBoolean(process.env.LLM_CLASSIFY_ENABLED, true),
     siteBaseUrl: deriveSiteBaseUrl(),
     barkServer: process.env.BARK_SERVER?.trim() ?? DEFAULT_BARK_SERVER,

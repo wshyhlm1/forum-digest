@@ -12,7 +12,8 @@ afterEach(() => {
 const env: AppEnv = {
   openAiApiKey: "sk-test",
   openAiBaseUrl: "https://gmn.chuangzuoli.com/v1",
-  openAiModel: "qwen3.6-plus",
+  openAiModel: "qwen3.7-plus",
+  openAiReasoningEffort: "high",
   llmClassifyEnabled: false,
   siteBaseUrl: "https://example.github.io/hn/",
   barkServer: "https://api.day.app",
@@ -81,11 +82,41 @@ describe("translate fallback", () => {
     const result = await translateTextWithFallback("visit https://example.com", {
       apiKey: env.openAiApiKey,
       baseUrl: env.openAiBaseUrl,
-      model: env.openAiModel
+      model: env.openAiModel,
+      reasoningEffort: env.openAiReasoningEffort
     });
 
     expect(result.provider).toBe("google");
     expect(result.text).toContain("https://example.com");
+  });
+
+  it("passes qwen reasoning effort to openai-compatible translation", async () => {
+    let requestBody: Record<string, unknown> | undefined;
+    const fakeFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "hello zh" } }]
+        }),
+        { status: 200 }
+      );
+    });
+
+    vi.stubGlobal("fetch", fakeFetch);
+
+    const result = await translateTextWithFallback("hello", {
+      apiKey: env.openAiApiKey,
+      baseUrl: env.openAiBaseUrl,
+      model: env.openAiModel,
+      reasoningEffort: env.openAiReasoningEffort
+    });
+
+    expect(result.provider).toBe("openai");
+    expect(requestBody).toBeDefined();
+    const capturedBody = requestBody!;
+    expect(capturedBody.model).toBe("qwen3.7-plus");
+    expect(capturedBody.reasoning_effort).toBe("high");
+    expect(capturedBody.enable_thinking).toBe(true);
   });
 
   it("splits google fallback payload when long query returns 400", async () => {
@@ -113,7 +144,8 @@ describe("translate fallback", () => {
     const result = await translateTextWithFallback(source, {
       apiKey: env.openAiApiKey,
       baseUrl: env.openAiBaseUrl,
-      model: env.openAiModel
+      model: env.openAiModel,
+      reasoningEffort: env.openAiReasoningEffort
     });
 
     expect(result.provider).toBe("google");
@@ -141,7 +173,8 @@ describe("translate fallback", () => {
     const result = await translateTextWithFallback(source, {
       apiKey: env.openAiApiKey,
       baseUrl: env.openAiBaseUrl,
-      model: env.openAiModel
+      model: env.openAiModel,
+      reasoningEffort: env.openAiReasoningEffort
     });
 
     expect(result.provider).toBe("google");

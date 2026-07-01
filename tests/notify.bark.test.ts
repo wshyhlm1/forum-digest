@@ -64,7 +64,8 @@ function createEnv(overrides: Partial<AppEnv> = {}): AppEnv {
   return {
     openAiApiKey: "",
     openAiBaseUrl: "https://example.com/v1",
-    openAiModel: "qwen3.6-plus",
+    openAiModel: "qwen3.7-plus",
+    openAiReasoningEffort: "high",
     llmClassifyEnabled: false,
     siteBaseUrl: "https://example.github.io/hn/",
     barkServer: "https://api.day.app",
