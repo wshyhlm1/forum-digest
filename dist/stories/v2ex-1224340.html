@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[开源分享] RPG Roleplay Platform：把你收藏的小说变成可交互游戏世界的自托管 LLM 引擎 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-01/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>[开源分享] RPG Roleplay Platform：把你收藏的小说变成可交互游戏世界的自托管 LLM 引擎</h1>
+      <p class="original-title">[开源分享] RPG Roleplay Platform：把你收藏的小说变成可交互游戏世界的自托管 LLM 引擎</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 RainJayFxxk</span>
+        <span>热度 0</span>
+        <span>回复 0</span>
+        <span>2026/07/01 22:43</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1224340" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1224340.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近发现一个挺有意思的开源项目，分享给同样喜欢折腾 LLM + 角色扮演的坛友。</li><li>一句话概括：一个自托管的 LLM RPG 引擎，能把长篇小说转化成可交互的游戏世界。</li></ul>
+      
+      <p class="reason">命中 9 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近发现一个挺有意思的开源项目，分享给同样喜欢折腾 LLM + 角色扮演的坛友。</p>
+这是什么
+<p>一句话概括：<strong>一个自托管的 LLM RPG 引擎，能把长篇小说转化成可交互的游戏世界</strong>。</p>
+<p>作者最初是为了跑自己一部 485 万字的小说做的，后来直接开源了。定位介于 SillyTavern 和 AI Dungeon
+之间，但更偏"世界观驱动"，而不是单纯的角色卡对话。</p>
+<p>项目地址： <a href="https://github.com/felixchaos/rpg-roleplay-platform" target="_blank" rel="noopener noreferrer">https://github.com/felixchaos/rpg-roleplay-platform</a>
+License：AGPL-3.0 （服务端必须开源，商业授权可联系作者）</p>
+截图
+<p></p>
+亮点在哪
+<p>不是又一个套壳 ChatGPT ，主要有几点比较戳我：</p>
+<ul>
+<li><strong>Git 风格的存档系统</strong>：commit / ref / checkout ，可以随时开分支跑不同剧情走向，不喜欢就 checkout 回来</li>
+<li><strong>内置 BM25 + pgvector 检索</strong>：原文本直接喂进去，AI 在续写时会真的"记得"设定，而不是塞满上下文就崩</li>
+<li><strong>D&amp;D 5E 规则集</strong>：自带遭遇战系统、物品栏，跑桌面 RPG 也够用</li>
+<li><strong>三面板 Markdown 编辑器</strong>：文件树 + 编辑区 + AI 侧板，支持幽灵文本续写、按块 accept/reject ，写作工具党会喜欢</li>
+<li><strong>Tavern 模式</strong>：兼容 SillyTavern 角色卡拖放导入，分支对话、每轮 system prompt 可编辑</li>
+<li><strong>BYOK 加密存储</strong>：密钥 AES-256-GCM 加密，支持 10+ 供应商（ Anthropic / OpenAI / Gemini / DeepSeek / DashScope 等）</li>
+</ul>
+技术栈
+
+
+
+层
+用了什么
+
+
+
+
+后端
+Python 3.12 + FastAPI + uvicorn
+
+
+数据库
+Postgres 16 + pgvector + Redis
+
+
+前端
+React 19 + Vite + Cloudscape Design
+
+
+部署
+Docker / 裸机脚本 / 桌面 App
+
+三种部署方式，按需选
+<ol>
+<li><strong>桌面版（推荐新手）</strong>：签名过的 macOS / Windows 应用，内置 Postgres + Python ，双击启动，全离线</li>
+<li><strong>一键脚本</strong>：<code>git clone</code> 后跑 <code>./scripts/<a href="http://setup.sh" target="_blank" rel="noopener noreferrer">安装程序.sh</a></code>，venv 、DB 、迁移一把梭</li>
+<li><strong>手动部署</strong>：约 8 步，适合想扔到自己 VPS 上的</li>
+</ol>
+和 SillyTavern 有啥区别
+
+
+
+
+SillyTavern
+RPG Roleplay
+
+
+
+
+核心单位
+角色卡
+小说 + 世界观
+
+
+检索
+需装扩展
+内置 BM25 + 向量
+
+
+存档
+导出聊天记录
+Git 风格分支
+
+<p>简单说：SillyTavern 更像"AI 老婆聊天器"，这个更像"AI 跑团 DM + 小说续写工作台"。</p>
+适合谁
+<ul>
+<li>手里有心水小说想跑二创的</li>
+<li>想搭个私人 AI 跑团桌的</li>
+<li>网文作者想拿 AI 做辅助大纲/续写的</li>
+<li>单纯想玩 SillyTavern 但嫌记忆力不够用的</li>
+</ul>
+我踩的坑（提前避雷）
+<ul>
+<li>pgvector 首次拉起来占资源不小，2C4G 的小鸡有点吃力，建议 4C8G 起步</li>
+<li>BYOK 用国产厂商（ DeepSeek / DashScope ）性价比拉满，Claude / GPT 跑长剧情钱包顶不住</li>
+<li>Docker 部署记得把 volume 挂好，不然存档全没</li>
+</ul>
+<p>抛砖引玉，感兴趣的可以去仓库 star 一下，作者响应还挺勤快。有一起玩的欢迎楼下交流配置和 prompt 心得。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近发现一个挺有意思的开源项目，分享给同样喜欢折腾 LLM + 角色扮演的坛友。</p>
+这是什么
+<p>一句话概括：<strong>一个自托管的 LLM RPG 引擎，能把长篇小说转化成可交互的游戏世界</strong>。</p>
+<p>作者最初是为了跑自己一部 485 万字的小说做的，后来直接开源了。定位介于 SillyTavern 和 AI Dungeon
+之间，但更偏"世界观驱动"，而不是单纯的角色卡对话。</p>
+<p>项目地址： <a href="https://github.com/felixchaos/rpg-roleplay-platform" target="_blank" rel="noopener noreferrer">https://github.com/felixchaos/rpg-roleplay-platform</a>
+License：AGPL-3.0 （服务端必须开源，商业授权可联系作者）</p>
+截图
+<p></p>
+亮点在哪
+<p>不是又一个套壳 ChatGPT ，主要有几点比较戳我：</p>
+<ul>
+<li><strong>Git 风格的存档系统</strong>：commit / ref / checkout ，可以随时开分支跑不同剧情走向，不喜欢就 checkout 回来</li>
+<li><strong>内置 BM25 + pgvector 检索</strong>：原文本直接喂进去，AI 在续写时会真的"记得"设定，而不是塞满上下文就崩</li>
+<li><strong>D&amp;D 5E 规则集</strong>：自带遭遇战系统、物品栏，跑桌面 RPG 也够用</li>
+<li><strong>三面板 Markdown 编辑器</strong>：文件树 + 编辑区 + AI 侧板，支持幽灵文本续写、按块 accept/reject ，写作工具党会喜欢</li>
+<li><strong>Tavern 模式</strong>：兼容 SillyTavern 角色卡拖放导入，分支对话、每轮 system prompt 可编辑</li>
+<li><strong>BYOK 加密存储</strong>：密钥 AES-256-GCM 加密，支持 10+ 供应商（ Anthropic / OpenAI / Gemini / DeepSeek / DashScope 等）</li>
+</ul>
+技术栈
+
+
+
+层
+用了什么
+
+
+
+
+后端
+Python 3.12 + FastAPI + uvicorn
+
+
+数据库
+Postgres 16 + pgvector + Redis
+
+
+前端
+React 19 + Vite + Cloudscape Design
+
+
+部署
+Docker / 裸机脚本 / 桌面 App
+
+三种部署方式，按需选
+<ol>
+<li><strong>桌面版（推荐新手）</strong>：签名过的 macOS / Windows 应用，内置 Postgres + Python ，双击启动，全离线</li>
+<li><strong>一键脚本</strong>：<code>git clone</code> 后跑 <code>./scripts/<a href="http://setup.sh" target="_blank" rel="noopener noreferrer">setup.sh</a></code>，venv 、DB 、迁移一把梭</li>
+<li><strong>手动部署</strong>：约 8 步，适合想扔到自己 VPS 上的</li>
+</ol>
+和 SillyTavern 有啥区别
+
+
+
+
+SillyTavern
+RPG Roleplay
+
+
+
+
+核心单位
+角色卡
+小说 + 世界观
+
+
+检索
+需装扩展
+内置 BM25 + 向量
+
+
+存档
+导出聊天记录
+Git 风格分支
+
+<p>简单说：SillyTavern 更像"AI 老婆聊天器"，这个更像"AI 跑团 DM + 小说续写工作台"。</p>
+适合谁
+<ul>
+<li>手里有心水小说想跑二创的</li>
+<li>想搭个私人 AI 跑团桌的</li>
+<li>网文作者想拿 AI 做辅助大纲/续写的</li>
+<li>单纯想玩 SillyTavern 但嫌记忆力不够用的</li>
+</ul>
+我踩的坑（提前避雷）
+<ul>
+<li>pgvector 首次拉起来占资源不小，2C4G 的小鸡有点吃力，建议 4C8G 起步</li>
+<li>BYOK 用国产厂商（ DeepSeek / DashScope ）性价比拉满，Claude / GPT 跑长剧情钱包顶不住</li>
+<li>Docker 部署记得把 volume 挂好，不然存档全没</li>
+</ul>
+<p>抛砖引玉，感兴趣的可以去仓库 star 一下，作者响应还挺勤快。有一起玩的欢迎楼下交流配置和 prompt 心得。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">0</span></h2>
+      <div class="comment-tree">
+        <p class="muted">暂无公开回复</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
