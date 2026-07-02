@@ -4,6 +4,8 @@ import { fetchHnCandidateIds, buildStoryCandidate, hydrateHnStory } from "./hn.j
 import { fetchLinuxDoCandidates, hydrateLinuxDoStory } from "./linuxdo.js";
 import { fetchV2exCandidates, hydrateV2exStory } from "./v2ex.js";
 
+const MAX_CONCURRENT_CLASSIFICATIONS = 4;
+
 export interface FetchStoriesResult {
   stories: StoryRecord[];
   sourceStatus: SourceStatusMap;
@@ -55,6 +57,24 @@ const SOURCE_FETCHERS: SourceFetchConfig[] = [
   }
 ];
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 async function classifyAndSelect(
   sourceName: string,
   candidates: StoryRecord[],
@@ -63,22 +83,24 @@ async function classifyAndSelect(
   limit: number = config.limit
 ): Promise<StoryRecord[]> {
   const rankedCandidates = [...candidates].sort((a, b) => b.hotScore - a.hotScore).slice(0, config.candidateLimitPerSource);
-  const classified: StoryRecord[] = [];
-
-  for (const candidate of rankedCandidates) {
+  const classified = (await mapWithConcurrency(
+    rankedCandidates,
+    MAX_CONCURRENT_CLASSIFICATIONS,
+    async (candidate) => {
     const decision = await classifyStoryRelevance(candidate, env);
     if (!decision.isRelevant) {
-      continue;
+      return null;
     }
-    classified.push({
+    return {
       ...candidate,
       category: decision.category,
       relevanceScore: decision.priority,
       relevanceReason: decision.reason,
       summaryZh: decision.summaryZh,
       highlightsZh: decision.highlightsZh
-    });
-  }
+    };
+    }
+  )).filter((story): story is StoryRecord => Boolean(story));
 
   const selected = classified
     .sort((a, b) => (b.relevanceScore + b.hotScore / 10) - (a.relevanceScore + a.hotScore / 10))
