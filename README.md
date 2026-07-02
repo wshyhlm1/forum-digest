@@ -104,7 +104,8 @@ HN 相关：
 HN_SNAPSHOT_STORY_LIMIT=120
 HN_DAILY_STORY_LIMIT=20
 HN_PUBLIC_COMMENTS_PER_STORY=8
-MAX_COMMENTS_PER_STORY=1000
+COMMENT_TRANSLATION_CHAR_BUDGET=60000
+MAX_COMMENTS_PER_STORY=120
 ```
 
 Linux.do can optionally use a logged-in cookie. Put it in local `.env` or the GitHub repository secret `LINUXDO_COOKIE`; never commit the cookie value. If Linux.do blocks public JSON, the batch still succeeds and records the failure in `sourceStatus.linuxdo`.
