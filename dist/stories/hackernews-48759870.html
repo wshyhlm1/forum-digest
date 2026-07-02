@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>代码审查的主要目的是找出难以维护的代码。 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-03/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>代码审查的主要目的是找出难以维护的代码。</h1>
+      <p class="original-title">The primary purpose of code review is to find code that will be hard to maintain</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ColinWright</span>
+        <span>热度 237</span>
+        <span>回复 126</span>
+        <span>2026/07/02 19:41</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48759870" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://mathstodon.xyz/@mjd/115096720350507897" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48759870.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>I think many people misunderstand the purpose of code review.  The purpose of code review is not for the reviewer to find bugs, and certainly not for them to ensure that the code is bug-free.  Anyone who depends on code review to find bugs is living in a fool&#39;s paradise.  As everyone should know by now, it is not in general possible to find bugs by examining the code.  
+
+The primary purpose of code review is to find code that will be _hard to maintain_.  The reviewer looks at the code and tries to understand what it is doing and how. If they can&#39;t, that means it will be hard to maintain in the future, and should be fixed now, while the original author is still familiar with it.</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">thayne</span>
+        
+        <span>2026/07/03 00:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">代码审查没有单一目的。查找难以维护的代码是其中之一，也是重要的一项，但肯定不是唯一的一项，而且我什至不确定它是否是最重要的一项。其他目的包括：<p>- 进行安全检查，以确保如果开发人员（或 AI）失控，合并恶意代码会变得更加困难</p><p>- 不太了解问题的人的第二视角，可能会看到更好的做事方法，或者原始开发人员错过的问题</p><p>- 在某些情况下，让更熟悉系统其他部分的人查看它，他可以判断它是否无法与其他部分很好地交互</p><p>- 确保存在至少还有一个熟悉代码的人</p><p> - 一个学习机会。作者可以从评审的反馈中学习，评审者可以从变更中的代码中学习。当作者和审稿人资历不同时尤其重要。当我指导新员工时，我会将他们添加为我所有 PR 的审核者，以便他们可以看到我是如何做事的，并审核他们的所有 PR，以便我可以提供指导。有时我什至从他们身上学到东西！</p><p>-是的，捕捉错误，尽管这不应该是主要机制，而且我同意这不是最重要的原因。不过，这对于安全和性能错误尤其重要，因为自动化测试更难发现这些错误。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763548">Code review doesn't have a single purpose. Finding code that is hard to maintain is one of those, and and an important one, but certainly not the only one, and I'm not sure it is even the most important one. Other purposes include:<p>- a safety check to ensure that if a developer (or AI) goes rogue, it is more difficult to merge malicious code</p><p>- a second perspective from someone who isn't as close to the problem and might see a better way to do things, or problems that the original developer missed</p><p>- in some cases having someone more familiar with other parts of the system look at it who can tell if it won't interact well with something else</p><p>- ensuring there is at least one other person familiar with the code</p><p>- a learning opportunity. The author can learn from feedback from the review, and the reviewer can learn from the code in the change. Especially important when the author and reviwer have differing seniority. When I mentor a new employee, I add them as a reviewer to all my PRs so they can see how I do things, and review all their PRs so I can provide guidance. And sometimes I even learn things from them!</p><p>- yes, catching bugs, although this should not be the primary mechanism for that, and I agree is not the most important reason. It is especially important for security and performance bugs though, as those are harder to catch with automated testing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763548">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763548" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">a4isms</span>
+        
+        <span>2026/07/03 00:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">另一个非常古老的理由：<p><i>当人们知道代码将由不仅会发表评论，而且还会根据所审查的代码对提交者的能力和适合度形成长期印象时，他们会以不同的方式编写代码。</i></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763686">Another—very old—rationale:<p><i>People write code differently when they know that it will be reviewed by people who will not only comment on it, but also form long-term impressions of the submitter's competence and fit based on the code that is reviewed.</i></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763686">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763686" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dotancohen</span>
+        
+        <span>2026/07/03 00:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我一直觉得这就是开源软件的优势。我费心查看代码以获取最佳实践的绝大多数开源软件都相当安全，而且最重要的是可维护。我在不同公司从事过的定制项目？完整的意大利面条几乎把所有人都弄乱了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763925">I've always felt that this is and advantage to open source software. The vast majority of open source software that I've bothered to look at the code for used best practices, was reasonably secure, and was above all maintainable. The bespoke projects that I've worked on at various companies? Complete spaghetti messes almost all of them.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763925">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763925" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">freedomben</span>
+        
+        <span>2026/07/03 00:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">恕我直言，这是一件大事。  我所在的团队的代码审查为零，而且代码审查很激烈，而且可以肯定的是，当人们知道代码会被审查时，他们会编写出更好的代码（一般来说）。  我们都会这样做，即使是潜意识里的。<p>但我确实提倡平衡。  可笑的代码审查往往会极大地减慢进程，这对某些事情有好处，但对另一些事情却有害。  恕我直言，找到一个良好的平衡非常重要</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763787">This is the big one IMHO.  I've been part of teams where there was zero code review, and where the code reviews were intense, and for sure people write much better code (generally speaking) when they know it will be reviewed.  We all do it, even if subconsciously.<p>I do advocate a balance though.  Ridiculous code reviews tend to slow the process down immensely, which is good for some things but bad for others.  Finding a good balance is super important IMHO</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763787">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763787" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">levl289</span>
+        
+        <span>2026/07/03 00:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">OP 是短式假二分法。感谢您的完美回复。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763918">OP is Short-form false-dichotomy. Thank you for this perfect response.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763918">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763918" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">urig</span>
+        
+        <span>2026/07/03 00:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">100%同意。就好像你从我的脑海中读出了第一句话。谢谢。
+与 #3 类似：<p>- 让在该子域更有经验的人发现有问题的部分以及与现有代码的不一致。</p>
+我同意所有这些，我读懂了理解代码并抱怨你不理解的内容的“单一目的”，这意味着如果你理解它，你将能够在理解它之后指出和评论错误/愚蠢/不安全/等的事情。  从OP的角度来看，这对我来说是有道理的。  特别是在模块化和分解方面；一旦我理解了一个巨大的 PR 的全部内容，我就会在脑海中对它进行建模，并且开始意识到它要么是可维护的，要么有一天会成为一场噩梦……或者介于两者之间。
+我同意它没有单一目的，但您没有反驳有关主要目的的说法。一个目的就是统治所有人。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763610">100% agree. It's as if you read the first sentence out of my mind. Thanks.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763610">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763610" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">ivanjermakov</span>
+        
+        <span>2026/07/03 00:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">与 #3 类似：<p>- 让在该子域更有经验的人发现有问题的部分以及与现有代码的不一致。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764011">Similar to #3:<p>- having someone more experienced in that subdomain catch problematic parts and inconsistencies with existing code.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764011">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764011" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">boie0025</span>
+        
+        <span>2026/07/03 00:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我同意所有这些，我读懂了理解代码并抱怨你不理解的内容的“单一目的”，这意味着如果你理解它，你将能够在理解它之后指出和评论错误/愚蠢/不安全/等的事情。  从OP的角度来看，这对我来说是有道理的。  特别是在模块化和分解方面；一旦我理解了一个巨大的 PR 的全部内容，我就会在脑海中对它进行建模，并且开始意识到它要么是可维护的，要么有一天会成为一场噩梦……或者介于两者之间。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764204">I agree with all of this, I read into the "single purpose" of understanding the code and complaining about what you don't understand implying that if you understand it, you will be able to point out and comment on things that are wrong /foolish/unsafe/etc after understanding it.  From that perspective on the OP, it makes sense to me.  Particularly with regard to modularity and factoring; once I understand all of a gigantic PR I will have modeled it in my mind and will begin to either see that it will be maintainable, or will be a total nightmare one day... or somewhere in between.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764204">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764204" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">boie0025</span>
+        
+        <span>2026/07/03 01:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">重新阅读后，我意识到该声明不是“单一目的”，而是“主要目的”，在这种情况下，这对我来说更有意义。  我想其他一切都来自于理解给定 PR 中的内容。  很难在你不理解的代码中找到bug，很难理解不遵循约定的代码等等。我想我就是这样工作的，只是没有从这个角度去思考。  我审查了很多代码，我通常做的就是在相关存储库中启动我的编辑器并继续执行。  如果有对 PR 外部的方法调用，根据它是什么以及我对它的了解，我会将其拉到我的编辑器中并在那里进行审查，以确保我了解发生了什么。  这种理解就是评论的来源。  也许“我理解这一点，这是正确的”或“我理解这一点，但似乎是错误的，因为[某事]”或“我不理解这一点，因为[无论如何]”等。也许“主要目的”并不完美..也许“总体目标”或类似的..：shipit：</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764723">After a re-read, I realized the claim wasn't "single purpose", it was "primary purpose", in which case this makes even more sense to me.  I guess everything else comes from understanding what's in a given PR.  It is difficult to find bugs in code that you don't understand, and it's difficult to understand code that doesn't follow convention, etc.  I think I've worked this way and just not thought about it from this perspective.  I review a lot of code, and what I generally do is fire up my editor in the relevant repo and follow along.  If there's a method call to outside of the PR, depending on what it is and what I know about it, I'll pull that up in my editor and review there to make sure I understand what's happening.  That understanding is where the comments come from.  Maybe "I understand this and it's right" or "I understand this, and it seems wrong because [something]" or "I do not understand this because [whatever]" etc. Maybe "primary purpose" isn't perfect.. perhaps "overarching goal" or similar..  :shipit:</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764723">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764723" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">threethirtytwo</span>
+        
+        <span>2026/07/03 00:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我同意它没有单一目的，但您没有反驳有关主要目的的说法。一个目的就是统治所有人。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764107">I agree it doesn’t have a single purpose but you didn’t refute the claim about a primary purpose. One purpose to rule them all.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764107">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764107" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">donatj</span>
+        
+        <span>2026/07/02 21:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我发现知识转移可能是代码审查中最重要的部分。<p>我们整个小团队在合并之前都会对 PR 表示赞赏，除非有很大的仓促，这可以让团队中的每个人在任何给定时间对代码库的状态有一个粗略的了解。不会出现像“我所依赖的整个系统消失了”这样的措手不及的情况，就像我在我工作过的更加孤立的地方所发生的那样。</p><p>除此之外，它还提供了一个论坛，可以提出有关事物如何运作的问题，以进一步建立理解。在一个高效的团队中，每个开发人员至少应该对整个系统有一定的了解，包括他们从未接触过的部分。</p><p>另一个<i>重要</i>功能就是机构知识检查。例如，最近我对一个表做了一个小更改，一位同事指出，有一个微服务我没有考虑到写入该表会破坏（是的，共享表是糟糕的设计，无关）。我不知道这个微服务的存在，更不用说可以访问这个表了。不过，这里的机构知识检查避免了更大的问题和潜在的数据清理情况。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48761588">What I find to be maybe the single most important part of code review is knowledge transfer.<p>Our entire small team thumbs up a PR before it's merged unless there's a big rush on it, and this gives everyone on the team a rough idea of the state of the codebase at any given time. There's no being blindsided like "this whole system I depend on is gone" like I had happen at far more siloed places I've worked.</p><p>Beyond that, it gives a forum to ask questions about how things work to further build understanding. On a high functioning team, every developer should have at least a modest understanding of the entire system, including parts they never touch.</p><p>Another <i>important</i> feature is just the institutional knowledge check. For instance recently I made a small change to a table and a coworker pointed out that there was a microservice I wasn't considering that wrote to that table that would break (yes, sharing tables is bad design, unrelated). I had no idea this microservice existed let alone had access to this table. The institutional knowledge check here though prevented a larger issue and potential data cleanup situation.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48761588">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48761588" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/07/02 23:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我们整个小团队在合并之前都会对 PR 表示赞赏，除非有很大的仓促<p>我过去的几位经理已经尝试过这一点。</p><p>对于一个运行缓慢的代码库的小团队来说，这感觉很棒。如果你试图把它强加给一个更大的团队，或者期望代码库能够快速移动，那么它就会变成一场浏览代码（如果是的话）的表演游戏，然后点击“竖起大拇指”按钮，这样你就可以回到你的工作了。</p><p>最终的情况是，没有人真正审查代码，因为每个人都有自己的工作要做，他们不想成为阻止重要 PR 的人，所以每个人都竖起大拇指。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763003">&gt; Our entire small team thumbs up a PR before it's merged unless there's a big rush on it<p>This has been tried by a couple of my past managers.</p><p>This feels great with a small team on a slow moving codebase. If you try to force it on a larger team or expect the codebase to move quickly then it turns into a performative game of skimming the code (if that) to click the thumbs up button so you can get back to your work.</p><p>The end game was a situation where nobody was really reviewing code because everyone had their own work to do and they didn’t want to be the one person blocking important PRs, so everyone was clicking thumbs up.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763003">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763003" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">cucumber3732842</span>
+        
+        <span>2026/07/02 23:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这还有一个“当每个人都有责任时，没有人负责”的帮助<p>话又说回来，如果你正在处理一个无法维护的代码库雷区，那么“解雇整个团队，我敢说你”可能就是你所追求的。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763460">This with a side helping of "when everyone is responsible nobody is"<p>Then again, if you're dealing with an un-maintainable minefield of a code base then "fire the whole team, I dare you" might be what you're after.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763460">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763460" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">thomascgalvin</span>
+        
+        <span>2026/07/02 22:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我们整个小团队在合并之前都会对 PR 表示赞赏，除非有很大的仓促，这可以让团队中的每个人在任何给定时间对代码库的状态有一个粗略的了解。不会出现像“我所依赖的整个系统都消失了”这样的措手不及的情况，就像我在我工作过的更加孤立的地方所发生的那样。<p>您的团队有多大？因为我认为这不会超出五名工程师的规模</p><p>我是自动化测试的大力支持者，因为即使依赖它的人不在房间里，它也会捕捉到诸如“我所依赖的整个系统已经消失”之类的事情</p><p>我也是......一切事物的共享所有权的大力支持者，真的。人们很自然地拥有代码库的不同部分，特别是如果它是他们创建的组件，但这会导致孤岛和低总线数量。不应该有人拥有一个依赖于其他组件的系统</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48762623">&gt; Our entire small team thumbs up a PR before it's merged unless there's a big rush on it, and this gives everyone on the team a rough idea of the state of the codebase at any given time. There's no being blindsided like "this whole system I depend on is gone" like I had happen at far more siloed places I've worked.<p>How large is your team? Because I don't think that would scale beyond maybe five engineers</p><p>I'm a huge proponent of automated testing, because that catches things like "this whole system I depend on is gone" even if the guy who depends on it isn't in the room</p><p>I'm also a huge proponent of shared ownership of ... everything, really. It's natural for people to kind of own different pieces of a codebase, especially if it's a component they created, but that leads to silos and low bus counts. There shouldn't be one guy who owns one system that depends on one other component</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48762623">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48762623" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">rowanseymour</span>
+        
+        <span>2026/07/02 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们甚至发现自己在代码要立即合并的情况下创建 PR，并标记其他开发人员，以便他们有一个方便的方法来查看合并的内容和原因。这样人们就不会忘记代码库中的内容。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48761886">We even find ourselves creating PRs in situations where the code is going to be merged immediately anyway, and tagging other devs, just so they have a convenient way to see what got merged and why. So people don't lose track of what is in the codebase.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48761886">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48761886" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jonahx</span>
+        
+        <span>2026/07/02 22:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是一个很好的做法。  还值得一提的是：假设每个人都很好地使用 git，那么普通的 git log 也可以完成同样的操作。  昨天工作的正确 git 日志就像你的工作报纸和咖啡一样。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48762152">It's a good practice.  Worth mentioning also: the same can be done with ordinary git log, assuming everyone is using git well.  A proper git log of yesterday's work can be like your work newspaper with coffee.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48762152">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48762152" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">laybak</span>
+        
+        <span>2026/07/02 22:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这看起来是一系列良好实践。不过我发现很难保持自律，让每次提交都范围明确且描述清晰</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48762291">this seems like a chain of good practices. though I find it hard to stay disciplined about keeping commits well scoped and well described</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48762291">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48762291" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">morganherlocker</span>
+        
+        <span>2026/07/03 01:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你可以将大多数PR系统设置为在合并时使用第一次提交的信息进行压缩，然后强制要求最顶层的提交信息以工单ID为前缀。这种做法有很多好处：git log更易读，git bisect追踪回归问题更轻松，能轻松找到与某项工作相关的所有提交，git blame也更有用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764818">You can setup most PR systems to squash on merge using the first commit's message, then enforce that the top commit message is prefixed with a ticket ID. This practice has many benefits: readable git log, easier git bisect for tracking down regressions, it becomes easy to find all commits associated with a block of work, more useful git blame.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764818">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764818" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jonahx</span>
+        
+        <span>2026/07/02 22:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">熟练掌握“rebase --interactive”以及其他在合并前编辑（本地！）历史的命令会有很大帮助。一旦你掌握了，这只会给大多数PR增加5分钟左右的额外工作量。虽然以前学习这些知识很难，但现在有了大语言模型，一切都变得非常简单。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48762353">Becoming very comfortable with "rebase --interactive" and other cmds for editing your (local!) history before merging helps a lot.  Once you are, it only adds 5m or so of extra work to most PRs.  And while acquiring this knowledge used to be difficult, LLMs make it very easy these days.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48762353">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48762353" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">duskdozer</span>
+        
+        <span>2026/07/02 23:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我还推荐一款专为rebase设计的编辑器。我使用的是nodejs rebase-editor TUI（不过看起来旧的非vibecoded版本已经从github上移除了，所以目前是否还能获取到不太清楚），它能让整理工作变得更轻松</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48762854">I would also recommend an editor designed for rebases. I use the nodejs rebase-editor TUI (though it looks like the old non-vibecoded releases have been removed from github, so unclear on the current availability of this one) which makes it easier to organize</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48762854">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48762854" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

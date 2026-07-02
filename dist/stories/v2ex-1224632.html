@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[macOS/开源] 会话散在 ~/.claude 和 ~/.codex 里找不到？我写了个统一浏览搜索 + 一键 resume 的工具 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-03/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>[macOS/开源] 会话散在 ~/.claude 和 ~/.codex 里找不到？我写了个统一浏览搜索 + 一键 resume 的工具</h1>
+      <p class="original-title">[macOS/开源] 会话散在 ~/.claude 和 ~/.codex 里找不到？我写了个统一浏览搜索 + 一键 resume 的工具</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 mahui</span>
+        <span>热度 0</span>
+        <span>回复 0</span>
+        <span>2026/07/03 00:24</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1224632" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1224632.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>不知道大家有没有这两个问题，反正我有：</li><li>一是会话找不回。想接着上周某个 session 继续干活，官方 /resume 列表就最近几条， 翻不到。想搜&quot;上次修证书路径是在哪个会话里聊的&quot;，没有搜索功能，等于没有。</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>不知道大家有没有这两个问题，反正我有：</p>
+<p>一是<strong>无法找回会话</strong>想接着上周的某个会话继续干活，官方 <code>/resume</code> 列表只显示最近几条，翻不到。想搜“上次修证书路径是在哪个会话里聊的”，却没有搜索功能，等于没有。</p>
+<p>二是<strong>项目无法找回</strong>vibe coding 一时爽，几个月下来，一时兴起开的项目散了一地，有些连目录在哪都想不起来了。Agent 的会话记录其实忠实地记着你在每个目录干过什么，但就是没有工具能把它捞出来看。</p>
+<p>因此写了 VibeTrail，把 Claude Code / Codex / Antigravity 三家的本地会话读取出来，整合成统一入口：</p>
+<p></p>
+<ul>
+<li><strong>项目总览</strong>：按工作目录聚合所有运行过 agent 的项目，最近干了什么一眼就能扫完。
+我自己打开首屏就找回了两个彻底遗忘的项目</li>
+<li><strong>全文搜索</strong>：跨所有智能体、所有项目搜索正文，也可限定单个项目搜索。
+命中后直接跳转至会话并定位到该条消息。搜索引擎直接引入了 ripgrep 的 crate，无需安装 rg。</li>
+<li><strong>一键恢复</strong>：点一下，打开终端，cd 到项目目录，跑 <code>claude --resume</code> 或
+<code>codex resume</code>，回到当时的上下文。Terminal / iTerm2 / Ghostty / Warp 都支持</li>
+<li>其他：续会话和 subagent 线程自动折叠归组、正文 Markdown 渲染、Token 统计、
+CLI 带 <code>--json</code> 方便接脚本</li>
+</ul>
+<p>技术上采用 Rust + Tauri。没有数据库、没有索引、没有常驻进程，每次都直接读文件。本机 2 万个 session（3.4G）实测：打开会话 0.06s，搜索和 rg 本尊一个速度。对 agent 目录严格只读。</p>
+<p>GitHub： <a href="https://github.com/mahui/vibe-trail" target="_blank" rel="noopener noreferrer">https://github.com/mahui/vibe-trail</a> （Apache-2.0，dmg 已签名公证）</p>
+<p>Provider 协议是开放的，想接入其他 agent 只需实现一个 trait 并加上几个测试即可，
+欢迎提交 PR，也欢迎吐槽。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>不知道大家有没有这两个问题，反正我有：</p>
+<p>一是<strong>会话找不回</strong>。想接着上周某个 session 继续干活，官方 <code>/resume</code> 列表就最近几条，
+翻不到。想搜"上次修证书路径是在哪个会话里聊的"，没有搜索功能，等于没有。</p>
+<p>二是<strong>项目找不回</strong>。vibe coding 一时爽，几个月下来一时兴起开的项目散了一地，
+有些连目录在哪都想不起来了。agent 的会话记录其实忠实记着你在每个目录干过什么，
+但没有工具把它捞出来看。</p>
+<p>所以写了 VibeTrail ，把 Claude Code / Codex / Antigravity 三家的本地会话
+读出来做成统一入口：</p>
+<p></p>
+<ul>
+<li><strong>项目总览</strong>：按工作目录聚合所有跑过 agent 的项目，最近干了什么一眼扫完。
+我自己打开第一屏就找回了两个彻底遗忘的项目</li>
+<li><strong>全文搜索</strong>：跨所有 agent 、所有项目搜正文，也可以限定单个项目搜。
+命中直接跳进会话定位到那条消息。搜索引擎是把 ripgrep 的 crate 链进来的，
+不用装 rg</li>
+<li><strong>一键 resume</strong>：点一下，终端打开、cd 到项目目录、跑 <code>claude --resume</code> 或
+<code>codex resume</code>，回到当时的上下文。Terminal / iTerm2 / Ghostty / Warp 都支持</li>
+<li>其它：续会话和 subagent 线程自动折叠归组、正文 markdown 渲染、token 统计、
+CLI 带 <code>--json</code> 方便接脚本</li>
+</ul>
+<p>技术上是 Rust + Tauri 。没有数据库没有索引没有常驻进程，每次都直接读文件。
+本机 2 万个 session （ 3.4G ）实测：打开会话 0.06s ，搜索和 rg 本尊一个速度。
+对 agent 目录严格只读。</p>
+<p>GitHub: <a href="https://github.com/mahui/vibe-trail" target="_blank" rel="noopener noreferrer">https://github.com/mahui/vibe-trail</a> （ Apache-2.0 ，dmg 已签名公证）</p>
+<p>Provider 协议是开放的，想接别的 agent 就是实现一个 trait 加几个测试的事，
+欢迎 PR ，也欢迎吐槽。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">0</span></h2>
+      <div class="comment-tree">
+        <p class="muted">暂无公开回复</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

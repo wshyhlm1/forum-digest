@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自 Linux 6.9 起，LUKS 挂起不再从内存中清除磁盘加密密钥。 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-03/">返回日报</a>
+      <div class="source-chip">Hacker News #2</div>
+      <h1>自 Linux 6.9 起，LUKS 挂起不再从内存中清除磁盘加密密钥。</h1>
+      <p class="original-title">Since Linux 6.9, LUKS suspend stopped wiping disk-encryption keys from memory</p>
+      <div class="meta-line">
+        <span>安全</span>
+        <span>作者 IngoBlechschmid</span>
+        <span>热度 204</span>
+        <span>回复 104</span>
+        <span>2026/07/02 23:25</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48763035" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://mathstodon.xyz/@iblech/116769502749142438" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48763035.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>自Linux 6.9起，LUKS在系统挂起时停止清除内存中的磁盘加密密钥，导致潜在的安全风险。</li><li>问题源于一次代码重构，修复仅需一行代码，并已添加自动化测试以防止未来回归。</li></ul>
+      <h3>看点</h3><ul><li>Linux 6.9版本引入的LUKS挂起问题导致加密密钥在内存中残留超过两年。</li><li>问题由一次看似合理的代码重构引发，展示了代码复杂交互的潜在风险。</li><li>修复仅需一行代码，并已添加自动化测试和警告机制以防止未来类似问题。</li><li>强调了形式化证明在确保代码正确性方面的重要性。</li><li>推荐使用全盘加密（如LUKS或VeraCrypt）以保护数据安全。</li></ul>
+      <p class="reason">该帖子讨论了Linux 6.9版本中LUKS磁盘加密在系统挂起时未能正确清除内存中的加密密钥的安全问题，涉及操作系统内核、加密技术和安全机制。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kokada</span>
+        
+        <span>2026/07/03 00:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">虽然这确实是一个有趣的错误，但我有点觉得标题是点击诱饵？因为据我了解，这个 `cryptsetup luksSuspend` 并不是真正的官方支持，而是 Debian 中完成的扩展，所以如果有的话，这个回归只影响 Debian 吗？我不确定你是否可以将不支持甚至广泛测试的东西归咎于内核。<p>我仍然觉得这令人印象深刻，而且很高兴我们现在有一个测试（顺便说一句，NixOSTests 很棒，我同意 OP）来避免这种回归回来。但从标题来看，这似乎是一个普遍存在的问题，而不是只影响一个发行版。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764234">While it is certainly an interesting bug, I kinda feel that the title is click bait? Because this `cryptsetup luksSuspend` from what I understood is not really officially supported but an extension done in Debian, so if anything this regression only affected Debian? I am not sure if you can blame the kernel for something that is not supported or even widely tested.<p>I still find this impressive, and it is nice that we now have a test (NixOSTests BTW are awesome, I agree with OP) to avoid this regression from coming back. But from the title it seems to be a widespread issue, not something that affects only one Distro.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764234">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764234" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">IngoBlechschmid</span>
+        
+        <span>2026/07/03 01:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">抱歉，目标是技术上精确的标题，并且不想诱骗点击。<p>是的，这不会影响使用库存配置的人，原因很简单，他们不会期望音量键在挂起期间是安全的。</p><p>Debian 的解决方案已移植到几个（大多数？）其他发行版，我猜有相当多的人维护私有端口。</p><p>thread-keyring(7) 联机帮助页承诺：“当引用线程密钥环的线程终止时，线程密钥环将被销毁。”对于他们的密钥上传（从用户空间到内核空间）机制，cryptsetup 项目依赖于这个属性；但内核 6.9 引入了一个回归，使该属性无效。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764438">Sorry, aimed for a technically precise title and didn't want to bait clicks.<p>Yes, this does not affect people on stock configurations for the plain reason that they wouldn't expect the volume key to be safe during suspend anyway.</p><p>Debian's solution was ported to several (most?) other distributions and I guess quite a few people maintained private ports.</p><p>The thread-keyring(7) manpage promises: "A thread keyring is destroyed when the thread that refers to it terminates." For their key upload (from userspace to kernelspace) mechanism, the cryptsetup project relied on this property; but kernel 6.9 introduced a regression invalidating this property.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bitbasher</span>
+        
+        <span>2026/07/03 00:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我没有看到其他方法吗？当您睡眠（挂起到 RAM）时，所有内容都存储在 RAM 中并被加密，但主密钥存在于内核内存中（如果我没记错的话）。<p>但是，如果您休眠（挂起到磁盘），RAM 的全部内容（包括主密钥）将写入/加密到磁盘，并且 RAM 被清除。</p><p>当您唤醒计算机时，您必须重新输入密码以解密主密钥，以将磁盘内容重新加载回内存。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763695">I don't see any other way? When you sleep (suspend to RAM), everything is stored in RAM and is encrypted but the master key is present in kernel memory (if I recall correctly).<p>However, if you hibernate (suspend to disk) the entire contents of RAM (including the master key) is written/encrypted to disk and the RAM is cleared.</p><p>When you wake the machine up you have to re-enter the passphrase to decrypt the master key to re-load disk contents back to memory.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763695">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763695" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">IngoBlechschmid</span>
+        
+        <span>2026/07/03 00:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，如果您只是在大多数 Linux 发行版上暂停笔记本电脑，那么包括主密钥在内的所有内容仍然保留在内存中。但 Debian 率先推出了（可选）cryptsetup-suspend 插件。这会发出一个 luksSuspend 命令，该命令应该从内存中擦除密钥，并在恢复时要求您重新提供密码。<p>到内核 6.8，这按描述工作；从内核 6.9 开始，它默默地没有。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763753">Yes, if you simply suspend your laptop on most stock Linux distributions, then everything including the master key is still kept in memory. But Debian pioneered the (optional) cryptsetup-suspend addon. This issues a luksSuspend command which is supposed to wipe the key from memory, and on resume asks you to resupply your passphrase.<p>Up to kernel 6.8, this worked as described; starting with kernel 6.9, it silently didn't.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763753">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763753" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">herywort</span>
+        
+        <span>2026/07/03 00:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所以即使密码已经可用，您仍然会被要求输入密码？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764181">So you would still be asked for a passphrase, even though it's already available?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764181">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764181" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">IngoBlechschmid</span>
+        
+        <span>2026/07/03 00:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">正是如此。 Cryptsetup 不会知道内核内存中卷密钥的额外副本。这就是为什么它<i>显得</i>安全（“如果音量键仍在内存中，我肯定不会被要求重新提供密码，对吧？”）。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764240">Exactly. Cryptsetup wouldn't know about the extra copy of the volume key in kernel memory. Which is why, dramatically, it <i>appeared</i> secure ("surely I wouldn't be asked to resupply the passphrase if the volume key is still in memory, right?").</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764240">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764240" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pedrocr</span>
+        
+        <span>2026/07/03 01:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果我理解正确的话，这仍然比默认设置更安全。从挂起状态恢复时，笔记本电脑仍会被加密密钥锁定，即使你能以某种方式绕过锁定，也无法访问磁盘。唯一的不安全之处在于，内核内存中的某个地方仍然存在着该密钥，因此如果你能以某种方式从运行中的系统提取出该密钥，就能将其解锁。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764539">It was still more secure than the default if I understand this correctly. On resume from suspend the laptop would still be locked by the encryption key and without access to the disk even if you can somehow circumvent the lock. The only insecurity was that somewhere in the kernel memory the key still exists so if you can somehow extract that from the live system you can unlock it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764539">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764539" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">IngoBlechschmid</span>
+        
+        <span>2026/07/03 01:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，你说得对：LUKS加密保护的是静态数据。窃取你磁盘的攻击者只能获取很少的信息，比如你使用了LUKS这一事实（除非你将LUKS头部放在其他地方，与磁盘分离），或许还有磁盘和磁盘扇区的使用统计信息。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764847">Yes, you are right: LUKS encryption protests your data at rest. An attacker which steals your disk can only gain little, like the information that you have used LUKS (unless you put your LUKS headers elsewhere, separated from the disk) and perhaps disk and disk sector usage statistics.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764847">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764847" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">naturalmovement</span>
+        
+        <span>2026/07/03 00:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">仅供参考：VeraCrypt 并不是 Windows 上事实上的加密软件。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763842">FYI: VeraCrypt is not the defacto encryption software for Windows.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763842">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763842" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">IngoBlechschmid</span>
+        
+        <span>2026/07/03 00:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哦，是哪一个？<p>（你不是指 BitLocker，对吧？）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763861">Oh, which one is it?<p>(You don't mean BitLocker, right?)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763861">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763861" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">naturalmovement</span>
+        
+        <span>2026/07/03 00:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">确实如此，而且他们占据了大部分的企业市场。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48763900">It absolutely is and they have most the enterprise market.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48763900">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48763900" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">IngoBlechschmid</span>
+        
+        <span>2026/07/03 00:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好吧，是的，没错。它绝对是Windows上使用最广泛的加密软件。<p>但我绝不会信任它一秒钟，因为它是专有的，而且问题频出。你可能知道这一点，但为了其他人的利益：</p><p>38C3 - Windows BitLocker：无螺丝刀则束手无策
+<a href="https://media.ccc.de/v/38c3-windows-bitlocker-screwed-without-a-screwdriver" target="_blank" rel="noopener noreferrer">https://media.ccc.de/v/38c3-windows-bitlocker-screwed-withou...</a>
+<a href="https://www.youtube.com/watch?v=5eNtT2p12cM" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=5eNtT2p12cM</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764112">Okay, yes, sure. It definitely is the most-used encryption software for Windows.<p>But I would never trust it a second, being proprietary and known for issues. You likely know that, but for the benefit of others:</p><p>38C3 - Windows BitLocker: Screwed without a Screwdriver
+<a href="https://media.ccc.de/v/38c3-windows-bitlocker-screwed-without-a-screwdriver" target="_blank" rel="noopener noreferrer">https://media.ccc.de/v/38c3-windows-bitlocker-screwed-withou...</a>
+<a href="https://www.youtube.com/watch?v=5eNtT2p12cM" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=5eNtT2p12cM</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764112">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764112" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">noinsight</span>
+        
+        <span>2026/07/03 01:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果你真的重视安全而不是用户便利性，你应该部署带PIN码的BitLocker，而不是仅使用TPM。这样一来，整整一类漏洞就消失了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764646">If you’re at all serious about security and not user convenience, you deploy BitLocker with a PIN instead of TPM only. And then a whole class of vulnerabilities goes away.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764646">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764646" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bri3d</span>
+        
+        <span>2026/07/03 01:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你提到的BitLocker问题，是仅使用安全启动的BitLocker架构的明显特性。如果你把Linux配置成那样，也会遇到类似的问题（例如，在Linux上很容易错误配置TPM密封磁盘加密，导致仍然允许使用恢复shell，而该shell会在磁盘未密封的情况下运行）。<p>带密码的BitLocker（相当于所讨论的LUKS配置）则不存在这些问题。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764626">The issues you linked with BitLocker are obvious properties of BitLocker-with-SecureBoot-only architecture. If you configure Linux that way, you get similar issues (for example, it's pretty easy to mis-configure TPM sealed disk encryption on Linux to still allow a recovery shell, which will run with the disk unsealed).<p>BitLocker with a password (the equivalent of the LUKS configuration in question) does not share these issues.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764626">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764626" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">saidnooneever</span>
+        
+        <span>2026/07/03 01:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VeraCrypt失去了他们的驱动程序许可证，所以据我所知你应该避免使用它，因为它再也无法更新驱动程序了。没看到他们重新获得该许可证的任何消息。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764430">veracrypt lost their drivers license so afaik you should avoid it since it cannot update its drivers any longer. didnt see any news about them reacquiring that license</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764430">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764430" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">snailmailman</span>
+        
+        <span>2026/07/03 01:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">假设你指的就是这件事，它在几天内就解决了。只是事件得到解决并没有成为头条新闻。
+<a href="https://sourceforge.net/p/veracrypt/discussion/general/thread/9620d7a4b3/?page=1#43c0" target="_blank" rel="noopener noreferrer">https://sourceforge.net/p/veracrypt/discussion/general/threa...</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764556">Assuming this is what you are referring to, it was resolved within a few days. The incident being resolved just didn't make headlines.
+<a href="https://sourceforge.net/p/veracrypt/discussion/general/thread/9620d7a4b3/?page=1#43c0" target="_blank" rel="noopener noreferrer">https://sourceforge.net/p/veracrypt/discussion/general/threa...</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764556">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764556" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nacs</span>
+        
+        <span>2026/07/03 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">提醒一下，使用Bitlocker意味着你在使用一种闭源加密，而微软会很乐意应要求交出你的恢复密钥。<p><a href="https://www.forbes.com/sites/thomasbrewster/2026/01/22/microsoft-gave-fbi-keys-to-unlock-bitlocker-encrypted-data/" target="_blank" rel="noopener noreferrer">https://www.forbes.com/sites/thomasbrewster/2026/01/22/micro...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764063">Reminder that by using Bitlocker, you're using a closed source encryption for which Microsoft will happily hand out your recovery key on request.<p><a href="https://www.forbes.com/sites/thomasbrewster/2026/01/22/microsoft-gave-fbi-keys-to-unlock-bitlocker-encrypted-data/" target="_blank" rel="noopener noreferrer">https://www.forbes.com/sites/thomasbrewster/2026/01/22/micro...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764063">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764063" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">andrewpiroli</span>
+        
+        <span>2026/07/03 00:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">只有当你把密钥存储在微软那里时才会这样，但这并非强制要求，如果你使用的是本地账户——我猜大多数注重隐私的人都会这么做——这也不是默认设置。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764171">Only if you store your key with Microsoft, which is not required or the default if you're using a local account which I assume most privacy sensitive people are.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764171">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764171" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gruez</span>
+        
+        <span>2026/07/03 01:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">更不用说，除非 BitLocker 的激活流程最近发生了变化，否则它会明确询问你如何存储备份密钥，并提供本地选项（例如 U 盘、打印出来等）和保存到微软账户这两种选择。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764522">Not to mention that unless the bitlocker activation flow changed recently, it specifically asks you how to store your backup keys, with a choice given been local options (eg. usb drive, printing it off, etc.) and saving it to your microsoft account.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764522">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764522" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">briHass</span>
+        
+        <span>2026/07/03 01:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">BitLocker 可以使用仅保存在本地的密钥，但 Windows 家庭版的默认设置是使用在线账户进行备份。<p>说“乐意”也有些牵强，因为如果收到有效的法院命令，他们其实别无选择。</p><p>如果你想要一种能抵御美国政府审查的加密方式，密钥只能存在你的脑子里。任何物理介质都可能被法院命令强制交出。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48764281">Bitlocker can use keys that are local only, but the default for home editions of Windows was to use the online account to back it up.<p>'Happily' is also a stretch, as they really don't have a choice if served a valid court order.</p><p>If you want encryption that is safe from the US government, keys need to be stored in your head. Anything physical is subject to court orders.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48764281">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48764281" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
