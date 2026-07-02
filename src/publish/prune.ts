@@ -33,7 +33,7 @@ export async function pruneBatchArtifacts(
     const dirEntries = await readdir(batchesDir, { withFileTypes: true });
     await Promise.all(
       dirEntries
-        .filter((entry) => entry.isDirectory() && !keepIds.has(entry.name))
+        .filter((entry) => entry.isDirectory() && entry.name !== "latest" && !keepIds.has(entry.name))
         .map((entry) => rm(path.join(batchesDir, entry.name), { recursive: true, force: true }))
     );
   } catch {
