@@ -149,7 +149,9 @@ async function requestGoogleTranslation(text: string): Promise<string> {
   endpoint.searchParams.set("dt", "t");
   endpoint.searchParams.set("q", text);
 
-  const response = await fetch(endpoint);
+  const response = await fetch(endpoint, {
+    signal: AbortSignal.timeout(20_000)
+  });
   if (!response.ok) {
     throw new GoogleTranslateHttpError(response.status);
   }
