@@ -1,0 +1,94 @@
+name: qwen-smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      QWEN_API_KEY: ${{ secrets.QWEN_API_KEY || secrets.OPENAI_API_KEY }}
+      QWEN_BASE_URL: ${{ vars.QWEN_BASE_URL || vars.OPENAI_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1' }}
+      QWEN_MODEL: ${{ vars.QWEN_MODEL || vars.OPENAI_MODEL || 'qwen3.7-plus' }}
+      QWEN_EFFORT: ${{ vars.QWEN_EFFORT || vars.OPENAI_REASONING_EFFORT || 'high' }}
+    steps:
+      - name: Test Qwen chat completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${QWEN_API_KEY:-}" ]; then
+            echo "::error::QWEN_API_KEY is empty"
+            exit 1
+          fi
+
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          base_url = os.environ.get("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1").rstrip("/")
+          model = os.environ.get("QWEN_MODEL", "qwen3.7-plus")
+          effort = os.environ.get("QWEN_EFFORT", "high").strip().lower()
+          endpoint = f"{base_url}/chat/completions" if base_url.endswith("/v1") or "/compatible-mode/v1" in base_url else f"{base_url}/v1/chat/completions"
+
+          base_body = {
+              "model": model,
+              "temperature": 0,
+              "messages": [
+                  {"role": "system", "content": "You are a concise test assistant. Reply with OK only."},
+                  {"role": "user", "content": "Reply OK."},
+              ],
+          }
+          bodies = [base_body]
+          if effort not in ("", "0", "false", "none", "off", "disabled"):
+              with_reasoning = dict(base_body)
+              with_reasoning["reasoning_effort"] = effort
+              with_reasoning["enable_thinking"] = True
+              bodies = [with_reasoning, base_body]
+
+          headers = {
+              "Content-Type": "application/json",
+              "Authorization": f"Bearer {os.environ['QWEN_API_KEY']}",
+          }
+
+          last_error = ""
+          for index, body in enumerate(bodies):
+              request = urllib.request.Request(
+                  endpoint,
+                  data=json.dumps(body).encode("utf-8"),
+                  headers=headers,
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=60) as response:
+                      payload = json.loads(response.read().decode("utf-8"))
+                      content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+                      print(f"Qwen smoke status: {response.status}")
+                      print(f"Qwen smoke model: {model}")
+                      print(f"Qwen smoke content length: {len(content.strip())}")
+                      if not content.strip():
+                          print("::error::Qwen returned empty content")
+                          sys.exit(1)
+                      sys.exit(0)
+              except urllib.error.HTTPError as error:
+                  body_text = error.read().decode("utf-8", errors="replace")
+                  last_error = f"HTTP {error.code}: {body_text[:500]}"
+                  if index == 0 and error.code in (400, 422) and len(bodies) > 1:
+                      print(f"Reasoning options were rejected with HTTP {error.code}; retrying without reasoning options.")
+                      continue
+                  break
+              except Exception as error:
+                  last_error = str(error)
+                  break
+
+          print(f"::error::Qwen smoke request failed: {last_error}")
+          sys.exit(1)
+          PY
