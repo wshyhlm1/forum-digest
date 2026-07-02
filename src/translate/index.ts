@@ -11,6 +11,8 @@ export interface TranslationResult {
 }
 
 const MAX_CONCURRENT_STORY_TRANSLATIONS = 3;
+const COMMENT_BATCH_SIZE = 8;
+const COMMENT_BATCH_CHAR_LIMIT = 8_000;
 
 async function mapWithConcurrency<T, R>(
   items: T[],
@@ -107,6 +109,100 @@ function extractHtmlTextLength(html: string): number {
   return total;
 }
 
+function chunkCommentsForTranslation(nodes: CommentNode[]): CommentNode[][] {
+  const batches: CommentNode[][] = [];
+  let current: CommentNode[] = [];
+  let currentLength = 0;
+
+  for (const node of nodes) {
+    const nextLength = node.textRawHtml.length;
+    const shouldFlush = current.length > 0
+      && (current.length >= COMMENT_BATCH_SIZE || currentLength + nextLength > COMMENT_BATCH_CHAR_LIMIT);
+    if (shouldFlush) {
+      batches.push(current);
+      current = [];
+      currentLength = 0;
+    }
+    current.push(node);
+    currentLength += nextLength;
+  }
+
+  if (current.length > 0) {
+    batches.push(current);
+  }
+
+  return batches;
+}
+
+function commentHtmlCacheKey(node: CommentNode): string {
+  return `comment-html:${node.commentKey}:${sha256(node.textRawHtml)}`;
+}
+
+async function translateCommentBatch(
+  batch: CommentNode[],
+  state: StateBundle,
+  env: AppEnv
+): Promise<void> {
+  const pending: CommentNode[] = [];
+
+  for (const node of batch) {
+    const cacheKey = commentHtmlCacheKey(node);
+    const hit = state.translationCache.entries[cacheKey];
+    if (hit?.sourceHash === sha256(node.textRawHtml) && hit.translated) {
+      node.textZhHtml = hit.translated;
+      node.translationStatus = "translated";
+    } else {
+      pending.push(node);
+    }
+  }
+
+  if (pending.length === 0) {
+    return;
+  }
+
+  const wrappedHtml = pending
+    .map((node, index) => `<article data-comment-index="${index}">${node.textRawHtml}</article>`)
+    .join("\n");
+
+  try {
+    const translated = await translateTextWithFallback(wrappedHtml, {
+      apiKey: env.openAiApiKey,
+      baseUrl: env.openAiBaseUrl,
+      model: env.openAiModel || "qwen3.7-plus",
+      reasoningEffort: env.openAiReasoningEffort
+    });
+    const dom = new JSDOM(`<body>${translated.text}</body>`);
+    const articles = Array.from(dom.window.document.querySelectorAll("article[data-comment-index]"));
+    if (articles.length !== pending.length) {
+      throw new Error(`translated comment batch returned ${articles.length} wrappers for ${pending.length} comments`);
+    }
+
+    for (let index = 0; index < pending.length; index += 1) {
+      const node = pending[index];
+      const html = articles[index].innerHTML.trim();
+      node.textZhHtml = html || node.textRawHtml;
+      node.translationStatus = "translated";
+      state.translationCache.entries[commentHtmlCacheKey(node)] = {
+        key: commentHtmlCacheKey(node),
+        translated: node.textZhHtml,
+        updatedAt: new Date().toISOString(),
+        sourceHash: sha256(node.textRawHtml),
+        provider: translated.provider
+      };
+    }
+  } catch {
+    for (const node of pending) {
+      try {
+        node.textZhHtml = await translateHtmlWithCache(node.commentKey, node.textRawHtml, "comment", state, env);
+        node.translationStatus = "translated";
+      } catch {
+        node.textZhHtml = node.textRawHtml;
+        node.translationStatus = "failed";
+      }
+    }
+  }
+}
+
 async function translateStory(
   story: StoryRecord,
   config: RunConfig,
@@ -140,6 +236,7 @@ async function translateStory(
   }
 
   let usedBudget = 0;
+  const commentsToTranslate: CommentNode[] = [];
   const queue = [...commentTree];
   while (queue.length > 0) {
     const node = queue.shift();
@@ -152,19 +249,21 @@ async function translateStory(
       node.translationStatus = "skipped_budget";
       node.textZhHtml = node.textRawHtml;
     } else {
-      try {
-        node.textZhHtml = await translateHtmlWithCache(node.commentKey, node.textRawHtml, "comment", state, env);
-        node.translationStatus = "translated";
-      } catch {
-        node.textZhHtml = node.textRawHtml;
-        node.translationStatus = "failed";
-      }
+      commentsToTranslate.push(node);
       usedBudget += textLength;
     }
 
     for (const child of node.children) {
       queue.push(child);
     }
+  }
+
+  const commentBatches = chunkCommentsForTranslation(commentsToTranslate);
+  if (commentBatches.length > 0) {
+    console.log(`[translate] ${story.storyKey} translating ${commentsToTranslate.length} comments in ${commentBatches.length} batches`);
+  }
+  for (const batch of commentBatches) {
+    await translateCommentBatch(batch, state, env);
   }
 
   const translatedStory: StoryRecord = {
