@@ -1,8 +1,30 @@
-import type { AppEnv, RunConfig, StoryRecord } from "../shared/types.js";
+import type { AppEnv, RunConfig, SourceStatusMap, StoryRecord, StorySource } from "../shared/types.js";
 import { classifyStoryRelevance } from "../llm/qwen.js";
 import { fetchHnCandidateIds, buildStoryCandidate, hydrateHnStory } from "./hn.js";
 import { fetchLinuxDoCandidates, hydrateLinuxDoStory } from "./linuxdo.js";
 import { fetchV2exCandidates, hydrateV2exStory } from "./v2ex.js";
+
+export interface FetchStoriesResult {
+  stories: StoryRecord[];
+  sourceStatus: SourceStatusMap;
+}
+
+interface SourceFetchConfig {
+  source: StorySource;
+  name: string;
+  limit: (config: RunConfig) => number;
+  fetch: (config: RunConfig, env: AppEnv) => Promise<StoryRecord[]>;
+}
+
+type SourceFetchResult =
+  | {
+      sourceConfig: SourceFetchConfig;
+      candidates: StoryRecord[];
+    }
+  | {
+      sourceConfig: SourceFetchConfig;
+      error: string;
+    };
 
 async function fetchHnCandidates(config: RunConfig): Promise<StoryRecord[]> {
   const storyIds = await fetchHnCandidateIds(config);
@@ -11,6 +33,27 @@ async function fetchHnCandidates(config: RunConfig): Promise<StoryRecord[]> {
   );
   return stories.filter((entry): entry is StoryRecord => Boolean(entry));
 }
+
+const SOURCE_FETCHERS: SourceFetchConfig[] = [
+  {
+    source: "hackernews",
+    name: "Hacker News",
+    limit: (config) => config.hnDailyStoryLimit,
+    fetch: (config) => fetchHnCandidates(config)
+  },
+  {
+    source: "v2ex",
+    name: "V2EX",
+    limit: (config) => config.limit,
+    fetch: (config) => fetchV2exCandidates(config)
+  },
+  {
+    source: "linuxdo",
+    name: "Linux.do",
+    limit: (config) => config.limit,
+    fetch: (config, env) => fetchLinuxDoCandidates(config, env)
+  }
+];
 
 async function classifyAndSelect(
   sourceName: string,
@@ -51,48 +94,121 @@ async function classifyAndSelect(
   return selected;
 }
 
-async function hydrateStory(story: StoryRecord, config: RunConfig): Promise<StoryRecord> {
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function createEmptySourceStatus(config: RunConfig): SourceStatusMap {
+  return {
+    hackernews: { ok: false, count: 0, attemptedAt: config.generatedAt },
+    v2ex: { ok: false, count: 0, attemptedAt: config.generatedAt },
+    linuxdo: { ok: false, count: 0, attemptedAt: config.generatedAt }
+  };
+}
+
+async function hydrateStory(story: StoryRecord, config: RunConfig, env: AppEnv): Promise<StoryRecord> {
   switch (story.source) {
     case "hackernews":
       return hydrateHnStory(story, config.maxCommentsPerStory);
     case "v2ex":
       return hydrateV2exStory(story, config.maxCommentsPerStory);
     case "linuxdo":
-      return hydrateLinuxDoStory(story, config.maxCommentsPerStory);
+      return hydrateLinuxDoStory(story, config.maxCommentsPerStory, env);
     default:
       return story;
   }
 }
 
-export async function fetchStories(config: RunConfig, env: AppEnv): Promise<StoryRecord[]> {
-  const sourceResults = await Promise.allSettled([
-    fetchHnCandidates(config),
-    fetchV2exCandidates(config),
-    fetchLinuxDoCandidates(config)
-  ]);
-  const sourceNames = ["Hacker News", "V2EX", "Linux.do"];
-  const selectedBySource: StoryRecord[][] = [];
+async function hydrateStoriesSafely(stories: StoryRecord[], config: RunConfig, env: AppEnv): Promise<StoryRecord[]> {
+  return Promise.all(
+    stories.map(async (story) => {
+      try {
+        return await hydrateStory(story, config, env);
+      } catch (error) {
+        console.warn(`[fetch] ${story.sourceLabel} story ${story.storyKey} detail unavailable:`, errorMessage(error));
+        return story;
+      }
+    })
+  );
+}
 
-  for (let index = 0; index < sourceResults.length; index += 1) {
-    const result = sourceResults[index];
-    const sourceName = sourceNames[index];
-    if (result.status === "rejected") {
-      console.warn(`[fetch] ${sourceName} unavailable:`, result.reason instanceof Error ? result.reason.message : String(result.reason));
+export async function fetchStories(config: RunConfig, env: AppEnv): Promise<FetchStoriesResult> {
+  const sourceStatus = createEmptySourceStatus(config);
+  const selectedBySource: StoryRecord[][] = [];
+  const fetchResults: SourceFetchResult[] = await Promise.all(
+    SOURCE_FETCHERS.map(async (sourceConfig) => {
+      try {
+        return {
+          sourceConfig,
+          candidates: await sourceConfig.fetch(config, env)
+        };
+      } catch (error) {
+        return {
+          sourceConfig,
+          error: errorMessage(error)
+        };
+      }
+    })
+  );
+
+  for (const result of fetchResults) {
+    const { sourceConfig } = result;
+    if ("error" in result) {
+      console.warn(`[fetch] ${sourceConfig.name} unavailable:`, result.error);
+      sourceStatus[sourceConfig.source] = {
+        ok: false,
+        count: 0,
+        error: result.error,
+        attemptedAt: config.generatedAt
+      };
       selectedBySource.push([]);
       continue;
     }
-    const limit = sourceName === "Hacker News" ? config.hnDailyStoryLimit : config.limit;
-    selectedBySource.push(await classifyAndSelect(sourceName, result.value, config, env, limit));
+
+    try {
+      const selected = await classifyAndSelect(
+        sourceConfig.name,
+        result.candidates,
+        config,
+        env,
+        sourceConfig.limit(config)
+      );
+      sourceStatus[sourceConfig.source] = {
+        ok: true,
+        count: selected.length,
+        attemptedAt: config.generatedAt
+      };
+      selectedBySource.push(selected);
+    } catch (error) {
+      const message = errorMessage(error);
+      console.warn(`[fetch] ${sourceConfig.name} classification unavailable:`, message);
+      sourceStatus[sourceConfig.source] = {
+        ok: false,
+        count: 0,
+        error: message,
+        attemptedAt: config.generatedAt
+      };
+      selectedBySource.push([]);
+    }
   }
 
   const hydratedGroups = await Promise.all(
-    selectedBySource.map((stories) => Promise.all(stories.map((story) => hydrateStory(story, config))))
+    selectedBySource.map((stories) => hydrateStoriesSafely(stories, config, env))
   );
 
-  return hydratedGroups
+  const stories = hydratedGroups
     .flat()
     .map((story, index) => ({
       ...story,
       rank: index + 1
     }));
+
+  for (const source of Object.keys(sourceStatus) as StorySource[]) {
+    sourceStatus[source].count = stories.filter((story) => story.source === source).length;
+  }
+
+  return {
+    stories,
+    sourceStatus
+  };
 }

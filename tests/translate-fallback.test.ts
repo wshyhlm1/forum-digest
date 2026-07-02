@@ -27,7 +27,8 @@ const env: AppEnv = {
   maxCommentsPerStory: 20,
   hnDailyStoryLimit: 20,
   hnPublicCommentsPerStory: 8,
-  hnSnapshotStoryLimit: 120
+  hnSnapshotStoryLimit: 120,
+  linuxDoCookie: ""
 };
 
 const config: RunConfig = {

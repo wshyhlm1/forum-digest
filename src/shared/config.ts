@@ -172,7 +172,7 @@ export function loadAppEnv(): AppEnv {
   return {
     openAiApiKey: readFirstEnv("QWEN_API_KEY", "MKT_LLM_TRANSLATE_API_KEY", "OPENAI_API_KEY"),
     openAiBaseUrl: readFirstEnv("QWEN_BASE_URL", "MKT_LLM_TRANSLATE_BASE_URL", "OPENAI_BASE_URL")
-      || "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      || "https://coding.dashscope.aliyuncs.com/v1",
     openAiModel: readFirstEnv("QWEN_MODEL", "MKT_LLM_TRANSLATE_MODEL", "OPENAI_MODEL") || "qwen3.7-plus",
     openAiReasoningEffort: readFirstEnv("QWEN_EFFORT", "OPENAI_REASONING_EFFORT") || "high",
     llmClassifyEnabled: parseBoolean(process.env.LLM_CLASSIFY_ENABLED, true),
@@ -211,7 +211,8 @@ export function loadAppEnv(): AppEnv {
     hnSnapshotStoryLimit: parseInteger(
       process.env.HN_SNAPSHOT_STORY_LIMIT,
       DEFAULT_HN_SNAPSHOT_STORY_LIMIT
-    )
+    ),
+    linuxDoCookie: process.env.LINUXDO_COOKIE?.trim()
   };
 }
 

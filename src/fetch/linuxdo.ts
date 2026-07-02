@@ -1,5 +1,5 @@
 import { sha256 } from "../shared/hash.js";
-import type { RunConfig, StoryRecord } from "../shared/types.js";
+import type { AppEnv, RunConfig, StoryRecord } from "../shared/types.js";
 import {
   computeHotScore,
   createBaseStory,
@@ -60,9 +60,21 @@ interface DiscoursePost {
   deleted_at?: string | null;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
+function buildHeaders(env?: AppEnv): Record<string, string> {
+  const headers: Record<string, string> = { ...COMMON_HEADERS };
+  if (env?.linuxDoCookie) {
+    headers.Cookie = env.linuxDoCookie;
+  }
+  return headers;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function fetchJson<T>(url: string, env?: AppEnv): Promise<T> {
   const response = await fetch(url, {
-    headers: COMMON_HEADERS,
+    headers: buildHeaders(env),
     signal: AbortSignal.timeout(20_000)
   });
   if (!response.ok) {
@@ -115,12 +127,20 @@ function toStory(topic: DiscourseTopic, rank: number, config: RunConfig): StoryR
   };
 }
 
-async function fetchTopicLists(config: RunConfig): Promise<DiscourseTopic[]> {
+async function fetchTopicLists(config: RunConfig, env?: AppEnv): Promise<DiscourseTopic[]> {
   const endpoints = [
     `${LINUXDO_BASE}/top.json?period=daily`,
     `${LINUXDO_BASE}/latest.json`
   ];
-  const results = await Promise.allSettled(endpoints.map((endpoint) => fetchJson<DiscourseTopicList>(endpoint)));
+  const results = await Promise.allSettled(endpoints.map((endpoint) => fetchJson<DiscourseTopicList>(endpoint, env)));
+  if (results.every((result) => result.status === "rejected")) {
+    const errors = results
+      .map((result) => (result.status === "rejected" ? errorMessage(result.reason) : ""))
+      .filter(Boolean)
+      .join("; ");
+    throw new Error(errors || "Linux.do topic list endpoints are unavailable.");
+  }
+
   const topics = results.flatMap((result) => (
     result.status === "fulfilled" ? result.value.topic_list?.topics ?? [] : []
   ));
@@ -142,11 +162,8 @@ async function fetchTopicLists(config: RunConfig): Promise<DiscourseTopic[]> {
     .slice(0, config.candidateLimitPerSource);
 }
 
-export async function fetchLinuxDoCandidates(config: RunConfig): Promise<StoryRecord[]> {
-  const topics = await fetchTopicLists(config).catch((error) => {
-    console.warn("[linuxdo] public topic list unavailable:", error instanceof Error ? error.message : String(error));
-    return [];
-  });
+export async function fetchLinuxDoCandidates(config: RunConfig, env?: AppEnv): Promise<StoryRecord[]> {
+  const topics = await fetchTopicLists(config, env);
 
   return topics
     .map((topic, index) => toStory(topic, index + 1, config))
@@ -158,13 +175,13 @@ export async function fetchLinuxDoCandidates(config: RunConfig): Promise<StoryRe
     }));
 }
 
-async function fetchTopicDetail(story: StoryRecord): Promise<DiscourseTopicDetail | null> {
+async function fetchTopicDetail(story: StoryRecord, env?: AppEnv): Promise<DiscourseTopicDetail | null> {
   const detailUrl = `${LINUXDO_BASE}/t/${story.id}.json`;
-  return fetchJson<DiscourseTopicDetail>(detailUrl).catch(() => null);
+  return fetchJson<DiscourseTopicDetail>(detailUrl, env).catch(() => null);
 }
 
-export async function hydrateLinuxDoStory(story: StoryRecord, maxComments: number): Promise<StoryRecord> {
-  const detail = await fetchTopicDetail(story);
+export async function hydrateLinuxDoStory(story: StoryRecord, maxComments: number, env?: AppEnv): Promise<StoryRecord> {
+  const detail = await fetchTopicDetail(story, env);
   const posts = detail?.post_stream?.posts ?? [];
   if (!detail || posts.length === 0) {
     return story;

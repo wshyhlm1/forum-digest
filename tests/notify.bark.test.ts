@@ -34,6 +34,7 @@ function createConfig(): RunConfig {
 
 function createManifest(batchId = "2026-03-22"): BatchManifest {
   return {
+    schemaVersion: 1,
     batchId,
     timezone: "Asia/Shanghai",
     slot: "manual",
@@ -44,6 +45,11 @@ function createManifest(batchId = "2026-03-22"): BatchManifest {
       hackernews: 4,
       v2ex: 5,
       linuxdo: 3
+    },
+    sourceStatus: {
+      hackernews: { ok: true, count: 4, attemptedAt: "2026-03-22T04:00:00.000Z" },
+      v2ex: { ok: true, count: 5, attemptedAt: "2026-03-22T04:00:00.000Z" },
+      linuxdo: { ok: true, count: 3, attemptedAt: "2026-03-22T04:00:00.000Z" }
     },
     latestIndexUrl: "https://example.github.io/hn/",
     batchUrl: `https://example.github.io/hn/batches/${batchId}/`,
@@ -82,6 +88,7 @@ function createEnv(overrides: Partial<AppEnv> = {}): AppEnv {
     hnDailyStoryLimit: 20,
     hnPublicCommentsPerStory: 8,
     hnSnapshotStoryLimit: 120,
+    linuxDoCookie: "",
     ...overrides
   };
 }

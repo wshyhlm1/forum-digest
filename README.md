@@ -68,6 +68,16 @@ state/translation-cache.json
 state/batches.json
 ```
 
+DailyBrief stable API entries:
+
+```text
+dist/latest.json
+dist/batches/latest/manifest.json
+dist/batches/YYYY-MM-DD/manifest.json
+```
+
+`manifest.json` includes `schemaVersion`, `sourceCounts`, `sourceStatus`, and per-story DailyBrief fields such as `dailyBriefSourceId`, `digestUrl`, `storyJsonUrl`, `discussionUrl`, `sourceUrl`, `publishedAt`, and `summaryZhShort`.
+
 ## 配置
 
 优先使用 Qwen/OpenAI-compatible 配置：
@@ -96,6 +106,8 @@ HN_DAILY_STORY_LIMIT=20
 HN_PUBLIC_COMMENTS_PER_STORY=8
 MAX_COMMENTS_PER_STORY=1000
 ```
+
+Linux.do can optionally use a logged-in cookie. Put it in local `.env` or the GitHub repository secret `LINUXDO_COOKIE`; never commit the cookie value. If Linux.do blocks public JSON, the batch still succeeds and records the failure in `sourceStatus.linuxdo`.
 
 ## 本地运行
 
@@ -132,4 +144,4 @@ workflow 包含两个定时：
 17 16 * * *       北京时间 00:17 生成前一天日报
 ```
 
-Linux.do 如果公开 JSON 被 403 拦截，会返回空结果并继续生成其他来源。
+Linux.do blocked public JSON is recorded in `sourceStatus.linuxdo` and the batch continues with the other sources.

@@ -9,6 +9,7 @@ import { notifyBatch } from "../notify/index.js";
 function createManifestFromHistory(config: RunConfig): BatchManifest {
   const batchUrl = new URL(`batches/${config.batchId}/`, config.siteBaseUrl).toString();
   return {
+    schemaVersion: 1,
     batchId: config.batchId,
     timezone: config.timezone,
     slot: config.slot,
@@ -19,6 +20,11 @@ function createManifestFromHistory(config: RunConfig): BatchManifest {
       hackernews: 0,
       v2ex: 0,
       linuxdo: 0
+    },
+    sourceStatus: {
+      hackernews: { ok: true, count: 0, attemptedAt: config.generatedAt },
+      v2ex: { ok: true, count: 0, attemptedAt: config.generatedAt },
+      linuxdo: { ok: true, count: 0, attemptedAt: config.generatedAt }
     },
     latestIndexUrl: config.siteBaseUrl,
     batchUrl,
@@ -51,5 +57,7 @@ export async function runNotifyPipeline(config: RunConfig): Promise<void> {
   );
   const result = await notifyBatch(manifest, config, state, env);
   await writeJsonFile(manifestPath, manifest);
+  await writeJsonFile(path.join(paths.distDir, "latest.json"), manifest);
+  await writeJsonFile(path.join(paths.distDir, "batches", "latest", "manifest.json"), manifest);
   await saveStateBundle(paths, result.state);
 }

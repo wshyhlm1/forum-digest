@@ -17,6 +17,15 @@ export type PushStatus =
   | "failed"
   | "skipped_duplicate";
 
+export interface SourceStatusRecord {
+  ok: boolean;
+  count: number;
+  error?: string;
+  attemptedAt?: string;
+}
+
+export type SourceStatusMap = Record<StorySource, SourceStatusRecord>;
+
 export interface AppEnv {
   openAiApiKey: string;
   openAiBaseUrl: string;
@@ -38,6 +47,7 @@ export interface AppEnv {
   hnDailyStoryLimit: number;
   hnPublicCommentsPerStory: number;
   hnSnapshotStoryLimit: number;
+  linuxDoCookie?: string;
 }
 
 export interface CliOptions {
@@ -164,19 +174,23 @@ export interface BatchManifestStory {
   id: number;
   storyKey: string;
   source: StorySource;
+  dailyBriefSourceId: string;
   sourceLabel: string;
   rank: number;
   sourceRank: number;
   title: string;
   titleZh: string;
+  digestUrl: string;
   storyUrl: string;
   storyJsonUrl: string;
   hnUrl: string;
   discussionUrl: string;
   sourceUrl: string;
+  publishedAt: string;
   score: number;
   commentsCount: number;
   category: string;
+  summaryZhShort: string;
   relevanceReason: string;
   summaryZh: string[];
   highlightsZh: string[];
@@ -184,6 +198,7 @@ export interface BatchManifestStory {
 }
 
 export interface BatchManifest {
+  schemaVersion: 1;
   batchId: string;
   timezone: string;
   slot: RunSlot;
@@ -191,6 +206,7 @@ export interface BatchManifest {
   targetDate: string;
   storyCount: number;
   sourceCounts: Record<StorySource, number>;
+  sourceStatus: SourceStatusMap;
   latestIndexUrl: string;
   batchUrl: string;
   stories: BatchManifestStory[];

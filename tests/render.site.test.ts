@@ -125,16 +125,63 @@ describe("renderSite", () => {
     const paths = await createTempPaths();
     const config = buildConfig();
 
-    const result = await renderSite(buildStories(), config, paths);
+    const sourceStatus = {
+      hackernews: { ok: true, count: 1, attemptedAt: config.generatedAt },
+      v2ex: { ok: true, count: 0, attemptedAt: config.generatedAt },
+      linuxdo: { ok: false, count: 0, error: "Linux.do fetch failed 403", attemptedAt: config.generatedAt }
+    };
+
+    const result = await renderSite(buildStories(), config, paths, sourceStatus);
     const manifestPath = path.join(paths.distDir, "batches", config.batchId, "manifest.json");
     const manifestRaw = await readFile(manifestPath, "utf8");
-    const manifest = JSON.parse(manifestRaw) as { batchId: string; sourceCounts: { hackernews: number }; stories: Array<{ storyKey: string; storyJsonUrl: string }>; batchUrl: string };
+    const manifest = JSON.parse(manifestRaw) as {
+      schemaVersion: number;
+      batchId: string;
+      storyCount: number;
+      sourceCounts: { hackernews: number; v2ex: number; linuxdo: number };
+      sourceStatus: {
+        hackernews: { ok: boolean; count: number };
+        linuxdo: { ok: boolean; count: number; error?: string };
+      };
+      stories: Array<{
+        storyKey: string;
+        dailyBriefSourceId: string;
+        digestUrl: string;
+        storyJsonUrl: string;
+        discussionUrl: string;
+        sourceUrl: string;
+        publishedAt: string;
+        summaryZhShort: string;
+      }>;
+      batchUrl: string;
+    };
+    const latestRaw = await readFile(path.join(paths.distDir, "latest.json"), "utf8");
+    const latest = JSON.parse(latestRaw) as { batchId: string; stories: unknown[] };
+    const latestAliasRaw = await readFile(path.join(paths.distDir, "batches", "latest", "manifest.json"), "utf8");
+    const latestAlias = JSON.parse(latestAliasRaw) as { batchId: string };
 
     expect(result.manifest.batchId).toBe(config.batchId);
+    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.storyCount).toBe(1);
     expect(manifest.sourceCounts.hackernews).toBe(1);
+    expect(manifest.sourceCounts.v2ex).toBe(0);
+    expect(manifest.sourceCounts.linuxdo).toBe(0);
+    expect(manifest.sourceStatus.hackernews.ok).toBe(true);
+    expect(manifest.sourceStatus.hackernews.count).toBe(1);
+    expect(manifest.sourceStatus.linuxdo.ok).toBe(false);
+    expect(manifest.sourceStatus.linuxdo.error).toContain("403");
     expect(manifest.stories[0].storyKey).toBe("hackernews-1001");
+    expect(manifest.stories[0].dailyBriefSourceId).toBe("hackernews");
+    expect(manifest.stories[0].digestUrl).toBe("https://example.github.io/forum-digest/stories/hackernews-1001.html");
     expect(manifest.stories[0].storyJsonUrl).toBe("https://example.github.io/forum-digest/stories/hackernews-1001.json");
+    expect(manifest.stories[0].discussionUrl).toBe("https://news.ycombinator.com/item?id=1001");
+    expect(manifest.stories[0].sourceUrl).toBe("https://example.com/post");
+    expect(manifest.stories[0].publishedAt).toBe("2026-03-22T03:00:00.000Z");
+    expect(manifest.stories[0].summaryZhShort.length).toBeGreaterThan(0);
     expect(manifest.batchUrl).toBe("https://example.github.io/forum-digest/batches/2026-03-22/");
+    expect(latest.batchId).toBe(config.batchId);
+    expect(latest.stories).toHaveLength(1);
+    expect(latestAlias.batchId).toBe(config.batchId);
   });
 
   it("renders batch and story pages for the forum digest", async () => {

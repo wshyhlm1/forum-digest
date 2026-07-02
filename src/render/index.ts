@@ -8,9 +8,11 @@ import type {
   CommentNode,
   ProjectPaths,
   RunConfig,
+  SourceStatusMap,
   StoryRecord,
   StorySource
 } from "../shared/types.js";
+import { plainTextFromHtml } from "../fetch/source-utils.js";
 
 export interface RenderResult {
   manifest: BatchManifest;
@@ -106,6 +108,79 @@ function countBySource(stories: StoryRecord[]): Record<StorySource, number> {
     v2ex: stories.filter((story) => story.source === "v2ex").length,
     linuxdo: stories.filter((story) => story.source === "linuxdo").length
   };
+}
+
+function dailyBriefSourceId(source: StorySource): string {
+  switch (source) {
+    case "hackernews":
+      return "hackernews";
+    case "v2ex":
+      return "v2ex-hot";
+    case "linuxdo":
+      return "linuxdo";
+    default:
+      return source;
+  }
+}
+
+function normalizeText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function truncateText(value: string, maxLength: number): string {
+  const normalized = normalizeText(value);
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  const boundary = Math.max(
+    normalized.lastIndexOf("。", maxLength),
+    normalized.lastIndexOf("！", maxLength),
+    normalized.lastIndexOf("？", maxLength),
+    normalized.lastIndexOf(".", maxLength),
+    normalized.lastIndexOf(";", maxLength),
+    normalized.lastIndexOf(" ", maxLength)
+  );
+  const cutAt = boundary >= 100 ? boundary + 1 : maxLength;
+  return `${normalized.slice(0, cutAt).trim()}...`;
+}
+
+function buildSummaryZhShort(story: StoryRecord): string {
+  const candidate = normalizeText([
+    ...story.summaryZh,
+    ...story.highlightsZh
+  ].filter(Boolean).join(" "));
+
+  if (candidate) {
+    return truncateText(candidate, 220);
+  }
+
+  const bodyText = normalizeText(
+    plainTextFromHtml(story.textZhHtml || story.textRawHtml || "")
+  );
+  if (bodyText) {
+    return truncateText(bodyText, 220);
+  }
+
+  return "";
+}
+
+function buildSourceStatus(
+  stories: StoryRecord[],
+  config: RunConfig,
+  sourceStatus?: SourceStatusMap
+): SourceStatusMap {
+  const counts = countBySource(stories);
+  return SOURCE_ORDER.reduce((status, source) => {
+    const current = sourceStatus?.[source];
+    status[source] = {
+      ok: current?.ok ?? true,
+      count: counts[source],
+      ...(current?.error ? { error: current.error } : {}),
+      attemptedAt: current?.attemptedAt ?? config.generatedAt
+    };
+    return status;
+  }, {} as SourceStatusMap);
 }
 
 function renderList(items: string[], emptyText: string): string {
@@ -570,36 +645,46 @@ interface RawStoryData {
 export async function renderSite(
   stories: StoryRecord[],
   config: RunConfig,
-  paths: ProjectPaths
+  paths: ProjectPaths,
+  sourceStatus?: SourceStatusMap
 ): Promise<RenderResult> {
   const baseUrl = ensureTrailingSlash(config.siteBaseUrl);
   const batchUrl = new URL(`batches/${config.batchId}/`, baseUrl).toString();
   const sourceCounts = countBySource(stories);
+  const sourceStatusForManifest = buildSourceStatus(stories, config, sourceStatus);
 
-  const manifestStories: BatchManifestStory[] = stories.map((story) => ({
-    id: story.id,
-    storyKey: story.storyKey,
-    source: story.source,
-    sourceLabel: story.sourceLabel,
-    rank: story.rank,
-    sourceRank: story.sourceRank,
-    title: story.title,
-    titleZh: story.titleZh,
-    storyUrl: new URL(`stories/${story.storyKey}.html`, baseUrl).toString(),
-    storyJsonUrl: new URL(`stories/${story.storyKey}.json`, baseUrl).toString(),
-    hnUrl: story.hnUrl,
-    discussionUrl: story.discussionUrl,
-    sourceUrl: story.url,
-    score: story.score,
-    commentsCount: story.commentsCount,
-    category: story.category,
-    relevanceReason: story.relevanceReason,
-    summaryZh: story.summaryZh,
-    highlightsZh: story.highlightsZh,
-    translationStatus: story.translationStatus
-  }));
+  const manifestStories: BatchManifestStory[] = stories.map((story) => {
+    const digestUrl = new URL(`stories/${story.storyKey}.html`, baseUrl).toString();
+    return {
+      id: story.id,
+      storyKey: story.storyKey,
+      source: story.source,
+      dailyBriefSourceId: dailyBriefSourceId(story.source),
+      sourceLabel: story.sourceLabel,
+      rank: story.rank,
+      sourceRank: story.sourceRank,
+      title: story.title,
+      titleZh: story.titleZh,
+      digestUrl,
+      storyUrl: digestUrl,
+      storyJsonUrl: new URL(`stories/${story.storyKey}.json`, baseUrl).toString(),
+      hnUrl: story.hnUrl,
+      discussionUrl: story.discussionUrl,
+      sourceUrl: story.url || story.discussionUrl,
+      publishedAt: story.publishedAt,
+      score: story.score,
+      commentsCount: story.commentsCount,
+      category: story.category,
+      summaryZhShort: buildSummaryZhShort(story),
+      relevanceReason: story.relevanceReason,
+      summaryZh: story.summaryZh,
+      highlightsZh: story.highlightsZh,
+      translationStatus: story.translationStatus
+    };
+  });
 
   const manifest: BatchManifest = {
+    schemaVersion: 1,
     batchId: config.batchId,
     timezone: config.timezone,
     slot: config.slot,
@@ -607,6 +692,7 @@ export async function renderSite(
     targetDate: config.targetDate,
     storyCount: stories.length,
     sourceCounts,
+    sourceStatus: sourceStatusForManifest,
     latestIndexUrl: baseUrl,
     batchUrl,
     stories: manifestStories,
@@ -617,12 +703,14 @@ export async function renderSite(
   };
 
   const batchDir = path.join(paths.distDir, "batches", config.batchId);
+  const latestBatchDir = path.join(paths.distDir, "batches", "latest");
   const storiesDir = path.join(paths.distDir, "stories");
   const rawDir = path.join(paths.distDir, "raw");
   const rawCommentsDir = path.join(rawDir, "comments");
   await Promise.all([
     mkdir(paths.distDir, { recursive: true }),
     mkdir(batchDir, { recursive: true }),
+    mkdir(latestBatchDir, { recursive: true }),
     mkdir(storiesDir, { recursive: true }),
     mkdir(rawDir, { recursive: true }),
     mkdir(rawCommentsDir, { recursive: true })
@@ -659,8 +747,10 @@ export async function renderSite(
 
   await Promise.all([
     writeFile(path.join(paths.distDir, "index.html"), renderRootIndex(config), "utf8"),
+    writeFile(path.join(paths.distDir, "latest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
     writeFile(path.join(batchDir, "index.html"), renderBatchListPage(stories, config), "utf8"),
     writeFile(path.join(batchDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
+    writeFile(path.join(latestBatchDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
     ...rawWrites
   ]);
 
