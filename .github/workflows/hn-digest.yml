@@ -145,48 +145,31 @@ jobs:
             git push
           fi
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    if: needs.build.result == 'success'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          timeout: 1800000
+      - name: Publish dist to gh-pages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git branch -D gh-pages 2>/dev/null || true
+          git subtree split --prefix dist -b gh-pages
+          git push origin gh-pages:gh-pages --force-with-lease
+          gh api "repos/${{ github.repository }}/pages/builds" -X POST || true
 
   deploy-current:
     if: github.event_name == 'workflow_dispatch' && inputs.action == 'deploy'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          fetch-depth: 0
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          timeout: 1800000
+      - name: Publish existing dist to gh-pages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git branch -D gh-pages 2>/dev/null || true
+          git subtree split --prefix dist -b gh-pages
+          git push origin gh-pages:gh-pages --force-with-lease
+          gh api "repos/${{ github.repository }}/pages/builds" -X POST || true
