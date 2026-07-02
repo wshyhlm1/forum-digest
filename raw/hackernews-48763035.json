@@ -1,0 +1,106 @@
+{
+  "storyKey": "hackernews-48763035",
+  "textRawHtml": "",
+  "comments": [
+    {
+      "id": 48764234,
+      "commentKey": "hackernews-48764234",
+      "textRawHtml": "While it is certainly an interesting bug, I kinda feel that the title is click bait? Because this `cryptsetup luksSuspend` from what I understood is not really officially supported but an extension done in Debian, so if anything this regression only affected Debian? I am not sure if you can blame the kernel for something that is not supported or even widely tested.<p>I still find this impressive, and it is nice that we now have a test (NixOSTests BTW are awesome, I agree with OP) to avoid this regression from coming back. But from the title it seems to be a widespread issue, not something that affects only one Distro.</p>"
+    },
+    {
+      "id": 48763695,
+      "commentKey": "hackernews-48763695",
+      "textRawHtml": "I don't see any other way? When you sleep (suspend to RAM), everything is stored in RAM and is encrypted but the master key is present in kernel memory (if I recall correctly).<p>However, if you hibernate (suspend to disk) the entire contents of RAM (including the master key) is written/encrypted to disk and the RAM is cleared.</p><p>When you wake the machine up you have to re-enter the passphrase to decrypt the master key to re-load disk contents back to memory.</p>"
+    },
+    {
+      "id": 48764438,
+      "commentKey": "hackernews-48764438",
+      "textRawHtml": "Sorry, aimed for a technically precise title and didn't want to bait clicks.<p>Yes, this does not affect people on stock configurations for the plain reason that they wouldn't expect the volume key to be safe during suspend anyway.</p><p>Debian's solution was ported to several (most?) other distributions and I guess quite a few people maintained private ports.</p><p>The thread-keyring(7) manpage promises: \"A thread keyring is destroyed when the thread that refers to it terminates.\" For their key upload (from userspace to kernelspace) mechanism, the cryptsetup project relied on this property; but kernel 6.9 introduced a regression invalidating this property.</p>"
+    },
+    {
+      "id": 48763753,
+      "commentKey": "hackernews-48763753",
+      "textRawHtml": "Yes, if you simply suspend your laptop on most stock Linux distributions, then everything including the master key is still kept in memory. But Debian pioneered the (optional) cryptsetup-suspend addon. This issues a luksSuspend command which is supposed to wipe the key from memory, and on resume asks you to resupply your passphrase.<p>Up to kernel 6.8, this worked as described; starting with kernel 6.9, it silently didn't.</p>"
+    },
+    {
+      "id": 48764181,
+      "commentKey": "hackernews-48764181",
+      "textRawHtml": "So you would still be asked for a passphrase, even though it's already available?"
+    },
+    {
+      "id": 48763842,
+      "commentKey": "hackernews-48763842",
+      "textRawHtml": "FYI: VeraCrypt is not the defacto encryption software for Windows."
+    },
+    {
+      "id": 48764240,
+      "commentKey": "hackernews-48764240",
+      "textRawHtml": "Exactly. Cryptsetup wouldn't know about the extra copy of the volume key in kernel memory. Which is why, dramatically, it <i>appeared</i> secure (\"surely I wouldn't be asked to resupply the passphrase if the volume key is still in memory, right?\")."
+    },
+    {
+      "id": 48763861,
+      "commentKey": "hackernews-48763861",
+      "textRawHtml": "Oh, which one is it?<p>(You don't mean BitLocker, right?)</p>"
+    },
+    {
+      "id": 48764539,
+      "commentKey": "hackernews-48764539",
+      "textRawHtml": "It was still more secure than the default if I understand this correctly. On resume from suspend the laptop would still be locked by the encryption key and without access to the disk even if you can somehow circumvent the lock. The only insecurity was that somewhere in the kernel memory the key still exists so if you can somehow extract that from the live system you can unlock it."
+    },
+    {
+      "id": 48763900,
+      "commentKey": "hackernews-48763900",
+      "textRawHtml": "It absolutely is and they have most the enterprise market."
+    },
+    {
+      "id": 48764847,
+      "commentKey": "hackernews-48764847",
+      "textRawHtml": "Yes, you are right: LUKS encryption protests your data at rest. An attacker which steals your disk can only gain little, like the information that you have used LUKS (unless you put your LUKS headers elsewhere, separated from the disk) and perhaps disk and disk sector usage statistics."
+    },
+    {
+      "id": 48764112,
+      "commentKey": "hackernews-48764112",
+      "textRawHtml": "Okay, yes, sure. It definitely is the most-used encryption software for Windows.<p>But I would never trust it a second, being proprietary and known for issues. You likely know that, but for the benefit of others:</p><p>38C3 - Windows BitLocker: Screwed without a Screwdriver\n<a href=\"https://media.ccc.de/v/38c3-windows-bitlocker-screwed-without-a-screwdriver\" rel=\"nofollow\">https://media.ccc.de/v/38c3-windows-bitlocker-screwed-withou...</a>\n<a href=\"https://www.youtube.com/watch?v=5eNtT2p12cM\" rel=\"nofollow\">https://www.youtube.com/watch?v=5eNtT2p12cM</a></p>"
+    },
+    {
+      "id": 48764063,
+      "commentKey": "hackernews-48764063",
+      "textRawHtml": "Reminder that by using Bitlocker, you're using a closed source encryption for which Microsoft will happily hand out your recovery key on request.<p><a href=\"https://www.forbes.com/sites/thomasbrewster/2026/01/22/microsoft-gave-fbi-keys-to-unlock-bitlocker-encrypted-data/\" rel=\"nofollow\">https://www.forbes.com/sites/thomasbrewster/2026/01/22/micro...</a></p>"
+    },
+    {
+      "id": 48764646,
+      "commentKey": "hackernews-48764646",
+      "textRawHtml": "If you’re at all serious about security and not user convenience, you deploy BitLocker with a PIN instead of TPM only. And then a whole class of vulnerabilities goes away."
+    },
+    {
+      "id": 48764626,
+      "commentKey": "hackernews-48764626",
+      "textRawHtml": "The issues you linked with BitLocker are obvious properties of BitLocker-with-SecureBoot-only architecture. If you configure Linux that way, you get similar issues (for example, it's pretty easy to mis-configure TPM sealed disk encryption on Linux to still allow a recovery shell, which will run with the disk unsealed).<p>BitLocker with a password (the equivalent of the LUKS configuration in question) does not share these issues.</p>"
+    },
+    {
+      "id": 48764430,
+      "commentKey": "hackernews-48764430",
+      "textRawHtml": "veracrypt lost their drivers license so afaik you should avoid it since it cannot update its drivers any longer. didnt see any news about them reacquiring that license"
+    },
+    {
+      "id": 48764171,
+      "commentKey": "hackernews-48764171",
+      "textRawHtml": "Only if you store your key with Microsoft, which is not required or the default if you're using a local account which I assume most privacy sensitive people are."
+    },
+    {
+      "id": 48764281,
+      "commentKey": "hackernews-48764281",
+      "textRawHtml": "Bitlocker can use keys that are local only, but the default for home editions of Windows was to use the online account to back it up.<p>'Happily' is also a stretch, as they really don't have a choice if served a valid court order.</p><p>If you want encryption that is safe from the US government, keys need to be stored in your head. Anything physical is subject to court orders.</p>"
+    },
+    {
+      "id": 48764556,
+      "commentKey": "hackernews-48764556",
+      "textRawHtml": "Assuming this is what you are referring to, it was resolved within a few days. The incident being resolved just didn't make headlines.\n<a href=\"https://sourceforge.net/p/veracrypt/discussion/general/thread/9620d7a4b3/?page=1#43c0\" rel=\"nofollow\">https://sourceforge.net/p/veracrypt/discussion/general/threa...</a>"
+    },
+    {
+      "id": 48764522,
+      "commentKey": "hackernews-48764522",
+      "textRawHtml": "Not to mention that unless the bitlocker activation flow changed recently, it specifically asks you how to store your backup keys, with a choice given been local options (eg. usb drive, printing it off, etc.) and saving it to your microsoft account."
+    }
+  ]
+}
