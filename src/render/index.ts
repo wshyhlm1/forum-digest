@@ -746,6 +746,7 @@ export async function renderSite(
   );
 
   await Promise.all([
+    writeFile(path.join(paths.distDir, ".nojekyll"), "", "utf8"),
     writeFile(path.join(paths.distDir, "index.html"), renderRootIndex(config), "utf8"),
     writeFile(path.join(paths.distDir, "latest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
     writeFile(path.join(batchDir, "index.html"), renderBatchListPage(stories, config), "utf8"),
