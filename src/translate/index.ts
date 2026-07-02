@@ -10,15 +10,39 @@ export interface TranslationResult {
   state: StateBundle;
 }
 
+const MAX_CONCURRENT_STORY_TRANSLATIONS = 3;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export async function translateStories(
   stories: StoryRecord[],
   config: RunConfig,
   state: StateBundle,
   env: AppEnv
 ): Promise<TranslationResult> {
-  const translatedStories = await Promise.all(
-    stories.map((story) => translateStory(story, config, state, env))
+  console.log(`[translate] translating ${stories.length} stories with concurrency ${MAX_CONCURRENT_STORY_TRANSLATIONS}`);
+  const translatedStories = await mapWithConcurrency(
+    stories,
+    MAX_CONCURRENT_STORY_TRANSLATIONS,
+    (story) => translateStory(story, config, state, env)
   );
+  console.log("[translate] completed story translation");
 
   return {
     stories: translatedStories,

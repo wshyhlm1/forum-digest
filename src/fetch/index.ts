@@ -188,6 +188,9 @@ export async function fetchStories(config: RunConfig, env: AppEnv): Promise<Fetc
     }
 
     try {
+      console.log(
+        `[fetch] classifying ${result.candidates.length} ${sourceConfig.name} candidates (limit ${sourceConfig.limit(config)})`
+      );
       const selected = await classifyAndSelect(
         sourceConfig.name,
         result.candidates,
@@ -195,6 +198,7 @@ export async function fetchStories(config: RunConfig, env: AppEnv): Promise<Fetc
         env,
         sourceConfig.limit(config)
       );
+      console.log(`[fetch] selected ${selected.length} ${sourceConfig.name} stories`);
       sourceStatus[sourceConfig.source] = {
         ok: true,
         count: selected.length,

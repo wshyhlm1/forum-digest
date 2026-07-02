@@ -112,11 +112,18 @@ export async function runSyncPipeline(config: RunConfig): Promise<BatchManifest>
   const env = loadAppEnv();
   const paths = getProjectPaths();
   const state = await loadStateBundle(paths);
+  console.log(`[sync] fetching stories for ${config.targetDate}`);
   const fetched = await fetchStories(config, env);
+  console.log(
+    `[sync] fetched ${fetched.stories.length} stories; status=${JSON.stringify(fetched.sourceStatus)}`
+  );
+  console.log("[sync] translating stories");
   const translated = await translateStories(fetched.stories, config, state, env);
+  console.log("[sync] rendering site");
   const renderResult = await renderSite(translated.stories, config, paths, fetched.sourceStatus).catch(() => ({
     manifest: createFallbackManifest(config, translated.stories, fetched.sourceStatus)
   }));
+  console.log(`[sync] rendered manifest with ${renderResult.manifest.storyCount} stories`);
   await renderHnPublicDigest(translated.stories, config, paths);
 
   const manifest = renderResult.manifest;
