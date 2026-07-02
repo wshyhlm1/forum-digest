@@ -11,6 +11,7 @@ on:
         options:
           - digest
           - snapshot
+          - deploy
       target_date:
         description: "Target date in Asia/Shanghai, YYYY-MM-DD"
         required: false
@@ -83,7 +84,7 @@ jobs:
   build:
     if: >-
       (github.event_name == 'schedule' && github.event.schedule == '17 16 * * *') ||
-      (github.event_name == 'workflow_dispatch' && inputs.action != 'snapshot')
+      (github.event_name == 'workflow_dispatch' && inputs.action != 'snapshot' && inputs.action != 'deploy')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -160,6 +161,28 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-current:
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
