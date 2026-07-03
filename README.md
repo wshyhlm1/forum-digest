@@ -132,7 +132,7 @@ npm run sync -- --mode manual --target-date 2026-07-01 --skip-push
 
 ## GitHub Pages
 
-在仓库 Settings -> Pages 中选择 `Deploy from a branch`，分支为 `gh-pages`、目录为 `/`，并设置 `SITE_BASE_URL`，例如：
+在仓库 Settings -> Pages 中选择 GitHub Actions，并设置 `SITE_BASE_URL`，例如：
 
 ```text
 https://<user>.github.io/<repo>/
