@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>“有个东西，也是我今天才学到的，叫 CDN” | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-03/">返回日报</a>
+      <div class="source-chip">V2EX #8</div>
+      <h1>“有个东西，也是我今天才学到的，叫 CDN”</h1>
+      <p class="original-title">“有个东西，也是我今天才学到的，叫 CDN”</p>
+      <div class="meta-line">
+        <span>云服务</span>
+        <span>作者 tf2</span>
+        <span>热度 123</span>
+        <span>回复 123</span>
+        <span>2026/07/03 11:18</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1224709" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1224709.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>用户分享关于CDN（内容分发网络）的学习心得</li><li>内容源自微信公众号文章，探讨CDN技术概念</li></ul>
+      <h3>看点</h3><ul><li>CDN技术入门讨论</li><li>互联网基础设施知识分享</li></ul>
+      <p class="reason">帖子讨论CDN（内容分发网络）技术，属于云服务和互联网基础设施范畴，与科技和开发相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p></p>
+<p><a href="https://mp.weixin.qq.com/s/L6R_SPWlOBv6dI0wWWHQrg" target="_blank" rel="noopener noreferrer">https://mp.weixin.qq.com/s/L6R_SPWlOBv6dI0wWWHQrg</a></p>
+<p>作者已编辑</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p></p>
+<p><a href="https://mp.weixin.qq.com/s/L6R_SPWlOBv6dI0wWWHQrg" target="_blank" rel="noopener noreferrer">https://mp.weixin.qq.com/s/L6R_SPWlOBv6dI0wWWHQrg</a></p>
+<p>作者已编辑</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">HK560</span>
+        <span>#1</span>
+        <span>2026/07/03 11:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">以后只会越来越多这种人</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826761">以后只会越来越多这种人</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826761">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826761" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">darksword21</span>
+        <span>#2</span>
+        <span>2026/07/03 11:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">顶着个 AI 头像，说的话一眼民科，太多了，而且这帮人还喜欢到处发东西，我的厌蠢症越来越严重了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826769">顶着个 AI 头像，说的话一眼民科，太多了，而且这帮人还喜欢到处发东西，我的厌蠢症越来越严重了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826769">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826769" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">liuzimin</span>
+        <span>#3</span>
+        <span>2026/07/03 11:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">想起被刷流量的狗盗刷 CDN 时的恐惧。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826771">想起被刷流量的狗盗刷 CDN 时的恐惧。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826771">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826771" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">killva4624</span>
+        <span>#4</span>
+        <span>2026/07/03 11:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我觉得吧，他不是技术人员或者互联网从业工作者，不知道 CDN 很正常。<br />只是把原文编辑掉这个操作就很耐人寻味了。<br />省流编辑后： “解法业内也是现成的，就是有个东西，叫 CDN 。”</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826791">我觉得吧，他不是技术人员或者互联网从业工作者，不知道 CDN 很正常。<br />只是把原文编辑掉这个操作就很耐人寻味了。<br />省流编辑后： “解法业内也是现成的，就是有个东西，叫 CDN 。”</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826791">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826791" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#5</span>
+        <span>2026/07/03 11:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个没什么，闻道有先后，术业有专攻。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826804">这个没什么，闻道有先后，术业有专攻。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826804">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826804" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">snowsui</span>
+        <span>#6</span>
+        <span>2026/07/03 11:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不太理解想表达什么，不知道这个就要被批评吗，人家又不是计算机出身</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826815">不太理解想表达什么，不知道这个就要被批评吗，人家又不是计算机出生</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826815">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826815" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xmitman</span>
+        <span>#7</span>
+        <span>2026/07/03 11:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不知道 CDN 是什么丢脸的事情吗，没觉得</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826824">不知道 CDN 是什么丢脸的事情吗，没觉得</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826824">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826824" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">vacuitym</span>
+        <span>#8</span>
+        <span>2026/07/03 11:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不知道 cdn 没什么，但是他作为一个科技博主，写的文章也都是这种，也是靠这个吃饭的，不知道确实过不去</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826831">不知道 cdn 没什么，但是他作为一个科技博主，写的文章也都是这种，也是靠这个吃饭的，不知道确实过不去</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826831">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826831" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lucifer9</span>
+        <span>#9</span>
+        <span>2026/07/03 11:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我觉得想要做 SEO 和 GEO 的人，都知道这俩词了，还没听说过 CDN ，这要么是段子要么就是纯散财童子<br />你要说他没听说过蓝讯，网宿这还多少有点儿可信度</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826834">我觉得想要做 SEO 和 GEO 的人，都知道这俩词了，还没听说过 CDN ，这要么是段子要么就是纯散财童子<br />你要说他没听说过蓝讯，网宿这还多少有点儿可信度</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826834">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826834" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Sundayz</span>
+        <span>#10</span>
+        <span>2026/07/03 11:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我的评价是赛博嘉豪，全文流水账，抓不住重点，也让人看不下去</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826841">我的评价是赛博嘉豪，全文流水账，抓不住重点，也让人看不下去</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826841">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826841" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tf2</span>
+        <span>#11</span>
+        <span>2026/07/03 11:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a>  @<a href="/member/snowsui" target="_blank" rel="noopener noreferrer">snowsui</a>  @<a href="/member/xmitman" target="_blank" rel="noopener noreferrer">xmitman</a> <br /><br />背景知识：作者是这个赛道排名靠前的公众号<br /><br />这篇文章以及它前几篇都在主要讲 GEO SEO 建站，面向小白的各种教程，科普<br /><br />如果大家都觉得截止 Fable5 出来前，不知道“行业内的解法”，很正常。不丢脸<br /><br />那么我在这个瞬间的确 被 Claude Fable 5 震撼了。犹如看到原子弹爆炸，让我瘫坐到椅子上。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826855">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a>  @<a href="/member/snowsui" target="_blank" rel="noopener noreferrer">snowsui</a>  @<a href="/member/xmitman" target="_blank" rel="noopener noreferrer">xmitman</a> <br /><br />背景知识：作者是这个赛道排名靠前的公众号<br /><br />这篇文章以及它前几篇都在主要讲 GEO SEO 建站，面向小白的各种教程，科普<br /><br />如果大家都觉得截止 Fable5 出来前，不知道“行业内的解法”，很正常。不丢脸<br /><br />那么我在这个瞬间的确 被 Claude Fable 5 震撼了。犹如看到原子弹爆炸，让我瘫坐到椅子上。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826855">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826855" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kera0a</span>
+        <span>#12</span>
+        <span>2026/07/03 11:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不知道 CDN 证明压根不是业内人，没有从业经历。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826871">不知道 CDN 证明压根不是业内人，没有从业经历。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826871">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826871" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Chicagoake</span>
+        <span>#13</span>
+        <span>2026/07/03 11:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ai 爆发后养活了不少半吊子博主。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826875">ai 爆发后养活了不少半吊子博主。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826875">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826875" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lanxisama</span>
+        <span>#14</span>
+        <span>2026/07/03 11:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xmitman" target="_blank" rel="noopener noreferrer">xmitman</a> 问题是你觉得不丢脸的话 那就别改啊 改了反而成小丑了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826878">@<a href="/member/xmitman" target="_blank" rel="noopener noreferrer">xmitman</a> 问题是你觉得不丢脸的话 那就别改啊 改了反而成小丑了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826878">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826878" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#15</span>
+        <span>2026/07/03 11:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tf2" target="_blank" rel="noopener noreferrer">tf2</a> 你的意思是用这点证明这个人水平极差，看你帖子的截图，你朋友圈还有 27 个人关注了他，你要给 27 位朋友卖保健品了吗？哈哈，我不认识也没有关注他，利益无关。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826888">@<a href="/member/tf2" target="_blank" rel="noopener noreferrer">tf2</a> 你的意思是用这点证明这个人水平极差，看你帖子的截图，你朋友圈还有 27 个人关注了他，你要给 27 位朋友卖保健品了吗？哈哈，我不认识也没有关注他，利益无关。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826888">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826888" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jacketma</span>
+        <span>#16</span>
+        <span>2026/07/03 12:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不能因为业外人士抢了饭碗就轻视运营能力啦，马☁不懂技术也搞出了 ali 啊。总体概率上，还是懂技术的成功概率大很多</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826908">不能因为业外人士抢了饭碗就轻视运营能力啦，马☁不懂技术也搞出了 ali 啊。总体概率上，还是懂技术的成功概率大很多</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826908">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826908" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">TimPeake</span>
+        <span>#17</span>
+        <span>2026/07/03 12:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">想起了抖音短视频段子： “你们理工程序员都要失业了啊 ，不就提示词吗 写提示词还能比得上我文科生？你看 我 2 天就写了一个网站。哪！我发你： http://localhost: 3000 ”</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826909">想起了抖音短视频段子： “你们理工程序员都要失业了啊 ，不就提示词吗 写提示词还能比得上我文科生？你看 我 2 天就写了一个网站。哪！我发你： http://localhost: 3000 ”</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826909">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826909" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Lin0936</span>
+        <span>#18</span>
+        <span>2026/07/03 12:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">眼熟的 id ，看了下果然在我 X 的屏蔽名单里</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826911">眼熟的 id ，看了下果然在我 X 的屏蔽名单里</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826911">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826911" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Fish1024</span>
+        <span>#19</span>
+        <span>2026/07/03 12:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">seo 从业人员一般都是这样。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826912">seo 从业人员一般都是这样。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826912">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826912" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yellowbean</span>
+        <span>#20</span>
+        <span>2026/07/03 12:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">刚读完这个文章，看到标题啪地一下点进来了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17826920">刚读完这个文章，看到标题啪地一下点进来了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17826920">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224709#reply17826920" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
