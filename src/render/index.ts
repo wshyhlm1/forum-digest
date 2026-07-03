@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sanitizeHtml from "sanitize-html";
 
@@ -638,12 +638,6 @@ function buildScript(): string {
   `;
 }
 
-interface RawStoryData {
-  storyKey: string;
-  textRawHtml: string;
-  comments: Array<{ id: number | string; commentKey: string; textRawHtml: string }>;
-}
-
 export async function renderSite(
   stories: StoryRecord[],
   config: RunConfig,
@@ -708,42 +702,18 @@ export async function renderSite(
   const latestBatchDir = path.join(paths.distDir, "batches", "latest");
   const storiesDir = path.join(paths.distDir, "stories");
   const rawDir = path.join(paths.distDir, "raw");
-  const rawCommentsDir = path.join(rawDir, "comments");
+  await rm(rawDir, { recursive: true, force: true });
   await Promise.all([
     mkdir(paths.distDir, { recursive: true }),
     mkdir(batchDir, { recursive: true }),
     mkdir(latestBatchDir, { recursive: true }),
-    mkdir(storiesDir, { recursive: true }),
-    mkdir(rawDir, { recursive: true }),
-    mkdir(rawCommentsDir, { recursive: true })
+    mkdir(storiesDir, { recursive: true })
   ]);
-
-  const rawWrites: Promise<void>[] = [];
 
   await Promise.all(
     stories.map(async (story) => {
-      const rawStory: RawStoryData = {
-        storyKey: story.storyKey,
-        textRawHtml: story.textRawHtml,
-        comments: flattenComments(story.comments).map((comment) => ({
-          id: comment.id,
-          commentKey: comment.commentKey,
-          textRawHtml: comment.textRawHtml
-        }))
-      };
-
-      rawWrites.push(
-        writeFile(path.join(rawDir, `${story.storyKey}.json`), JSON.stringify(rawStory, null, 2), "utf8"),
-        writeFile(path.join(storiesDir, `${story.storyKey}.json`), `${JSON.stringify(story, null, 2)}\n`, "utf8")
-      );
-
-      for (const comment of rawStory.comments) {
-        rawWrites.push(
-          writeFile(path.join(rawCommentsDir, `${comment.commentKey}.json`), JSON.stringify({ html: comment.textRawHtml }), "utf8")
-        );
-      }
-
-      return writeFile(path.join(storiesDir, `${story.storyKey}.html`), renderStoryPage(story, config), "utf8");
+      await writeFile(path.join(storiesDir, `${story.storyKey}.json`), `${JSON.stringify(story, null, 2)}\n`, "utf8");
+      await writeFile(path.join(storiesDir, `${story.storyKey}.html`), renderStoryPage(story, config), "utf8");
     })
   );
 
@@ -753,8 +723,7 @@ export async function renderSite(
     writeFile(path.join(paths.distDir, "latest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
     writeFile(path.join(batchDir, "index.html"), renderBatchListPage(stories, config), "utf8"),
     writeFile(path.join(batchDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
-    writeFile(path.join(latestBatchDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
-    ...rawWrites
+    writeFile(path.join(latestBatchDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8")
   ]);
 
   return { manifest };

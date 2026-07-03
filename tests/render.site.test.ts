@@ -209,7 +209,7 @@ describe("renderSite", () => {
     expect(storyHtml).toContain("中文评论正文");
   });
 
-  it("writes full story json and raw comment json", async () => {
+  it("writes full story json without raw comment artifacts", async () => {
     const paths = await createTempPaths();
     const config = buildConfig();
 
@@ -219,9 +219,7 @@ describe("renderSite", () => {
     const storyJson = JSON.parse(storyJsonRaw) as StoryRecord;
     expect(storyJson.comments[0].children[0].textZhHtml).toContain("嵌套评论");
 
-    const rawCommentRaw = await readFile(path.join(paths.distDir, "raw", "comments", "hackernews-2001.json"), "utf8");
-    const rawComment = JSON.parse(rawCommentRaw) as { html: string };
-    expect(rawComment.html).toBe("<p>Original comment body</p>");
+    await expect(readFile(path.join(paths.distDir, "raw", "comments", "hackernews-2001.json"), "utf8")).rejects.toThrow();
   });
 
   it("writes lightweight HN public json and full comments json", async () => {
