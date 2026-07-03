@@ -24,7 +24,13 @@ function createManifestFromHistory(config: RunConfig): BatchManifest {
     sourceStatus: {
       hackernews: { ok: true, count: 0, attemptedAt: config.generatedAt },
       v2ex: { ok: true, count: 0, attemptedAt: config.generatedAt },
-      linuxdo: { ok: true, count: 0, attemptedAt: config.generatedAt }
+      linuxdo: {
+        ok: true,
+        count: 0,
+        disabled: true,
+        reason: "linuxdo source disabled by project decision",
+        attemptedAt: config.generatedAt
+      }
     },
     latestIndexUrl: config.siteBaseUrl,
     batchUrl,

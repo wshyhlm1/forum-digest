@@ -142,7 +142,7 @@ function createHistoryEntry(
 function buildPayload(config: RunConfig, manifest: BatchManifest, env: AppEnv): BarkPayload {
   return {
     title: `AI/科技论坛日报已更新 | ${formatChinaDisplay(new Date(config.generatedAt))}`,
-    body: `目标日期 ${config.targetDate}，共 ${manifest.storyCount} 条：HN ${manifest.sourceCounts.hackernews}、V2EX ${manifest.sourceCounts.v2ex}、Linux.do ${manifest.sourceCounts.linuxdo}。`,
+    body: `目标日期 ${config.targetDate}，共 ${manifest.storyCount} 条：HN ${manifest.sourceCounts.hackernews}、V2EX ${manifest.sourceCounts.v2ex}。`,
     url: manifest.batchUrl,
     icon: env.barkIconUrl,
     group: "ForumDigest"

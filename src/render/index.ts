@@ -19,7 +19,8 @@ export interface RenderResult {
 }
 
 const BASE_ALLOWED_TAGS = ["p", "a", "code", "pre", "ul", "ol", "li", "blockquote", "strong", "em", "b", "i", "br", "span"];
-const SOURCE_ORDER: StorySource[] = ["hackernews", "v2ex", "linuxdo"];
+const SOURCE_STATUS_ORDER: StorySource[] = ["hackernews", "v2ex", "linuxdo"];
+const DISPLAY_SOURCE_ORDER: StorySource[] = ["hackernews", "v2ex"];
 
 function ensureTrailingSlash(value: string): string {
   return value.endsWith("/") ? value : `${value}/`;
@@ -171,12 +172,14 @@ function buildSourceStatus(
   sourceStatus?: SourceStatusMap
 ): SourceStatusMap {
   const counts = countBySource(stories);
-  return SOURCE_ORDER.reduce((status, source) => {
+  return SOURCE_STATUS_ORDER.reduce((status, source) => {
     const current = sourceStatus?.[source];
     status[source] = {
       ok: current?.ok ?? true,
       count: counts[source],
       ...(current?.error ? { error: current.error } : {}),
+      ...(current?.disabled ? { disabled: current.disabled } : {}),
+      ...(current?.reason ? { reason: current.reason } : {}),
       attemptedAt: current?.attemptedAt ?? config.generatedAt
     };
     return status;
@@ -316,7 +319,7 @@ function renderStoryCard(story: StoryRecord, config: RunConfig): string {
 
 function renderBatchListPage(stories: StoryRecord[], config: RunConfig): string {
   const counts = countBySource(stories);
-  const groups = SOURCE_ORDER.map((source) => {
+  const groups = DISPLAY_SOURCE_ORDER.map((source) => {
     const sourceStories = stories.filter((story) => story.source === source);
     const label = sourceStories[0]?.sourceLabel ?? (source === "hackernews" ? "Hacker News" : source === "v2ex" ? "V2EX" : "Linux.do");
     return `
@@ -348,7 +351,6 @@ function renderBatchListPage(stories: StoryRecord[], config: RunConfig): string 
       <div class="meta-line">
         <span>Hacker News ${counts.hackernews}</span>
         <span>V2EX ${counts.v2ex}</span>
-        <span>Linux.do ${counts.linuxdo}</span>
         <span>每源目标 ${config.limit} 条</span>
       </div>
       <div class="actions">

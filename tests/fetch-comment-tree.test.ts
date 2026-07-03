@@ -125,7 +125,9 @@ describe("fetchStories", () => {
     expect(stories[0].comments[0].children).toHaveLength(1);
     expect(stories[0].comments[0].children[0].id).toBe(3);
     expect(result.sourceStatus.hackernews.ok).toBe(true);
-    expect(result.sourceStatus.linuxdo.ok).toBe(false);
-    expect(result.sourceStatus.linuxdo.error).toContain("403");
+    expect(result.sourceStatus.linuxdo.ok).toBe(true);
+    expect(result.sourceStatus.linuxdo.disabled).toBe(true);
+    expect(result.sourceStatus.linuxdo.count).toBe(0);
+    expect(fakeFetch.mock.calls.some(([input]) => String(input).includes("linux.do"))).toBe(false);
   });
 });

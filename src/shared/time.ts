@@ -62,10 +62,7 @@ export function resolveTargetDate(mode: RunMode, now: Date = new Date(), provide
   }
 
   const dateOnly = formatChinaDate(now);
-  const parts = mapParts(getChinaParts(now));
-  const hour = Number.parseInt(parts.hour ?? "0", 10);
-  const minute = Number.parseInt(parts.minute ?? "0", 10);
-  if (mode === "scheduled" && hour === 0 && minute <= 30) {
+  if (mode === "scheduled") {
     return shiftDateOnly(dateOnly, -1);
   }
   return dateOnly;

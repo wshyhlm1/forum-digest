@@ -1,6 +1,6 @@
 # AI/科技论坛日报
 
-这是一个“夜间数据快照层 + 静态发布层”的论坛日报项目。HN 优先使用官方 Firebase API 做周期快照，日报生成时消费前一天快照；V2EX/Linux.do 后续继续接入同一个静态站。
+这是一个“夜间数据快照层 + 静态发布层”的论坛日报项目。HN 优先使用官方 Firebase API 做周期快照，日报生成时消费前一天快照；当前活跃源为 Hacker News 和 V2EX。LinuxDo 已停止抓取，只在 manifest 里保留 `linuxdo: 0` 的兼容状态。
 
 ## HN 数据流
 
@@ -108,7 +108,7 @@ COMMENT_TRANSLATION_CHAR_BUDGET=60000
 MAX_COMMENTS_PER_STORY=20
 ```
 
-Linux.do can optionally use a logged-in cookie. Put it in local `.env` or the GitHub repository secret `LINUXDO_COOKIE`; never commit the cookie value. If Linux.do blocks public JSON, the batch still succeeds and records the failure in `sourceStatus.linuxdo`.
+LinuxDo is intentionally disabled. The generated manifest keeps `sourceCounts.linuxdo = 0` and `sourceStatus.linuxdo.disabled = true` for downstream compatibility, but the workflow no longer reads `LINUXDO_COOKIE` or requests linux.do.
 
 ## 本地运行
 
@@ -132,7 +132,7 @@ npm run sync -- --mode manual --target-date 2026-07-01 --skip-push
 
 ## GitHub Pages
 
-在仓库 Settings -> Pages 中选择 GitHub Actions，并设置 `SITE_BASE_URL`，例如：
+在仓库 Settings -> Pages 中选择 `Deploy from a branch`，分支为 `gh-pages`、目录为 `/`，并设置 `SITE_BASE_URL`，例如：
 
 ```text
 https://<user>.github.io/<repo>/
@@ -145,4 +145,4 @@ workflow 包含两个定时：
 17 16 * * *       北京时间 00:17 生成前一天日报
 ```
 
-Linux.do blocked public JSON is recorded in `sourceStatus.linuxdo` and the batch continues with the other sources.
+LinuxDo is disabled and does not block the batch; downstream readers should treat `sourceStatus.linuxdo.disabled = true` as an intentional zero-content source.

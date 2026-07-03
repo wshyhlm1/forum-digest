@@ -1,7 +1,6 @@
 import type { AppEnv, RunConfig, SourceStatusMap, StoryRecord, StorySource } from "../shared/types.js";
 import { classifyStoryRelevance } from "../llm/qwen.js";
 import { fetchHnCandidateIds, buildStoryCandidate, hydrateHnStory } from "./hn.js";
-import { fetchLinuxDoCandidates, hydrateLinuxDoStory } from "./linuxdo.js";
 import { fetchV2exCandidates, hydrateV2exStory } from "./v2ex.js";
 
 const MAX_CONCURRENT_CLASSIFICATIONS = 4;
@@ -48,12 +47,6 @@ const SOURCE_FETCHERS: SourceFetchConfig[] = [
     name: "V2EX",
     limit: (config) => config.limit,
     fetch: (config) => fetchV2exCandidates(config)
-  },
-  {
-    source: "linuxdo",
-    name: "Linux.do",
-    limit: (config) => config.limit,
-    fetch: (config, env) => fetchLinuxDoCandidates(config, env)
   }
 ];
 
@@ -87,18 +80,18 @@ async function classifyAndSelect(
     rankedCandidates,
     MAX_CONCURRENT_CLASSIFICATIONS,
     async (candidate) => {
-    const decision = await classifyStoryRelevance(candidate, env);
-    if (!decision.isRelevant) {
-      return null;
-    }
-    return {
-      ...candidate,
-      category: decision.category,
-      relevanceScore: decision.priority,
-      relevanceReason: decision.reason,
-      summaryZh: decision.summaryZh,
-      highlightsZh: decision.highlightsZh
-    };
+      const decision = await classifyStoryRelevance(candidate, env);
+      if (!decision.isRelevant) {
+        return null;
+      }
+      return {
+        ...candidate,
+        category: decision.category,
+        relevanceScore: decision.priority,
+        relevanceReason: decision.reason,
+        summaryZh: decision.summaryZh,
+        highlightsZh: decision.highlightsZh
+      };
     }
   )).filter((story): story is StoryRecord => Boolean(story));
 
@@ -124,18 +117,22 @@ function createEmptySourceStatus(config: RunConfig): SourceStatusMap {
   return {
     hackernews: { ok: false, count: 0, attemptedAt: config.generatedAt },
     v2ex: { ok: false, count: 0, attemptedAt: config.generatedAt },
-    linuxdo: { ok: false, count: 0, attemptedAt: config.generatedAt }
+    linuxdo: {
+      ok: true,
+      count: 0,
+      disabled: true,
+      reason: "linuxdo source disabled by project decision",
+      attemptedAt: config.generatedAt
+    }
   };
 }
 
-async function hydrateStory(story: StoryRecord, config: RunConfig, env: AppEnv): Promise<StoryRecord> {
+async function hydrateStory(story: StoryRecord, config: RunConfig): Promise<StoryRecord> {
   switch (story.source) {
     case "hackernews":
       return hydrateHnStory(story, config.maxCommentsPerStory);
     case "v2ex":
       return hydrateV2exStory(story, config.maxCommentsPerStory);
-    case "linuxdo":
-      return hydrateLinuxDoStory(story, config.maxCommentsPerStory, env);
     default:
       return story;
   }
@@ -145,7 +142,7 @@ async function hydrateStoriesSafely(stories: StoryRecord[], config: RunConfig, e
   return Promise.all(
     stories.map(async (story) => {
       try {
-        return await hydrateStory(story, config, env);
+        return await hydrateStory(story, config);
       } catch (error) {
         console.warn(`[fetch] ${story.sourceLabel} story ${story.storyKey} detail unavailable:`, errorMessage(error));
         return story;

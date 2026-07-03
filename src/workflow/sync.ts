@@ -51,6 +51,8 @@ function buildSourceStatus(config: RunConfig, stories: StoryRecord[], sourceStat
       ok: current?.ok ?? true,
       count,
       ...(current?.error ? { error: current.error } : {}),
+      ...(current?.disabled ? { disabled: current.disabled } : {}),
+      ...(current?.reason ? { reason: current.reason } : {}),
       attemptedAt: current?.attemptedAt ?? config.generatedAt
     };
     return status;

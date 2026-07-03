@@ -40,16 +40,22 @@ function createManifest(batchId = "2026-03-22"): BatchManifest {
     slot: "manual",
     generatedAt: "2026-03-22T04:00:00.000Z",
     targetDate: "2026-03-22",
-    storyCount: 12,
+    storyCount: 9,
     sourceCounts: {
       hackernews: 4,
       v2ex: 5,
-      linuxdo: 3
+      linuxdo: 0
     },
     sourceStatus: {
       hackernews: { ok: true, count: 4, attemptedAt: "2026-03-22T04:00:00.000Z" },
       v2ex: { ok: true, count: 5, attemptedAt: "2026-03-22T04:00:00.000Z" },
-      linuxdo: { ok: true, count: 3, attemptedAt: "2026-03-22T04:00:00.000Z" }
+      linuxdo: {
+        ok: true,
+        count: 0,
+        disabled: true,
+        reason: "linuxdo source disabled by project decision",
+        attemptedAt: "2026-03-22T04:00:00.000Z"
+      }
     },
     latestIndexUrl: "https://example.github.io/hn/",
     batchUrl: `https://example.github.io/hn/batches/${batchId}/`,
@@ -165,6 +171,7 @@ describe("notify bark", () => {
     expect(payload.url).toBe("https://example.github.io/hn/batches/2026-03-22/");
     expect(payload.title).toContain("AI/科技论坛日报已更新 |");
     expect(payload.body).toContain("目标日期 2026-03-22");
-    expect(payload.body).toContain("HN 4、V2EX 5、Linux.do 3");
+    expect(payload.body).toContain("HN 4、V2EX 5");
+    expect(payload.body).not.toContain("Linux.do");
   });
 });

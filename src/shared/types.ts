@@ -21,6 +21,8 @@ export interface SourceStatusRecord {
   ok: boolean;
   count: number;
   error?: string;
+  disabled?: boolean;
+  reason?: string;
   attemptedAt?: string;
 }
 

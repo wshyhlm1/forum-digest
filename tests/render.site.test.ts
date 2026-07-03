@@ -128,7 +128,13 @@ describe("renderSite", () => {
     const sourceStatus = {
       hackernews: { ok: true, count: 1, attemptedAt: config.generatedAt },
       v2ex: { ok: true, count: 0, attemptedAt: config.generatedAt },
-      linuxdo: { ok: false, count: 0, error: "Linux.do fetch failed 403", attemptedAt: config.generatedAt }
+      linuxdo: {
+        ok: true,
+        count: 0,
+        disabled: true,
+        reason: "linuxdo source disabled by project decision",
+        attemptedAt: config.generatedAt
+      }
     };
 
     const result = await renderSite(buildStories(), config, paths, sourceStatus);
@@ -141,7 +147,7 @@ describe("renderSite", () => {
       sourceCounts: { hackernews: number; v2ex: number; linuxdo: number };
       sourceStatus: {
         hackernews: { ok: boolean; count: number };
-        linuxdo: { ok: boolean; count: number; error?: string };
+        linuxdo: { ok: boolean; count: number; disabled?: boolean; reason?: string };
       };
       stories: Array<{
         storyKey: string;
@@ -168,8 +174,9 @@ describe("renderSite", () => {
     expect(manifest.sourceCounts.linuxdo).toBe(0);
     expect(manifest.sourceStatus.hackernews.ok).toBe(true);
     expect(manifest.sourceStatus.hackernews.count).toBe(1);
-    expect(manifest.sourceStatus.linuxdo.ok).toBe(false);
-    expect(manifest.sourceStatus.linuxdo.error).toContain("403");
+    expect(manifest.sourceStatus.linuxdo.ok).toBe(true);
+    expect(manifest.sourceStatus.linuxdo.disabled).toBe(true);
+    expect(manifest.sourceStatus.linuxdo.reason).toContain("disabled");
     expect(manifest.stories[0].storyKey).toBe("hackernews-1001");
     expect(manifest.stories[0].dailyBriefSourceId).toBe("hackernews");
     expect(manifest.stories[0].digestUrl).toBe("https://example.github.io/forum-digest/stories/hackernews-1001.html");
