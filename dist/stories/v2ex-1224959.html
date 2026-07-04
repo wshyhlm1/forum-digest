@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FluxDown：用 Rust + Flutter 写的免费开源下载管理器，IDM 平替 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-04/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>FluxDown：用 Rust + Flutter 写的免费开源下载管理器，IDM 平替</h1>
+      <p class="original-title">FluxDown：用 Rust + Flutter 写的免费开源下载管理器， IDM 平替</p>
+      <div class="meta-line">
+        <span>开源</span>
+        <span>作者 clow</span>
+        <span>热度 11</span>
+        <span>回复 11</span>
+        <span>2026/07/04 19:22</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1224959" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1224959.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>开发者推出一款名为 FluxDown 的免费开源下载管理器，旨在作为 IDM 的替代品。</li><li>项目采用 Rust + Tokio 构建下载引擎，Flutter + Rinf 构建 UI，支持 Windows、macOS、Linux 全平台。</li><li>支持 HTTP、FTP、BitTorrent、eD2K、HLS、DASH 等多协议，并提供浏览器扩展实现下载拦截接管。</li></ul>
+      <h3>看点</h3><ul><li>纯 Rust 引擎实现零 FFI 依赖，通过 trait 解耦可复用于桌面 App、headless server 和 CLI。</li><li>IDM 式运行时动态分段技术，慢速分段会被空闲线程拆分抢救以提升下载效率。</li><li>SQLite 全量断点续传，零广告零追踪无账号，本地优先设计。</li><li>开源协议为 AGPL-3.0，作者提醒用户认准官方域名，警惕假冒网站传播木马。</li></ul>
+      <p class="reason">帖子介绍了一款使用 Rust 和 Flutter 开发的免费开源下载管理器 FluxDown，涉及开源项目、开发工具、编程语言（Rust/Flutter）及跨平台技术栈，与科技日报关注的开源生态和开发者工具高度相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">做了个下载管理器 FluxDown，免费开源（AGPL-3.0），想当 IDM 的平替。<br /><br />技术栈：下载引擎采用纯 Rust + Tokio（零 FFI 依赖的独立 crate，通过 EventSink / HostSelection 两个 trait 与宿主解耦，同一引擎可复用于桌面 App / headless server / CLI），UI 采用 Flutter + Rinf，浏览器扩展采用 WXT。<br /><br />特点：<br />- Rust 引擎，IDM 式运行时动态分段（慢速分段会被空闲线程拆分抢救）<br />- 多协议：HTTP / FTP / BitTorrent / eD2K / HLS / DASH<br />- Chrome / Edge / Firefox 扩展三层拦截接管下载<br />- SQLite 全量断点续传<br />- 零广告零追踪无账号，本地优先<br />- Windows / macOS / Linux 全平台<br /><br />官网： <a href="https://fluxdown.zerx.dev" target="_blank" rel="noopener noreferrer">https://fluxdown.zerx.dev</a><br />GitHub： <a href="https://github.com/zerx-lab/FluxDown" target="_blank" rel="noopener noreferrer">https://github.com/zerx-lab/FluxDown</a><br /><br />欢迎拍砖，想支持什么协议 / 功能也可以提。（认准官方域名，最近有假冒站 <a href="http://fluxdown.com.cn" target="_blank" rel="noopener noreferrer">fluxdown.com.cn</a> 在传木马，别下错）</div>
+      <div class="post-body is-hidden" data-role="story-raw">做了个下载管理器 FluxDown ，免费开源（ AGPL-3.0 ），想当 IDM 的平替。<br /><br />技术栈：下载引擎纯 Rust + Tokio （零 FFI 依赖的独立 crate ，通过 EventSink / HostSelection 两个 trait 和宿主解耦，同一引擎复用给桌面 App / headless server / CLI ），UI 是 Flutter + Rinf ，浏览器扩展 WXT 。<br /><br />特点：<br />- Rust 引擎，IDM 式运行时动态分段（慢速分段会被空闲线程拆分抢救）<br />- 多协议：HTTP / FTP / BitTorrent / eD2K / HLS / DASH<br />- Chrome / Edge / Firefox 扩展三层拦截接管下载<br />- SQLite 全量断点续传<br />- 零广告零追踪无账号，本地优先<br />- Windows / macOS / Linux 全平台<br /><br />官网： <a href="https://fluxdown.zerx.dev" target="_blank" rel="noopener noreferrer">https://fluxdown.zerx.dev</a><br />GitHub： <a href="https://github.com/zerx-lab/FluxDown" target="_blank" rel="noopener noreferrer">https://github.com/zerx-lab/FluxDown</a><br /><br />欢迎拍砖，想支持什么协议 / 功能也可以提。（认准官方域名，最近有假冒站 <a href="http://fluxdown.com.cn" target="_blank" rel="noopener noreferrer">fluxdown.com.cn</a> 在传木马，别下错）</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">11</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anyplace</span>
+        <span>#1</span>
+        <span>2026/07/04 20:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://github.com/SurgeDM/Surge" target="_blank" rel="noopener noreferrer">https://github.com/SurgeDM/Surge</a><br />可以跟这个 Go 版本比一比</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830795"><a href="https://github.com/SurgeDM/Surge" target="_blank" rel="noopener noreferrer">https://github.com/SurgeDM/Surge</a><br />可以跟这个 go 的比比</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830795">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830795" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">loveqianool</span>
+        <span>#2</span>
+        <span>2026/07/04 20:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">镜像 <a href="http://ghcr.io/zerx-lab/fluxdown-server" target="_blank" rel="noopener noreferrer">ghcr.io/zerx-lab/fluxdown-server</a> 正在拉取 0.8s，在清单列表条目中找不到 linux/arm64/v8 的匹配清单<br /><br />有没有考虑部分兼容 Aria2 RPC，以便让大量使用 aria2 的工具能快速添加下载任务。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830811">Image <a href="http://ghcr.io/zerx-lab/fluxdown-server" target="_blank" rel="noopener noreferrer">ghcr.io/zerx-lab/fluxdown-server</a> Pulling 0.8sno matching manifest for linux/arm64/v8 in the manifest list entries<br /><br />有没有考虑 Aria2 RPC 的部分兼容，让大量使用 aria2 的工具能快速添加下载任务。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830811">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830811" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dddedd</span>
+        <span>#3</span>
+        <span>2026/07/04 22:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Web 界面如果能适配一下手机端就更好了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830898">web 界面能适配下手机端就更好了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Y25tIGxpdmlk</span>
+        <span>#4</span>
+        <span>2026/07/04 22:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一上来就喊出要做 IDM 的平替，这么猛的吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830915">上来就喊出做 IDM 的平替，这么凶的吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830915">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830915" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">WeaPoon</span>
+        <span>#5</span>
+        <span>2026/07/04 22:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持一下，已经替换 FDM 试试看。<br /><br />先反馈一个 UI Bug：关于界面缩放，先选择一个缩放比例，再选择其他缩放比例，界面发生了变化，但是显示的选择项总是停留在第二次选择的缩放数值上，切换界面再回来后数值就对了。<br /><br /> <a href="https://i.imgur.com/XxUo35E.png" target="_blank" rel="noopener noreferrer"></a><br /><br /> <a href="https://i.imgur.com/crV5fas.png" target="_blank" rel="noopener noreferrer"></a><br /><br /> <a href="https://i.imgur.com/6CpYCgV.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830947">支持一下，已替换 FDM 试试看。<br /><br />先反馈个 UI Bug,界面缩放，先选择一个缩放，在选择其他缩放，界面发生了变化，但是选择总是在第二次选择的缩放数值上，切换界面回来后数值是对的。<br /><br /> <a href="https://i.imgur.com/XxUo35E.png" target="_blank" rel="noopener noreferrer"></a><br /><br /> <a href="https://i.imgur.com/crV5fas.png" target="_blank" rel="noopener noreferrer"></a><br /><br /> <a href="https://i.imgur.com/6CpYCgV.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830947">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830947" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kirbyzhu</span>
+        <span>#6</span>
+        <span>2026/07/04 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">网站好像被直接重定向到木马网站了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830974">网站好像被直接导向到木马网站</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">WeaPoon</span>
+        <span>#7</span>
+        <span>2026/07/04 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/AwWPx1y.png" target="_blank" rel="noopener noreferrer"></a><br /><br /> <a href="https://i.imgur.com/ZcE5Esy.png" target="_blank" rel="noopener noreferrer"></a><br /><br />在下载界面点击“高级选项”时，整个界面会在一瞬间发生变形，截图是瞬间截下来的（并非对图片进行了拉伸），随后又恢复正常。虽然时间很短，但肉眼依然可见。本来想录个视频，但录屏时总是无法复现，而不录屏时随便点几下就能复现。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830975"><a href="https://i.imgur.com/AwWPx1y.png" target="_blank" rel="noopener noreferrer"></a><br /><br /> <a href="https://i.imgur.com/ZcE5Esy.png" target="_blank" rel="noopener noreferrer"></a><br /><br />在下载界面，点击高级选项，在一瞬间整个界面会变形，图片是瞬间截图截下来的（不是对图片进行了拉伸），然后再恢复，虽然时间很短，但是肉眼还是可见的。本来想说录制个视频，但是录制视频的时候总是无法复现，但是没录屏的时候，随便点几下就能复现。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830975">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17830975" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kirbyzhu</span>
+        <span>#8</span>
+        <span>2026/07/04 23:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说错了，原来是个提示，不过这个提示只有在正常访问网站时才会出现，进了盗版网站也一样没用<br /><br />下载测试一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17831000">说错了 原来是个提示 不过这个提示只有在正常网站访问的时候才会有 进了盗版网页的一样没用<br /><br />下载测试测试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17831000">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17831000" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">WeaPoon</span>
+        <span>#9</span>
+        <span>2026/07/04 23:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">UI 的 Bug 有点多，使用界面缩放后，右键菜单弹出的位置不对<br /> <a href="https://i.imgur.com/xw1MtDx.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17831006">UI 的 Bug 有点多，使用了界面缩放后 右键菜单弹出的位置不对<br /> <a href="https://i.imgur.com/xw1MtDx.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17831006">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17831006" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">love4taylor</span>
+        <span>#10</span>
+        <span>2026/07/04 23:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没有 Safari 扩展吗（</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17831034">没有 Safari 扩展么（</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17831034">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17831034" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">WeaPoon</span>
+        <span>#11</span>
+        <span>2026/07/04 23:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ED2K 都十几分钟了，一点动静都没有<br /><br /> <a href="https://i.imgur.com/wPD7w2L.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17831035">ED2K 十几分钟了 没有一点动静 <br /><br /> <a href="https://i.imgur.com/wPD7w2L.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17831035">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224959#reply17831035" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

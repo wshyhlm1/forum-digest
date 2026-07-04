@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude 账号被封风险检测工具 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-04/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>Claude 账号被封风险检测工具</h1>
+      <p class="original-title">Claude 账号被封风险检测工具</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 twk93</span>
+        <span>热度 67</span>
+        <span>回复 67</span>
+        <span>2026/07/04 11:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1224898" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1224898.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>开发者指出 Claude Code 会读取本地信息并在请求中打上中国用户隐形标记，用于封号识别。</li><li>社区开发者 LinXiaoTao 推出了一键检测功能，用于识别 Claude 的封号机制。</li><li>该检测功能已被集成到 Uwarp Fuck Claude 工具中，方便用户一键检测封号风险。</li></ul>
+      <h3>看点</h3><ul><li>Claude Code 被指通过隐形标记识别中国用户，引发隐私和封号争议。</li><li>社区开发者迅速响应，推出检测工具帮助用户规避封号风险。</li><li>工具集成到 Uwarp Fuck Claude，提供一键检测功能，操作便捷。</li><li>反映了 AI 服务在地区限制和用户隐私保护方面的争议。</li></ul>
+      <p class="reason">帖子讨论了 Claude Code 的封号机制及其检测工具，涉及 AI 服务的使用限制、用户隐私及反检测技术，属于 AI 领域相关话题。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>Claude Code 的封号思路：Claude Code 会偷偷读取你电脑上的本地信息，然后用一种肉眼完全看不到的方式，悄悄给你发送给 AI 服务器的每一个请求，打上「这个人是中国用户」的隐形标记，传回 Anthropic 的服务器。昨天看到社区上 LinXiaoTao 开发了个一键检测功能，挺好用的，将这个功能集成到了 Uwarp</p>
+<p><a href="https://www.uwarp.design/fuck-claude" target="_blank" rel="noopener noreferrer">Fuck Claude 一键检测</a></p>
+<p></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>Claude Code 的封号思路：Claude Code 会偷偷读取你电脑上的本地信息，然后用一种肉眼完全看不到的方式，悄悄给你发送给 AI 服务器的每一个请求，打上「这个人是中国用户」的隐形标记，传回 Anthropic 的服务器。昨天看到社区上 LinXiaoTao 开发了个一键检测功能，挺好用的，将这个功能集成到了 Uwarp</p>
+<p><a href="https://www.uwarp.design/fuck-claude" target="_blank" rel="noopener noreferrer">Fuck Claude 一键检测</a></p>
+<p></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#1</span>
+        <span>2026/07/04 11:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">检测封号风险入口： https://www.uwarp.design/fuck-claude</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17829951">检测封号风险入口： https://www.uwarp.design/fuck-claude</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17829951">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17829951" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xooass</span>
+        <span>#2</span>
+        <span>2026/07/04 11:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">实际上我们公司用美国分公司资料注册的 team 账号，用的美国公司主体银行卡支付，10 多个用户全在国内政策上班用中文，而且不会电脑的，有时候估计登录不上了才知道开代理，一直没被封，也有可能时机未到</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17829973">实际上我们公司用美国分公司资料注册的 team 账号，用的美国公司主体银行卡支付，10 多个用户全在国内政策上班用中文，而且不会电脑的，有时候估计登录不上了才知道开代理，一直没被封，也有可能时机未到</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17829973">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17829973" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xooass</span>
+        <span>#3</span>
+        <span>2026/07/04 11:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">政策上班=正常上班</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17829978">政策上班=正常上班</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17829978">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17829978" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">eventlooped</span>
+        <span>#4</span>
+        <span>2026/07/04 11:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/yvOQV0w.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17829989"><a href="https://i.imgur.com/yvOQV0w.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17829989">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17829989" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sleek7671</span>
+        <span>#5</span>
+        <span>2026/07/04 11:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我记得时区不是只有大陆的吗？港澳台也在里头吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17829998">我记得时区不是只有大陆的吗？港澳台也在里头吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17829998">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17829998" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">owen800q</span>
+        <span>#6</span>
+        <span>2026/07/04 11:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/sleek7671" target="_blank" rel="noopener noreferrer">sleek7671</a> 港澳地区也是制裁地区</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830014">@<a href="/member/sleek7671" target="_blank" rel="noopener noreferrer">sleek7671</a> 港澳地區也是制裁地區</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830014">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830014" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sleek7671</span>
+        <span>#7</span>
+        <span>2026/07/04 11:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 这个我知道，但是我之前看分析的代码里好像并没有检测港澳时区</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830024">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 这个我知道，但是我之前看分析的代码里好像并没有检测港澳时区</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830024">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830024" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">owen800q</span>
+        <span>#8</span>
+        <span>2026/07/04 12:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/sleek7671" target="_blank" rel="noopener noreferrer">sleek7671</a> 你细看一下他的代码，检测当前系统时间是否上海 GMT+8 ？ 港澳台地区的时区都是返回真。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830068">@<a href="/member/sleek7671" target="_blank" rel="noopener noreferrer">sleek7671</a> 你細看一下他的代碼，檢測當前系統時間是否上海 GMT+8 ？ 港澳台地區的時區都是返回真。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830068">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830068" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#9</span>
+        <span>2026/07/04 12:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xooass" target="_blank" rel="noopener noreferrer">xooass</a> 指不定哪天就被封了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830069">@<a href="/member/xooass" target="_blank" rel="noopener noreferrer">xooass</a> 指不定哪天就被封了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830069">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830069" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#10</span>
+        <span>2026/07/04 12:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/eventlooped" target="_blank" rel="noopener noreferrer">eventlooped</a> 你的 IP 怎么做到这么干净的，我开 turn 模式都没有用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830070">@<a href="/member/eventlooped" target="_blank" rel="noopener noreferrer">eventlooped</a> 你的 IP 怎么做到这么干净的，我开 turn 模式都没有用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830070">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830070" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#11</span>
+        <span>2026/07/04 12:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 貌似有些东南亚地区也会被误杀</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830071">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 貌似有些东南亚地区也会被误杀</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830071">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830071" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fangqiu1992</span>
+        <span>#12</span>
+        <span>2026/07/04 12:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">20 多分一样被封</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830076">20 多分一样被封</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830076">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830076" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">obama</span>
+        <span>#13</span>
+        <span>2026/07/04 12:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">特么比腾讯还可恶</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830080">特么比腾讯还可恶</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830080">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830080" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#14</span>
+        <span>2026/07/04 12:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/fangqiu1992" target="_blank" rel="noopener noreferrer">fangqiu1992</a> 那付的钱有退款吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830106">@<a href="/member/fangqiu1992" target="_blank" rel="noopener noreferrer">fangqiu1992</a> 那付的钱有退款吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830106">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830106" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">owen800q</span>
+        <span>#15</span>
+        <span>2026/07/04 12:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/twk93" target="_blank" rel="noopener noreferrer">twk93</a> 那剩下的就是用语言，语气，语感，行为特征检测了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830109">@<a href="/member/twk93" target="_blank" rel="noopener noreferrer">twk93</a> 那剩下來的就是用語言，語氣，語感，行為特徵檢測了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830109">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830109" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#16</span>
+        <span>2026/07/04 12:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/sleek7671" target="_blank" rel="noopener noreferrer">sleek7671</a> 应该都在他的打击范围吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830110">@<a href="/member/sleek7671" target="_blank" rel="noopener noreferrer">sleek7671</a> 应该都在他的打击范围吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830110">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830110" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">twk93</span>
+        <span>#17</span>
+        <span>2026/07/04 12:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 多维度检测还是很容易识别中国用户的，他这个反华有点强烈的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830113">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 多维度检测还是很容易识别中国用户的，他这个反华有点强烈的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830113">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830113" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fangqiu1992</span>
+        <span>#18</span>
+        <span>2026/07/04 12:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/twk93" target="_blank" rel="noopener noreferrer">twk93</a> 退了 转 codex 了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830118">@<a href="/member/twk93" target="_blank" rel="noopener noreferrer">twk93</a> 退了 转 codex 了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830118">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830118" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mikaelson</span>
+        <span>#19</span>
+        <span>2026/07/04 12:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">92 分，但是一直用着好好的。好多年了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830121">92 分，但是一直用着好好的。好多年了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830121">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830121" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">HFX3389</span>
+        <span>#20</span>
+        <span>2026/07/04 12:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">浏览器层面的搞一个指纹浏览器都能过，除非你不跑 Claude Code 或者 Desktop 咯</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17830125">浏览器层面的搞一个指纹浏览器都能过，除非你不跑 Claude Code 或者 Desktop 咯</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17830125">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1224898#reply17830125" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
