@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>有机地图 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-07/">返回日报</a>
+      <div class="source-chip">Hacker News #2</div>
+      <h1>有机地图</h1>
+      <p class="original-title">Organic Maps</p>
+      <div class="meta-line">
+        <span>开源</span>
+        <span>作者 tosh</span>
+        <span>热度 1156</span>
+        <span>回复 362</span>
+        <span>2026/07/05 22:14</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48794446" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://organicmaps.app/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48794446.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Organic Maps 是一款开源、隐私优先的离线地图与导航应用，支持徒步、骑行、驾车等多种场景。</li><li>该应用完全离线运行，无广告、无追踪，基于 OpenStreetMap 数据，已达成 600 万次安装。</li><li>支持 CarPlay/Android Auto、KML/GPX 导入导出、维基百科文章集成等功能，适用于多平台下载。</li></ul>
+      <h3>看点</h3><ul><li>100% 离线功能，无需网络连接即可使用全部特性</li><li>开源社区驱动开发，完全免费且无广告无追踪</li><li>支持多种路线规划与导航模式，包括步行、骑行、驾车</li><li>集成维基百科内容，提供热门地点详细信息</li><li>跨平台支持，可在 AppStore、Google Play、F-Droid 等多个渠道下载</li></ul>
+      <p class="reason">Organic Maps 是一款开源、注重隐私的离线地图与 GPS 应用，基于 OpenStreetMap 数据开发，完全免费且无广告无追踪，符合开源、科技产品、硬件（GPS）等相关领域。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">eisa01</span>
+        
+        <span>2026/07/05 22:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Organic Maps 是我最常用的导航应用，因为你可以立即自己修复错误！这比在专有应用上免费干活然后指望他们接受你的编辑要好得多。<p>一年前有个分支项目叫 CoMaps，正在增加各种新功能。</p><p>例如，我正在添加 CarPlay 仪表盘支持，你可以通过加入 TestFlight 来测试。</p><p>我们非常需要更多的测试人员以及一些真正的 iOS 开发者（我不是）。我们正在赶工在9月前实现场景生命周期支持，如果你喜欢重构老旧代码库，这绝对是个绝佳机会！</p><p><a href="https://www.comaps.app/" target="_blank" rel="noopener noreferrer">https://www.comaps.app/</a>
+<a href="https://codeberg.org/comaps/comaps" target="_blank" rel="noopener noreferrer">https://codeberg.org/comaps/comaps</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48794631">Organic Maps was my go to app for a navigation app where you can fix errors yourself immediately! So much better than having to work for free on the proprietary apps, and hope they accept your edits<p>There’s a fork from one year ago, CoMaps, that is gaining different features</p><p>E.g., I am adding CarPlay Dashboard support that you can test by joining the TestFlight</p><p>We are in great need of both more testers and some proper iOS devs (I am not). We’re racing to get scene lifecycle support by September, perfect opportunity if you like modernising old codebases!</p><p><a href="https://www.comaps.app/" target="_blank" rel="noopener noreferrer">https://www.comaps.app/</a>
+<a href="https://codeberg.org/comaps/comaps" target="_blank" rel="noopener noreferrer">https://codeberg.org/comaps/comaps</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48794631">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48794631" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">david-gpu</span>
+        
+        <span>2026/07/06 01:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所有这些应用都依赖于 OpenStreetMap (OSM) 提供的数据。这是一个类似维基百科的项目，任何人都可以贡献编辑。<p><a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">https://www.openstreetmap.org/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48795982">All these apps rely on the data provided by OpenStreetMap (OSM). It is a Wikipedia-like project where anybody can contribute edits.<p><a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">https://www.openstreetmap.org/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48795982">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48795982" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">everybodyknows</span>
+        
+        <span>2026/07/06 11:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对于商家来说，可以通过一个操作简便的网页来完成：<a href="https://www.onosm.org/" target="_blank" rel="noopener noreferrer">https://www.onosm.org/</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48800311">For business operators this can be done with a low-friction web page: <a href="https://www.onosm.org/" target="_blank" rel="noopener noreferrer">https://www.onosm.org/</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48800311">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48800311" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ygra</span>
+        
+        <span>2026/07/06 13:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">请注意：这些最终会变成地图上的备注，需要其他制图师手动输入。里面有大量的垃圾信息和可疑条目，所以我经常懒得再去录入它们了，尤其是在我不熟悉或无法核实信息的地方。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48800909">Nota bene: those end up as notes on the map which another mapper has to input manually. There's a lot of spam and dubious entries so I often no longer bother entering them, especially in places I don't know or where I cannot verify the information.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48800909">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48800909" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">lavela</span>
+        
+        <span>2026/07/06 17:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我使用 Street Complete 一段时间了，并且一直想知道使用这些应用程序是否被认为有帮助，或者是否只会造成流失/噪音。社区对此是否有普遍共识？<p>我自己做一些小的、可能不完整的元数据编辑是否会更容易被接受，或者评论结构（如果有的话）更适合更少、更稳定的贡献者？</p><p>是否有一次直接编辑，然后花了很长时间才出现在地图上，我无法理解是否来自新编辑的编辑被太少的评论者更仔细地审查，从本质上来说编辑（拆除后删除一堆建筑物，并且可能没有用正确的区域类型替换它）或者如果要包含的新编辑的发布周期比我预期的要长得多。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48802598">I was using Street Complete for some time and was always wondering if using these apps is considered helpful or if it only creates churn/noise. Is there a general consensus on that in the community?<p>Would it be more accepted to just do a few small, potentially not metadata-complete edits myself or is the review structure (if there is any) geared more towards fewer, more steady contributors?</p><p>Did one direct edit once and iirc it took ages to land in the map and I wasn't able to grasp if came from new editors' edits being scrutinized more carefully by too few reviewers, from the nature of the edits (deleting a bunch of buildings after demolition and probably not replacing it with the right area type) or if the release cycle for new edits to be included is just way longer than I would have expected.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48802598">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48802598" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ygra</span>
+        
+        <span>2026/07/06 23:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">作为一名经常贡献者，我喜欢 StreetComplete，而且我不会担心它可能会生成一些超出绝对必要的变更集（它往往会为每个任务制作一个变更集（对各个答案进行多次修改），而且也仅在特定时间范围内进行。当然，这意味着向楼梯添加信息会创建多个变更集（倾斜、步数、表面、扶手），但这并不重要。<p>StreetComplete 非常好在我看来，SC 只是询问地图上现有的特征（长凳、公交车站、商店、道路、障碍物等），其中一些可能会过时，因此询问商店的营业时间可能会导致某人查看并注意到该商店现在已关闭，或者被另一家商店取代，因此在许多情况下，为对象添加细节的任务会产生很好的副作用，即这些特征会被查看并审查它们是否仍然存在，否则这种情况不会经常发生。添加新数据通常比修复或删除过时的信息要低。</p><p>而且它的进入门槛很低，特别是对于不熟悉 OSM 标记的人来说，因为在我看来，用户体验非常适合初学者（同时对高级制图人员仍然有用），因此您可以轻松地将其推荐给喜欢此类爱好的人（例如寻宝、Pokémon Go），对我来说，这是一个更多外出的借口，也是我去的地方。在 COVID-19 期间，我并不是为了完成另一个任务。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48806029">As a frequent contributor myself I love StreetComplete and I wouldn't worry about it perhaps generating a few changesets more than strictly necessary (it tends to make one changeset per quest (with multiple amendments for individual answers) and also only during a certain time frame. Sure, that means that adding information to a staircase creates multiple changesets (incline, step_count, surface, handrail), but that doesn't really matter.<p>What StreetComplete is very good at, in my opinion, is simply QA on the ground. SC asks about features existing on the map (benches, bus stops, shops, roads, barriers, etc.) and some of them might go stale. So asking about opening hours of a shop might cause someone to look and notice that the shop is closed now, or replaced by another one, so in many cases the quests that add detail to objects have the nice side-effect that those are being looked at and reviewed whether they still exist, which otherwise does not happen often. The barrier to adding new data is often lower than fixing or removing outdated information.</p><p>And it's such a low barrier to entry, especially for people not familiar with OSM's tagging, since the UX is very well designed for beginners in my eyes (while still being useful for advanced mappers), that you can easily recommend it to people who like those kind of hobbies (e.g. geocaching, Pokémon Go). For me it was an excuse to go outside more, also to places I haven't been, during COVID-19, just to tick off another quest.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48806029">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48806029" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">maxerickson</span>
+        
+        <span>2026/07/06 18:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">审核并不阻止数据的添加，更多的是请求反馈。<p>不同的地图有不同的更新周期。 osm.org 上的滑动地图旨在尽快更新，通常是几分钟，但有时会出现问题。显示较大区域的缩放级别更新速度也稍慢。</p><p>只要您添加的内容是最新/准确的，我就不会担心您是否已捕获有关功能的所有内容。 “这个东西就在这里”对于地图来说比没有信息要好得多。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48802877">The review does not block the data being added, it's more of a request for feedback.<p>Different maps have different update cycles. The slippy map on osm.org is meant to update as quickly as possible, usually a few minutes, but sometimes there are hiccups. Zoom levels that show larger areas also update a little slower.</p><p>As long as what you are adding is up to date/accurate, I wouldn't worry about whether you've captured everything about the features. "This thing is here" is a lot better for the map than no information.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48802877">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48802877" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">trueno</span>
+        
+        <span>2026/07/06 03:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这些该死的项目到底有没有把提议的编辑推回 openstreetmap？<p>要是没推回去那简直太无耻了</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48797312">do these damn projects even push the proposed edits up back to openstreetmap?<p>insanely shameful if not</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48797312">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48797312" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">shrinks99</span>
+        
+        <span>2026/07/06 05:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，CoMaps 允许用户提交基础数据来更新 OSM 的地址和兴趣点。这个问题其实比你最初想象的要难，OSM 数据的交付格式在架构上通常与数据库格式不同。就 OrganicMaps 和 CoMaps 而言，它们都会生成针对离线优化的地图格式用于分发。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48798051">Yes, CoMaps lets users submit basic data that updates OSM for addresses and POIs.  It's a harder problem than you may initially think too, quite often the delivery format of OSM data differs in schema from the DB format.  In the case of OrganicMaps and CoMaps, they both generate offline-optimized map formats for distribution.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48798051">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48798051" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">superjan</span>
+        
+        <span>2026/07/06 04:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们无法自动执行。OSM 编辑者必须审核通过。显然，OSM 担心人们从谷歌地图复制信息会引发法律问题。他们希望看到证据，比如路牌照片。至少以我有限的经验来看是这样。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48797547">They can’t do so automatically. Osm Editors must approve. Apparantly OSM fears legislation when people copy info from google maps. They like to see evidence, like street sign photos. In my limited experience anyway.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48797547">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48797547" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jraph</span>
+        
+        <span>2026/07/06 07:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我偶尔会为 OSM 做出贡献。您只需发送您的编辑内容，它们就会直接生效。我认为没有事先的节制。在这些应用程序上，您使用 OSM 帐户 IIRC 登录 OSM（尽管我主要使用 EveryDoor 或直接使用 osm.org 为此，偶尔使用 StreetComplete，但我不使用 Comaps 进行贡献）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48798885">I occasionally contribute to OSM. You just send your edit and they are directly live. I don't think there's prior moderation. On these apps you log in to OSM using an OSM account IIRC (though I mostly use EveryDoor or directly osm.org for this, occasionally StreetComplete, I don't contribute using Comaps)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48798885">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48798885" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ygra</span>
+        
+        <span>2026/07/06 13:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有些应用并不直接编辑OSM，而是在地图上添加备注，交由他人来编辑。也许他们指的就是这个。<p>例如，OrganicMaps经常会创建这类备注：<a href="https://www.openstreetmap.org/note/5377887" target="_blank" rel="noopener noreferrer">https://www.openstreetmap.org/note/5377887</a>，对于某些类型的编辑来说，这比直接编辑更安全。StreetComplete在很多情况下也是如此，比如当某个地点已不存在时。我认为，商店和其他地点通常可以直接添加，因为这几乎与现有数据没有关联。</p><p>不过确实，我在户外主要使用StreetComplete（SCEE），有时也用Every Door和Vespucci。对于像Organic Maps这样的离线地图应用来说，解决与实时OSM数据的潜在冲突可能并不容易，因为实时数据可能比应用内的地图数据新几周甚至几个月。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48801021">Some apps don't edit OSM directly, but rather add a note on the map for others to edit. Maybe that's what they meant.<p>E.g., OrganicMaps often creates these kinds of notes: <a href="https://www.openstreetmap.org/note/5377887" target="_blank" rel="noopener noreferrer">https://www.openstreetmap.org/note/5377887</a> which for certain kinds of edits is safer than trying to directly edit. StreetComplete does the same in many cases when something no longer exists. I think, shops and other places can often be added directly, though since that has little to no ties to existing data.</p><p>But yeah, I'm using mostly StreetComplete (SCEE) when outside, sometimes Every Door and Vespucci. For offline map apps like Organic Maps it's likely not easy resolving potential conflicts with live OSM data that might be weeks or months newer than the map data in the app.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48801021">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48801021" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">notabotiswear</span>
+        
+        <span>2026/07/06 20:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，OrganicMap会直接推送新地点和元数据编辑<i>。我认为他们只在删除时使用备注。<p></p></i>确切地说，是批量进行的。在相对较短的时间间隔（几分钟）内进行的多次编辑会被作为一个整体提交。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48803884">Yes, OrganicMap pushes new places and metadata edits directly<i>. I think they only use notes for deletions.<p></p></i> In batches, to be exact. Multiple edits in relatively short intervals (a few minutes) are commited as one.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48803884">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48803884" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ihatehn</span>
+        
+        <span>2026/07/06 11:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这不是真的，我不知道有任何 FOSS OSM 应用程序有任何审批流程。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48800446">This isn't true, I don't know any FOSS OSM apps that have any approval process.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48800446">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48800446" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">superjan</span>
+        
+        <span>2026/07/06 13:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我能想象各地情况不尽相同。我想我所在的当地编辑者分会比较活跃。鉴于我有2条评论表示反对，而没有一条表示赞同，我想这应该是个例外。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48800907">I can imagine it is not the same everywhere. I guess I have an active local chapter of editors. Given that I have 2 comments disagreeing and none concurring I guess this is an exception.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48800907">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48800907" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ihatehn</span>
+        
+        <span>2026/07/06 14:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我从2015年就开始编辑OSM，并为自由开源的OSM应用贡献了大约一半的时间。过去确实出现过冲突或特殊情况，但StreetComplete、OsmAnd、Organic Maps和CoMaps上的编辑都会直接生效，没有任何强制审核。OSM变更集上有一个“请求审核”复选框，但实际上很少会真正进行审核，而且在此期间编辑就已经生效了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48801409">I've been editing OSM since 2015 and contributing to FOSS OSM apps for about half that, there have been conflicts or special cases in the past but edits on StreetComplete, OsmAnd, Organic Maps, and CoMaps all go live without any mandatory review. There's a "request review" checkbox on OSM changesets, but it's somewhat rare to actually get a review and the edit is live in the meantime</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48801409">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48801409" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">iririririr</span>
+        
+        <span>2026/07/06 06:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">然而，谷歌多年来因窃取 openstreetmap 数据而被当场抓获，这导致了一封胆怯的 Ooopsy 信。<p>真正的原因是用户内容，要么没有人贡献，要么充斥着滥用行为。没有中间。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48798387">yet google was caught red handed stealing openstreetmap data for years and all it led to was a timid Ooopsy letter.<p>the real reason is that user content, either you don't have anybody contributing, or you're flooded with abuse. there's no middle.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48798387">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48798387" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gpvos</span>
+        
+        <span>2026/07/06 04:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我假设它们都会这么做，因为要维护自己的数据分支，并不断协调用户编辑和 OSM 的更新，这几乎是不可能的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48797477">I assume they all do, it's nigh impossible to maintain your own data fork and keep reconciling your users' edits and the updates from OSM.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48797477">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48797477" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">palata</span>
+        
+        <span>2026/07/06 18:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 这些该死的项目甚至吗<p>你知道 OpenStreetMap 是什么以及它是如何工作的吗？听起来你完全不知道，但这并不妨碍你使用这种语言。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48802929">&gt; do these damn projects even<p>Do you have the slightest idea what OpenStreetMap is and how it works? It sounds like you have absolutely no clue, and it still doesn't prevent you from using that kind of language.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48802929">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48802929" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hk__2</span>
+        
+        <span>2026/07/06 04:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">当然可以。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48797548">Of course they do.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48797548">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48797548" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
