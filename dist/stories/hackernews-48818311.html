@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>聊天控制1.0和2.0详解 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-08/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>聊天控制1.0和2.0详解</h1>
+      <p class="original-title">Chat Control 1.0 and 2.0 Explained</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 gasull</span>
+        <span>热度 829</span>
+        <span>回复 312</span>
+        <span>2026/07/07 22:23</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48818311" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://fightchatcontrol.eu/chat-control-overview" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48818311.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>The temporary, voluntary scanning regime — adopted in 2021, rejected by Parliament in March 2026, expired in April 2026, and now the subject of an unprecedented revival attempt. Jul 14, 2021 Temporary derogation adopted Regulation (EU) 2021/1232 creates a temporary exception to the ePrivacy Directive, giving providers a legal basis to voluntarily scan private messages for child sexual abuse material. Originally set to expire 3 August 2024. Apr 29, 2024 First extension With the permanent regulation (Chat Control 2.0) nowhere near agreement, the derogation is extended until 3 April 2026. Dec 18, 2025 Commission proposes second extension The Commission proposes extending the derogation by another two years, to April 2028. Mar 2, 2026 LIBE committee rejects the extension In a surprise vote, the Parliament&#39;s civil liberties committee rejects the draft extension by 38 votes to 28. Mar 11, 2026 Parliament adopts a protective position The plenary votes 458–103 for a compromise: extend to 2027, but only with targeted and proportionate detection of known content, no end-to-end encrypted communications, and limiting scanning to suspected users or groups identified by the competent judicial authority. Mid-Mar 2026 Trilogue on the extension collapses The Council rejects Parliament&#39;s conditions and shows no flexibility in negotiations; talks on the extension break down. Mar 26, 2026 Parliament rejects the extension outright 311 MEPs vote against extending the derogation (228 in favour, 92 abstentions). The critical Amendment 34, rejecting automated assessment of unknown photos and texts, passes by a single vote (307–306). Apr 4, 2026 Chat Control 1.0 expires The legal ground for voluntary, indiscriminate scanning ends. Google, Meta, Microsoft, and Snap state they will continue scanning private messages regardless. Jun 26, 2026 Council moves to resurrect the expired law EU ambassadors agree to push a temporary revival — unprecedented, as Parliament&#39;s rejection was considered final. Because an expired regulation cannot be extended, the Council proposes a formally new law with identical content via an expedited procedure. Jul 2, 2026 Council adopts its position The Council adopts its position on the &quot;new&quot; regulation via written procedure. Jul 7, 2026 Urgency procedure approved Parliament voted 331–303 (11 abstentions) to fast-track the expired derogation, skipping the responsible Committee. A binding vote follows on Thursday, 9 July, where an absolute majority of 361 MEPs is needed to stop it.</li><li>The permanent CSA Regulation — proposed in 2022, deadlocked for years, and still unagreed after five rounds of trilogue negotiations. Encryption remains the red line. May 11, 2022 Commission proposes the CSA Regulation Home Affairs Commissioner Ylva Johansson unveils a proposal for a permanent regulation making detection and reporting of child sexual abuse material a legal requirement for platforms — including a requirement to bypass end-to-end encryption. Nov 2023 Parliament adopts a protective mandate No scanning of end-to-end encrypted services, detection limited to visual material, judicial warrants targeted at specific suspects, and no mandatory age verification. Oct 2025 Germany breaks the Council deadlock After years of Council deadlock, Germany announces it will vote against mandatory suspicionless scanning. The Danish presidency drops detection orders and shifts to risk assessment and mitigation obligations for providers, while proposing to make the voluntary suspicionless scanning (interim regulation) permanent. Nov 26, 2025 Council endorses its position The Council adopts the softened Danish compromise, opening trilogue negotiations. Critics note the text still allows “voluntary” suspicionless detection and imposes broad risk-mitigation duties, including mandatory age verification, that could reshape private messaging in practice. Dec 2025 – May 2026 Four trilogue rounds Negotiations between Parliament, Council, and Commission take place on 9 December 2025, 26 February, 16 April, and 11 May 2026 — without agreement on the core issues. Jun 10, 2026 Council&#39;s own lawyers raise the alarm The Council Legal Service states that the &quot;voluntary&quot; scanning proposal still constitutes generalised scanning of communications — incompatible with Article 7 of the EU Charter absent reasonable suspicion and prior judicial authorisation. Jun 29, 2026 &quot;Final&quot; trilogue fails The fifth trilogue, billed as the last with adoption targeted for July, produces no deal. Negotiators cannot agree on making suspicionless scanning permanent, as requested by Council. Progress is reported on excluding mandatory age verification, but agreement is postponed and talks continue under the incoming Irish presidency.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mikaeluman</span>
+        
+        <span>2026/07/08 03:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">大多数人都希望看到更多关于制止儿童性虐待的工作。<p>但这就是“授予我独裁权力，这样我就能做好事”的终极游戏。</p><p>它不是狭隘和具体的，而是一项基础广泛的法律，即使犯罪者所占比例很小，也应该能够更有效地锁定目标，但它突然触及每个人。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48822751">Most everyone would love to see more work on stopping child sexual abuse.<p>But this is the ultimate "grant me dictatorial powers so I can do good" play.</p><p>Rather than narrow and specific - it's a broad based law that suddenly touches everyone even though offenders are a small percentage and should be able to be targeted more efficiently.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48822751">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48822751" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">cortesoft</span>
+        
+        <span>2026/07/08 03:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，这是基本率谬误情况的完美示例...即使扫描仪的准确率达到 99.99%，因为更高比例的照片是无辜的，扫描仪发现的大多数匹配都将是误报。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48822816">Yep, and this is a perfect example of a base rate fallacy situation... even if the scanner is 99.99% accurate, because an even higher percentage of photos are innocent, most matches the scanner will find will be false positives.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48822816">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48822816" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">wesammikhail</span>
+        
+        <span>2026/07/08 06:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有趣的是你提到了这个。<p>当我 15 岁的时候，DC++ 还很流行，我曾经浏览人们的共享文件夹。有一天，我看到一份名为“误报悖论”的文件。这是一个 1 寻呼机，它描述了一台识别恐怖分子准确率达到 99.9% 的机器如何由于您所描述的误报基本率谬误而变得完全无用。</p><p>多年来，它一直困扰着我。值得注意的是，即使是 99.9% 准确的启发式方法在规模上也是不够的。</p><p>这就引出了一个问题：让我们假设意图是纯粹的（我们知道它们不是，但让我们慷慨一些），当 99.9% 启发式方法不够好时，还有哪些其他选择？当系统规模扩大时注定会失败时，你如何设计系统？</p><p>编辑：你知道吗，我在 HN <a href="https://news.ycombinator.com/item?id=48816959" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48816959</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48824657">Funny you bring this up.<p>Back in the day when I was like 15 and DC++ was still a thing, I used to browse people's shared folders. One day I came across a file called "the paradox of false positive". It was a 1 pager that described how a machine which is 99.9% accurate at identifying terrorists would be completely useless due to this false positive base rate fallacy you're describing.</p><p>It really stuck with me throughout the years. It's kind o remarkable how even a 99.9% accurate heuristic is insufficient at scale.</p><p>Which begs the question: lets assume the intentions are pure (which we know they're not but lets be generous), what other options are there when 99.9% heuristic is not good enough? how do you design systems when they're guaranteed to fail as they scale up?</p><p>edit: and what do you know, I just saw this as I scrolled down on HN <a href="https://news.ycombinator.com/item?id=48816959" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48816959</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48824657">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48824657" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Asmod4n</span>
+        
+        <span>2026/07/08 13:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们为此建立的系统称为育儿。<p>在我长大的地方有一句话：你需要一个村庄来养育一个孩子，我觉得我们已经忘记了这一点，并且现在感受到了它的问题。</p><p>顺便说一句，冯德莱恩自 2009 年以来一直试图将这样的东西写成法律，这让她得到了 Zensursula 的绰号。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48827927">The system we got for this is called parenting.<p>And there is a saying where I grew up: you need a village to raise a kid, I feel like we lost track of that and feel the issues of that now.</p><p>Btw, von der leyen is trying to get stuff like this written down as laws since 2009, it got her the nickname Zensursula.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48827927">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48827927" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">joe_mamba</span>
+        
+        <span>2026/07/08 17:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>&gt;顺便说一句，冯德莱恩自 2009 年以来一直试图将此类内容写入法律，这让她得到了 Zensursula 的绰号。</i><p>德国人和欧洲人看到了这一点，认为最适合她的地方是领导欧盟？！</p><p>再次提醒我她是如何当选这个职位的？</p><p>因为似乎整个欧盟人民都认识她因此臭名昭著，除了少数精英通过“民主程序”任命她为欧盟首脑。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829564"><i>&gt;Btw, von der leyen is trying to get stuff like this written down as laws since 2009, it got her the nickname Zensursula.</i><p>And Germans and Europeans looked at that and thought the best place for her is leading the EU?!</p><p>Remind me again how she got elected in that position?</p><p>Because it seems like the entire EU population knew her being infamous for that, except for the few elites who appointed her there via "democratic process" to the head of the EU.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829564">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829564" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">arrowsmith</span>
+        
+        <span>2026/07/08 18:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">欧盟委员会主席是通过薄弱的民主幌子“选举”出来的，而欧洲人民实际上无法控制这种民主，而且大多不予关注。如果你认为她在那里是因为广大公众认为她是这份工作的最佳人选，那么你就不知道欧盟是如何运作的。<p>而且大多数欧盟人口根本不了解她。如果超过 50% 的欧洲人都能说出她的名字，我会感到惊讶。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829954">The president of the European Commission is “elected” through a thin pretence of democracy that the people of Europe have effectively no control over, and mostly pay no attention to. If you think she’s there because the greater public decided she’s the best person for the job then you don’t know how the EU works.<p>Also most of the EU population don’t know her for anything at all. I’d be surprised if more than 50% of Europeans could name her.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829954">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829954" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kvgr</span>
+        
+        <span>2026/07/08 18:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没有一个不属于欧盟的人投票给他。她是二手票。这些角色都应该是直接投票的结果。这样你就只能得到那些吸了欧盟议会钱的人的选票。人们投票的唯一立场是 EP。而且这个百分比太小了，如果他们问那些没有投票的人是否想要的话，他们就不得不把它拆掉。<p>我不反对欧盟的合作，主要是在外部安全和自由市场经济方面。但我们的制度不是很民主，也不是很能代表人民。他们的行为就像半神一样，由议会选举产生，他们的行为不会产生任何真正的后果。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829946">Not a single person that is not attached to EU voted for he. She is second hand vote. These roles should all be result of direct vote. This way you only get votes by people who are sucking the money of Eu parliament or. The only position people vote for is EP. And that % is so small, that if they ask the people who didn't vote if they want it, they would have to tear it down.<p>I am not against EU cooperation, mainly in external security and free market economy. But the system we have is not very democratic, and def not very representative of people. They act like demigods, elected by parliament with no real consequences of their actions.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829946">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829946" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">narag</span>
+        
+        <span>2026/07/08 22:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>这些角色都应该是直接投票的结果。</i><p>我不同意。这是一个缺乏主权的实体的行政权力职位。赋予直接投票的合法性是非常有问题的。</p><p>首先要赋予议会更多权力。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48832171"><i>These roles should all be result of direct vote.</i><p>I disagree. That's an executive power position for an entity that lacks sovereignty. Giving it the legitimacy of direct vote is highly problematic.</p><p>Start by giving more power to parliament.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48832171">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48832171" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">spwa4</span>
+        
+        <span>2026/07/09 00:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我想你会发现，缺乏主权的是欧盟成员国，而不是欧盟。欧盟法律凌驾于成员国法律之上，而不是反过来。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48833706">I think you'll find it's the EU member countries that lack sovereignty, not the EU. EU law overrides member state law, not the other way around.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48833706">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48833706" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mbeex</span>
+        
+        <span>2026/07/08 18:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对于欧盟而言，您必须重新考虑“当选”的含义。当然不是“德国人和欧洲人”的行为。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829950">You have to reconsider what "elected" means when it comes to the EU. Certainly not acts of "Germans and Europeans".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829950">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829950" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">latentsea</span>
+        
+        <span>2026/07/08 14:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我们为此获得的系统称为“育儿”<p>但它惨遭失败。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48828519">&gt; The system we got for this is called parenting<p>And it fails miserably.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48828519">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48828519" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wolvoleo</span>
+        
+        <span>2026/07/08 15:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">并非如此。是的，大多数孩子会在 18 岁之前看到色情内容，但这不会伤害他们，也不会让他们对自愿行为产生错误的看法。<p>如果有什么不同的话，我发现 Z 世代比 X 世代更注重明确同意。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48828543">Not really. Yes most kids will see porn before they're 18 but it doesn't damage them or give them the wrong idea about consensual behaviour.<p>If anything I find GenZ a lot more focused on explicit consent than GenX.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48828543">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48828543" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">joe_mamba</span>
+        
+        <span>2026/07/08 17:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>&gt;结果惨败。</i><p>不，事实并非如此。这只是不必要的还原论末日主义者的看法，没有任何论证来支持这一点。</p><p>在这种情况下定义系统的失败和成功。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829618"><i>&gt;And it fails miserably.</i><p>No it doesn't. That's just needlessly reductionist doomerist take with no argumentation to back that up.</p><p>Define failure and success of the system in this context.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829618">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829618" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wesammikhail</span>
+        
+        <span>2026/07/08 15:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它已经工作了数万年。过去几十年发生的变化并不是养育方式或技术。这是保姆国家的兴起，父母放弃了对孩子的养育，而将其委托给教育机构。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48828764">It's been working for tens of thousands of years. What changed in the last few decades wasn't parenting or technology. It was the rise of the nanny state where the parents gave up the parenting of their kids and entrusted that to educational institutions instead.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48828764">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48828764" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">DiggyJohnson</span>
+        
+        <span>2026/07/08 19:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我真的认为这三个都是：<p>1.文化因素是对孩子及其父母的期望不断提高，这会花费时间和金钱；</p><p>2。政治/社会因素是保姆国家和学术机构，公众不仅期望它们教育孩子，还期望它们抚养孩子；</p><p>3。技术。尤其是互联网、移动设备、社交媒体和简短内容。技术会分散孩子和家长的注意力并使其孤立。</p><p>这三个因素的一个例子是当地非常常见的新闻比喻：“爱管闲事的邻居打电话给 CPS，因为隔壁的家庭让他们的孩子步行上学。结果整个家庭都受到了创伤。”</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48830585">I genuinely think it’s all three:<p>1. The cultural factor is rising expectations for children and their parents, costing both time and money;</p><p>2. The political/social factor is nanny states and academic institutions that the public expects to not only teach but raise their kids;</p><p>3. Technology. Especially the Internet, mobile devices, social media, and short form content. Technology distracts and isolates both kids and parents.</p><p>An example of the three factors at work is the all-too-common local news trope of <i>”Nosy neighbor calls CPS because the family next door lets their kids walk to school. Whole family traumatized as a result.”</i></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48830585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48830585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pixl97</span>
+        
+        <span>2026/07/09 01:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;它已经工作了数万年。<p>我的意思是，我很乐意将你发送到一万年前，让你告诉我它是如何进行的。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48834799">&gt;It's been working for tens of thousands of years.<p>I mean, I'll gladly send you 10k years back and have you tell me how it goes.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48834799">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48834799" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">p-e-w</span>
+        
+        <span>2026/07/08 15:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它既会奏效也会失灵，就像许多其他事物一样。但如果你将“绝不能失败”这一目标奉为至高无上的准则，最终必然会造就一个像我们现在这样的系统。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48828850">It both works and fails, like many other things. But if you hold the goal that it must never fail in sufficiently high esteem, you invariably end up with a system like the one we have now.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48828850">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48828850" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Dilettante_</span>
+        
+        <span>2026/07/08 17:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;绝不能失败的目标<p>这个说法很贴切</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829519">&gt;the goal that it must never fail<p>That's a good way to put it</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829519">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829519" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">joe_mamba</span>
+        
+        <span>2026/07/08 17:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果一个系统的目标是绝不失败，那么负责运行该系统的官僚们只会操纵指标、掩盖所有问题，而系统则会先是非常缓慢地、然后非常突然地走向崩溃。<p>事实上，这就是为什么在欧盟和西方世界，从来没有任何实质性的改善举措得以落实，因为我们期望每一次新变革都能带来完美的结果，并且在实施新事物之前要求潜在风险降为零，所以领导者们更容易选择什么都不做，什么都不改变，只是坐视不管、维持现状，同时我们在受控衰退中抱怨着事情一直在慢慢变糟。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829652">If the goal of a system is to never fail, then the bureaucrats in charge of running that system will just game the metrics and cover up all the issue, while it fails first very slowly then very suddenly.<p>In fact that's why nothing ever gets done to improve things in the EU/west, because we expect perfect outcome in every new change and we want potential risks to be zero before something new is implemented, so it's easier for leaders to just never do anything, never change anything, just sit and maintain the status quo while we go through managed decline complaining things keep slowly getting worse.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829652">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829652" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wartywhoa23</span>
+        
+        <span>2026/07/08 17:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您是否意识到，按照这种思路，您最终会陷入法西斯反乌托邦，您的孩子属于国家？<p>或者，当您兜售有关失败育儿的宣传童话时，您是否希望其他人最终陷入法西斯反乌托邦？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48829787">Do you realize you'll end up in fascist dystopia where your children belong to the state, with this line of thinking?<p>Or is that where you want other people to end up while you peddle propagandist fairytales about failed parenting?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48829787">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48829787" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
