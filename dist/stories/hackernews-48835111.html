@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grok 4.5 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-09/">返回日报</a>
+      <div class="source-chip">Hacker News #1</div>
+      <h1>Grok 4.5</h1>
+      <p class="original-title">Grok 4.5</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 BoumTAC</span>
+        <span>热度 720</span>
+        <span>回复 1273</span>
+        <span>2026/07/09 02:00</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48835111" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://x.ai/news/grok-4-5" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48835111.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>https://cursor.com/blog/grok-4-5</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://cursor.com/blog/grok-4-5" target="_blank" rel="noopener noreferrer">https://cursor.com/blog/grok-4-5</a></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://cursor.com/blog/grok-4-5" target="_blank" rel="noopener noreferrer">https://cursor.com/blog/grok-4-5</a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tiberium</span>
+        
+        <span>2026/07/09 02:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它似乎非常经济 - 与 Opus 相比，推理效率提高了 4 倍，而价格为 2 美元/6 美元。相比之下，GPT 5.4 为 2.5 美元/15 美元，GPT 5.5/5.6 为 5/30 美元，Opus 4.8 为 5/25 美元，Fable 为 10/50 美元。<p>通过基准测试（除非他们玩过它们），似乎处于 Opus 4.7 水平左右，这就是 Elon 在 <a href="https://x.com/elonmusk/status/2074911038286295049" target="_blank" rel="noopener noreferrer">https://x.com/elonmusk/status/2074911038286295049</a>。</p><p>我想光标数据非常有用。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48835179">It seems to be extremely economical - 4x better reasoning efficiency compared to Opus while being priced at $2/$6. For comparison, GPT 5.4 is $2.5/$15, GPT 5.5/5.6 are $5/$30, Opus 4.8 is $5/$25, Fable is $10/$50.<p>And by benchmarks (unless they gamed them), seems to be at around Opus 4.7 level, which is what Elon mentioned in <a href="https://x.com/elonmusk/status/2074911038286295049" target="_blank" rel="noopener noreferrer">https://x.com/elonmusk/status/2074911038286295049</a>.</p><p>I guess the Cursor data was very useful.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48835179">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48835179" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/07/09 02:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">2/6 美元的定价似乎仅适用于 200K 以下的上下文。<p>高于此范围（最大上下文为 500K）的定价将翻倍至 4/12 美元。</p><p><a href="https://docs.x.ai/developers/models/grok-4.5" target="_blank" rel="noopener noreferrer">https://docs.x.ai/developers/models/grok-4.5</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48835729">The $2/6 pricing seems to only apply for context under 200K.<p>Above that (max context is 500K) pricing doubles to $4/12.</p><p><a href="https://docs.x.ai/developers/models/grok-4.5" target="_blank" rel="noopener noreferrer">https://docs.x.ai/developers/models/grok-4.5</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48835729">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48835729" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">GodelNumbering</span>
+        
+        <span>2026/07/09 06:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">此外，缓存命中定价是输入定价的 25%（2 美元 vs 0.50 美元）。长代理工作流程由缓存输入主导。美国前沿实验室通常以输入价格的 10% 进行此操作，而 DeepSeek/小米等将其达到极端的 1% 范围（这就是为什么这些在现实世界的代理循环中运行成本低廉，每次运行数十个工具调用）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48838032">Also, the cache hit pricing is 25% of the input pricing ($2 vs $0.50). Long agentic workflows are dominated by cached input. The US frontier labs typically have this at 10% of the input price, and DeepSeek/Xiaomi etc take it to the extreme 1% range (which is why those are cheap to run in real world agentic loops with dozens of toolcalls per run)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48838032">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48838032" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/07/09 20:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">只是为了添加上下文（没有双关语），OpenAI 还根据上下文使用情况收取不同的费用，GPT 5.5 低于 200K 为 5/30 美元，高于 10/45 美元。<p>无论上下文使用情况如何，Anthropic 都有固定价格。</p><p>这些按代币定价方案不能直接比较，因为这些模型都使用不同数量的代币，即使对于输入也是如此（Anthropic 最近的标记生成器更改为完全相同的输入生成了 30% 的标记）以及推理，并且上下文/标记的使用也因 Claude Code 使用 3 倍于 Pi 的上下文/标记而变化很大。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844999">Just to add context (no pun intended), OpenAI also charge differently based on context usage with GPT 5.5 being $5/30 below 200K, and $10/45 above.<p>Anthropic have a fixed price regardless of context usage.</p><p>These per-token pricing schemes aren't directly comparable though since these models all use different numbers of tokens, even for input (Anthropic's recent tokenizer change generates 30% more tokens for exact same input), as well as for reasoning, and context/token usage also varies wildly by harness with Claude Code using 3x the context/tokens of Pi.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844999">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844999" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Sidio</span>
+        
+        <span>2026/07/09 23:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我不知道，谢谢。<p>有谁知道为什么他们会对更高的上下文使用收取更多费用（除了他们可以收取的费用之外）？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48847917">I didn't know that, thank you.<p>Does anyone know why they would charge more for higher context usage (other than they can)?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48847917">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48847917" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">staticshock</span>
+        
+        <span>2026/07/10 01:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">将整个上下文（对话的完整线程、所有工具调用输出等）视为一次性提交给 LLM 的一条消息，以便它可以生成下一个标记（这只是下一个单词甚至音节。）生成该标记后，它会附加到上下文，并且整个上下文再次用于生成下一个标记。继续这样做，直到生成整个响应。上下文越大，模型在生成每个下一个标记时需要注意的内容就越多。<p>打个比方：想象你的朋友是一本未完成的书的作者。他们死时写下了 19 章，临终时要求你写第 20 章。假设您能够胜任这项任务，那么只有花时间吸收到目前为止所写的全部内容，您才能做好这项工作。</p><p>这就是法学硕士的工作方式。上下文缓存是对此的优化，但它有其局限性。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48849956">Think of the entirety of the context (the full thread of conversation, all tool call output, etc.) as one message that's been submitted to the LLM all at once just so it can generate the next token (which is just the next word or even syllable.) Once that token is generated it is appended to the context, and the entire context is once again used to generate the next token. Keep doing that until the entire response is generated. The larger the context, the more stuff the model has to pay attention to as it generates each next token.<p>To use an analogy: imagine your friend is the author of an unfinished book. They die with 19 chapters written, and on their death bed ask you to write the 20th chapter. Assuming you're up to the task, you can only do this well if you take the time to absorb the entirety of what's been written so far.</p><p>This is how LLMs work. Context caching is an optimization on top of this, but it has its limits.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48849956">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48849956" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/07/10 00:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我想这确实会增加他们的成本，或者更确切地说，增加你在硬件折旧中所占的份额。<p>AI 服务成本显然主要是硬件折旧而不是运营成本（电力等），如果你的大型上下文请求占用 VRAM 一小部分时间，那么你就要为当时发生的折旧付费！</p><p>e. H100 的购买成本为 20-40,000 美元，使用寿命可能为 3 年，如果这 3 年 24x7 运行，仅消耗大约 2000 美元的电力。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48848254">I guess it does increase their cost, or rather your share of their hardware depreciation.<p>AI serving cost is apparently mostly hardware depreciation rather than operating cost (electricity etc), and if your large context request is occupying VRAM for some fraction of a second then you are paying for the depreciation that occurs in that time!</p><p>e. H100 costs $20-40K to buy, with a lifetime of maybe 3 years, and will only consume maybe $2K in electricity if run 24x7 for those 3 years.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48848254">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48848254" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">gabriel-uribe</span>
+        
+        <span>2026/07/09 04:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Womp。在其他地方没有看到过这个。<p>不再感觉那么便宜。可能只会将其包含在 &lt;200k 上下文任务的名片夹中，例如成为我的审阅代理之一。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48837326">Womp. Didn't see this anywhere else.<p>No longer feels as inexpensive. Will likely just include this in the rolodex of &lt;200k context tasks, like being one of my review agents.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48837326">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48837326" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">seer</span>
+        
+        <span>2026/07/09 19:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，但取决于你如何使用它 - 拥有超能力，并且普遍将事物分割成更小的集中子代理 - 这可以严重降低成本......<p>我希望我的公司给我更多的选择，而不仅仅是使用克劳德来测试这些东西</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844069">Yeah but depends how you use it - with superpowers and it’s prevalence of splitting things into smaller focused subagents - this could seriously reduce costs …<p>I wish my company gave me more options than just using Claude to test these things out</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844069">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844069" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">braebo</span>
+        
+        <span>2026/07/09 20:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Claude Fable 和 Opus 4.8 1M 是迄今为止最好、最智能的型号。  其他任何内容都是降级，因此您不会错过任何内容。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844717">Claude Fable and Opus 4.8 1M are by far the best, smartest models.  Anything else is a downgrade so you’re not missing anything.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844717">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844717" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/07/09 21:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最近的 Databricks 比较显示，GLM 5.2 在高强度工作下的表现与 Opus 4.8 相同，并且一些早期的 Twitter 报告（例如来自 OpenCode 开发人员的报告）强烈支持 GPT 5.6 Sol 而不是 Fable。<p>一如既往，这取决于您使用它们的目的以及使用方式。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48845335">The recent Databricks comparison has GLM 5.2 performing identically to Opus 4.8 on high effort, and some early Twitter reports (e.g. from the OpenCode developers) strongly favor GPT 5.6 Sol over Fable.<p>As always it depends on what you are using them for, and how you are using them.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48845335">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48845335" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jadbox</span>
+        
+        <span>2026/07/09 04:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是非常值得注意的，但没有在公告中。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48837267">That's very notable and left out of the announcement.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48837267">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48837267" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">game_the0ry</span>
+        
+        <span>2026/07/09 04:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我有一个理论，xAI 拥有最大的集群之一，但处理流量和令牌要少得多，因为它不如竞争对手受欢迎，并且 xAI 可以将节省的成本转嫁给最终用户。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48836867">I have a theory that xAI has one of the largest clusters but with far less traffic + tokens to process bc its less popular than its competition, and xAI can pass the savings on to the end user.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48836867">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48836867" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">goos</span>
+        
+        <span>2026/07/09 04:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为什么更高的成本和更少的收入会让他们将节省的成本转嫁给最终用户？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48836937">Why would having more costs and less income allow them to pass savings on to the end user?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48836937">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48836937" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rjh29</span>
+        
+        <span>2026/07/09 04:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们已经投资了大量闲置的 GPU 数据中心。他们的用户较少，因此可以为每个用户提供更多的推理 - 更多的思考，更大的模型。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48837044">They already invested in the massive datacentres of GPUs sitting idle. They have fewer users so they can deliver more inference per user - more thinking, larger models.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48837044">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48837044" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">loeg</span>
+        
+        <span>2026/07/09 07:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们不就是租给前沿AI商店吗？他们并没有闲着。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48838917">Don't they just rent them out to the frontier AI shops? They're not sitting idle.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48838917">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48838917" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">londons_explore</span>
+        
+        <span>2026/07/09 19:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">租用 GPU 会遇到各种困难，尤其是在您的设置非常自定义的情况下。<p>竞争对手必须将其训练系统移植到您的特定网络架构、系统设计、rdma、以太网、infiniband、nvlink 等。</p><p>让它运行可能不会太难，但让它高效运行并充分利用所有这些失败将需要大量的人力和时间。</p><p>添加事实上，大多数前沿实验室似乎都有一次巨大的训练运行 - 据我所知，没有人知道如何在数据中心之间有效地分配该训练运行。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844146">There are various difficulties with renting GPUs, especially if your setup is very custom.<p>The competitor would have to port their training systems to your specific network architecture, system design, rdma Vs ethernet vs infiniband Vs nvlink etc.</p><p>Getting it running might not be too hard, but getting it running efficiently and making good use of all those flops will require considerable human effort and wall time.</p><p>Add that to the fact most frontier labs seem to have a single huge training run - and to my knowledge nobody has figured out how to distribute that training run between data centers effectively.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844146">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844146" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">loeg</span>
+        
+        <span>2026/07/10 01:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我并不是说这是一个假设 - 我相信 xAI <i>已经</i>将他们的 GPU 农场出租给前沿实验室。  无论存在什么后勤挑战，似乎已经克服了足够多的挑战。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48849873">I'm not saying this as a hypothetical -- I believe xAI is <i>already</i> renting their GPU farm out to frontier labs.  Whatever logistical challenges exist, enough of them seem to have been overcome.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48849873">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48849873" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rjh29</span>
+        
+        <span>2026/07/09 19:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">当然，租用的 GPU 将用于推理，推理可以在任何地方运行，并且需要比训练运行规模大得多。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844248">Surely rented GPUs would be used for inference, which runs anywhere and needs to scale much larger than a training run.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844248">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844248" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">stavros</span>
+        
+        <span>2026/07/09 15:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">确实如此。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48842078">They do, yes.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48842078">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48842078" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

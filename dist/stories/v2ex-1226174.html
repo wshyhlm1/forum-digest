@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[开源] 一个能操控你电脑、手机、浏览器的个人 AI 助理 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-09/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>[开源] 一个能操控你电脑、手机、浏览器的个人 AI 助理</h1>
+      <p class="original-title">[开源] 一个能操控你电脑、手机、浏览器的个人 AI 助理</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 valuetransfer</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/07/09 21:22</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1226174" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1226174.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近做了一个开源的 AI 助理项目 one，它可以部署在 Cloudflare Worker 上，通过网页访问，同时也做了安卓 App 、电脑端和浏览器插件。通过这些客户端，AI 能够操控你的电脑、手机、浏览器，完成你的任务。</li><li>🧠 它的大脑常驻云端（ Worker + D1 ），一直在线； 🔌 各个客户端是它连上来的“手”； 🔐 数据全在你自己的 Cloudflare 账户里。</li></ul>
+      
+      <p class="reason">命中 8 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近做了一个开源的 AI 助理项目 <strong>一</strong>，它可以部署在 Cloudflare Worker 上，通过网页访问，同时也开发了安卓 App、电脑端和浏览器插件。通过这些客户端，AI 能够操控你的电脑、手机和浏览器，完成你的任务。</p>
+<p>简单说：</p>
+<blockquote>
+<p>🧠 它的大脑常驻云端（ Worker + D1 ），一直在线；<br />
+🔌 各个客户端是它连上来的“手”；<br />
+🔐 数据全在你自己的 Cloudflare 账户里。</p>
+</blockquote>
+<p>🔗 开源地址：<a href="https://github.com/yanglongyun/one" target="_blank" rel="noopener noreferrer">https://github.com/yanglongyun/one</a></p>
+
+💻 操控电脑（ Mac / Windows ）
+<p>它可以执行 shell 命令、截屏并用视觉模型读屏、读取前台应用的可见控件、按名字点击元素、输入文本和发送按键、打开或切换应用。</p>
+<p>这样 AI 能够真正坐到你电脑前一步步替你干活——跑脚本、在某个软件里连续操作、看着屏幕做判断，而不只是给你出主意。</p>
+📱 操控手机
+<p>安装安卓 App 后，进入「设置 &gt; 无障碍」开启 one 这只手，即可读取当前界面的可交互元素，支持按文字或坐标点击、输入文本、滑动屏幕、发送 Home/返回键指令以及打开指定 App。</p>
+<p>这样一来，AI 就能在你手机上代你操作任意 App，像填写表单、批量点击、执行固定流程这类重复性工作，都可以交给它。</p>
+🌐 操控浏览器
+<p>装上 Chrome 插件后，它通过 Chrome DevTools Protocol 操作浏览器：打开网页、导航、读取页面内容、点击、执行 JS、截图。</p>
+<p>这样 AI 能够替你在网页上查资料、抓数据、走完一整套点击流程。</p>
+⏰ 为 AI 设置定时任务
+<p>它内置任务机制：你可以设置定时任务（cron 或指定时间），到点它自己醒来、开一个 agent 任务去干活，结果回传给你。</p>
+<p>你可以让它做「每天早八点整理昨天的记录发我」这类事，不用你守着。</p>
+🎯 给 AI 设定目标
+<p>你还可以设置一个目标，AI 能够自己规划推进节奏——每次推进后自评、决定下一次什么时候再来，像个会自我调度的负责人，持续帮你盯着一件长期的事。</p>
+<p>你可以把「把我近半年的聊天和笔记翻一遍，整理成一份个人年度复盘。」这种丢给它。</p>
+🧠 AI 的记忆
+<p>它支持记忆，具有三层：</p>
+<ul>
+<li><strong>必读</strong>：称呼、语言、底线这类每轮都得在场的核心信息。</li>
+<li><strong>星标</strong>：需要经常参考的。</li>
+<li><strong>已存</strong>：学到的稳定事实和偏好，予以归档，需要时召回。</li>
+</ul>
+<p>而且它会在聊天里主动把关于你的长期信息沉淀成记忆，不用你每次都交代。</p>
+🔄 多设备
+<p>你可以同时连接多个设备，每个设备一个唯一名字，云端大脑按需把指令派给对应的那只手——比如同一句话里，让它读你手机上收到的验证码、再回到电脑上把表填完。</p>
+🧩 创建小应用
+<p>除此之外，它还可以现场构建小应用。你对它说一句「帮我做个记账本」，它当场写出一个纯前端小应用（ HTML / JS / CSS + 一个建表 SQL ），进九宫格随时打开。</p>
+<p>应用里有个 <code>window.one</code>，给了 <code>sql</code> / <code>proxy</code> / <code>llm</code> / <code>vision</code> / <code>agent</code> 五项能力，数据落入您自己的 D1 中。</p>
+<p>预置了笔记、待办、虚拟恋人陪聊、每日启示几个，可以直接抄着改。</p>
+⚙️ 接入你自己的模型
+<p>模型配置很简单：填 <strong>API 地址、API Key 、模型名</strong>，再选认证方式（ Bearer 或 <code>x-api-key</code>）就能跑起来。</p>
+<ul>
+<li><strong>支持各种国内外模型</strong>：OpenAI、Claude、Gemini，以及DeepSeek、通义千问、Kimi、智谱GLM等——只要是OpenAI兼容接口或Claude端点，填进去就能用。</li>
+<li><strong>支持代码规划</strong>：可以将编程订阅计划（coding plan）的额度接入，作为模型来源来驱动它。</li>
+<li><strong>视觉模型</strong>：可以单独配一个视觉模型（看图、读屏用），也可以直接勾一下让主模型兼任视觉。</li>
+</ul>
+
+🔗 开源地址
+<p><a href="https://github.com/yanglongyun/one" target="_blank" rel="noopener noreferrer">https://github.com/yanglongyun/one</a></p>
+💬 一点说明
+<p>注意：这个项目主要是由 Claude 和 Codex 完成的，完全是 vibe coding 的产物。不过在发布前，我已经让它们进行了多次 review 并修复了 bug，我自己体验下来也没什么大问题。</p>
+<p>如果你在配置或使用中遇到问题，可以在评论区留言，也可以直接联系我的微信：<strong>智能体就绪</strong></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近做了一个开源的 AI 助理项目 <strong>one</strong>，它可以部署在 Cloudflare Worker 上，通过网页访问，同时也做了安卓 App 、电脑端和浏览器插件。通过这些客户端，AI 能够操控你的电脑、手机、浏览器，完成你的任务。</p>
+<p>简单说：</p>
+<blockquote>
+<p>🧠 它的大脑常驻云端（ Worker + D1 ），一直在线；<br />
+🔌 各个客户端是它连上来的“手”；<br />
+🔐 数据全在你自己的 Cloudflare 账户里。</p>
+</blockquote>
+<p>🔗 开源地址：<a href="https://github.com/yanglongyun/one" target="_blank" rel="noopener noreferrer">https://github.com/yanglongyun/one</a></p>
+
+💻 操控电脑（ Mac / Windows ）
+<p>它可以执行 shell 命令、截屏并用视觉模型读屏、读取前台应用的可见控件、按名字点击元素、输入文本和发送按键、打开或切换应用。</p>
+<p>这样 AI 能够真正坐到你电脑前一步步替你干活——跑脚本、在某个软件里连续操作、看着屏幕做判断，而不只是给你出主意。</p>
+📱 操控手机
+<p>装上安卓 App 、到「设置 → 无障碍」把 one 这只手打开，它就可以读取当前界面的可交互元素、按文字或坐标点击、输入文本、滑动、发 Home / 返回键、打开指定 App 。</p>
+<p>这样 AI 能够在你手机上代你操作任意 App ，填表单、批量点按、走一套固定流程这类重复活，交给它。</p>
+🌐 操控浏览器
+<p>装上 Chrome 插件后，它通过 Chrome DevTools Protocol 操作浏览器：开网页、导航、读取页面内容、点击、执行 JS 、截图。</p>
+<p>这样 AI 能够替你在网页上查资料、抓数据、走完一整套点击流程。</p>
+⏰ 给 AI 设置定时任务
+<p>它内置任务机制：你可以设置定时任务（ cron 或指定时间），到点它自己醒来、开一个 agent 任务去干活，结果回传给你。</p>
+<p>你可以让它做「每天早八点整理昨天的记录发我」这类事，不用你守着。</p>
+🎯 给 AI 目标
+<p>你还可以设置一个目标，AI 能够自己规划推进节奏——每次推进后自评、决定下一次什么时候再来，像个会自我调度的负责人，持续帮你盯着一件长期的事。</p>
+<p>你可以把「把我近半年的聊天和笔记翻一遍，整理成一份个人年度复盘。」这种丢给它。</p>
+🧠 AI 的记忆
+<p>它支持记忆，具有三层：</p>
+<ul>
+<li><strong>必读</strong>：称呼、语言、底线这类每轮都得在场的核心信息。</li>
+<li><strong>星标</strong>：需要经常参考的。</li>
+<li><strong>已存</strong>：学到的稳定事实和偏好，归档、需要时召回。</li>
+</ul>
+<p>而且它会在聊天里主动把关于你的长期信息沉淀成记忆，不用你每次都交代。</p>
+🔄 多设备
+<p>你可以同时连接多个设备，每个设备一个唯一名字，云端大脑按需把指令派给对应的那只手——比如同一句话里，让它读你手机上收到的验证码、再回到电脑上把表填完。</p>
+🧩 创造小应用
+<p>除此之外，它还可以现场构建小应用。你对它说一句「帮我做个记账本」，它当场写出一个纯前端小应用（ HTML / JS / CSS + 一个建表 SQL ），进九宫格随时打开。</p>
+<p>应用里有个 <code>window.one</code>，给了 <code>sql</code> / <code>proxy</code> / <code>llm</code> / <code>vision</code> / <code>agent</code> 五个能力，数据落在你自己的 D1 。</p>
+<p>预置了笔记、待办、虚拟恋人陪聊、每日启示几个，可以直接抄着改。</p>
+⚙️ 接入你自己的模型
+<p>模型配置很简单：填 <strong>API 地址、API Key 、模型名</strong>，再选认证方式（ Bearer 或 <code>x-api-key</code>）就能跑起来。</p>
+<ul>
+<li><strong>支持各种国内外模型</strong>：OpenAI 、Claude 、Gemini ，以及 DeepSeek 、通义千问、Kimi 、智谱 GLM 等——只要是 OpenAI 兼容接口或 Claude 端点，填进去就能用。</li>
+<li><strong>支持 coding plan</strong>：能把编程订阅计划（ coding plan ）的额度接进来当模型来源驱动它。</li>
+<li><strong>视觉模型</strong>：可以单独配一个视觉模型（看图、读屏用），也可以直接勾一下让主模型兼任视觉。</li>
+</ul>
+
+🔗 开源地址
+<p><a href="https://github.com/yanglongyun/one" target="_blank" rel="noopener noreferrer">https://github.com/yanglongyun/one</a></p>
+💬 一点说明
+<p>注意：这个项目主要是让 Claude 和 Codex 做的，属于完全 vibe coding 做的项目。不过发布之前，我已经让他们多次 review 并修复 bug ，自己体验也没什么大的问题。</p>
+<p>如果你在配置或使用中遇到问题，可以在评论区留言，也可以直接联系我的微信：<strong>agentready</strong></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">aliveyang</span>
+        <span>#1</span>
+        <span>2026/07/09 21:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">明天摸鱼试试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17849908">明天摸鱼试试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17849908">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226174#reply17849908" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YAFEIML</span>
+        <span>#2</span>
+        <span>2026/07/09 21:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">star 支持</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17849928">star 支持</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17849928">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226174#reply17849928" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">valuetransfer</span>
+        <span>#3</span>
+        <span>2026/07/09 23:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/YAFEIML" target="_blank" rel="noopener noreferrer">YAFEIML</a> 感谢~</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17850041">@<a href="/member/YAFEIML" target="_blank" rel="noopener noreferrer">YAFEIML</a> 感谢~</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17850041">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226174#reply17850041" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">valuetransfer</span>
+        <span>#4</span>
+        <span>2026/07/09 23:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/aliveyang" target="_blank" rel="noopener noreferrer">aliveyang</a> 哈哈可以，有什么问题可以联系我</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17850042">@<a href="/member/aliveyang" target="_blank" rel="noopener noreferrer">aliveyang</a> 哈哈可以，有什么问题可以联系我</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17850042">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226174#reply17850042" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

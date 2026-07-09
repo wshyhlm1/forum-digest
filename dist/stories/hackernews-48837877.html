@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用 Rust 重写 Bun | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-09/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>用 Rust 重写 Bun</h1>
+      <p class="original-title">Rewriting Bun in Rust</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 afturner</span>
+        <span>热度 692</span>
+        <span>回复 429</span>
+        <span>2026/07/09 05:49</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48837877" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://bun.com/blog/bun-in-rust" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48837877.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Disclosure: Bun was acquired by Anthropic in December 2025. I and others on the Bun team work at Anthropic. I used a pre-release version of Claude Fable 5 for much of the Rust rewrite.Bun started as a line-for-line port of esbuild&#39;s JavaScript &amp; TypeScript transpiler from Go to Zig. I wrote my first line of Zig on April 16, 2021. I bet on Zig after seeing the single-page Zig Language Reference on Hacker News and getting really excited about the low-level control and care for performance.From the start, Bun&#39;s scope was massive:JavaScript, TypeScript, and CSS transpiler, minifier, and bundlernpm-compatible package managerJest-like test runnerNode.js &amp; TypeScript-compatible module resolutionHTTP/1.1 &amp; WebSocket clientNode.js API implementations like fs, net, tls, and dozens of other modulesThe initial version of Bun was written by me in 1 year, in a cramped Oakland apartment, pre-LLM, in Zig. The default outcome for ambitiously-scoped projects like Bun is joining the graveyard of dead side projects on a GitHub profile page. Zig made Bun possible. I would never have been able to build this much in 1 year if it wasn&#39;t for Zig.Nowadays, Bun&#39;s CLI gets over 22 million monthly downloads. Popular tools like Claude Code and OpenCode bet on Bun as their runtime. Vercel, Railway, DigitalOcean and more have 1st-party support for Bun.Bun&#39;s scope has also been a challenge for stability. Here&#39;s a small sample of bugs we fixed in Bun v1.3.14:heap-use-after-free crash in node:zlib when calling .reset() on a zlib, Brotli, or Zstd stream while an async .write() is still in progress on the threadpooluse-after-free crash in node:zlib when an onerror callback issued a re-entrant write() followed by close() on native handlesuse-after-free crashes in node:http2 when re-entrant JS callbacks (e.g. session.request() inside a timeout listener, an options getter, or a write callback) triggered a hashmap rehash, invalidating internal stream pointersuse-after-free in UDPSocket.send() and sendMany() where user code in valueOf() or toString() callbacks could detach an ArrayBuffer between payload capture and the actual sendcrash and out-of-bounds read in Buffer#copy and Buffer#fill when a valueOf callback detaches or resizes the underlying ArrayBuffer during argument coercionheap out-of-bounds write in UDPSocket.sendMany() when the socket&#39;s connection state changed mid-iteration via user JS callbacksmemory leak in crypto.scrypt where the callback and protected password/salt buffers were never released when the output buffer allocation failedSSLWrapper.init leaked the strdup&#39;d passphrase on error pathsmemory leak in tlsSocket.setSession() where each call leaked one SSL_SESSION (~6.5 KB per call) due to a missing SSL_SESSION_free after d2i_SSL_SESSIONmemory leak where fs.watch() watchers were never garbage collected after .close(), caused by a reference count underflow that permanently pinned each watcher as a GC rootdouble-free crash in the CSS parser when background-clip had vendor prefixes and multi-layer backgroundsDuplexUpgradeContext was never freed — a full leak per tls.connect({ socket: duplex })race condition crash in MessageEvent where the GC marker thread could observe a torn variant in m_data during concurrent access from a BroadcastChannel or MessagePortWe could have kept fixing these kinds of bugs one-off in perpetuity, but we owe it to our users counting on us to do better than that, and systematically prevent these kinds of bugs from recurring.What we were already doingWe patched the Zig compiler to add Address Sanitizer support. We run our test suite with ASAN on every commit.We ship Zig safety-checked ReleaseSafe builds on WindowsWe fuzz Bun&#39;s runtime APIs 24/7 using Fuzzilli, the JavaScript engine fuzzer used by V8 &amp; JavaScriptCoreWe have a whole lot of end-to-end memory leak testsThis is more than many projects do.Just be really smart and don&#39;t make mistakes?Our bugfix list felt bad and I was tired of going to sleep worrying about crashes in Bun. I don&#39;t blame Zig for that - other users of Zig don&#39;t have the bugs we had, and mixing GC with manually-managed memory is an uncommon enough thing for software to need that no language really designs for it. We wouldn&#39;t have gotten this far if not for Zig, and I&#39;ll always be grateful. Until very recently, programming language choice was a one-way decision for a project like Bun.JavaScript is a garbage-collected language and modern JavaScript engines like JavaScriptCore (and V8) have strict rules around exception handling and the garbage collector. Zig, like C, doesn&#39;t manage memory for you and this is a tradeoff that for many projects is a great reason to use Zig. Zig does not have constructors/destructors, and most cleanup is expected to be written out explicitly at each call site with defer.For Bun, correctly handling the lifetimes of garbage-collected values and manually-managed values has been a major source of stability issues - most often small memory leaks and occasionally, crashes. Every memory allocation has to be meticulously reviewed. Where do these bytes get freed? How do we ensure it only gets freed once? Did we check for JavaScript exceptions properly? Is this garbage-collected pointer visible to the conservative stack scanner? Is this garbage collected memory or manually managed memory?For stability issues, knowing as early as possible is best. Fuzzing happens after code is merged. CI happens when code is pushed. Runtime safety checks &amp; address sanitizer happens when code is run (hopefully in development, before CI).One common way to reduce this class of issue is to ensure cleanup code is always run exactly once for code that needs it. Zig is designed to be a simple language with no hidden control flow, and so it prefers the explicit defer keyword to run code at the end of a scope over C++&#39;s implicit ~Destructor or Rust&#39;s implicit Drop.LanguageCleanupZigdefer, errdeferC++~Destructor, &amp;&amp;MoveRustDropFor Zig code, when exactly should we be running the cleanup code? If we&#39;re passing the same *T to many different functions, how do we know when it&#39;s no longer accessible and can be cleaned up? How does it work when some functions need to continue to reference the memory after the function is called? Our current approach is a mix of:arena lifetimes, where the scope of when it&#39;s accessible is clear (parser state doesn&#39;t escape the calling function and so AST nodes are a good choice there)reference-countingpay really close attentionMany projects opt to answer these kinds of questions through a style guide. TigerBeetle&#39;s TigerStyle is an example in Zig and Google&#39;s 31,000 word C++ style guide is another. The challenge with style guides is enforcement. How do you make sure the style guide is followed? Historically, code review was the answer with best-effort enforcement via linters &amp; static analyzers.Having a rigid style guide with clear ownership expectations explicitly spelled out in the type system was a real option for Bun. Since Zig has no operator overloading, we would likely end up with a lot of code looking something like this:fn foo(a_ptr: SharedPtr(TCPSocket)) !void { const a: *TCPSocket = a_ptr.get(); defer a_ptr.deref();</li><li>const b = try do_something_with_a(a); defer b.deref();</li></ul>
+      
+      <p class="reason">命中 7 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">pier25</span>
+        
+        <span>2026/07/09 08:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我个人并不关心他们使用 AI 将 Bun 重写为 Rust。即使 1.4 不够好，随着时间的推移，它可能会变得更好。<p>让我回到 Node 的是看到过渡的处理是多么业余。</p><p>- 在 CVE 等方面，Zig 版本没有 LTS 支持。</p><p>- Zig 版本中废弃的博客文章中提到的 3MB 内存泄漏等巨大错误，基本上迫使人们使用 Rust 版本来修复生产中的应用程序。</p><p>- 与 Bun 的零参与社会对如此重大的决定。有一天，“别再闹了，我只是在玩这个”，几天后“yolo 合并到了 main”。</p><p>Jarred 基本上一直在运作，就好像他是一个孤独的黑客，致力于他的个人项目。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48839579">Personally I don't care that they used AI to rewrite Bun to Rust. Even if 1.4 is not good enough it will probably get better over time.<p>What has pushed me back to Node is seeing how amateurish the transition has been handled.</p><p>- No LTS support for the Zig version regarding CVEs etc.</p><p>- Huge bugs like the 3MB memory leak mentioned in the blog post abandoned in the Zig version to basically force people into the Rust version to fix their apps in production.</p><p>- Zero involvement with the Bun community about such a major decision. One day it was "stop the drama I'm just playing with this" and a couple of days later "yolo merged to main".</p><p>Jarred basically keeps operating as if he was a lone hacker working on his personal project.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48839579">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48839579" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">egorfine</span>
+        
+        <span>2026/07/09 16:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 与 Bun 社区的零参与<p>是的。这种转变的人性方面非常糟糕。 Bun 背后的人刚刚证明了他对社区的重视。</p><p>但我相信他会围绕这次重写建立另一个社区。毕竟，有很多人为“Rust 重写”欢呼。</p><p>直到新的最喜欢的语言出现。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48842834">&gt; Zero involvement with the Bun community<p>Yeah. The human aspect of the transition was just incredibly bad. The person behind Bun has just demonstrated how much he values the community.</p><p>But I'm sure he will build another community around this rewrite. After all, there is an abundance of people cheering "Rust rewrites".</p><p>Until the new favorite language comes up.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48842834">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48842834" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">alexjurkiewicz</span>
+        
+        <span>2026/07/09 09:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">付费客户可获得 LTS。是否有付费客户要求 Zig 分支机构 LTS？或者您是否期望开源维护者无特殊原因地做免费工作？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48839979">Paying customers get LTS. Are any paying customers asking for a Zig branch LTS? Or are you expecting open source maintainers to do free work for no particular reason?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48839979">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48839979" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">pier25</span>
+        
+        <span>2026/07/09 10:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Java、Node 和 .NET 都有 LTS 版本，所有这些版本都可以免费使用。<p>&gt; <i>或者您是否期望开源维护者无特殊原因地做免费工作？</i></p><p>免费工作？上次我听说 Anthropic 收购了 Bun。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48840429">Java, Node, and .NET have LTS versions all of which are free to use.<p>&gt; <i>Or are you expecting open source maintainers to do free work for no particular reason?</i></p><p>Free work? Last I heard Anthropic had acquired Bun.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48840429">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48840429" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zamadatix</span>
+        
+        <span>2026/07/09 18:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">假设他们仍然对外部采用率感兴趣，那么进入 Bun 的 LTS 版本可能是个好主意。他们在不到 3 年前发布了 1.0，并且收购花了大约 6 个月的时间来解决。考虑 LTS 版本将使许多发展较慢的地方能够担心陷入速度之中。<p>我不知道尝试在 Zig 版本停止的地方制作 LTS 版本是否有意义，特别是如果他们知道他们正在发布不同的解决方案和代码库来解决大部分安全和内存错误。让这个问题再稳定几个月，如果确实有需求的话，我们打算在年底之前发布它的 LTS。拥有 Java、Node 和 .NET 等 LTS 版本的所有好处，无需跳转到代码库的预移植版本，而代码库从一开始就没有被定位为 LTS 的良好版本。</p><p>如果 LTS 版本已经在计划中，那么最终的基于 Zig 的 LTS 将非常有意义。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48843579">Getting to an LTS release train of bun is probably a good idea, assuming they are still interested in external adoption rates. They shipped 1.0 a little under 3 years ago and the acquisition has had ~6 months to get settled. Looking at an LTS release would enable a lot of the more slower moving places to look at bun within being worried about getting caught up in the velocity.<p>I don't know it makes sense to try to make the an LTS version of where the Zig version left off, particularly if they know they are shipping a different solution &amp; codebase to tackle the bulk of their security and memory bugs. Let this settle a few more months with the intent of releasing an LTS of it by the end of the year, if there really is demand for it. All of the benefits of having an LTS version like Java, Node, and .NET without needing to jump to a pre-port version of the codebase which was never targeted to be a good version to LTS in the first place.</p><p>A final Zig-based LTS would have made great sense  if LTS releases had already been in the picture though.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48843579">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48843579" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">graemep</span>
+        
+        <span>2026/07/09 20:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 假设他们仍然关心外部采用率。<p>如果不是的话，那将是一个放弃它的绝佳理由。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844839">&gt; assuming they are still interested in external adoption rates.<p>If they are not it would be a good reason to move away from it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844839">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844839" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">raincole</span>
+        
+        <span>2026/07/09 16:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那么不仅仅是免费工作，而是您希望 Anthropic 付费来维护 Zig 版本...？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48842557">So not <i>just</i> free work, but you expect Anthropic to pay to maintain a Zig version...?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48842557">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48842557" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">woodruffw</span>
+        
+        <span>2026/07/09 20:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我不明白维护Bun的LTS版本怎么符合Anthropic的利益。他们似乎不太可能使用它，而且这会耗费他们的资金（以人力的形式）。<p>据我了解，Java和.NET提供公开的LTS版本，是因为使用这些LTS版本的大公司为他们提供了资金支持，而且Oracle和微软<i>本质上</i>是把LTS支持作为一种产品来销售的。我不知道Node为什么这么做，也许情况类似。但Bun的处境似乎与这三者都不同。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48844788">I don’t follow how it would be in Anthropic’s interests to maintain an LTS version of Bun. It seems unlikely they’d use it, and it would cost them money (in the form of labor).<p>To my understanding, Java and .NET offer public LTSes because they’re financially buoyed by huge companies using those LTS versions, and Oracle and Microsoft are <i>fundamentally</i> selling that LTS support as a product. I have no idea why Node does, maybe it’s similar. But Bun’s position appears to be different than all three.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48844788">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48844788" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Tadpole9181</span>
+        
+        <span>2026/07/09 13:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你是以Anthropic成员的身份在要求提供Zig的LTS版本吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48841342">Are you asking for an LTS Zig version as a member of Anthropic?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48841342">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48841342" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">iknowstuff</span>
+        
+        <span>2026/07/09 10:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1.4 与 1.3 相比没有重大变化，那么为什么会有 LTS 以及对留在 1.3 的人们的任何保证呢？据我所知，所有已知的回归都已像任何其他版本一样得到修复</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48840427">1.4 has no breaking changes from 1.3 so why would there be an LTS and any guarantees for people staying on 1.3? All known regressions have been fixed like any other release as far as I can tell</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48840427">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48840427" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nicce</span>
+        
+        <span>2026/07/09 15:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; - 对于有关 CVE 等的 Zig 版本没有 LTS 支持。<p>每个版本都会有大量的 CVE，并且需要付出很大的努力。例如。博客中存在内存问题的示例。最好认为 Zig 版本不存在安全性。使用风险自担。</p><p>&gt;贾里德基本上一直在运作，就好像他是一个孤独的黑客，致力于他的个人项目。</p><p>但是，他们有权这样做。这是预料之中的，特别是如果公司拥有它的话。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48842359">&gt; - No LTS support for the Zig version regarding CVEs etc.<p>Every release would have tons of CVEs and would take so much effort. E.g. the example from blog with memory issues. Better just think that Zig version was not there what comes to security. Use at your own risk.</p><p>&gt; Jarred basically keeps operating as if he was a lone hacker working on his personal project.</p><p>They have right to do it, however. It is expected, especially if company owns it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48842359">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48842359" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">srdjanr</span>
+        
+        <span>2026/07/09 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他当然有权利这样做，没有人质疑这一点。用户和社区也有权利投诉、停止使用和支持Bun，因为他们不喜欢他的行为</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48846220">Of course he has the right to do it, no one disputes that. The users and community also have the right to complain, or stop using and supporting Bun because they don't like his actions</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48846220">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48846220" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">atonse</span>
+        
+        <span>2026/07/09 10:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果存在任何类型的兼容性被破坏的情况，LTS 会更相关。他们仍然没有发布 1.4，尽管从各个指标来看，它似乎都运行得非常好，有大量的人使用 Claude 代码，一个月内没有出现任何回归。  在我看来，没有任何迹象表明他们在这里粗心。<p>事实上，他在每次代码更改、每一行上都有两个敌对的审阅者克劳德实例。我不知道有哪个人类团队会对每一行进行两次独立审查，除了编写航天飞机软件的人之外。</p><p>他们还修复了内存泄漏。它用什么语言编写有什么关系？归根结底，人们用它来运行打字稿代码等。</p><p>有多少 Bun 用户关心它是用 Zig 编写的？我当然不知道。我已经使用bun有两年了，我想我查过zig一次。它只是不相关。</p><p>它变得更稳定了吗？是的。更苗条？是的。性能更强？是的。有任何证据表明它的安全性较低吗？不。该代码已经发布两个月了。到现在为止，所有反对者都已经找到了确凿的证据。他们没有。您还需要多少证据来证明这是一次巨大的成功？</p><p>这是我们的新现实。代理商非常优秀，这样的项目是有可能实现的。这太令人兴奋了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48840048">LTS is more relevant if there was any kind of compatibility that was broken. They still haven’t released 1.4 even though it seems to have gone extremely well by every metric in the wild, with tons of people using Claude code with no regressions in a month.  Nothing to me suggests they’re being careless here.<p>In fact, he had two adversarial reviewer Claude instances on every code change, every line. I don’t know a single human team that does two independent reviews of every line, except maybe the people that wrote space shuttle software.</p><p>Also they fixed the memory leak. How does it matter what language it’s written in? At the end of the day, people use it to run their typescript code among other things.</p><p>How many bun users care that’s it’s written in zig? I certainly don’t. I’ve been using bun for 2 years and I think I looked up zig once. It’s just not relevant.</p><p>Did it get more stable? Yes. Slimmer? Yes. More performant? Yes. Is there any proof that it got LESS secure? No. The code has been out for two months. By now all the nay sayers would’ve found the smoking gun. They haven’t. How much more proof would you like that this was a resounding success?</p><p>This is our new reality. The agents are so good that projects like this are in the realm of possible. That’s exciting.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48840048">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48840048" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">pier25</span>
+        
+        <span>2026/07/09 11:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>如果存在任何类型的兼容性被破坏，LTS 更相关</i><p>我们是否 100% 确定情况并非如此？不。</p><p>事实上，如果认为如此大规模的重写不会引入新的错误和/或意外的行为变化，那就太天真了。</p><p>&gt; <i>对我来说，没有任何迹象表明他们在这里粗心。</i></p><p>有很多原因表明这一点<i>包括</i>缺乏 LTS 或任何在如此大规模的转变中投入的想法。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48840566">&gt; <i>LTS is more relevant if there was any kind of compatibility that was broken</i><p>Do we know 100% for certain that this isn't the case? No.</p><p>In fact it would be naive to think a rewrite of this magnitude wouldn't introduce new bugs and/or unexpected changes in behavior.</p><p>&gt; <i>Nothing to me suggests they’re being careless here.</i></p><p>Plenty of reasons suggest this <i>including</i> the lack of an LTS or any kind of thought put into such a massive transition.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48840566">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48840566" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">atonse</span>
+        
+        <span>2026/07/09 13:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">再说一遍，代码已经公开两个月了。而且据很多人说，很多人显然很乐意大声声讨所有出问题的地方。<p>对这次移植已经做了初步分析。而且代码还在继续重构。但是有没有哪篇铁证如山的文章，是有人真的发现了功能或稳定性上的回退？我们看到的情况恰恰相反。修复了几十个bug。我们不需要凭空推测。他们已经进行了两个月的实验，所有代码都公开透明。</p><p>只是感觉两个月过去了，人们还是想死死抱住这个_想法_，认为这太草率了，却拿不出任何造成重大负面影响的证据。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48841230">Again, the code’s been out for two months. And by many accounts, many people would clearly love to scream loudly about all the things that broke.<p>There were initial analyses done on the port. And things continue to get refactored. But is there any slam dunk article where someone actually found any regression in functionality or stability? We’re seeing the opposite. Dozens of bugs fixed. We don’t have to theorize. They’ve been running this experiment for 2 months, with all the code out in the open.</p><p>It just feels like after two months, people want to cling to the _idea_ that this was reckless, without evidence of any meaningful negative impact.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48841230">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48841230" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">srdjanr</span>
+        
+        <span>2026/07/09 22:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我对此有一些看法：<p>1）我（可能还有其他人）对此的最后印象是当它仅基于所有通过的测试进行合并时。在很多项目中，仅仅依靠测试肯定是鲁莽的（不确定Bun测试的覆盖率/质量）。</p><p>我没有太关注他们后来做了什么，也许确实足够好。例如，克劳德·科德（Claude Code）使用它并且表现良好令人放心。</p><p>2）快速做出如此重大的决定（甚至没有时间）咨询社区并不能真正激发信心。</p><p>3）即使最终一切都很完美，你也可能会鲁莽。</p><p>在城市中以 80 英里/小时的速度行驶，你可能有 80% 的机会不撞车。如果你没有撞车，你就会有一个更快、更有趣的旅程。并不意味着它不是鲁莽的。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48846736">I have a few opinions on this:<p>1) My (and possibly other people's) last impression of this was when it was merged just based on all tests passing. In many projects, relying just on tests would definitely be reckless (not sure about coverage/quality of Bun tests).</p><p>I didn't follow much what where they doing later, maybe it is indeed good enough. For example, Claude Code using it and being fine is reassuring.</p><p>2) Making such a big decision that quickly and not (even having the time to) consulting community doesn't really inspire confidence.</p><p>3) You can be reckless even if everything ends up being perfect in the end.</p><p>Going 80mph in a city, you probably have like 80% chance of not crashing. And if you don't crash, you just had a much faster and more fun trip. Doesn't mean it wasn't reckless.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48846736">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48846736" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">vincnetas</span>
+        
+        <span>2026/07/09 22:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这让我想起了魔兽世界经典：Leeroy Jenkins<p>yolo！！！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48846065">this reminded me of WoW classics: Leeroy Jenkins<p>yolo!!!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48846065">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48846065" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/07/09 12:42</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[已删除]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48841076"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48841076">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48841076" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jgalt212</span>
+        
+        <span>2026/07/09 22:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 有一天，“别再闹了，我只是在玩这个”，几天后，“yolo 合并到 main 了”。<p>是的，这太荒谬了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48846172">&gt; One day it was "stop the drama I'm just playing with this" and a couple of days later "yolo merged to main".<p>Yeah, that was beyond ridiculous.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48846172">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48846172" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">padjo</span>
+        
+        <span>2026/07/09 20:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">人们很快就依靠情感主张来攻击这一点，这很奇怪。就像我们是工程师一样，如果您能指出此重写的具体问题，我很乐意听到。显然，贾里德会给出积极的例子，他说他这样做并不能证明重写是一个坏主意。你需要指出客观问题，而不是你模糊的不安感。就目前而言，从所有可用的衡量标准来看，这似乎是一个巨大的成功，这绝对是非凡的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48845132">It's very odd how quickly people fall back on emotional claims to attack this. Like we're engineers, if you can point at concrete problems with this rewrite I'd love to hear them. Obviously Jared is going to give the positive case, saying that he's doing that doesn't prove the rewrite is a bad idea. You need to point at objective problems, not your vague sense of unease. As it stands, by all available measures, this appears to have been a massive success, which is absolutely remarkable.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48845132">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48845132" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
