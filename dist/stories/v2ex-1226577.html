@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>国模 Minimax 的能力到底如何？glm 抢不到，打算买一下 minimax。 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-11/">返回日报</a>
+      <div class="source-chip">V2EX #8</div>
+      <h1>国模 Minimax 的能力到底如何？glm 抢不到，打算买一下 minimax。</h1>
+      <p class="original-title">国模 Minimax 的能力到底如何？ glm 抢不到 打算买一下 minimax</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 squirrel7105</span>
+        <span>热度 35</span>
+        <span>回复 35</span>
+        <span>2026/07/11 16:25</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1226577" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1226577.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>用户询问国产大模型 Minimax 的实际能力表现</li><li>因 GLM 模型难以获取，考虑转向使用 Minimax</li></ul>
+      <h3>看点</h3><ul><li>国产大模型 Minimax 能力讨论</li><li>GLM 模型资源紧张导致用户寻找替代方案</li><li>用户对国产大模型选择存在困惑</li></ul>
+      <p class="reason">帖子讨论国产大模型 Minimax 的能力表现，属于 AI 领域话题。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p></p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p></p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">midasplus</span>
+        <span>#1</span>
+        <span>2026/07/11 16:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很烂，别买<br />当时本着支持 IO 的想法试了下，实在是没办法用...<br />虽然量是真的大</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854934">很烂，别买<br />当时本着支持 IO 的想法试了下，实在是没办法用...<br />虽然量是真的大</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854934">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854934" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ntdll</span>
+        <span>#2</span>
+        <span>2026/07/11 16:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">minimax 得和豆包坐一桌。<br /><br />国产模型值得尝试的只有 GLM/QWEN/DEEPSEEK ，但是 Deepseek 主要还是便宜的同时，又没那么拉</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854952">minimax 得和豆包坐一桌。<br /><br />国产模型值得尝试的只有 GLM/QWEN/DEEPSEEK ，但是 Deepseek 主要还是便宜的同时，又没那么拉</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854952">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854952" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">squirrel7105</span>
+        <span>#3</span>
+        <span>2026/07/11 16:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/midasplus" target="_blank" rel="noopener noreferrer">midasplus</a> 但是没啥买的了。。。glm 买不到 之前和别人拼的 4 个人拼 现在质谱还不允许 直接把号封了 无语</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854953">@<a href="/member/midasplus" target="_blank" rel="noopener noreferrer">midasplus</a> 但是没啥买的了。。。glm 买不到 之前和别人拼的 4 个人拼 现在质谱还不允许 直接把号封了 无语</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854953">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854953" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">squirrel7105</span>
+        <span>#4</span>
+        <span>2026/07/11 16:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ntdll" target="_blank" rel="noopener noreferrer">ntdll</a> deepseek 没套餐 tmd</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854954">@<a href="/member/ntdll" target="_blank" rel="noopener noreferrer">ntdll</a> deepseek 没套餐 tmd</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854954">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854954" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">midasplus</span>
+        <span>#5</span>
+        <span>2026/07/11 16:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/squirrel7105" target="_blank" rel="noopener noreferrer">squirrel7105</a> 为啥不直接买 codex 呢，也不会像 A 畜那样封号严重</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854977">@<a href="/member/squirrel7105" target="_blank" rel="noopener noreferrer">squirrel7105</a> 为啥不直接买 codex 呢，也不会像 A 畜那样封号严重</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854977">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854977" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kyomio</span>
+        <span>#6</span>
+        <span>2026/07/11 16:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">deepseek 直接用 api 得了也不贵的，minimax 没眼看，坐路边去吧。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854978">deepseek 直接用 api 得了也不贵的，minimax 没眼看，坐路边去吧。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854978">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854978" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wxVIP</span>
+        <span>#7</span>
+        <span>2026/07/11 16:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">MiniMax 的股票已经说明了一切</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854983">MiniMax 的股票已经说明了一切</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854983">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854983" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hallDrawnel</span>
+        <span>#8</span>
+        <span>2026/07/11 16:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">直接买 codex,不要浪费钱。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17854988">直接买 codex,不要浪费钱。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17854988">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17854988" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">johnhuangemc2</span>
+        <span>#9</span>
+        <span>2026/07/11 17:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">MiniMax 主打量大管饱，适合一些后台任务。现在我主要拿它来跑一些 e2e 测试，跑起来不用管，最后直接看结果的任务。<br />拿来主力写代码的话，最大的问题就是慢，慢得发指。智力问题都得排在慢之后了。如果能解决慢的问题，倒也将就可用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855032">MiniMax 主打量大管饱, 适合一些后台任务. 现在我主要拿它来跑一些 e2e 测试, 跑起来不用管最后直接看结果的任务. <br />拿来主力写代码的话最大的问题就是慢. 慢得发指. 智力问题都得排在慢之后了. 如果能解决慢的问题, 也将就可用.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855032">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855032" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">uqf0663</span>
+        <span>#10</span>
+        <span>2026/07/11 17:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">3 没用过不知道，2.7 简直是玩具中的玩具。买过一个月，从此别跟我提这家，不会再考虑了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855040">3 没用过不知道，2.7 是玩具中的玩具，买过一个月，从此别跟我提这家，不会再考虑</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855040">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855040" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">106npo</span>
+        <span>#11</span>
+        <span>2026/07/11 17:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">当便宜的 flash 用就行。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855044">当便宜的 flash 用就行</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855044">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855044" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">foryou2023</span>
+        <span>#12</span>
+        <span>2026/07/11 17:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">买了不能当生产工具用，纯粹浪费钱。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855047">买了不能当生产工具用，纯粹的浪费钱。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855047">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855047" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wakaka</span>
+        <span>#13</span>
+        <span>2026/07/11 17:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">推沟里。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855054">推沟里</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855054">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855054" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tangzhik</span>
+        <span>#14</span>
+        <span>2026/07/11 17:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">注册并实名后送 15 元体验金，可以体验看看。我个人感觉 M3 消耗太快了，一个下午就干掉了 10 块钱。跑的是 agent，查询股票基金，然后投喂相关新闻并做出判断与建议，不涉及处理代码。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855057">注册，实名后送 15 元体验，可以体验看看，我个人感觉 M3 消耗太快了，一个下午就干掉了 10 块钱，跑的是 agent ，查询股票基金，然后投喂有关的新闻并做出判断与建议，不涉及处理代码。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855057">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855057" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zazzaz</span>
+        <span>#15</span>
+        <span>2026/07/11 17:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">推荐 deepseek，直接用 API 都很便宜，缓存率相当高。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855061">推荐 deepseek ，直接用 api 都很便宜，缓存率相当高</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855061">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855061" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Maxwe11</span>
+        <span>#16</span>
+        <span>2026/07/11 18:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">2.5 之前的那个时代，能力和价格倒是也匹配，反正大家能力都没那么强，也就能用。过了 2.5 阶段就已经不是一言难尽了，甚至都还不如 kimi。<br /><br />deepseek 有缓存，专注项目的缓存率比较高，可以先试着用一段时间。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855080">2.5 之前的那个时代，能力价格倒是也匹配，反正大家能力都没那么强，也就能用，过了 2.5 阶段就已经不是一言难尽了，甚至都还不如 kimi 。<br /><br />deepseek 有缓存，专注项目的缓存率比较高，可以先试着用一段时间</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855080">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855080" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Dabney</span>
+        <span>#17</span>
+        <span>2026/07/11 18:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我之前买了 Plus 的年费，目前还在坚持用，属于能用但不好用，而且配合 CC 的话消耗贼快。我目前试出来 Kimi Code + M3，然后把上下文控制在 100k 以内时，消耗和能力属于能够接受的水平。就这吧，也就是 DS 没有 Code Plan……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855096">我之前买了 plus 的年费，目前还在坚持用，属于能用但不好用，而且配合 cc 的话消耗贼快，我目前试出来 kimi code + m3 然后控制上下文在 100k 内的时候消耗和能力属于能够接受的水平。就这吧，也就是 ds 没有 code plan……</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855096">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855096" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">106npo</span>
+        <span>#18</span>
+        <span>2026/07/11 18:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tangzhik" target="_blank" rel="noopener noreferrer">tangzhik</a> API 的标价就没打算真卖 😂2.7HS 的缓存写入比输入还便宜的定价都挂了好几个月了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855126">@<a href="/member/tangzhik" target="_blank" rel="noopener noreferrer">tangzhik</a> api 的标价就没打算卖 😂2.7HS 的缓存写比输入还便宜的定价挂了几个月</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855126">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855126" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">loshine1992</span>
+        <span>#19</span>
+        <span>2026/07/11 19:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果不是需要发票报销的话，现在直接买 Grok 就行</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855172">如果不是需要发票报销的话，现在买 grok 就行</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855172">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855172" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SayHelloHi</span>
+        <span>#20</span>
+        <span>2026/07/11 19:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Ollama 有 GLM5.2<br /><br /><a href="https://ollama.com/library/glm-5.2" target="_blank" rel="noopener noreferrer">https://ollama.com/library/glm-5.2</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17855200">ollama 有 glm5.2<br /><br /><a href="https://ollama.com/library/glm-5.2" target="_blank" rel="noopener noreferrer">https://ollama.com/library/glm-5.2</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17855200">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1226577#reply17855200" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
