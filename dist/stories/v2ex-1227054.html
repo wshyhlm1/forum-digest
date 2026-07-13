@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>防封号/降智，真的需要 DOH 吗？ | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-13/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>防封号/降智，真的需要 DOH 吗？</h1>
+      <p class="original-title">防封号/降智，真的需要 DOH 吗？</p>
+      <div class="meta-line">
+        <span>科技</span>
+        <span>作者 jebem</span>
+        <span>热度 7</span>
+        <span>回复 7</span>
+        <span>2026/07/13 23:48</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1227054" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1227054.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>讨论使用 DOH 防止 AI 服务封号或降智的技术方案</li><li>分析 Clash verge rev DNS 覆写功能的工作原理及潜在问题</li><li>探讨国内 DNS 请求暴露对防封号效果的影响</li></ul>
+      <h3>看点</h3><ul><li>DOH 在防止 AI 服务封号中的实际效果存疑</li><li>Clash verge rev 同时向两组 DNS 发送请求可能暴露国内 DNS 请求</li><li>使用 dnscrypt-proxy 代理本地 DNS 转为 DOH 的实践案例</li><li>国内网站因缺少 ECS 导致访问缓慢的问题</li><li>阿里 DOH 作为替代方案的可行性分析</li></ul>
+      <p class="reason">帖子讨论了使用 DOH（DNS over HTTPS）来防止 AI 服务（如 Claude/GPT）封号或降智的技术问题，涉及 DNS 泄漏检测、Clash verge rev 的 DNS 覆写功能、dnscrypt-proxy 代理配置等技术细节，属于科技和网络技术领域。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近和朋友合用 Claude/GPT（主要还是 GPT），朋友让我用 <a href="https://ip.net.coffee/dns/" target="_blank" rel="noopener noreferrer">这个网站</a> 来检查 DNS 泄漏。</p>
+<p>于是我研究了半天，也没查出是什么问题，没法使用 clash-verge-rev 自带的 DNS 覆写功能（本人使用的是 Arch Linux），最终改用 dnscrypt-proxy 代理本地的 DNS，将其转为 DoH，然后再走代理发送到 Cloudflare 等 DoH 服务（未使用 ECS）。</p>
+<p>但是使用过程中发现国内的一些网站，比如网易云会因为没有 ECS 而将我的请求判定为国外请求，于是使用国外的 CDN，导致 TCP 请求特别缓慢。</p>
+<p>我大致了解了一下 Clash Verge Rev 的 DNS 覆写工作原理（有不正确的地方请纠正），就是同时使用两组 DNS（一般是 DoH）去解析域名，如果是国内的，就用解析快的那个，如果是国外 IP，就用国外 DNS 服务商的那一组（严格来说是 fallback servers）解析的那个 IP。</p>
+<p>而我理解的这些公司检测大陆 DNS 的方式，就是随机分配一个子域名让 DNS 来解析，然后通过 ECS（如果有的话）和发起请求的 DNS 服务器所在地域来进行判断。那么我的问题是，前面 Clash Verge Rev 同时向两组服务器发送请求的行为，不就已经暴露了存在国内 DNS 请求的事实吗？（因为总归会配置一个国内的 DNS 吧，这样才能有比较好的国内网站访问体验）那使用 DNS 覆写来防封号/降智的意义究竟是什么呢？（并不是说 DoH 对于隐藏访问的网站没有用处）这样的话，我还不如直接用阿里的 DoH，速度还更快些。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近和朋友在合用 Claude/GPT （主要还是 GPT ），朋友让我用 <a href="https://ip.net.coffee/dns/" target="_blank" rel="noopener noreferrer">这个网站</a> 来检查 DNS 泄漏。</p>
+<p>于是我研究了半天，不知道是什么问题，没办法使用 clash-verge-rev 自带的 dns 覆写功能（本人使用 ArchLinux ），最终使用了 dnscrypt-proxy 来代理本地的 DNS ，转为 DOH ，然后再走代理发送到 cloudflare 等 doh 服务（没有使用 ECS ）。</p>
+<p>但是使用过程中发现国内的一些网站，比如网易云会因为没有 ECS 而将我的请求判定为国外请求，于是使用国外的 CDN ，导致 TCP 请求特别缓慢。</p>
+<p>我大致了解了一下 Clash verge rev 的 DNS 覆写工作原理（有不正确的地方请纠正），就是同时使用两组 DNS （一般是 doh ） 去解析域名，如果是国内的，就用解析快的那个，如果是国外 IP ，就用国外 dns 服务商的那一组（严格来说是 fallback servers ）解析的那个 IP 。</p>
+<p>而我理解的这些公司检测大陆 dns 的方式就是随机分配一个子域名让 dns 来解析，然后通过 ECS （如果有）和发来请求的 dns 服务器地域来判断。那么我的问题是前面 clash verge rev 同时向两组 servers 发送请求的行为不就已经暴露了有国内的 dns 请求吗？（因为一定会配置一个国内的吧，这样才有比较好的国内网站访问体验）那使用 dns 覆写来防封号/降智的意义是什么呢？（并不是说 doh 对于隐藏访问的网站没有用处）那我还不如直接用 ali 的 doh 了，速度还快些。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">7</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lianyue</span>
+        <span>#1</span>
+        <span>2026/07/14 00:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我这有个方案 直接查域注册商/ 和 ns 服务器<br />境外的优先国内解析 解析出来了 境外 ip 境外解析<br />境外的优先国外解析 解析出来了 境内 ip 境内解析<br />就这么简单  域 缓存 30d <br />但是缺点就是第一次打开慢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861508">我这有个方案 直接查域注册商/ 和 ns 服务器<br />境外的优先国内解析 解析出来了 境外 ip 境外解析<br />境外的优先国外解析 解析出来了 境内 ip 境内解析<br />就这么简单  域 缓存 30d <br />但是缺点就是第一次打开慢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861508">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861508" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Mora1n</span>
+        <span>#2</span>
+        <span>2026/07/14 00:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lianyue" target="_blank" rel="noopener noreferrer">lianyue</a> 这个方案 sing-box 的 evaluate 完美适配</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861513">@<a href="/member/lianyue" target="_blank" rel="noopener noreferrer">lianyue</a> 这个方案 sing-box 的 evaluate 完美适配</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861513">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861513" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jebem</span>
+        <span>#3</span>
+        <span>2026/07/14 00:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lianyue" target="_blank" rel="noopener noreferrer">lianyue</a> 那需要自己写个小程序吗？或者有无什么工具推荐？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861514">@<a href="/member/lianyue" target="_blank" rel="noopener noreferrer">lianyue</a> 那需要自己写个小程序吗？或者有无什么工具推荐？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861514">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861514" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lianyue</span>
+        <span>#4</span>
+        <span>2026/07/14 00:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jebem" target="_blank" rel="noopener noreferrer">jebem</a> ai 写很简单 whois / rdap / rir(全球 ip asn 分配)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861524">@<a href="/member/jebem" target="_blank" rel="noopener noreferrer">jebem</a> ai 写很简单 whois / rdap / rir(全球 ip asn 分配)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861524">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861524" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GeruzoniAnsasu</span>
+        <span>#5</span>
+        <span>2026/07/14 00:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我的评价是不如直接 dockerize</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861531">我的评价是不如直接 dockerize</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861531">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861531" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">aklllw</span>
+        <span>#6</span>
+        <span>2026/07/14 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你的配置有问题啊，本身就有人做好了 cn 域名列表。哪怕代理工具工作不正常，要用本地自建 dns 的话，也很好做分流。<br />可以问 AI“怎么实现 dns 分流，海外域名使用谷歌 doh ，境内域名使用本地 dns”<br /><br />ECS 是 DNS 的事情，和网站有什么关系</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861537">你的配置有问题啊，本身就有人做好了 cn 域名列表。哪怕代理工具工作不正常，要用本地自建 dns 的话，也很好做分流。<br />可以问 AI“怎么实现 dns 分流，海外域名使用谷歌 doh ，境内域名使用本地 dns”<br /><br />ECS 是 DNS 的事情，和网站有什么关系</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861537">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861537" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jebem</span>
+        <span>#7</span>
+        <span>2026/07/14 00:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好的，那我回头重新配置一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17861558">好的，那我回头重新配置一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17861558">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1227054#reply17861558" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

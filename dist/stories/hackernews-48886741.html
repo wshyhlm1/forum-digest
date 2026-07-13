@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>询问 HN：为AI生成的文章添加标记 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-13/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>询问 HN：为AI生成的文章添加标记</h1>
+      <p class="original-title">Ask HN: Add flag for AI-generated articles</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 levkk</span>
+        <span>热度 776</span>
+        <span>回复 344</span>
+        <span>2026/07/13 09:24</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48886741" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48886741.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Should HN add the ability to flag articles as AI-generated? This doesn&#39;t have to act as a regular flag, i.e., it won&#39;t de-rank the article; it could just show up as an indicator, allowing others (like myself) who don&#39;t like reading AI-generated text, to skip i</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">HN 是否应该增加将文章标记为 AI 生成的功能？这种标记不必像常规标记那样运作，也就是说，它不会降低文章的排名；它只需作为一个提示标识显示出来，让其他（比如我）不喜欢阅读 AI 生成文本的人能够直接跳过。<p>未解决的问题：</p><p>1. 为什么常规投票系统还不够？</p><p>2. HN是否应顺应生成式AI时代做出改变？其成功恰恰在于坚守根本原则而未作改变。</p></div>
+      <div class="post-body is-hidden" data-role="story-raw">Should HN add the ability to flag articles as AI-generated? This doesn't have to act as a regular flag, i.e., it won't de-rank the article; it could just show up as an indicator, allowing others (like myself) who don't like reading AI-generated text, to skip it.<p>Open questions:</p><p>1. Why is the regular voting system not enough?</p><p>2. Should HN change in response to the gen AI era? It has been successful not changing fundamentals.</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dang</span>
+        
+        <span>2026/07/13 10:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们不允许 HN 本身出现 genai 文本 - 请参阅<a href="https://news.ycombinator.com/newsguidelines.html#generated" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/newsguidelines.html#generated</a> 和 <a href="https://news.ycombinator.com/item?id=47340079" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=47340079</a>。当然，如何执行它是一个单独的问题，但规则是存在的。<p>我们还没有关于文章内容的类似规则，但我的感觉是，社区大多不想阅读它，或者，更保守地说，不重视它。这就是为什么我们看到如此多的“只需向我显示提示”回复，以及其他类似的回复：<a href="https://news.ycombinator.com/genai-pushback" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/genai-pushback</a>。我建立了这个列表，所以我有一些东西可以发送给通过电子邮件说明为什么他们的 genai 文章被标记的用户。</p><p>现在这是一场令人着迷的军备竞赛：人工智能正在对人类进行训练，但人类的蜂巢思维也在对人工智能进行训练。读者对听起来像是法学硕士所用的语言产生了过敏。人工智能会适应这一点，但人类也会反过来适应。最终结果如何，谁也说不准。</p><p>目前，使用 genai 的写作（和作家）与不使用 genai 的写作之间存在着一种新兴的阶级区别。一旦出现“这听起来像是法学硕士”的过敏症，那么这篇文章就会立即在读者的心目中被降级为低地位的桶。这并不意味着它不会仍然受到关注 - 但它现在处于耻辱之下。</p><p>（我对这个原创性相当满意，直到我记得 pg 在 <a href="https://paulgraham.com/writes.html" target="_blank" rel="noopener noreferrer">https://paulgraham.com/writes.html</a> 中提出了“写入和不写入”。哦，好吧，这就是重要的一点。）</p><p>这有一个令人高兴的反面，任何人都喜欢读者将自己的文章归类为高地位而不是低地位可以应用自己简单地撰写文章的柔道动作。</p><p>现在我需要添加免责声明，即这一切都不是对 LLM 技术本身的否定。我们严重依赖它，毫无疑问它很有用。问题是<i>如何</i>使用它（再次：<a href="https://x.com/paulg/status/2058871512451412457" target="_blank" rel="noopener noreferrer">https://x.com/paulg/status/2058871512451412457</a>）以及一个人是否应该在向其他人发布的文章中使用它。</p><p>转向OP的问题：</p><p>&gt; <i>HN应该添加将文章标记为人工智能生成的功能吗？ [...]它可能只是显示为一个指标</i></p><p>标记为只是一个指标将是标记，我们一直拒绝将其添加到HN，但我不会排除它。</p><p>我认为我们（最后）添加的是“请给出标记此帖子的原因”步骤，而“因为我认为它是genai”将是多个选择之一（垃圾邮件、离题、刻薄等）</p><p>&gt; <i>为什么常规投票系统不够？</i></p><p>常规投票系统永远不够。 <a href="https://hn.algolia.com/?dateRange=all&amp;page=0&amp;prefix=false&amp;sort=byDate&amp;type=comment&amp;query=%22upvotes%20alone%22%20by:dang" target="_blank" rel="noopener noreferrer">https://hn.algolia.com/?dateRange=all&amp;page=0&amp;prefix=false&amp;so...</a></p><p>&gt; <i>HN 应该改变以应对新一代人工智能时代吗？</i></p><p>对此，我很想用 <a href="https://news.ycombinator.com/item?id=48887149" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48887149</a> 来回复，以向https://news.ycombinator.com/item?id=3742902。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48887149">We don't allow genai text on HN itself - see <a href="https://news.ycombinator.com/newsguidelines.html#generated" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/newsguidelines.html#generated</a> and <a href="https://news.ycombinator.com/item?id=47340079" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=47340079</a>. How to enforce it is a separate question, of course, but the rule exists.<p>We don't have a similar rule yet about article content but my sense is that the community mostly doesn't want to read it—or, to put it more conservatively, discounts it. This is why we see so many "just show me the prompt" responses, along with others like this: <a href="https://news.ycombinator.com/genai-pushback" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/genai-pushback</a>. I built that list so I have something to send to users who email about why their genai articles got flagged.</p><p>It's a fascinating arms race right now: the AIs are training on the humans but the human hivemind is also training on the AIs. Readers are developing allergic sensitivities to language that sounds like an LLM produced it. The AIs will adapt to this, but the humans will adapt in turn. Where it ends up is anyone's guess.</p><p>For the present, there is an emerging class distinction between writing (and writers) that use genai vs. writing that does not. As soon as the "this sounds like an LLM" allergy kicks in, the writing instantly gets relegated to a low-status bucket in the reader's mind. That doesn't mean it won't still get looked at - but it is now under a stigma.</p><p>(I was rather pleased with the originality of this until I remembered pg had come up with "writes and write-nots" in <a href="https://paulgraham.com/writes.html" target="_blank" rel="noopener noreferrer">https://paulgraham.com/writes.html</a>. Oh well, it's the point that matters.)</p><p>This has the happy flipside that anyone who would like readers to classify their article as high-status rather than low-status can apply the judo move of simply writing it themselves.</p><p>Now I need to add the disclaimer that none of this is a dismissal of LLM technology per se. We rely on it heavily, and there's no question that it's useful. The question is <i>how</i> to use it (pg again: <a href="https://x.com/paulg/status/2058871512451412457" target="_blank" rel="noopener noreferrer">https://x.com/paulg/status/2058871512451412457</a>) and whether one should use it on writing that one publishes to other humans.</p><p>To turn to OP's questions:</p><p>&gt; <i>Should HN add the ability to flag articles as AI-generated? [...] it could just show up as an indicator</i></p><p>Flagging-as-just-an-indicator would be tagging, which we've always resisted adding to HN, but I wouldn't rule it out.</p><p>What I do think we'll (finally) add is a "please give a reason why you flagged this post" step, and "because I think it's genai" will be one choice among several (spam, offtopic, mean, etc.)</p><p>&gt; <i>Why is the regular voting system not enough?</i></p><p>The regular voting system is never enough. <a href="https://hn.algolia.com/?dateRange=all&amp;page=0&amp;prefix=false&amp;sort=byDate&amp;type=comment&amp;query=%22upvotes%20alone%22%20by:dang" target="_blank" rel="noopener noreferrer">https://hn.algolia.com/?dateRange=all&amp;page=0&amp;prefix=false&amp;so...</a></p><p>&gt; <i>Should HN change in response to the gen AI era?</i></p><p>To this I am tempted to reply with <a href="https://news.ycombinator.com/item?id=48887149" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48887149</a> in homage to <a href="https://news.ycombinator.com/item?id=3742902" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=3742902</a>.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48887149">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48887149" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">grayclhn</span>
+        
+        <span>2026/07/13 13:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我认为将其归类为过敏或状态问题有点太圆滑了。保守地说，我已经阅读和审查了数百份人工智能生成的工作文档，并且还“编写”/委托了很多文档。我最大的问题是，不可能参与人工智能编写的文档并提供反馈，因为无法知道误解或差距是因为作者对材料的理解不够深入，还是作者理解了但人工智能没有理解，而且作者校对得不够仔细。或者，如果提出了一个令人惊讶的想法 - 这是作者的见解吗？他们能否详细说明它，它来自哪里，等等？<p>Hackernews 显然不起作用，但“不可能更深入地研究材料，因为作者并不真正存在”对于<i>讨论网站</i>来说是一个问题。如果人类合著者投入足够的工作，他们可以确保文档真正反映他们的观点和理解，但根据我的经验，这种情况不太常见。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888422">I think classifying it as an allergy or a status thing is a little too glib. I’ve read and reviewed, conservatively, hundreds of AI generated documents for work, and “written”/commissioned a bunch too. My biggest issue is that it’s impossible to engage with and give feedback on an AI written document, because it’s impossible to know whether misconceptions or gaps are because the author doesn’t understand the material deeply enough or the author does but the AI doesn’t and the author’s not proofreading carefully enough. Or if a surprising idea is raised — is it the authors insight, can they elaborate on it, where did it come from, etc?<p>Hackernews isn’t work, obviously, but “it’s impossible to engage deeper with the material because the author doesn’t really exist” is sort of a problem for a <i>discussion site</i>. If the human coauthor puts in enough work, they can make sure the doc really reflects their views and their understanding, but in my experience that’s much less common.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">thevinter</span>
+        
+        <span>2026/07/13 22:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;我最大的问题是不可能参与人工智能编写的文档并提供反馈<p>感谢您让我最近才开始注意到的普遍烦恼（就我而言，代码而言）。</p><p>与同事讨论代码时，尤其是与那些我不太了解的人讨论代码时，我经常依靠他们生成的代码的质量来调整对话的技术性</p><p>现在，我经常看到那些我知道自己无法编写的人编写的非常复杂的代码，而且我不知道如何编写参与其中，如何与他们一起审查，我的评论可以多详细等等。</p><p>这很烦人。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48893629">&gt;My biggest issue is that it’s impossible to engage with and give feedback on an AI written document<p>Thanks for giving shape to a general annoyance, in my case with code, that I only recently started noticing.</p><p>When discussing code with my colleagues, especially with those that I do not know particularly well, I often relied on the quality of the code they produced to modulate how technical the conversation ought to be be.</p><p>Now, instead, I often see very complex code from people that I know wouldn't have been able to produce it themselves, and I have no clue how to engage with it, how to review it with them, how detailed can my comments be etc.</p><p>It's pretty annoying.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48893629">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48893629" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tripzilch</span>
+        
+        <span>2026/07/13 17:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">正是如此。每当有人向我展示他们（或其他人）的人工智能辅助编码（振动编码）的东西时，我只能在非常肤浅的层面上参与其中，说“哦酷”。<p>你不能讨论它，它是如何完成的，因为在 80% 的情况下，它是“人工智能做到了”。</p><p>我认为这对 HN 来说没有那么有趣或有用，因为这确实是一个讨论网站。</p><p>如果氛围编码的东西不是“看看它做了什么，它的氛围写自述文件”，而是作为一篇人类撰写的博客文章，内容是“我如何使用人工智能制作这个东西，什么模型，提示和利用，体验如何等等”，那将会有所不同——再次<i>这</i>将是一个有趣的讨论。</p><p>但除此之外，除了“是的，很酷，人工智能制作的很酷”之外，还有什么可说的？你那个东西”</p><p>&gt;不可能知道误解或差距是因为作者对材料的理解不够深入还是作者理解了但人工智能没有理解并且作者校对得不够仔细。或者，如果提出了一个令人惊讶的想法 - 这是作者的见解吗？他们能否详细说明它，它来自哪里等等？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48889965">This exactly. Whenever someone shows me their (or someone else's) AI-assisted-coded (vibe coded) thing, I can only ever engage with it on a very superficial level, saying "oh cool".<p>You can't have a discussion about it, how it was done, because for 80% of cases it's "the AI did it".</p><p>I don't think this is that interesting or useful for HN, because indeed it's a discussion site.</p><p>It would be different if the vibe coded thing didn't come as a "look what it made and its vibe written README" but instead as a human written blog article about "how I made this thing using AI, what models, prompts and harnesses, how the experience was etc etc etc" --- again <i>that</i> would be something interesting to have a discussion about.</p><p>But otherwise what is there to say except "yeah cool that's cool that the AI made you that thing"</p><p>&gt; it’s impossible to know whether misconceptions or gaps are because the author doesn’t understand the material deeply enough or the author does but the AI doesn’t and the author’s not proofreading carefully enough. Or if a surprising idea is raised — is it the authors insight, can they elaborate on it, where did it come from, etc?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48889965">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48889965" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mghackerlady</span>
+        
+        <span>2026/07/13 21:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这正在成为反HN (reddit) 上的一个问题。有人会提交一些很酷的东西，但不会透露其振动编码状态，然后无法回答有关他们提交的内容的任何真正问题。一般来说，我对振动编码软件没有任何问题，但我认为这样分享它很奇怪。这些人从中得到什么？声望？我认为他们没有得到任何东西，因为它几乎总是在看到它几分钟后被标记为振动编码</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48892454">This is becoming a problem on the anti-HN (reddit). Someone will submit something cool, not disclose its status as vibecoded, and then not be able to answer any real questions about whatever it is they submitted. I don't have a problem with vibe coded software in general, but I think sharing it like that is strange. What do these people get from it? Prestige? I don't think they get any, as it's almost always clocked as vibecoded a few minutes after seeing it</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48892454">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48892454" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">westurner</span>
+        
+        <span>2026/07/13 22:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>有什么可说的</i><p>贡献方式：同行评审、人工代码评审、为代码和代码评审提供代币资金、配置 SAST 和 DAST 工具以使其成为 DevSecOps 而不是 DevOpsSec、配置 AGENTS.md 和 /upgrade-dependency-and-run-tests 技能，</p><p>将“它不够充分，因为它是 AI”与“它”进行比较看起来这一代代理还没有在有或没有明确提示的情况下处理这个质量方面”，“你可以通过编写测试、文档以及在可维护性和主观优雅性方面进行重构来提高质量”（如果你正在尝试开发一个热门的开源项目）</p><p>&gt; <i>不可能知道误解或差距是否是因为作者不理解材料</i></p><p>研究人员不应该考虑这个论点 - 这是前提和形式 - 而不是关于作者的切题人身攻击？</p><p>推动格式良好的论点比人工智能更古老</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48893409">&gt; <i>what is there to say</i><p>Ways to contribute: Peer review, human code review, money for tokens for code and code review, configure SAST and DAST tools to make it DevSecOps instead of DevOpsSec, configure AGENTS.md and an /upgrade-dependencies-and-run-tests skill,</p><p>Compare "It's inadequate because it's AI" with "it looks like this generation of agents doesn't yet handle this quality aspect with or without explicit prompts" with "you could improve quality by writing tests, docs, and before that refactor for maintainability and subjective elegance" (if you're trying develop a hit open source project)</p><p>&gt; <i>impossible to know whether misconceptions or gaps are because the author doesn’t understand the material</i></p><p>Shouldn't a researcher consider the argument - it's premises and form - instead of tangential ad hominem about the author?</p><p>Pushing for well-formed arguments is older than AI</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48893409">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48893409" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">grayclhn</span>
+        
+        <span>2026/07/13 23:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">刚刚浏览了您的简历，假设它是最新的，看起来您大部分时间都是独立工作。如果是这样的话，我完全明白为什么我的论点没有引起共鸣。<p>“作者不理解材料”并不是人身攻击——我的大部分工作涉及与其他人（通常经验不足）合作，帮助他们提供相当复杂的计量经济学或机器学习模型。有时我会亲自动手，但通常不会。知道是否是“作者不理解材料”很重要，因为我的工作是<i>帮助他们</i>理解材料，以便他们能够交付 1）有效且 2）达到预期效果的东西。 AI 编写的文档充其量是喜忧参半。</p><p>或者也许是我不理解！不管怎样，如果有什么地方看起来不对劲，我想和那些了解主题的人讨论一下，并且可以告诉我那些看起来不对劲的部分，这样我就可以从中学习。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894611">Just skimmed your resume and, assuming it’s up to date, it looks like you mostly work independently. If that’s the case, I can totally see why my argument doesn’t resonate.<p>“The author doesn’t understand the material” isn’t an ad hominem — most of my work involves working with other people, usually less experienced, to help them deliver reasonably complex econometric or ML models. Sometimes I’m hands on, usually not. Knowing if it’s “the author not understanding the material” is important because my job is to <i>help them</i> understand it so that they can deliver something that 1) works and 2) does what it’s supposed to. AI written docs are at best a mixed blessing.</p><p>Or maybe it’s me not understanding! Either way, if something looks wrong, I want to discuss it with people who know the subject matter and can talk me through the parts that look off so that I can learn from it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894611">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894611" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">woolion</span>
+        
+        <span>2026/07/13 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;我最大的问题是不可能参与人工智能编写的文档并提供反馈，因为无法知道误解或差距是因为作者对材料理解不够深入，还是作者理解但人工智能没有理解，而且作者校对不够仔细。<p>FWIW，我必须解决 PR 或 PoC 的同样问题；现在我的第一个问题是，“你知道他的行为吗？”。第一步，获得一个像样的规范，被推迟到第一稿实施已经推送之后......</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888731">&gt;My biggest issue is that it’s impossible to engage with and give feedback on an AI written document, because it’s impossible to know whether misconceptions or gaps are because the author doesn’t understand the material deeply enough or the author does but the AI doesn’t and the author’s not proofreading carefully enough.<p>FWIW, same problem with PRs or PoC that I have to work on; now my first question is, "did you know about his behaviour?". The first step, getting a decent spec, is delayed to after a first draft implementation is already pushed...</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888731">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888731" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tlb</span>
+        
+        <span>2026/07/13 18:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您可以参与人工智能编写的文档！只需将文档粘贴到人工智能（与编写该文档的人工智能相同或不同）并提出问题即可。您可以在几秒钟内得到答案，而不是一小时（如果是 HN 读者的博客文章）、几天（如果是专业博主）或永远不会（如果是记者）。<p>也许人工智能撰写的文章应该将提示作为隐藏文本包含在页面上。或者包含一个嵌入提示的链接，这会导致人工智能吐出同一篇文章，然后您可以提出问题。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48890338">You can engage with an AI-written document! Simply paste the document into the AI (same or different as the AI that wrote it) and ask questions. You can get an answer in seconds compared to an hour (if it's a blog post by an HN reader), days (if it's a professional blogger), or never (if it's by a journalist).<p>Perhaps AI-written articles should include the prompt as hidden text on the page. Or include a link with the prompt embedded, that causes the AI to spit out the same article that you could then ask questions about.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48890338">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48890338" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">grayclhn</span>
+        
+        <span>2026/07/13 21:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我确实可以使用人工智能来研究我在 HN 上学到的主题。这与我来 HN 的目的不同，或者当我正在审查工作中的某项提案时，或者如果我对一篇文章感兴趣并希望从作者或其他在该领域有经验的人那里了解更多未形成最终草案的细节。<p>“为什么作者没有考虑[这个看起来相似的事情]”几乎从来不是你可以问法学硕士的问题，尤其是对于作者投入如此少的内容的文章。他们自己的努力，他们没有编辑掉明显的人工智能告诉。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48892573">I can indeed use AI to do research on topics I learn about on HN. That’s a different activity than what I come to HN for, or when I’m reviewing a proposal for something at work, or if I’m interested in an article and want to learn more about some of the details that didn’t make the final draft from either the author or from other people with experience in the area.<p>“Why didn’t the author consider [this thing that seems similar]” is almost never something you can ask an llm, especially for articles where the author is putting in so little of their own effort that they don’t edit out obvious AI tells.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48892573">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48892573" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dang</span>
+        
+        <span>2026/07/13 13:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这很有趣，谢谢！我唯一的反对意见是，我关于“过敏”和“状态”的部分是关于观众的反应，而你似乎在某种程度上不同的层面上谈论。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888456">That's interesting, thank you! My only pushback is that my bit about "allergy" and "status" is about the audience response here, whereas you seem to be talking on a somewhat different level.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888456">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888456" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">grayclhn</span>
+        
+        <span>2026/07/13 14:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哦，当然。我唯一的观点是，IME（我假设还有许多其他评论者）围绕不完美的人工智能编写的文档进行讨论和参与的质量比人类编写的同一篇文档要差得多。工作对我来说是最明显的……因为其中许多是我非常关心我们交付的系统的设计文档，但我在其他地方也注意到了同样的事情。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888595">Oh for sure. My only point is that IME (and I’d assume many other commenters) the quality of discussion and engagement around an imperfect ai-written doc is considerably worse than the same doc written by a human. Work is where it’s most obvious to me… because many of these are design docs for systems I care deeply about us delivering, but I’ve noticed the same thing elsewhere.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888595">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888595" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tripzilch</span>
+        
+        <span>2026/07/13 17:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">但是，当考虑到受众对类似低质量水平的人类书面帖子的反应时，你不会将其称为“过敏”或“状态”问题。<p>HN 受众一直对低努力的废液（包括人类生成的）“过敏”。</p><p>OP（和我的）观点试图指出人工智能生成的东西可能如何伪装成如果它是人类写的，那么它会是“有趣”的东西，但实际上，当没有人类在背后支持时，它就毫无意义了：</p><p>如果一个人类做出了一个奇怪的、怪异的、甚至是次优的设计决策，那么这可能是一个有趣的讨论。</p><p>如果一个人工智能做了同样的事情，首先，我不关心也不想猜测为什么它的权重会做它所做的事情，它只是不像人类的动机那么有趣，除非文章/链接的主要内容实际上是关于（又是人类的经验）“我如何制作这个东西，使用人工智能，什么提示，利用，模型等”。</p><p>我希望它有意义，并让您不再将其视为“过敏”（又名观众的问题），而是实际上是帖子的质量问题。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48890046">But you wouldn't have called it "allergy" or a "status" problem when considering the audience's response to human written posts of a similar low quality level.<p>It's always been the case that the HN audience has been "allergic" to low effort slop (including human generated).</p><p>The OP (and my) point was trying to point out how the AI generated stuff might masquerade as something "interesting" if it had been human written, but actually is much of a nothing burger when there's no human behind it:</p><p>if a human made a strange, weird, or even sub-optimal design decision, that's something to possibly have an interesting discussion about.</p><p>if an AI does the same, first of, I don't care and don't wanna guess why its weights did the thing it did, it's just not as interesting as human motivations, UNLESS the main meat of the article/link <i>is</i> in fact about (again the human experience of) "how I made this thing, using AI, what prompts, harness, models, etc".</p><p>I hope it makes sense and allows you to no longer dismiss this as an "allergy" (aka the audience's problem), but as something that is actually a quality problem with the post.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48890046">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48890046" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">heurist</span>
+        
+        <span>2026/07/14 00:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您严重低估了一代人的努力。人工智能的第一个输出可能是草率的，但一旦你开始注入自己的想法和愿望，它就会与任何人工智能自己输出的结果相去甚远。 （并不是说没有零努力的浪费 - 有很多）。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895440">You are heavily discounting the human side of the generation effort. The first output from an AI might be slop but once you start injecting your own ideas and desires it lands much further away from what any AI would output on its own. (Not that there's no zero-effort slop around - there's a lot).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tripzilch</span>
+        
+        <span>2026/07/14 01:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很抱歉，我认为人工智能的人性化使用是不需要付出努力的，因为它不是而且可能需要大量时间（和努力/精力）。<p>然而，根据我的经验，即使是那些花费大量时间和精力用人工智能生成某些东西的人，当你询问有关该项目的更深层次问题时，往往会耸耸肩，并经常指向人工智能生成的文档，也就是说，让我微妙地说，“这并不是一种真正的乐趣”。阅读”，与与人类对话相比尤其苍白，人类花费精力学习如何做它所做的事情，而不是提示人工智能。</p><p>我也不是说这没有任何例外。但我发现它们很少见。</p><p>就像我说的，即使人类不太理解它们生成的内容，即便如此，最好还是阅读一篇人类撰写的文章，了解它是如何生成的，使用什么工具和工具等。</p><p>我来到这个网站是为了学习东西并与其他人交谈，而不仅仅是为了对某人用人工智能生成的内容感到“哦啊”（如果这就是他们能做的）提供）。</p><p>希望这是有道理的。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895748">Sorry if I made it seem I think the human side of AI-use is without effort, because it's not and can take a lot of time (and effort/energy).<p>It is, however, my experience that even the people who spend a lot of time and effort generating something with AI, tend to shrug when you ask a deeper question about the project, and often point to the AI generated documentation, which is, let me be subtle and say, "not really a joy to read", and especially pales in comparison to having a conversation with a human who spent their effort on learning how to do the thing it did, instead of prompting an AI.</p><p>I'm also not saying there aren't any exceptions to this. But I've found them rare.</p><p>Like I said, even if the human doesn't quite understand what they generated, even then it would be preferable to read a human written article about <i>how</i> it was generated, using what tools and harnesses, etc.</p><p>I come to this website to learn stuff and converse with other people, not just to go "ooh aah" at what somebody generated with AI (if that is all they can offer).</p><p>Hope that makes sense.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895748">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895748" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">bhaney</span>
+        
+        <span>2026/07/13 12:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>我认为我们（最后）会添加一个“请给出标记此帖子的原因”步骤，而“因为我认为它是 genai”将是其中一个选择</i><p>这是否意味着人工智能生成的文章是可标记的冒犯行为？我们应该已经标记可疑的人工智能生成的文章，还是应该等待标记系统首先支持原因？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48887886">&gt; <i>What I do think we'll (finally) add is a "please give a reason why you flagged this post" step, and "because I think it's genai" will be one choice among several</i><p>Does that mean that an article being AI-generated is a flaggable offense? Should we be flagging suspected AI-generated articles already, or should we wait for the flagging system to support reasons first?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48887886">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48887886" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dang</span>
+        
+        <span>2026/07/13 12:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">该死的，你们提出了直接进入模糊领域的好问题！<p>我还不确定。但你是对的，从我所说的来看，这是正确的。</p><p>我所知道的是，用户应该标记他们认为不属于 HN 的文章。但这应该依赖于他们对 <a href="https://news.ycombinator.com/newsguidelines.html" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/newsguidelines.html</a> 的阅读，而不仅仅是基于喜欢/不喜欢的反应。也就是说，用户应该标记他们认为违反网站准则的文章，而不仅仅是他们不喜欢的文章。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48887907">Damn you people for asking good questions that go straight to the fuzzy areas!<p>I don't know for sure yet. But you're right that that would follow from what I said.</p><p>What I do know is that users should flag articles that they think don't belong on HN. But this should rely on their reading of <a href="https://news.ycombinator.com/newsguidelines.html" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/newsguidelines.html</a> and not just be based on a like/dislike reaction. That is, users should flag articles that they think break the site guidelines, not just ones they dislike.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48887907">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48887907" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sph</span>
+        
+        <span>2026/07/13 12:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我一直在劝阻人们不要标记“他们认为不属于 HN 的文章”，因为你一次又一次地禁用了我这样做的能力。在与您的私下交谈中，您已经确认，如果我标记/担保您的管理员不同意的内容，我的特权就会被剥夺，即使我真的相信某个帖子不符合准则。<p>所以要么我读懂了您的想法，或者最好不要举报，除非某些事情明显、明确地违反了指导方针。</p><p>我一直对整个举报机制及其周边政治的任意性和我敢说虚伪感到恼火。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888062">I have been discouraging people from flagging ‘articles that they think don't belong on HN’, because you have disabled my ability to do so time and time again. In private conversation with you, you have confirmed that if I flag/vouch stuff you mods don’t agree with, I get the privilege taken away, even if I genuinely believe a post to fall outside of the guidelines.<p>So either I read your mind, or it is best not to flag unless something is obviously, unequivocally, running afoul of the guidelines.</p><p>I keep being annoyed at how arbitrary, and dare I say hypocritical, the entire flagging mechanism and its surrounding politics are.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888062">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888062" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">PennRobotics</span>
+        
+        <span>2026/07/13 19:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对我来说，举报就像在风中撒尿。如果我注意到连续发帖者提交的内容极其低效（从“6个月零5分钟前”开始，每个醒着的时候都会有一对自己的帖子，几乎每天一次，偏离主题的维基百科，“我有60000+点，但只从thealtantic/guardian/nytimes上传”），那么我会继续愤怒的十分钟标记狂潮。<p>我也对那些同样的连续发帖者应用法律条文反对其他人的神经感到震惊用户。我真的不在乎 Bartosz Ciechanowski 是否只是自我推销他自己的每一篇帖子。有些用户比其他用户更有趣，无论他们在技术上是否稍微违反了网站指南。</p><p>我怀疑某些用户的标记可能比其他用户更有价值，如果几年前我的标记能力被悄悄删除，我不会感到惊讶。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48891310">Flagging, to me, seems like pissing in the wind. If I notice serial posters submitting extremely low effort content (a pair of their own posts every waking hour from "6 months and 5 minutes ago", off-topic wikipedia nearly once a day, "I have 60000+ points but only upload from thealtantic/guardian/nytimes") then I go on an irate ten-minute flagging binge.<p>I've also been aghast at the nerve of those same serial posters applying the letter of the law against other users. I genuinely wouldn't care if Bartosz Ciechanowski only self-promotes every last one of his own posts. Some users are significantly more interesting than others, whether or not they violate the site guidelines marginally on a technicality.</p><p>I have suspected it's possible some users flags are worth more than others, and I wouldn't be surprised if my flagging ability was silently removed several years ago.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48891310">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48891310" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dang</span>
+        
+        <span>2026/07/13 13:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>在与您的私下交谈中，您已经确认，如果我标记/证实您的管理员不同意的内容，我的特权就会被剥夺，即使我真的相信某个帖子不符合准则。
+</i><p>人们喜欢根据我们应该说的事情做出这样模糊的断言。您引用我的字面意思，以便读者可以做出自己的决定怎么样？</p><p>抱歉，如果这很暴躁（嗯，它<i>很</i>暴躁），但我无法计算心怀不满的用户在 HN 线程上发布虚假帖子以发泄他们对模组的残余挫败感的次数。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888131">&gt; <i>In private conversation with you, you have confirmed that if I flag/vouch stuff you mods don’t agree with, I get the privilege taken away, even if I genuinely believe a post to fall outside of the guidelines.
+</i><p>People love to make vague claims like this based on things we supposedly said. How about you quote what exactly what I literally said so readers can make up their own minds?</p><p>Sorry if that is testy (well, it <i>is</i> testy), but I can't count the number of times that disgruntled users have posted falsely to HN threads to vent their residual frustrations with the mods.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888131">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888131" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code 在读取提示词前会发送 33k 个 token；OpenCode 则发送 7k。 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-13/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>Claude Code 在读取提示词前会发送 33k 个 token；OpenCode 则发送 7k。</h1>
+      <p class="original-title">Claude Code sends 33k tokens before reading the prompt; OpenCode sends 7k</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 systima</span>
+        <span>热度 623</span>
+        <span>回复 333</span>
+        <span>2026/07/13 02:25</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48883275" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://systima.ai/blog/claude-code-vs-opencode-token-overhead" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48883275.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>We put Claude Code and OpenCode on the same model, the same machine, and the same tasks, then examined everything sent and received.Be the first to know when we publish original research or thought pieces on AI and quantum governance. NOTE: To reach out, please &quot;Book a call&quot; instead.No spam. Unsubscribe at any time.Claude Code is far hungrier:When we asked both harnesses for a one-line reply, Claude Code used roughly 33,000 tokens of system prompt, tool schemas, and injected scaffolding before the prompt even arrived. OpenCode used about 7,000.Claude Code is far more cache inefficient:OpenCode&#39;s request prefix was byte-identical in every run we captured; it paid to cache its payload once per session and read it back for pennies.Claude Code on the other hand re-wrote tens of thousands of prompt-cache tokens mid-session, run after run, and on the same task wrote up to 54x more cache tokens than OpenCode.Cache writes of course are billed at a premium, which accounted for the usage dashboard climbing when using Claude Code.Config further bloats the prompt:A production repository&#39;s 72KB instruction (AGENTS.md or CLAUDE.md) file adds another (avg) 20,000 tokens to every single request. Five modest MCP servers add 5,000 to 7,000 more. By the time a real working setup sends its first request, it is 75,000 to 85,000 tokens deep before the user has typed a word.Subagents add to the cost:A small task that cost 121,000 tokens done directly cost 513,000 tokens when fanned out to two subagents. This is because each subagent is its own agent that re-reads its own system prompt and tools on every turn it takes, so a fan-out multiplies the number of full baselines in flight.Having said that, the parent ingests only each subagent&#39;s returned result, not its whole transcript.We found one result in favour of Claude Code:On a multi-step task Claude Code&#39;s whole-task total came out lower than OpenCode&#39;s, because it batches tool calls into fewer requests while OpenCode re-pays its smaller baseline turn after turn. The meter starts higher; how the session unfolds decides who spends more. That advantage held on the first model we tested; re-run on a newer one, the same task took twice the requests and cost roughly 298,000 tokens against OpenCode&#39;s 133,000.Every finding above was cross-checked on a second model family. The pattern held, with one nuance we cover below.The rest of this post shows how we measured all of this at the API boundary, where the tokens go, and what prompt caching does and does not save you.Why measure this at allEvery token of harness payload is a token of working context you cannot spend on your task.If you operate agentic AI in production, particularly under the EU AI Act where Article 12 expects you to log and understand your system&#39;s behaviour, &quot;what does my agent actually send&quot; is a question you should be able to answer with data.MethodWe spliced a logging proxy between each harness and the model endpoint.harness (Claude Code / OpenCode) → logging proxy (captures request payloads + response usage) → model endpointThe proxy records two things per request. The first is the exact JSON payload the harness emitted, meaning the system blocks, tool schemas, and messages. The second is the usage block the API returned, covering input tokens, cache writes, cache reads, and output tokens.The payload capture is ground truth for what the harness sends. The usage block is ground truth for what was metered.We tested under these conditions.Harnesses. Claude Code 2.1.207 and OpenCode 1.17.18, both pinned to claude-sonnet-4-5, July 2026. A reduced matrix (the floor, the cache task, and the multi-step task) was later re-run pinned to claude-fable-5; where the model changed the result, we say so inline.Baseline isolation. Fresh config directories with no MCP servers, no user settings, and no memory; an empty workspace with no instruction files; permissions bypassed. Multiplier lanes then add one variable at a time.Tasks. T1 says &quot;Reply with exactly: OK&quot; and isolates fixed overhead (three runs per harness). T2 reads a seeded file and summarises it. T3 is a write-run-test-fix loop against FizzBuzz plus a checker script.Quality check. A separate ten-lane benchmark, five runs per harness against a seeded, hash-verified test suite, scored pass rates alongside token cost; reported in the quality section.Zero-tools variant. Claude Code with --tools &quot;&quot; and OpenCode with &quot;tools&quot;: {&quot;*&quot;: false}, separating system prompt from tool schema weight.One full disclosure note before the numbers:Our traffic passes through Meridian, a local gateway that bridges the Claude Code SDK to a standard Anthropic endpoint so a Claude Max subscription can drive third-party tools. It wraps every request in the SDK&#39;s own envelope, a constant we measured at roughly 6,200 tokens on the Sonnet path and 3,500 on the Fable path with bare calibration requests and subtracted from every metered figure below.Payload-level figures come from the captured request bodies, which the gateway cannot affect, and are exact.Character-to-token conversion for component estimates uses each harness&#39;s own measured ratio of 4.1 to 4.4 characters per token, derived from cold-cache anchors where the metered write equals the full payload, rather than a generic heuristic.Part I. The floorThe fixed overhead of saying OKThe task was 22 characters. Here is what each harness sent with it on its first request.ComponentClaude CodeOpenCodeSystem prompt27,344 chars, 3 blocks9,324 chars, 1 blockTool schemas27 tools, 99,778 chars10 tools, 20,856 charsFirst-message scaffolding7,997 chars of &lt;system-reminder&gt; blocksnoneThe actual prompt22 chars22 charsFirst-turn payload (calibrated)~32,800 tokens~6,900 tokensOpenCode&#39;s request is close to minimal. There is one system block that opens with &quot;You are OpenCode, the best coding agent on the planet&quot;, plus ten classic coding tools, plus the user&#39;s prompt as the only content.Claude Code&#39;s request is a platform bootstrap. The 27 tools include the coding core plus an entire background-agent and orchestration suite, from CronCreate and Monitor to the Task family, worktree management, and push notifications.Before the user-entered prompt, its first message carries three injected reminder blocks; a catalogue of agent types for delegation, a catalogue of available skills, and user context.Tool schemas are the dominant term for both. Roughly 24,000 of Claude Code&#39;s ~33,000 tokens are tool definitions, versus roughly 4,800 of OpenCode&#39;s ~6,900.Zero tools, pure harnessStripping the tools isolates the system prompt itself. Claude Code&#39;s weighs in at 26,891 chars, about 6.5k tokens. OpenCode&#39;s is 8,811 chars, about 2.0k tokens.Both harnesses trim their prompt slightly when tools are disabled. Even with no tools at all, Claude Code&#39;s instruction set is over three times the size of OpenCode&#39;s; the residual is behavioural doctrine, meaning tone rules, safety guidance, task-management instructions, and environment description.A one-tool taskT2 asked each harness to read a file and summarise it. Both produced correct summaries.Claude Code took 6 HTTP requests and roughly 199,000 cumulative metered input tokens. OpenCode took 4 requests and roughly 41,000, plus one Haiku side call for session titling.Most of those tokens are cache reads billed at a tenth of the input price. Three things scale with payload regardless; the first-turn cache write, the per-turn read, and context-window consumption, which no cache discount reduces.A 33k-token baseline means every turn starts a sixth of the way into a 200k window before any code enters the conversation.A multi-step task, where the gap closesT3, the write-run-test-fix loop, inverted the expectation set by the baselines.MetricClaude CodeOpenCodeModel requests39 (+1 title call)Tool-calling styleparallel batch in one round tripone tool call per turnCumulative metered input~121,000 tokens~132,000 tokensClaude Code batched the entire job, two file writes and two script executions, into a single parallel tool round trip. OpenCode made exactly one tool call per turn and took nine.Because the baseline is re-sent on every request, request count multiplies baseline. OpenCode paid its ~7k baseline nine times, Claude Code paid its ~33k three times, and the totals converged.Whole-task input roughly equals baseline times request count, plus conversation growth. A large-baseline harness that batches aggressively and a small-baseline harness that serialises can land in the same place.Two structural details emerged from the payloads:Claude Code injects an additional &lt;system-reminder&gt; block as the conversation progresses, three on the first turn and four by the first tool round trip, so its scaffolding grows with turn count.OpenCode&#39;s per-turn marginal payload, roughly 400 to 2,200 chars per turn, is pure conversation content.Does a newer model change the picture?We re-ran the floor on Claude Fable 5 to check whether the gap was a Sonnet artefact, and it shrank (which we didn&#39;t expect).Claude Code&#39;s system prompt is model-conditional. It sent 27,787 chars of instructions to Sonnet but only 10,526 to Fable, with tool schemas also trimmed from 99,778 to 82,283 chars. Same 27 tools, much less doctrine.OpenCode&#39;s payload was byte-identical across both models.The floor gap on Fable comes out at roughly 3.3x by payload against 4.7x on Sonnet. Still far hungrier, but the ratio is model-dependent.The multi-step convergence did not survive the change either:On Fable, Claude Code took six requests instead of three, including an 85,686-token mid-session cache re-write, and landed at roughly 298,000 tokens against OpenCode&#39;s 133,000.Therefore the batching advantage is model behaviour, not a harness constant.These lanes also produced OpenCode&#39;s only mid-session cache write in the entire study, a single event of roughly 6,000 tokens; everything else it sent stayed byte-stable.One served-model note belongs here:Under Fable we received responses alternately as claude-fable-5 and claude-opus-4-8, consistent with those tiers sharing infrastructure.The Fable lanes were smaller samples, two runs for the floor and cache tasks and one for the multi-step task, so treat them as directional confirmation rather than a second full study.Part II. The multipliersThe floor (above) explains a session that starts lean and stays short.Real sessions tend to be much longer and more meandering, so we tried to emulate that by measuring a longer session with stacked responses.Multiplier 1. The instruction fileWe dropped a real 72KB AGENTS.md from a production repository into the workspace and re-ran T1.The effect is symmetrical and large. Both harnesses gained just over 20,000 tokens per request. OpenCode&#39;s metered total went from 13,152 to 33,336. Claude Code&#39;s went from 39,005 to 59,243.The asymmetry is in the mechanics, and it bit us during the experiment. Claude Code 2.1.207 ignored AGENTS.md entirely and only ingested the file when renamed CLAUDE.md, injecting it into the first user message. OpenCode reads either filename and injects it into the system prompt.Two practical consequences follow. Check which filename your harness actually honours, because an ignored instruction file is silent. And know that a heavy instruction file nearly quadruples a lean harness&#39;s baseline; it rides on every request of every session in that repository.Multiplier 2. MCP serversWe attached public, credential-free MCP servers in one-server and five-server configurations.The schemas are identical across harnesses, so the tax is nearly identical too; roughly 1,000 to 1,400 tokens per small server, per request. Five servers added 4,900 tokens to Claude Code by payload and 6,967 metered to OpenCode, growing the tool counts from 27 to 69 and from 10 to 52.Small public servers are the gentle case. Production servers with rich APIs ship schemas several times larger, which is exactly what the everything measurement below shows.One operational footnote. Claude Code silently ignored a project-scoped .mcp.json in print mode until passed an explicit --mcp-config flag. If you assume a server is attached, verify it at the boundary.Multiplier 3. Framework templatesStory-driven workflow frameworks such as BMAD expand a slash command into a large prompt template of personas, protocols, and checklists.We ran an 8,405-char representative template as the prompt for the same T3 story in both harnesses. The template itself is only about 2,100 tokens, but it enters the conversation history and is re-carried by every subsequent request in the session. A 9-request session re-sends it nine times.Framework tax is template size times request count, and it stacks on top of everything above.Multiplier 4. SubagentsWe asked each harness to fan the work out to two parallel subagents. This is where the totals climb fastest.Claude Code completed the task with 9 model requests across three distinct request classes. There was the main session with its full ~33k baseline, and five subagent calls each carrying their own bootstrap of a 3,554-char agent system prompt plus 24 of the 27 tools.Cumulative metered input reached 513,000 tokens, against 121,000 for the same work done directly. That is a 4.2x multiplier for one modest fan-out. The parent ingests only each subagent&#39;s returned result; the cost is that each subagent is a fresh agent re-reading its own bootstrap on every one of its own turns, so two subagents running several turns each add several more full-baseline requests to the session.OpenCode&#39;s design here is notably leaner. Its subagent requests carry a reduced profile of a 1,379-char system prompt and 5 tools. Its subagent lane did not complete cleanly through our gateway, so we report the design difference from the captured payloads and leave its totals unquantified.If your heavy sessions surprise you, this is the first place to look. Delegation is powerful and sometimes correct; it is also the single largest token multiplier we measured.Multiplier 5. Extended thinkingThinking output bills at output rates, five times the input rate, and reasoning blocks are carried forward inside the conversation.We attempted to toggle extended thinking in both harnesses and are declining to publish numbers. Our gateway applies its own thinking policy, neither harness&#39;s toggle demonstrably survived the path, and anything we quoted would be noise.The mechanism is not in doubt, though. On reasoning-heavy work it compounds with every multiplier above, because the thinking blocks join the history that gets re-sent.The everything numberFinally, the bridging measurement. We ran T1 again under a real working configuration.For OpenCode that meant eleven MCP servers covering email and calendar, task management, reference management, product analytics, and others, plus the 72KB instruction file. The first request metered 90,817 tokens on a cold cache write, carrying 179 tools and 277KB of schemas, before the user had typed a word.For Claude Code, four MCP servers plus installed plugins and the same instruction file produced a 311KB payload of roughly 75,000 tokens with 118 tools.After subtracting the gateway envelope, that is roughly a 12x configuration multiplier against OpenCode&#39;s ~7,000-token floor. The harness sets the floor; your configuration sets the bill.The cache economicsPrompt caching changes the units but not the conclusions.Both harnesses set cache breakpoints correctly. The payload is written once, at a 1.25x premium for the 5-minute TTL, and re-read at a tenth of the price thereafter.Three costs survive the discount.First, the write itself, re-paid whenever a pause exceeds the TTL. A five-minute think, a meeting, a lunch; each re-primes the full stack at write rates.Second, the read multiplied by request count, which subagent fan-outs and serial tool loops inflate quickly.Third, context-window consumption, which is completely immune to caching. An 85k-token bootstrap occupies more than 40 per cent of a 200k window on every single request, shrinking the room for actual code before compaction kicks in and spends yet more tokens summarising.Cache stability, the decisive differenceCaching only pays if the prefix stays stable, so we hashed the tools array and system blocks of every request in the dataset.OpenCode emitted byte-identical prefixes across every request and every run. Three separate T1 sessions produced the same tools bytes, the same system bytes, and the same message bytes; the repeat runs wrote zero cache tokens and read everything. Its nine-request T3 session held one stable prefix throughout.Claude Code emitted three distinct request classes per session; a warmup probe, the main conversation, and subagent calls, each with its own prefix and therefore its own cache entry. Its system bytes also varied between sessions in the same workspace, and its first-message scaffolding varied between runs.The consequence shows up in the cache-write column:On the identical file-summarise task, Claude Code wrote 53,839 cache tokens across five requests, including one complete mid-task re-write of its full ~43k prefix. OpenCode wrote 1,003.We re-ran the matched task to check whether that was a one-off (it was not).The large mid-session re-write reproduced, 43,342 tokens in the first run and 36,899 in the second, while a third run against a freshly warmed cache wrote almost nothing. OpenCode showed zero mid-session re-writes in every Sonnet session we could cleanly meter.We then repeated the matched task on Claude Fable 5:The behaviour replicated almost exactly; another complete mid-session re-write, this time 50,053 tokens with zero cache read, and a cache-write gap of 52x against Sonnet&#39;s 54x. The multi-step task on Fable produced an even larger one, 85,686 tokens. Two model families, same pattern. OpenCode stayed byte-stable bar one write of roughly 6,000 tokens across all the Fable runs, against Claude Code&#39;s repeated re-writes of 37,000 to 86,000.Depending on cache temperature, Claude Code&#39;s cache-write volume on the same task ranged from 5.9x to 54x OpenCode&#39;s, and cache writes bill at a premium, 1.25x base rate for the 5-minute tier and 2x for the 1-hour tier.One attribution caveat is owed here. A single mid-task cache miss could in principle be our gateway evicting rather than the harness moving its cache breakpoints; reproduction across runs makes systematic harness behaviour the likelier explanation, and the prefix instability itself is harness-side, visible in the captured bytes before any gateway involvement.If you have watched a usage meter climb dramatically under Claude Code but stay flat under OpenCode with the same model, this is the likeliest mechanism; bigger prefixes, more distinct prefixes per session, and more re-writes of them, multiplied by any subagent fan-out.What about quality?A fair objection to everything above is &quot;a bill says nothing about the work&quot;, ie, paying more is rational if the output is better.The tasks here were chosen so that quality could not be the explanation. Both harnesses completed every scored task correctly. The multi-step task was verified by an assertion script each harness had to write and then pass, and both exited clean. The file summaries were both accurate. On these tasks the token gap is the cost difference for an identical outcome, which is exactly what makes it measurable.We then measured a first slice of it directly. A separate ten-lane benchmark gave each harness the same job, implementing two date utilities against a seeded ten-assert test suite it could not modify, in five fresh workspaces per harness; this time the suite was pre-written and hash-verified, so neither harness graded its own work. Both passed five out of five. Against that identical, independently verified outcome, the average metered cost per passing run was roughly 268,000 input tokens for Claude Code and 72,000 for OpenCode, about 3.7x, with both harnesses served the same model snapshot. OpenCode also finished each lane in a minute or two, against four to eight minutes for Claude Code.Whether the premium buys quality on genuinely hard engineering work is a different question, and a two-function utility is a first slice of it, not an answer. Claude Code&#39;s background agents, skills, and orchestration surface may well earn their tokens on harder tasks; testing that claim needs harder tasks and more runs, and the rig here can drive both.Two of the findings are independent of quality, though. Re-writing a byte-identical cache prefix mid-session buys no code quality at all; it is the same content, paid for again at premium rates. An instruction file the harness silently ignores buys nothing either. Whatever the capability argument for a larger platform, those two are waste on any definition.Dogfooding, or the benchmark dataset as an audit logThe honest version of this experiment is &quot;trust the captured payloads&quot;, so we treated the dataset the way we tell clients to treat production inference logs.Every one of the 273 captured request/response records was written into a tamper-evident, SHA-256 hash-chained audit trail using our open-source library @systima/aiact-audit-log, and the chain verifies end to end.Chain verified: 273 entries No breaks detected Hash chain integrity: VALIDThis is the same mechanism the library provides for EU AI Act Article 12 logging; structured records, integrity you can hand to a third party, and reconstruction of exactly what was sent and returned.The dogfooding also cut both ways. One rebuild reported more records ingested than the chain contained, a buffered-write fault we caught because the chain count refused to reconcile; we rebuilt from the raw captures and re-verified before quoting the number above.A token benchmark is a low-stakes use of it. A credit-decisioning agent is not.CaveatsOne machine, one pair of versions, two model families for the floor and cache lanes (Sonnet 4.5 and Fable 5), one for the multiplier lanes, small n (three T1 and three T2 runs on Sonnet, two and two on Fable, five quality lanes per harness, one run per multiplier lane). Harness prompts change frequently, so treat the numbers as a July 2026 snapshot and the method as the durable artefact.A local gateway sat in the measurement path. Component-level figures come from captured payloads, which it cannot affect. Metered figures are cold-cache anchors calibrated against its measured constant; warm-run metered numbers were unattributable, so we only quote cold anchors. The gateway also silently substituted a newer model snapshot than the one we pinned, which is its own lesson. If you are not logging at the API boundary, you do not know what model you are actually running. On the Fable path the gateway also resumed a stale server-side session in one lane and executed tools host-side in another; we excluded both and re-ran the multi-step lane with unique filenames to break the gateway’s conversation fingerprint, which completed cleanly. Under the Fable pin it also answered alternately as claude-fable-5 and claude-opus-4-8.The T3 convergence is one observation of one task shape. A strictly sequential task would push Claude Code&#39;s request count, and therefore its total, back up. The OpenCode zero-tools and subagent lanes returned malformed streams through the gateway, so for those conditions we report captured payload sizes only.The real-configuration figures describe one practitioner&#39;s setup, reported in sizes and counts only. Yours will differ; the method transfers.Reproducing itThe measurement rig is roughly 200 lines of Node. It is an HTTP proxy that forwards to your model endpoint, writes each request body and response usage block to disk, and appends each pair to an audit chain.The rig, the seeded quality benchmark, and the full aggregated results are open source at github.com/systima-ai/agentic-coding-tools-comparison.The raw captures stay private, since they embed complete system prompts and configuration, but the rig regenerates equivalent captures for your own setup in minutes.Point ANTHROPIC_BASE_URL at it. Give the harness a fresh config directory and an empty workspace for the floor. Then add your instruction file, your MCP servers, and your workflows one at a time, and watch the boundary.If your traffic passes through a gateway, measure its envelope with a bare request first, and check which model actually answers.</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">这源于一种预感。我们通常使用 OpenCode，但由于 Meridian 的问题而“被迫”使用 Claude Code 一段时间。当时，我们看到使用量的增长速度比使用 OpenCode 时快得多。<p>这是最初的轶事证据，但我们开展了这项小型研究以收集实证数据：</p><p>我们在智能体编程工具（Claude Code 和 OpenCode）与 Anthropic 的端点之间添加了日志记录，并捕获了所有请求（以及返回的用量数据块）。</p><p>仅有一个例外（详见文末），我们明确发现，就缓存策略和 harness token 使用量而言，Claude Code 的效率远低于 OpenCode。</p></div>
+      <div class="post-body is-hidden" data-role="story-raw">This started based off of a hunch. We usually use OpenCode, but were 'forced' to use Claude Code for a while due to issues with Meridian. In that time, we saw the usage meter rise much, much more quickly than when using OpenCode.<p>This was the initial anecdotal evidence, but we undertook this small study to collect empirical data:</p><p>We added logging between the agentic coding tool (Claude Code and OpenCode) and Anthropic's endpoint, and captured all requests (and the returned usage blocks).</p><p>With one caveat (toward the end of the post) we found unambiguously that Claude Code was far more inefficient in terms of its cache strategy and its harness token usage than OpenCode.</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mcv</span>
+        
+        <span>2026/07/13 03:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">真正燃烧代币的是子代理。我曾经给 Claude Code 一个相当大的任务，它立即启动了 7 个子代理，甚至在其中一个完成之前就耗尽了我的预算。 5小时后再次尝试：相同的结果。<p>如果我让主代理顺序执行相同的任务，那完全没有问题。我不知道是否真的只是沟通和编排导致子代理效率如此低下，还是 Anthropic 认为大多数使用子代理的人在大公司账户上按代币付费，所以这是从 tokenmaxxers 那里赚更多钱的简单方法。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48883796">What really burns tokens is sub agents. I once gave Claude Code a pretty big task, and it immediately launched 7 sub agents which burned through my budget before even one of them was finished. Tried again 5 hours later: same result.<p>If I let the main agent do the same task sequentially, it was no problem at all. I don't know if it's really just communication and orchestration that makes sub agents so inefficient, or if Anthropic figured that most people using sub agents pay per token on a big corporate account, so this is an easy way to make more money from tokenmaxxers.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48883796">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48883796" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">btown</span>
+        
+        <span>2026/07/13 03:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">作为对比：在一个复杂的项目中，Fable 的“好奇心”可能正是您在探索和规划阶段所想要的 - 不仅对于将您的提示转变为不同角度进行探索的编排器，而且对于每个子代理来说，其任务是在代码库中搜索这些“角度”之一。如果你真的想尽一切努力，让这些子代理产生自己的发现，并递归地扩大查询的表面积，那么希望寓言贯穿始终是相当合理的。<p>也就是说，如果你的项目是“并行地在一堆事情上做这个精心计划的事情”，那么你绝对应该指示让子代理“下台”到不太好奇的模型。因此，他们的输出很可能更具凝聚力！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48883949">As a counterpoint: in a complex project, Fable's "curiosity" may be exactly what you want for an exploration and planning stage - not just for the orchestrator that turns your prompt into different angles with which to explore, but for each subagent whose task is to search the codebase for one of those "angles." If you truly want no stone unturned, letting those subagents spawn their own discoveries, and recursively grow the surface area of the inquiry, then it's quite reasonable to want Fable throughout.<p>That said, if your project is "do this well-planned thing on a bunch of things in parallel" then you should absolutely be instructing to have subagents "step down" to less curious models. Their output may well be more cohesive as a result!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48883949">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48883949" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">adastra22</span>
+        
+        <span>2026/07/13 04:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不过，好奇心是低效的。很多次我不得不停止代理并告诉它只他妈的编写代码并尝试编译它。  否则，它将通过程序逻辑填充其整个上下文跟踪，以从代码本身得出它将要执行的操作是否有效。它完全没有注意到它可以......尝试。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48884357">The curiosity is inefficient though. So many times I have to stop the agent and tell it to just fucking write the code and try compiling it.  Otherwise it will fill its entire context tracing through the program logic to derive from the code itself whether the thing it is about to do would work. It completely fails to notice it can just… try.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48884357">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48884357" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">CSMastermind</span>
+        
+        <span>2026/07/13 05:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">LLM 的一切都是低效的。  他们有他们的好处，但看着他们对那些明显痛苦的事情进行推理，他们之前（在记忆压缩之前）确实调查过，永远不要后退一步，然后说“这太慢了，让我寻找更好的方法”等等，这是痛苦的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48884904">Everything about LLMs is inefficient.  They have their benefits but watching them reason over things that are painfully obvious, that they've literally investigated before (before a memory compaction), never take a step back aand be like 'this is going too slow let me look for a better way', etc. is painful.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48884904">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48884904" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ifwinterco</span>
+        
+        <span>2026/07/13 14:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">情况变得更糟了，对吗？在每个人都使用 CoT 进行深入研究之前的旧模型不会这样做，只是用 1/10 的代币使用量来编写代码。<p>缺点是代码不是那么好，但它的生成速度更快、更便宜，而且通常实际上很好。</p><p>CoT 使 LLM 变得更好（比如 50% 的改进或其他），但成本增加了一个数量级。该图表正朝着错误的方向发展，并且已经存在了一段时间了</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888868">It’s got worse though right? Older models from before everyone went off the deep end with CoT don’t do this and just write the code with 1/10 the token usage.<p>The downside is the code isn’t as good but it is produced a lot faster and more cheaply and often it’s actually fine.</p><p>CoT has made LLMs better (say 50% improvement or something) but increases cost by an order of magnitude. That graph is going in the wrong direction and has been for a while now</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888868">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888868" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">NuclearPM</span>
+        
+        <span>2026/07/13 18:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">CoT？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48890799">CoT?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48890799">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48890799" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">NatKarmios</span>
+        
+        <span>2026/07/13 19:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">快速搜了一下，是思维链</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48890929">Chain of Thought, according to a quick search</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48890929">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48890929" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hoppp</span>
+        
+        <span>2026/07/13 07:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我想我的使用方式有所不同。我仍然主要坚持 Web UI。<p>我写一个好的提示，粘贴代码，然后复制输出代码并将其放入我的项目中。</p><p>所以最后我手工组装，我只给它需要知道的内容，这样就不会浪费额外的上下文。</p><p>循环中的人当然是秘密武器，但这样我就非常高效，没有 vivicode，而且我工作得也很快。一切都经过审核。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48885823">I think I use it differently. I still mainly stick to web UI.<p>I write a good prompt, paste the code then copy the output code and place it into my project.</p><p>So in the end I hand assemble and I only give it what it needs to know so no extra context wasted.</p><p>The human in the loop is of course the secret sauce but this way I am highly efficient, no vibecode and I work really fast too. Everything is audited.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48885823">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48885823" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jumpkick</span>
+        
+        <span>2026/07/13 07:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这就是我最初与法学硕士合作的方式，我更喜欢它。这让我对我添加的代码有了更好的理解。但是，我再也无法像这样跟上我的团队了。当其他人都直接在 Claude Code 中工作时，速度太慢了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48885880">This is how I worked with LLMs originally, and I much preferred it. This gave me a much better understanding of the code that I was adding. But, there's no way to keep up with my team like this anymore. It's just too slow when everyone else is working directly in Claude Code.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48885880">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48885880" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hoppp</span>
+        
+        <span>2026/07/13 08:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果整个团队都在凭感觉写代码，而且没有人工审查，那除了凭感觉写也没别的办法了，肯定的。<p>要是没人担责，我也就随便凭感觉写了，但要是真这么干，我连项目最后变成啥样都懒得管了。</p><p>我会变得极其超脱，彻底不在乎，就算出了天大的严重bug……我也完全无所谓了，因为那会儿这根本不是我负责，也不是我写的代码。我不过就是在那儿顺水推舟罢了。</p><p>直接把它接上Jira，让经理们去加功能，然后扔给QA。</p><p>到那时候，真正的工程就完全自动化了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48886582">If the entire team is vibe coding and there is no human audit then there is no way but to vibe code, for sure.<p>I would also just vibe it if there is no responsibility, but if I do it that way I don't even care what happens with the project.</p><p>I get so detached from it that I stop caring and if it has huge critical bugs..I just don't care anymore because it's not my responsibility or my code at all at that point. I'm just there to nudge things along.</p><p>Just hook it up to Jira and let the managers add the features then pass it off to QA.</p><p>Real engineering is fully automated at that point.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48886582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48886582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">FridgeSeal</span>
+        
+        <span>2026/07/13 11:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我也完全无所谓了，因为那会儿这根本不是我负责，也不是我写的代码<p>没错，百分之百。</p><p>公司已经明摆着不在乎了，那还白费什么劲。把整个项目切到自动模式，直接撒手不管，白天干点别的去。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48887581">&gt; I just don't care anymore because it's not my responsibility or my code at all at that point<p>Yep, 100%.</p><p>Business has made it clear they don’t care, so there’s no point in burning one’s energy. Throw the whole thing on auto, check out, and go do something else during the day.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48887581">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48887581" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">palmotea</span>
+        
+        <span>2026/07/13 14:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 把整个项目切到自动模式，直接撒手不管，白天干点别的去。<p>你要是真这么干，那就死定了（至少在如今这个社会）。等他们发现你是在这么混日子，你的工作怎么办？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888670">&gt; Throw the whole thing on auto, check out, and go do something else during the day.<p>If that's what you're doing, you're fucked (in today's society, at least). What happens to your job when they figure out that's what you're doing?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888670">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888670" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">FridgeSeal</span>
+        
+        <span>2026/07/13 15:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很多公司非常_想要_这种状态。<p>我同意，在这些地方工作可能干不长久，就算没别的原因，光是工作环境恶劣、让人士气低落就够受的了。我的重点是，这种公司确实存在，而且他们对“我的天哪，AI！！！1！1！”简直狂热到了极点，在这种地方多费心思，纯粹是浪费自己的精力。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48889017">Plenty of companies, very much _want_ this.<p>I agree, that work in these places is likely short lived, if for no other reason than working in them is awful and demoralising. My point is, that these places exist, and have such a hard-on for “oh my god, AI!!!1!1!” that putting in extra effort there, is a waste of your own energy.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48889017">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48889017" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">exe34</span>
+        
+        <span>2026/07/13 17:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不过他们总得找个背锅的，而你比顾问便宜多了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48889854">They need somebody to blame though, and you're much cheaper than a consultant.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48889854">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48889854" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">butlike</span>
+        
+        <span>2026/07/14 01:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我只是在想：归根结底结果是一样的。要么他们终止你作为受薪员工的合同，要么终止你作为顾问的合同。做顾问收费更高，而且你永远不用说自己是被解雇的。你这简直是在为转行做顾问提供绝佳的论据。<p>你完全可以对着不同的公司回答同样的套路问题以拿到最高薪水，然后当情况变得棘手时，你基本上可以“解雇”这家公司，说他们已经超出了你的核心咨询范畴。也许再推荐个新顾问然后走人。周而复始。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895727">I'm just thinking: The result is net-net the same. Either they terminate your contract as a salaried employee or they do it as a consultant. The fee is higher as a consultant and you never have to say you were fired. You're making a really good argument for getting into consulting.<p>You can just answer the same rote questions to different companies for max salary, then when the going gets tough you can essentially 'fire' the company and say they've moved past your core consulting paradigm. Maybe suggest a new consultant and move one. Rinse; repeat.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pferde</span>
+        
+        <span>2026/07/13 16:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哇，这简直快赶上《呆伯特》里的荒诞程度了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48889547">Wow, this is almost Dilbertesque level of absurdity.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48889547">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48889547" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mancerayder</span>
+        
+        <span>2026/07/13 09:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">QA团队是在承受那些意外问题、bug、性能问题等的冲击，还是说一切照旧？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48886688">Are the QA team bearing the brunt of the unexpected issues, bugs, performance etc or is it business-as-usual?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48886688">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48886688" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">FridgeSeal</span>
+        
+        <span>2026/07/13 11:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可笑的是，你居然以为公司里还有QA团队。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48887561">Amusing that you think businesses still have QA teams.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48887561">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48887561" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oxzidized</span>
+        
+        <span>2026/07/13 12:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">上一条评论说他们最后会“……把活儿推给QA。”<p>编辑：估计那很可能是在半开玩笑。</p><p>题外话：作为一个对编程感兴趣有一阵子、但人生轨迹最终没走上软件开发道路的人，看着你们最近经历的这场过山车，真是觉得太疯狂了。以前我还挺郁闷没能靠干这行谋生，但最近我越来越觉得自己躲过了一劫。</p><p>当然，这并不意味着我现在所在的行业就没有一堆跟AI相关的破事要处理。我想大多数人都有。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48887831">Parent comment said they end up "...pass[ing] it off to QA."<p>Edit: suppose that very well could have been tongue-in-cheek.</p><p>Side note: as someone who has been interested in programming for a while, but didn't end up in a software dev track in life, it's been pretty wild watching the ride you all have been going on lately. I used to be pretty bummed I didn't get to do that kind of work for a living, but lately I've been feeling more and more like I dodged a bullet.</p><p>Not that I don't have my own AI-related junk I have to deal with where I did end up, of course. I think most have.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48887831">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48887831" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">aryehof</span>
+        
+        <span>2026/07/13 15:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好奇你从事的是哪个行业，在AI方面面临着哪些挑战？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48888968">Curious what industry your in and what your facing AI wise?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48888968">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48888968" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
