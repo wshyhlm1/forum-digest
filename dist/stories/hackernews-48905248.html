@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>如何让Claude停止使用“承重”一词 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-15/">返回日报</a>
+      <div class="source-chip">Hacker News #5</div>
+      <h1>如何让Claude停止使用“承重”一词</h1>
+      <p class="original-title">How to stop Claude from saying load-bearing</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 shintoist</span>
+        <span>热度 573</span>
+        <span>回复 585</span>
+        <span>2026/07/14 19:46</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48905248" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://jola.dev/posts/how-to-stop-claude-from-saying-load-bearing" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48905248.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者分享了一种通过 Claude 的 MessageDisplay hook 机制替换其常用词汇的方法。</li><li>通过 Python 脚本和正则表达式，将 Claude 输出中的特定短语（如 load-bearing、honest take）替换为自定义词汇。</li><li>该方法需要配置 shell 脚本和 settings.json，在 Claude 启动时加载 hook 实现文本替换。</li></ul>
+      <h3>看点</h3><ul><li>针对 Claude 频繁使用特定词汇（如 load-bearing seams、honest takes）的痛点提供解决方案</li><li>展示了 Claude 的 hook 机制可用于自定义输出内容</li><li>提供了完整的 Python 脚本和配置示例</li><li>以幽默方式解决 AI 工具使用中的实际问题</li><li>体现了开发者对 AI 工具行为的深度定制能力</li></ul>
+      <p class="reason">帖子讨论了如何通过 Claude 的 hooks 机制修改其输出文本，属于 AI 工具使用与定制开发范畴。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">doctoboggan</span>
+        
+        <span>2026/07/15 01:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我不介意与 Claude 一起编码，它使用了所有典型的claudisms。当我阅读博客文章、电子邮件或其他形式的散文时，我会更加烦恼，并且看到同样的克劳斯。<p>我想他们并不烦人，因为我知道我正在与法学硕士交谈并期待典型的回应。当我在网上阅读我以前认为是人类写的散文时，意识到它是法学硕士可能会很不舒服。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48910656">I do not mind when I am coding with Claude and it uses all the typical claudisms. I am much more bothered when I am reading a blog post, email, or other form of prose and I see those same claudisms.<p>I guess they are not annoying since I know I am talking to an LLM and expect the typical responses. When I am reading prose online that I previously would have expected a human to write, it can be quite jarring to realize its an LLM.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48910656">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48910656" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">rpdillon</span>
+        
+        <span>2026/07/15 03:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我很长一段时间没有使用 Claude，但我的同事使用了，所以我通过旁道被感染：我最终阅读了他们的 vibed 文档，注意到“承重”，有点喜欢它，并开始在对话中使用它，直到我得到反馈说我“像 Claude 一样说话”，所以现在我完全避免使用这个短语。语言和社会规范的交集很有趣。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48911569">I didn't use Claude for a long time, but my coworkers did, so I got infected through a side channel: I ended up reading their vibed docs, noticed "load-bearing", kind of liked it, and started using it in conversation, until I got feedback that I was "talking like Claude", so now I avoid the phrase entirely. The intersection of language and social norms is interesting.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48911569">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48911569" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">cafebeen</span>
+        
+        <span>2026/07/15 03:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，我有过读一本书并观察我认为是克劳德主义的相关经历，结果发现它是在 2019 年写的。一些常见的故事实际上是很好的写作习惯，但我想它们最好是小剂量的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48911637">Yes, I had a related experience of reading a book and observing what I thought were claude-isms, only to realize it was written in 2019.  Some of the common tells are actually good writing practices, but I guess they are best in smaller doses.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48911637">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48911637" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">palmotea</span>
+        
+        <span>2026/07/15 13:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 是的，我有过读一本书并观察我认为是克劳德主义的相关经历，结果发现它写于 2019 年。一些常见的故事实际上是很好的写作习惯，但我想它们最好是小剂量的。<p>法学硕士还没有发明任何东西。每一个法学硕士主义都是一些预先存在的、既定的词语、隐喻和/或文体元素<i>机械地被过度使用，直到它变成即时陈词滥调</i>。</p><p>另一个法学硕士主义是乏味的废话：毫无意义的废话，有点像那些旧的好莱坞外墙：它似乎是一座坚固的建筑，但如果你仔细观察，它只是支撑着一堵墙（<a href="https://www.ferrovial.com/blog/en/2018/03/the-fake-architecture-of-the-film-world/" target="_blank" rel="noopener noreferrer">https://www.ferrovial.com/blog/en/2018/03/the-fake-architect...</a>)。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48916571">&gt; Yes, I had a related experience of reading a book and observing what I thought were claude-isms, only to realize it was written in 2019. Some of the common tells are actually good writing practices, but I guess they are best in smaller doses.<p>The LLMs haven't invented anything. Every LLM-ism is some pre-existing and established word, metaphor, and or stylistic element <i>mechanically overused until it becomes an instant cliche</i>.</p><p>The other LLM-ism is vapid bullshit: meaningless crap that's kind of like those old hollywood facades: it appears to be a substantial building, but if you look a bit closer it's just a single wall propped up (<a href="https://www.ferrovial.com/blog/en/2018/03/the-fake-architecture-of-the-film-world/" target="_blank" rel="noopener noreferrer">https://www.ferrovial.com/blog/en/2018/03/the-fake-architect...</a>).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48916571">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48916571" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">SoftTalker</span>
+        
+        <span>2026/07/15 03:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">当然，这就是人工智能获取它们的地方：训练数据。这些短语和陈词滥调非常普遍，尤其是在公司“白皮书”、备忘录和营销材料中。曾经有一段时间，“炉管”和“筒仓”一样很常见。<p>但法学硕士似乎确实一直专注于在相同的地方使用相同的东西。我想这是因为这是概率最高的构造。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48912125">Sure, that's where the AI got them: the training data. These phrases and cliches were very prevalent especially in corporate "white papers" and memos and marketing materials. There was a time when "stove pipe" was a common one too, along with "silo."<p>But the LLMs really seem to fixate on using the same ones in the same places all the time. I guess that's because that's the highest probability construction.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48912125">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48912125" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">vidarh</span>
+        
+        <span>2026/07/15 19:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">把每个大语言模型都看作一种独立的人格。我们正在接收来自大量不同人格的企业套话，所以即使它们很相似，也依然是透过许多不同的滤镜过滤出来的。<p>我们大多数人只接触少数几个高产的大语言模型，所以大语言模型的那些小毛病很快就让人厌烦也就不足为奇了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48919428">Consider each LLM as one personality. We're getting corporate bullshit from a large number of different personalities, so even when they are similar they are still filtered through many different lenses.<p>Most of us are only dealing with a handful of hyper-productive LLMs, so it makes sense that the LLM-ticks get old much quicker.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48919428">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48919428" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sheept</span>
+        
+        <span>2026/07/15 08:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一些在 LLM 之前的作者 [0] 不鼓励使用破折号，因为它们很容易过度使用。<p>[0]: <a href="https://slate.com/human-interest/2011/05/em-dashes-why-writers-should-use-them-more-sparingly.html" target="_blank" rel="noopener noreferrer">https://slate.com/human-interest/2011/05/em-dashes-why-write...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48914607">Even em dashes have been discouraged by some writers [0] before LLMs because they're easy to overuse.<p>[0]: <a href="https://slate.com/human-interest/2011/05/em-dashes-why-writers-should-use-them-more-sparingly.html" target="_blank" rel="noopener noreferrer">https://slate.com/human-interest/2011/05/em-dashes-why-write...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48914607">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48914607" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">NoMoreNicksLeft</span>
+        
+        <span>2026/07/15 09:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">老天保佑，要是Claude开始用句内括号，我可能就得发誓（在网上）保持沉默了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48914988">God help me if Claude starts using inline parentheticals, I might just have to take a vow of (online) silence.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48914988">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48914988" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">abustamam</span>
+        
+        <span>2026/07/16 01:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很高兴看到我不是唯一一个（也许）过度使用行内括号的人……有时候甚至会用到括号里套括号！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48924091">Glad to see I'm not the only one who (perhaps) overuses in-line parentheticals... sometimes to the point where I'd have parentheticals within parentheticals!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48924091">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48924091" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tzs</span>
+        
+        <span>2026/07/15 09:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如今，要被指责为人工智能，只需记住并使用 (1) 您在高中英语课上学到的关于作文的知识，以及 (2) 您从“Mac 不是打字机”[1] 中学到的知识。<p>[1] <a href="https://www.amazon.com/dp/0201782634" target="_blank" rel="noopener noreferrer">https://www.amazon.com/dp/0201782634</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48915217">All it takes to get accused of being AI nowadays is to remember and use (1) what you were taught about composition in your high school English class, and (2) what you learned from "The Mac is Not a Typewriter" [1].<p>[1] <a href="https://www.amazon.com/dp/0201782634" target="_blank" rel="noopener noreferrer">https://www.amazon.com/dp/0201782634</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48915217">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48915217" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mohamedkoubaa</span>
+        
+        <span>2026/07/15 05:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这正是人类发明“事物有流行与过时之分”这一概念的原因。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48912897">This is exactly why humans invented the idea of things going in and out of style.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48912897">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48912897" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">_carbyau_</span>
+        
+        <span>2026/07/15 10:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">被贴上“老派”的标签是一回事，被贴上“大语言模型”的标签则完全是另一回事。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48915607">It is one thing to be labelled as "old fashioned" but entirely another to be labelled as an LLM.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48915607">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48915607" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nathias</span>
+        
+        <span>2026/07/15 16:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你是什么意思，哪些“特征”算是好的写作习惯？<p>在我看来，这些特征简直糟糕透顶，哪怕是人类写出来的也一样。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48917727">what do you mean, which tells are good writing practices?<p>as I see them they are all truly terrible even if authored by humans</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48917727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48917727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jambalaya8</span>
+        
+        <span>2026/07/15 03:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">事实上，早在2017或2018年（甚至可能更早），AI就已经在学习这些“AI腔调”了。我认为很多最近才盲目跟风炒作AI的人并没有意识到，AI所采用的这些语言习惯其实并不新鲜。在某个时间点，‘你’与AI之间的界限将变得如此透明，以至于很可能会被彻底抹平。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48911895">Actually, AI was learning these 'AI-isms' even back in 2017/2018 (probably even earlier). I think a lot of people who just jumped on the imaginary AI bandwagon more recently don't realise the mannerisms AIs are adopting are not really new. At some point the bleed between 'you' or 'you' and AI will just become so transparent it will be obliterated, more likely than not.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48911895">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48911895" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">stingraycharles</span>
+        
+        <span>2026/07/15 07:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你是什么意思？AI是在所有可用数据上进行训练的，所以显然它也用2017或2018年的数据进行了训练。<p>还是说你的意思是，AI今天表现出的这些模式在当时那个时期的交流中就已经存在了？</p><p>这似乎也是显而易见的，因为AI有很多来自各个时期的重复模式，而“承重”只是其中之一。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48914036">What do you mean? AI is being trained on all data available, so obviously it’s being trained on data from 2017/2018 as well.<p>Or do you mean that the patterns that AI is showing today were already present in communication around that time?</p><p>That seems obvious as well, as AI has a lot of repetitive patterns that come from all kinds of periods, of which “load-bearing” is just one.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48914036">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48914036" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jambalaya8</span>
+        
+        <span>2026/07/15 09:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，我想说的是，这些模式在2017/2018年就已经显现出来了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48915113">Yes, I am saying the patterns were emergent already in 2017/2018.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48915113">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48915113" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">schrodinger</span>
+        
+        <span>2026/07/15 03:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我认为你和原帖楼主观点一致——他们提到2019年的书里就有这些词，因此这些术语_确实_早于AI出现。你的观点是AI训练所用的材料比承重材料还要多（哈哈），但这与楼主的观点是一致的，并不矛盾。<p>之所以提这个，是因为你的“其实”可能会让人以为你在反驳，但实际上大家是一家人，其乐融融呢！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48912103">I believe you and OP are in agreement — they were saying that the 2019 book had them, therefore the terms _do_ predate AI. Your point that AI was being trained on material than is load-bearing (lol) but in agreement with OP, not contradictory.<p>Only mentioning because your "actually" may imply you thought you were disagreeing, when in fact it's one big happy family!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48912103">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48912103" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">greedo</span>
+        
+        <span>2026/07/15 03:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我在 Teams 上给项目同事写了一封感谢信，其中一半人认为我是使用 AI 来写的。作为前世的职业作家，我感到很惊讶。然后他们告诉我，他们从未见过我写过超过一两句话的东西，所以他们很自然地认为相对完善的东西必须由人工智能辅助。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48912117">I wrote a thank you message on Teams to my coworkers on a project, and half of them thought I had used AI to write it. As a professional writer in a previous life, I was astonished. Then they told me that they had never seen me write anything more than a sentence or two so naturally they assumed something relatively polished had to be AI assisted.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48912117">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48912117" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">phs318u</span>
+        
+        <span>2026/07/15 04:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">虽然我没当过专业作家，但从高中起我就一直是个文笔不错、词汇量丰富的人，那时英语是我最擅长的科目，尽管我是个理科达人。我痛恨这样一个事实：曾经被视为优势的技能，如今在公共场合却成了累赘。我讨厌为了不被指责使用了（或本身就是）大语言模型，而不得不降低写作水平并进行自我审查。尽管我的文章里有一些反复出现的个人语言特征——某些我作为个人习惯依然会用的语言错误（而大语言模型绝不会这么用）——但人们并不总能注意到这些。所以，我被迫改变自己的文风，去应对这种本质上相当于现实版验证码的荒谬处境。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48912827">Though I haven’t been a professional writer, I’ve been a good writer with an expansive vocabulary since high school where English was my best subject despite being a STEM maven. I hate the fact that what was previously considered an advantageous skill is now a millstone in public use. I hate having to dumb down and self—censor in order to avoid being accused of using (or being) an LLM. Even though my writing has a few repeated personal tells - certain linguistic errors that I nevertheless employ as part of my idiom (and an LLM never would) - people don’t always notice them. So, I’m forced to change my voice to deal with what’s essentially an IRL Captcha.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48912827">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48912827" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">leetrout</span>
+        
+        <span>2026/07/15 07:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">认真问一句：破折号误用是个玩笑吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48914146">Serious question: is the em dash misuse a joke?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48914146">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48914146" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

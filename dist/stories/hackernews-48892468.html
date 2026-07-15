@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grok CLI 已将整个主目录上传到 GCS | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-15/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Grok CLI 已将整个主目录上传到 GCS</h1>
+      <p class="original-title">Grok CLI uploaded the whole home directory to GCS</p>
+      <div class="meta-line">
+        <span>安全</span>
+        <span>作者 denysvitali</span>
+        <span>热度 432</span>
+        <span>回复 403</span>
+        <span>2026/07/13 21:35</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48892468" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://twitter.com/a_green_being/status/2076598897779020159" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48892468.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Grok CLI 工具被发现将用户整个主目录上传至 xAI 的 GCS 服务器</li><li>上传内容包括 SSH 密钥、密码管理器数据库、文档、照片、视频等敏感文件</li><li>引发对 AI 工具数据安全和用户隐私保护的广泛关注</li></ul>
+      <h3>看点</h3><ul><li>AI 开发工具存在严重数据泄露风险</li><li>用户敏感信息（SSH 密钥、密码库）被意外上传</li><li>开发者需警惕 AI CLI 工具的文件访问权限</li><li>事件发生在 2026 年 7 月，引发社区对 AI 工具安全性的讨论</li></ul>
+      <p class="reason">该帖子讨论了 Grok CLI 工具将用户整个主目录（包括 SSH 密钥、密码管理器数据库等敏感文件）上传到 xAI 服务器的问题，涉及 AI 工具的安全性和隐私风险。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://xcancel.com/a_green_being/status/2076598897779020159" target="_blank" rel="noopener noreferrer">https://xcancel.com/a_green_being/status/2076598897779020159</a></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://xcancel.com/a_green_being/status/2076598897779020159" target="_blank" rel="noopener noreferrer">https://xcancel.com/a_green_being/status/2076598897779020159</a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">simonw</span>
+        
+        <span>2026/07/13 22:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要澄清的是，这<i>并非</i>Grok代理决定读取这些文件。<p>我认为大语言模型与这个决定毫无关系。看起来Grok工具在启动会话时，会确定性地发起将用户当前仓库（如果未进行版本控制，可能还包括其目录？不清楚该用户之前是否在home目录下运行过“git init”）完整上传到Grok服务器的操作。</p><p>一种可能的“无害”解释是，xAI随后对每个文件进行向量嵌入，以便后续提供正确的上下文。我认为这在这里并不是一个值得的权衡，尤其是其他流行的编程代理仅靠本地运行grep/ripgrep就能应付自如。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48893329">Important to clarify that this was <i>not</i> the Grok agent deciding to read the files.<p>I don't think the LLM had anything to do with this decision at all. It looks like the Grok tool starts a session by deterministically kicking off a full upload of the user's current repository (and maybe their directory if not version tracked? Not clear if this user had previously run "git init" in their home directory) to Grok's servers.</p><p>One possible "innocent"
+explanation could be that xAI then run vector embedding on every file to help later provide the right context. I don't think thats a worthwhile tradeoff here, especially since other popular coding agents get by just using grep/ripgrep run locally.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48893329">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48893329" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">danlitt</span>
+        
+        <span>2026/07/13 23:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这可不是什么无害的解释，就像有人闯入你家只是为了帮你调一下恒温器一样荒谬。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894205">That is not an innocent explanation, any more than someone breaking into your house to adjust your thermostat.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894205">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894205" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">treszkai</span>
+        
+        <span>2026/07/14 18:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为了完整性起见，在这个案例中，调节恒温器的人也是被雇来干活的，而且前门没锁。他们仍然不该这么做，但他们确实把事办成了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48904696">For completeness, the person who adjusted the thermostat in this case was also hired to get stuff done, and the front door was left unlocked. They still shouldn't have done it, but they were effective.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48904696">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48904696" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">gruez</span>
+        
+        <span>2026/07/13 23:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是啊，听起来就像cursor（正待被spacex/xAI收购）所做的语义索引。<p><a href="https://cursor.com/docs/agent/tools/search" target="_blank" rel="noopener noreferrer">https://cursor.com/docs/agent/tools/search</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894443">Yeah sounds like semantic indexing that cursor (pending acquisition by spacex/xAI) does.<p><a href="https://cursor.com/docs/agent/tools/search" target="_blank" rel="noopener noreferrer">https://cursor.com/docs/agent/tools/search</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894443">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894443" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Havoc</span>
+        
+        <span>2026/07/14 01:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们还会上传你的 ssh 密钥吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895585">They upload your ssh keys too?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gruez</span>
+        
+        <span>2026/07/14 01:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果你把主目录用作项目目录，他们可能就会这么做，毕竟他们只提到使用 gitignore 作为黑名单。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895798">They might, if you use your home directory as the project directory, given that they only mention using gitignore as the blacklist.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895798">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895798" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dinfinity</span>
+        
+        <span>2026/07/14 03:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">更多信息：
+<a href="https://forum.cursor.com/t/codebase-indexing/36/18" target="_blank" rel="noopener noreferrer">https://forum.cursor.com/t/codebase-indexing/36/18</a><p>也就是说，文件内容会被上传用于嵌入/索引，但据说嵌入后Cursor不会存储这些内容。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48897724">More info:
+<a href="https://forum.cursor.com/t/codebase-indexing/36/18" target="_blank" rel="noopener noreferrer">https://forum.cursor.com/t/codebase-indexing/36/18</a><p>So file contents are uploaded for embedding/indexing, but supposedly none of those contents are stored at Cursor after embedding.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48897724">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48897724" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nerdsniper</span>
+        
+        <span>2026/07/13 22:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">而且，如果真那么有必要，相当不错的嵌入模型完全可以在本地运行，直接遍历用户文件夹就行了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48893492">Also decent embeddings models could run locally and just trickle through the user folder if that was so necessary.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48893492">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48893492" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/07/13 23:26</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[已删除]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894170"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894170">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894170" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">liuliu</span>
+        
+        <span>2026/07/14 00:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这条评论应该被置顶。<p>太多回复都是在没看懂原文的情况下就急着反驳。这可不是“又一个代理在干代理该干的事”。这是Grok Build团队刻意做出的选择，通过服务器端的开关让程序把你的整个代码库上传到Google Cloud Storage存储桶。这不是代理的决定，程序是Grok团队写的，可以反编译出来，里面的逻辑一目了然。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895030">This should be the first comment here.<p>Too many replies here are done before reading it. It is not "just another agent does the agent thing". It is a deliberate choice of the Grok Build team to have a toggle from the server to let the program to upload your entire codebase to a Google Cloud Storage bucket. It is not an agent decision, the program is written by the Grok team, can be dissembled and seeing the logic wild-open.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895030">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895030" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">LightBug1</span>
+        
+        <span>2026/07/14 00:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">天哪……我感觉比尔·希克斯的喜剧段子要来了……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894859">Jesus ... I feel a Bill Hicks sketch coming on ...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894859">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894859" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Lomlioto</span>
+        
+        <span>2026/07/13 23:45</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894462">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894462">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894462" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">alfiedotwtf</span>
+        
+        <span>2026/07/13 23:39</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894368">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894368">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894368" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bossyTeacher</span>
+        
+        <span>2026/07/13 23:56</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894632">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894632">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894632" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">keeganpoppen</span>
+        
+        <span>2026/07/14 00:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不，他显然就是个“蠢货”迪士尼反派，只有白痴才会哪怕稍微听信他一点！xD</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895300">no, clearly he is a "dumbass" disney villain that only IDIOTS listen to in even the SLIGHTEST! xD</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895300">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895300" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">LetsGetTechnicl</span>
+        
+        <span>2026/07/13 22:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这么多回复都在说他们应该用.md文件之类的东西来限制访问。但真有什么保证说它们会遵守这些规则吗？似乎就算你苦苦哀求别碰那些文件，它们也有可能照碰不误。那么多人就这么心甘情愿地在自己电脑上装了间谍软件，而大科技公司却把这称为下一个重大突破。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48892849">So many of the replies are saying that they should've restricted access using .md files and whatnot. Is really any guarantee that they even follow those? It seems like even if you ask pretty please don't touch those files, there's a chance they will. So many people have just willingly installed spyware on their computers and big tech calls this the next big thing.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48892849">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48892849" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">_verandaguy</span>
+        
+        <span>2026/07/13 23:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我会一直大声疾呼，直到有人听进去为止：<p>试图使用 markdown 文件来限制访问，<i>绝</i>对不能被视为<i>任何</i>安全保障。</p><p>这是一种带内信令形式，它输入到一台机器中，而这台机器除了别的之外，还会试图揣摩你请求的言外之意、推断用户意图并取悦用户。</p><p>解决这个问题的唯一合理方法是使用控制平面。一个构建良好的运行框架可以做到这一点；沙盒也可以做到；见鬼，一个精心挑选的 `umask` 也能做到；但这两种方法都容易让用户产生通知疲劳。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894112">I will keep banging this drum until people listen:<p>Trying to use markdown files to limit access should <i>never</i> be treated as a security guarantee <i>at all.</i></p><p>This is a form of in-band signalling that goes into a machine that, among other things, tries to read between the lines of your requests, extrapolate user desires, and please the user.</p><p>The only sane way to address this is using a control plane. A well-built harness can do this; a sandbox can do this; hell, a carefully-chosen `umask` can do this; but both of those are liable to introduce notification fatigue in the user.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894112">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894112" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">thesuitonym</span>
+        
+        <span>2026/07/14 00:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">太离谱了，几十年来我们都知道使用 ACL 来确保人们无法访问我们不想让他们访问的文件，但不知为何，一台假装成人的计算机却没有得到同样的待遇。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894782">It's wild that we've known for decades to use ACLs to make sure people don't have access to files we don't want them to have access to, but somehow a computer pretending to be a person doesn't get that same treatment.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894782">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894782" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">_verandaguy</span>
+        
+        <span>2026/07/14 00:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">什么ACL，根本没用，我们早就知道带内信令这回事了，可整个行业似乎要么对此一无所知，要么遗忘的频率规律得简直就像根本不知道一样。<p>系统级ACL；强制或自主访问控制；默认安全的应用和网络配置，这些全都白搭，如果你弄个大语言模型，赋予它本该由负责任、有判断力的人类操作员拥有的所有权限，然后让它根据任意不受信任的输入来执行操作，而这些输入可能包含提示词注入攻击，这种东西通常是无法被净化的。</p><p>定义明确、执行严格的安全策略可以减轻灾难，但目前实际环境中的许多系统根本没有考虑到这种威胁模型。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48894871">ACLs, nothing, we've known about in-band signalling since forever and still this whole segment of the industry seems to either not know about it, or forgets about it at a cadence so regular it may as well not know about it.<p>System-level ACLs; mandatory or discretionary access control; secure-by-default application and network configurations are all for naught if you take an LLM, run it with all the privileges you'd have an accountable, judgemental operator, and then tell it to act based on arbitrary untrusted input which might include prompt injection attacks, something which cannot generally be sanitized.</p><p>Well-defined, well-enforced security policies can mitigate disasters, but many in the wild right now just don't account for this kind of threat model.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48894871">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48894871" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hilariously</span>
+        
+        <span>2026/07/14 00:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这纯粹是故意视而不见——我曾就职于一家开发工具的公司，他们坚称基于Markdown的安全机制已经足够好了，还把它展示给公司里任何人攻击，因为他们太自信了。<p>我花了不到5分钟就彻底搞垮了它……根本没人理会，他们只是继续推进——打个勾就完事了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48895254">It's just purposeful blindness - I worked for a company building out tooling that insisted markdown based security was good enough and showed it off for anyone at the company to attack because they were so sure.<p>It took me less than 5 minutes to completely disable... nobody cared, they just kept going - check the box and move on.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48895254">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48895254" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
