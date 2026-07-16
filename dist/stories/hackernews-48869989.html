@@ -216,15 +216,15 @@
 <body data-page="story">
   <main class="page story-page">
     <header class="topbar">
-      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-15/">返回日报</a>
-      <div class="source-chip">Hacker News #4</div>
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-16/">返回日报</a>
+      <div class="source-chip">Hacker News #1</div>
       <h1>你的“应用”本来可以只是个网页（所以我帮你改好了）</h1>
       <p class="original-title">Your &#39;app&#39; could have been a webpage (so I fixed it for you)</p>
       <div class="meta-line">
         <span>开发工具</span>
         <span>作者 MrVandemar</span>
-        <span>热度 847</span>
-        <span>回复 511</span>
+        <span>热度 871</span>
+        <span>回复 532</span>
         <span>2026/07/11 16:21</span>
       </div>
       <div class="actions">
@@ -236,9 +236,9 @@
 
     <section class="section">
       <h2>摘要</h2>
-      <ul><li>作者不满某旅行应用强制安装且包含追踪和广告，决定将其替换为网页。</li><li>通过逆向工程 Android 应用流量，作者发现其内容本质上是 HTML 和 JSON 数据。</li><li>作者编写 Ruby 脚本定期抓取数据并生成轻量级网页，提供更优用户体验。</li></ul>
-      <h3>看点</h3><ul><li>批判“应用文化”：许多应用本可以是更简单、更通用的网页。</li><li>技术实践：使用 Android Studio、Magisk、HTTP Toolkit 等工具进行流量拦截和分析。</li><li>发现应用 API 漏洞：用户名和密码直接拼接在 URL 中，安全性堪忧。</li><li>网页优势：可复制、可打印、可搜索、跨设备兼容，且体积更小。</li><li>作者最终托管了一个无追踪、无广告的网页版本，供团队成员使用。</li></ul>
-      <p class="reason">文章讲述了作者通过逆向工程 Android 应用流量，将原本臃肿且包含追踪和广告的应用替换为轻量级网页的过程，涉及网络抓包、API 分析、自动化脚本开发等技术实践，与开发工具、编程和 Web 技术密切相关。</p>
+      <ul><li>Why is this an “app”? This summer, the kids’ performing arts school are singing and dancing in a show at Disneyland. We’re all very excited, but my excitement, at least, was muted a little when I was told to install the “Travelbound” app in order to get access to the itinerary, travel arrangements, and accommodation details. Fuck that noise. This should have been a webpage. Why do you want me to install a(nother) shitty app just to tell me something that could have been a (smaller, faster, more universally-accessible) document? I’m not remotely exaggerating. This app is literally text, images, and links to PDF files, delivered via the Web. There only seem to be two things that this “app” does, that a webpage might not have, and they’re both anti-features: It reports tracking data associated with your Google Account back to the developers. It shows you advertisements (which they call “inspirations”) for other trips organised by the same agency. Fuck. Everything. About. That. A webpage would have been so much better. Unlike this app, a webpage can be…1 Copy-pastable Printable Saveable Bookmarkable Searchable Usable on virtually any device (Potentially) more-accessible I’m annoyed enough… that I’m going to “fix” this app. Hold my beer. Intercepting app traffic It’s been a while since the last time I reverse-engineered an Android app from its network traffic, so I had to brush-up on the best way. Here’s what I ended up doing. Created a new virtual device in Android Studio’s Virtual Device Manager. Tested adb shell was working and used rootAVD to root it: ./rootAVD.sh system-images/android-33/google_apis_playstore/x86_64/ramdisk.img.2 Performed a cold boot, ran Magisk, and tweaked its settings to automatically grant su access to any app that asked.3 All your traffic are belong to me. At this point, it’s just like running Wireshark or TCPdump. Ran HTTP Toolkit and told it to intercept AVD traffic. It installed a (fake) VPN provider, routing the phone’s traffic through the proxy.4 Installed the Travelbound app from the Play Store. Configured HTTP Toolkit to proxy only the Travelbound app (more signal, less noise). With only a couple of minutes experimentation I discovered that the app works by concatenating the username and password5 and using it in a URL of the form: https://travelbound.api.vamoos.com/api/itineraries/{username}-{password} This returns a pile of JSON which, with a little interpretation, can be seen to represent all of the content the app “shows”. E.g., there’s: an array containing each leg of the itinerary, an array containing all of the “inspirations” advertisements to show you, a cross-referenced array containing all of the files (images etc.) that are referenced by the other sections, etc. They’re clearly producing HTML code anyway… so again, I ask: why isn’t this a webpage? A little experimentation showed me that the S3 image URLs were being delivered with moderately-short expiration times, so the JSON needs re-fetching periodically even if the content hasn’t been changed.6 Turning it into something better Now I had everything I needed to make something… better. I wrote a Ruby script that runs on a Cron schedule to pull the latest JSON and use it to build a HTML page. I chose to have it completely skip over the “inspirations” (“overlayRows” in the data schema) and just list: the items from the itinerary and all of the files not referenced by the inspirations nor itinerary, (a lazy way to collate the PDF download links). Then I hosted the page, protected by a password: the same one my tour group were given in the first place. I included the raw JSON it used in &lt;details&gt; elements so it can be checked if e.g. there are bits of the schema I didn’t see but that might appear later. My web page isn’t as “pretty” as the app from which it “borrows” its information. But it’s a fraction of the size and gets all of the Web’s standard features for free. Some people like an “app”, and that’s… fine, I guess. But some apps could have been a webpage. And especially where, like this one, the content they deliver is already written in HTML and delivered over HTTP… they should be a webpage, right? I can’t understand how we got to this place with “app culture”! Software companies are happy to make their lives harder (and more expensive: deploying to the big app stores isn’t free!), in order to deliver HTML content to fewer people and with fewer features7 than if they just published directly to the Web in the first place! There are (some) tasks for which an “app” is absolutely the right choice of medium. Travelbound is not one of them. But at least I (and the rest of our group, whom I’ve shared it with) now get the choice about how we access this content. Either a 43MB app (ballooning to 124MB when it’s finished downloading extra content) with tracking and advertisements… or a 0.05MB web page (with an optional extra 35MB of images) that provides more features and works on more devices. I know which one I’ll be using! Footnotes 1 And these are just the features that everybody can get behind. The webpage I ultimately ended up making to replace the app also has some user-friendly/developer-hostile features, like the fact that it removes the tracking code and doesn’t show advertisements. 2 You need to root the device in order to force applications that use Certificate Pinning to trust your man-in-the-middle proxy server. Without this, some applications – including the one I wanted to reverse-engineer – will recognise your self-signed TLS certificate as invalid and refuse to communicate. 3 Without changing this setting in Magisk, I found that HTTP Toolkit would request su access but not wait for the response, and go on to run in unprivileged mode before I had a chance to grant it! 4 Owing to Android security considerations I needed to manually install the root CA certificate it installed for me, but the instructions “just worked”. 5 The username and password is shared by an entire tour group. I’m guessing they don’t have a plan for if some credentials get leaked? Or possibly they consider all of the data they hold to be low-sensitivity enough that it doesn’t matter if it does… in which case I return to my original point: why the hell wasn’t it just a webpage in the first place? 6 Or else the images need caching locally, which seems to be what the app does, in the bloatiest possible way. 7 And, often, with worse accessibility. I’ve not audited the accessibility of this app, but there are things about it that suggest that it’d be harder to use using accessibility technologies than my plain, simple Web version. × × × ×</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
     </section>
 
     <section class="section">
@@ -325,63 +325,6 @@
         <div class="comment-children">
     <details class="comment-node depth-4">
       <summary>
-        <span class="meta-author">palata</span>
-        
-        <span>2026/07/15 19:07</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">这是错误的。我喜欢移动应用程序的最重要原因与我喜欢桌面程序的原因相同。<p>- 我可以<i>下载一次</i>然后使用它。</p><p>- 我可以看到它何时更新（相对于每次加载时都会更新的网站）。出于安全原因，更好的是，我什至可以与其他人在线验证我的应用程序，并确保我们运行相同的东西。</p><p>- 端到端加密在网页中没有多大意义，因为我从根本上必须信任服务器（它为我每次运行的整个应用程序提供服务）。如果您关心端到端加密，那么您需要一个应用程序。</p><p>- 对于开源应用程序，我可以审核代码，可能会对其进行编辑并使用它。我无法通过网页做到这一点。</p><p>- 我只使用免费应用程序，所以 30% 的零是...零。</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48919046">This is wrong. The most important reasons why I prefer mobile apps are the same as why I prefer desktop programs.<p>- I can <i>download it once</i> and then use it.</p><p>- I can see when it gets updated (versus a website that gets updated every time I load it). For security reasons it's better, I can even verify my app with other people online and make sure we run the same thing.</p><p>- End-to-end encryption doesn't make much sense in a webpage, because I fundamentally have to trust the server (which serves me the whole app I run every time). If you care about end-to-end encryption, you want an app.</p><p>- For open source apps, I can audit the code, possibly edit it, and use it. I cannot do that with a webpage.</p><p>- I exclusively use free apps, so 30% of zero is... zero.</p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48919046">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48919046" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        <div class="comment-children">
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">Akronymus</span>
-        
-        <span>2026/07/15 19:37</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">&gt; - 我能看到它何时更新（而网站每次加载都会更新）。出于安全考虑这样更好，我甚至可以在网上和其他人核对应用版本，确保我们运行的是同一个东西。<p>但在很多情况下，这已经不再适用了。比如Discord，已经引入了无需通过安卓Play商店即可更新应用部分功能的能力，YouTube也是如此。他们显然用这招来违背你的意愿把产品搞得越来越烂。</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48919295">&gt; - I can see when it gets updated (versus a website that gets updated every time I load it). For security reasons it's better, I can even verify my app with other people online and make sure we run the same thing.<p>in many cases this is no longer the case. Discord, for example, has introduced capabilities to update parts of the app without goung through the play store on android, same with youtube. Which they obviously use to enshittify things against your will.</p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48919295">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48919295" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        <div class="comment-children">
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">palata</span>
-        
-        <span>2026/07/15 22:49</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">我理解你的观点，但我不确定用糟糕的实践来批评技术本身有多大相关性。<p>比如，我能写出现代C++程序，其速度比90年代的解释型Java程序慢好几个数量级。但这并不意味着C++比解释型Java慢：只能说明我不会写软件，对吧？</p><p>如果我关心安全性，那我会选择我认为构建得当的应用。我确实认为ProtonMail和Signal构建得很规范。但问题在于，由于技术的工作原理，ProtonMail中进行的端到端加密要求我必须信任服务器，这从一开始就违背了端到端加密的初衷[1]。</p><p>[1]：公平地说，这并没有完全否定ProtonMail的意义。它让我相信ProtonMail不会大规模存储所有用户的数据。但它确实更弱，因为Proton可以轻易地针对我个人，而Signal做不到。</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48921709">I understand your point, but I am not sure how relevant it is to use bad practice as a criticism of the technology itself.<p>Like I can write a modern C++ program that will be orders of magnitudes slower than an interpreted Java program from the 90s. But that does not mean that C++ is slower than interpreted Java: just that I can't write software, right?</p><p>If I care about security, then I choose apps that I believe are built correctly. I do happen to believe that ProtonMail is built correctly, and Signal as well. But it remains that because of how the technology works, the end-to-end encryption happening in ProtonMail requires me to trust the server, which defeats the point of end-to-end encryption in the first place [1].</p><p>[1]: to be fair, it does not defeat the purpose of ProtonMail entirely. It helps me trust that ProtonMail doesn't massively store data of all the users. But it is weaker because Proton can easily target me personally, and Signal cannot.</p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48921709">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48921709" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  </div>
-      </div>
-    </details>
-  </div>
-      </div>
-    </details>
-  
-    <details class="comment-node depth-4">
-      <summary>
         <span class="meta-author">tcfhgj</span>
         
         <span>2026/07/15 09:56</span>
@@ -427,7 +370,45 @@
           <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
           <a class="btn secondary" href="https://news.ycombinator.com/item?id=48921030" target="_blank" rel="noopener noreferrer">楼层</a>
         </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">johnecheck</span>
         
+        <span>2026/07/16 10:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为什么？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929753">Why?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929753">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929753" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tcfhgj</span>
+        
+        <span>2026/07/16 21:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">以免将苹果与橘子相提并论</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48934060">to avoid comparing apples with oranges</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48934060">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48934060" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
       </div>
     </details>
   
@@ -496,6 +477,101 @@
   
     <details class="comment-node depth-4">
       <summary>
+        <span class="meta-author">palata</span>
+        
+        <span>2026/07/15 19:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是错误的。我喜欢移动应用程序的最重要原因与我喜欢桌面程序的原因相同。<p>- 我可以<i>下载一次</i>然后使用它。</p><p>- 我可以看到它何时更新（相对于每次加载时都会更新的网站）。出于安全原因，更好的是，我什至可以与其他人在线验证我的应用程序，并确保我们运行相同的东西。</p><p>- 端到端加密在网页中没有多大意义，因为我从根本上必须信任服务器（它为我每次运行的整个应用程序提供服务）。如果您关心端到端加密，那么您需要一个应用程序。</p><p>- 对于开源应用程序，我可以审核代码，可能会对其进行编辑并使用它。我无法通过网页做到这一点。</p><p>- 我只使用免费应用程序，所以 30% 的零是...零。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48919046">This is wrong. The most important reasons why I prefer mobile apps are the same as why I prefer desktop programs.<p>- I can <i>download it once</i> and then use it.</p><p>- I can see when it gets updated (versus a website that gets updated every time I load it). For security reasons it's better, I can even verify my app with other people online and make sure we run the same thing.</p><p>- End-to-end encryption doesn't make much sense in a webpage, because I fundamentally have to trust the server (which serves me the whole app I run every time). If you care about end-to-end encryption, you want an app.</p><p>- For open source apps, I can audit the code, possibly edit it, and use it. I cannot do that with a webpage.</p><p>- I exclusively use free apps, so 30% of zero is... zero.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48919046">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48919046" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">SebastianKra</span>
+        
+        <span>2026/07/16 04:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1. 你也可以下载并安装PWA以供离线使用。<p>2. 这对应用来说已不再成立。服务端驱动UI现在很普遍。</p><p>3. JS在本地运行。你可以比使用应用时更轻松地检查网络流量。</p><p>4. 你也可以审计开源网站。</p><p>5. 你的个人偏好与苹果靠应用赚取巨额利润而非网站这一事实毫无关系。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48926606">1. You can download &amp; install PWAs for offline use too.<p>2. This isn't true for apps anymore. Server driven ui is a thing.</p><p>3. JS runs locally. You can inspect the network traffic more easily than you can with an app.</p><p>4. You can audit OSS websites too.</p><p>5. Your personal preferences have nothing to do with the fact that Apple makes tons of money from apps but not websites.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48926606">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48926606" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">palata</span>
+        
+        <span>2026/07/16 17:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1. 如果你这么做，那我就把它归类为移动应用，而不是 Web 应用。Web 应用是在浏览器中加载的。我们这里讨论的不是编程语言，就算你通过 WASM 在浏览器里运行 Rust，它依然是在浏览器中加载的。<p>2. 什么？</p><p>3. 端到端加密应用的网络流量……就是发往您不信任的服务器的加密流量。</p><p>4. 不确定这是否是恶意的，您方便地放弃了其他想法：您可以分叉一个网站并将其用于原始服务吗？再说一次，如果您审核源代码然后加载网站，您不知道是否正在运行这些源代码。或者下次点击“刷新”时是否会这样做。</p><p>5. 诚然，他们靠应用赚得盆满钵满。对此，我的解决办法是强制他们允许第三方应用商店的存在。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48932109">1. If you do it like this, then I count it as a mobile app, not a webapp. A webapp loads in the browser. We're not debating programming language here, if you run Rust in your browser via WASM it's still loading in the browser.<p>2. Wut?</p><p>3. The network traffic of an end-to-end encrypted app is... encrypted traffic to the server you don't trust.</p><p>4. Not sure if it's bad faith or not, you conveniently drop the other ideas: can you fork a website and use it against the original service? And again, if you audit the sources and then load the website, you have no idea if you are running those sources or not. Or if you will next time you hit "refresh".</p><p>5. Granted, they make a ton of money for apps. My solution to that is to force them to allow third-party stores.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48932109">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48932109" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Akronymus</span>
+        
+        <span>2026/07/15 19:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; - 我能看到它何时更新（而网站每次加载都会更新）。出于安全考虑这样更好，我甚至可以在网上和其他人核对应用版本，确保我们运行的是同一个东西。<p>但在很多情况下，这已经不再适用了。比如Discord，已经引入了无需通过安卓Play商店即可更新应用部分功能的能力，YouTube也是如此。他们显然用这招来违背你的意愿把产品搞得越来越烂。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48919295">&gt; - I can see when it gets updated (versus a website that gets updated every time I load it). For security reasons it's better, I can even verify my app with other people online and make sure we run the same thing.<p>in many cases this is no longer the case. Discord, for example, has introduced capabilities to update parts of the app without goung through the play store on android, same with youtube. Which they obviously use to enshittify things against your will.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48919295">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48919295" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">palata</span>
+        
+        <span>2026/07/15 22:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我理解你的观点，但我不确定用糟糕的实践来批评技术本身有多大相关性。<p>比如，我能写出现代C++程序，其速度比90年代的解释型Java程序慢好几个数量级。但这并不意味着C++比解释型Java慢：只能说明我不会写软件，对吧？</p><p>如果我关心安全性，那我会选择我认为构建得当的应用。我确实认为ProtonMail和Signal构建得很规范。但问题在于，由于技术的工作原理，ProtonMail中进行的端到端加密要求我必须信任服务器，这从一开始就违背了端到端加密的初衷[1]。</p><p>[1]：公平地说，这并没有完全否定ProtonMail的意义。它让我相信ProtonMail不会大规模存储所有用户的数据。但它确实更弱，因为Proton可以轻易地针对我个人，而Signal做不到。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48921709">I understand your point, but I am not sure how relevant it is to use bad practice as a criticism of the technology itself.<p>Like I can write a modern C++ program that will be orders of magnitudes slower than an interpreted Java program from the 90s. But that does not mean that C++ is slower than interpreted Java: just that I can't write software, right?</p><p>If I care about security, then I choose apps that I believe are built correctly. I do happen to believe that ProtonMail is built correctly, and Signal as well. But it remains that because of how the technology works, the end-to-end encryption happening in ProtonMail requires me to trust the server, which defeats the point of end-to-end encryption in the first place [1].</p><p>[1]: to be fair, it does not defeat the purpose of ProtonMail entirely. It helps me trust that ProtonMail doesn't massively store data of all the users. But it is weaker because Proton can easily target me personally, and Signal cannot.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48921709">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48921709" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
         <span class="meta-author">esaym</span>
         
         <span>2026/07/15 06:39</span>
@@ -547,83 +623,7 @@
           <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
           <a class="btn secondary" href="https://news.ycombinator.com/item?id=48915231" target="_blank" rel="noopener noreferrer">楼层</a>
         </div>
-        <div class="comment-children">
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">oblio</span>
         
-        <span>2026/07/15 11:09</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">这其实很容易解决，只要在移动操作系统层面提供一个好功能，允许从网站创建手机桌面图标就行了。<p>当然，苹果和谷歌永远不会做这种事，毕竟他们全球应用销售的抽成高达约1000亿美元。</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48915789">This is trivially solvable with a good mobile OS level feature to create phone desktop icons from websites.<p>Of course, Apple and Google will never do such a thing when their cut of app sales is ~$100bn globally.</p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48915789">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48915789" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        <div class="comment-children">
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">Calazon</span>
-        
-        <span>2026/07/15 11:36</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">我刚试了一下，在安卓版Chrome上似乎能相对轻松地完成这个操作。不过UI可以做得更友好些。<p>而且我确实遇到了一个问题：如果网站允许我将其作为PWA安装，Chrome就会优先执行此操作，而不愿将该网站上的特定页面添加为书签。</p><p>另外，也许你的意思是这可以在操作系统层面而非浏览器层面完成，这倒也有道理。</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48915982">I just tried and it looks like I can do this in Chrome on Android relatively easily. The UI could be a lot nicer for it though.<p>And I did run into an issue where if the site allows me to install it as a PWA, Chrome will want to do that and won't want to bookmark a specific page on that site instead.</p><p>Also, maybe your point was that this could be done at the OS level rather than the browser, which is fair.</p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48915982">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48915982" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">pjmlp</span>
-        
-        <span>2026/07/15 14:03</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">同意，不过在使用安卓版Chrome时，你可以轻松地将任何网站以图标形式添加到书签。<p>别忘了谷歌还有ChromeOS，是苹果对Web没那么热衷。</p><p>另一方面，多亏了开发者和Electron这种垃圾，现在的Web实际上已经变成了ChromeOS。</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48916817">Agreed, except that on Android, you can easily bookmark any site as icon, when using Android Chrome.<p>Don't forget that Google also has ChromeOS, it is Apple that isn't that keen on the Web.</p><p>On the other hand, thanks to devs and Electron garbage, the Web is actually ChromeOS nowadays.</p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48916817">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48916817" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">BlackFingolfin</span>
-        
-        <span>2026/07/15 14:46</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">不知道你在说什么（这是反讽吗？），但在iOS上，Safari允许你将任何网站添加到主屏幕。我很确定安卓也有类似的功能。</div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48917109">Not sure what you are talking about (is this sarcasm?), but on iOS,  Safari allows you to add any website as an item to your home screen. I am pretty sure Android has a similar feature.</div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48917109">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48917109" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  </div>
-      </div>
-    </details>
-  </div>
       </div>
     </details>
   </div>

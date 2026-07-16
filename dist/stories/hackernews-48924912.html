@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inkling：我们的开放权重模型 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-16/">返回日报</a>
+      <div class="source-chip">Hacker News #2</div>
+      <h1>Inkling：我们的开放权重模型</h1>
+      <p class="original-title">Inkling: Our Open-Weights Model</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 vimarsh6739</span>
+        <span>热度 1125</span>
+        <span>回复 274</span>
+        <span>2026/07/16 02:12</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48924912" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://thinkingmachines.ai/news/introducing-inkling/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48924912.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Thinking Machines 发布开源权重模型 Inkling，采用 MoE 架构，总参数 975B、活跃参数 41B，支持 1M token 上下文。</li><li>Inkling 为多模态基础模型，原生支持文本、图像和音频推理，并可通过 Tinker 平台进行微调。</li><li>同步推出轻量版 Inkling-Small（12B 活跃参数），并开放 Playground 供开发者体验与定制。</li></ul>
+      <h3>看点</h3><ul><li>MoE 架构：975B 总参数 / 41B 活跃参数，兼顾性能与成本。</li><li>多模态原生推理：支持文本、图像、音频统一处理。</li><li>超长上下文：支持高达 1M token 的上下文窗口。</li><li>开源权重 + 微调平台：可在 Tinker 上进行自定义微调，甚至让模型自己编写微调任务。</li><li>通用基础模型定位：在代理、推理、编码、视觉、音频等多维度均衡表现。</li></ul>
+      <p class="reason">帖子介绍了 Thinking Machines 发布的开源权重大模型 Inkling，涉及模型架构、多模态能力、微调平台等 AI 核心技术内容，与 AI 和开源高度相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">segmondy</span>
+        
+        <span>2026/07/16 03:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">非常好，多模态，支持音频的最大开放权重模型。   看看音频功能有多好会很有趣。<p>如果您想在本地运行，请查看
+<a href="https://github.com/danielhanchen/llama.cpp/tree/add-inkling" target="_blank" rel="noopener noreferrer">https://github.com/danielhanchen/llama.cpp/tree/add-inkling</a>
+<a href="https://unsloth.ai/docs/models/inkling" target="_blank" rel="noopener noreferrer">https://unsloth.ai/docs/models/inkling</a>
+<a href="https://huggingface.co/unsloth/inkling-GGUF" target="_blank" rel="noopener noreferrer">https://huggingface.co/unsloth/inkling-GGUF</a>
+<a href="https://huggingface.co/unsloth/inkling-NVFP4" target="_blank" rel="noopener noreferrer">https://huggingface.co/unsloth/inkling-NVFP4</a></p><p>这据说比 KimiK2.7 更好，与 GLM5.2 一样大肆宣传，我发现自己有一半的时间使用 KimiK2.7，所以如果基准测试是正确的，那么这绝对可以加入其中。  我希望它在某些领域具有击败所有其他开放重量模型的优势。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48926216">Very nice, multi modal, largest open weight model that supports audio.   Would be interesting to see how good the audio capability is.<p>If you want to run locally, checkout
+<a href="https://github.com/danielhanchen/llama.cpp/tree/add-inkling" target="_blank" rel="noopener noreferrer">https://github.com/danielhanchen/llama.cpp/tree/add-inkling</a>
+<a href="https://unsloth.ai/docs/models/inkling" target="_blank" rel="noopener noreferrer">https://unsloth.ai/docs/models/inkling</a>
+<a href="https://huggingface.co/unsloth/inkling-GGUF" target="_blank" rel="noopener noreferrer">https://huggingface.co/unsloth/inkling-GGUF</a>
+<a href="https://huggingface.co/unsloth/inkling-NVFP4" target="_blank" rel="noopener noreferrer">https://huggingface.co/unsloth/inkling-NVFP4</a></p><p>This supposedly is better than KimiK2.7, as much hype as GLM5.2 gets, I find myself using KimiK2.7 half of the time, so if the benchmark is true, then this can definitely go in the mix.  My hope is that it might have strengths in some areas to beat all other open weight models.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48926216">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48926216" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">paxys</span>
+        
+        <span>2026/07/16 06:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">更不用说 - 这是美国的。这是自 Llama 3 以来第一个非中国公开重量级竞争模型</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48927652">Not to mention - it is American. This is the first competitive non-Chinese open weights model since what, Llama 3?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48927652">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48927652" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Topfi</span>
+        
+        <span>2026/07/16 07:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Cohere（总部位于多伦多）的 North Mini Code 在我的个人评估中确实非常有竞争力，许多来自中国的型号。我将其定位在 Moonshot AI 和 Z.ais 最近发布的版本之下，但高于 Qwen、Deepseek、MiMo 等版本。<p>当然取决于美国大陆还是仅美国。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48928739">North Mini Code by Cohere (HQd in Toronto) has honestly been very competitive in my personal assessment with many of the models coming out of the PRC. I'd position it below Moonshot AIs and Z.ais recent releases, but above the varieties of Qwen, Deepseek, MiMo, etc.<p>Depends whether America the continent or just the United States counts of course.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48928739">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48928739" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">AlanYx</span>
+        
+        <span>2026/07/16 21:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;Cohere（总部位于多伦多）<p>Cohere 一直在改变其关于总部所在地的说法。2019 年至 2020 年，他们的总部设在多伦多。然后从 2020 年初到 2026 年，他们宣称在多伦多和旧金山设有双总部。接着在 2026 年 4 月，他们又开始宣称在多伦多和柏林设有双总部。而在过去两个月里的某个时候，他们又改口称总部设在多伦多了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48934438">&gt;Cohere (HQd in Toronto)<p>Cohere keeps changing their story about where they're headquartered. From 2019-2020 they were HQed in Toronto. Then from early 2020 to 2026 they billed themselves as dual-headquartered in Toronto and San Francisco. Then in April 2026 they started to bill themselves as dual headquartered in Toronto and Berlin. Sometime in the last two months they've started to bill themselves as HQed in Toronto again.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48934438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48934438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">andy99</span>
+        
+        <span>2026/07/16 10:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有意思，我之前不知道还有这个模型，你觉得它能和 Qwen 3.6 35B A3B 竞争吗？后者似乎是最接近的对标对象。<p>在 artificial analysis 智能指数上，Qwen 以 32 比 20 领先（Cohere 没有参与编程指数的基准测试）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929583">Interesting, I didn’t know this existed, do you think it’s competitive with Qwen 3.6 35B A3B which seems to be the closest comparator?<p>It’s 20 vs 32 in favor of Qwen on artificial analysis intelligence index (cohere isn’t benchmarked on the coding index)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929583">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929583" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throwa356262</span>
+        
+        <span>2026/07/16 15:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">尽管体积小巧，但它的编程能力却出人意料地强大。<p>您可以免费试用：</p><p><a href="https://opencode.ai/docs/zen/#pricing" target="_blank" rel="noopener noreferrer">https://opencode.ai/docs/zen/#pricing</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931338">It is surprisingly capable for coding despite its tiny size.<p>You can try it out for free:</p><p><a href="https://opencode.ai/docs/zen/#pricing" target="_blank" rel="noopener noreferrer">https://opencode.ai/docs/zen/#pricing</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931338">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931338" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mark_l_watson</span>
+        
+        <span>2026/07/16 21:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">+1 我热衷于将中国开放权重模型用于各种任务（我也喜欢 Opus 和 Gemini），但我很高兴看到另一个高质量的美国开放模型（我认为 gemma 质量很高，比如 qwen）。<p>我喜欢关闭 Inkling 的网络搜索来试验模型权重中编码的先天知识。我做的一件有趣的事情是检查非常大的模型包含关于我作为个人的先天知识。 Inkling 对我所做的事情有一个有趣而简洁的影子。 （我写了很多书，所以我在训练数据。）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48934025">+1 I enthusiastically use Chinese open weight models for a wide range of tasks (I also love Opus and Gemini) but I am so happy to see another high quality American open model (I consider gemma to be high quality, like qwen).<p>I enjoyed turning off web search for Inkling to experiment with what innate knowledge is encoded in the model weights. A fun thing I do is check what innate knowledge very large models contain about me, as an individual. Inkling has an interesting concise shadow of what I do. (I have written a lot of books, so I am in training data.)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48934025">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48934025" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">segmondy</span>
+        
+        <span>2026/07/16 06:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这不是自 Llama3 以来更好的模型。  Trinity Large是美国的，相当不错，不幸的是，大量疯狂的好模型已经问世，在本地运行400B比较困难。  我认为 Arcee 在推广他们的模型方面做得很糟糕。<p><a href="https://www.arcee.ai/blog/trinity-large" target="_blank" rel="noopener noreferrer">https://www.arcee.ai/blog/trinity-large</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48927979">It's not the better model since Llama3.  Trinity Large is American and quite decent, unfortunately tons of crazy good models have been out and it's harder to run locally at 400B.  I think Arcee did a terrible job of promoting their model.<p><a href="https://www.arcee.ai/blog/trinity-large" target="_blank" rel="noopener noreferrer">https://www.arcee.ai/blog/trinity-large</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48927979">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48927979" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">adrian_b</span>
+        
+        <span>2026/07/16 19:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还有一个月前发布的 NVIDIA Nemotron 3 Ultra，参数为 561B。<p>我还不知道它有多智能，但是 NVIDIA LLM 为快速推理进行了很好的优化（当然是在他们的 GPU 上）。</p><p>之前那是美国最大的开放权重 LLM。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48933136">There is also NVIDIA Nemotron 3 Ultra, with 561B parameters, which was released a month ago.<p>I do not know yet how smart it is, but the NVIDIA LLMs are very well optimized for fast inference (on their GPUs of course).</p><p>Previously that was the biggest American open-weights LLM.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48933136">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48933136" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">throwaw12</span>
+        
+        <span>2026/07/16 14:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果它是美国的，这意味着什么？<p>它是否受到审查，或者最终会在中东国家停止工作？</p><p>或者它是否偏向强大的政治游说团体利益？</p><p>当权重开放时，我通常不在乎它来自哪里，只要它适合我的用例即可</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931052">What does it mean, if it is American?<p>Is it censored or will it eventually stop working in Middle Eastern countries?</p><p>Or is it biased towards powerful political lobby group interests?</p><p>When weights are open I usually don't care where is it from, as long as it is working for my use cases well</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931052">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931052" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">swiftcoder</span>
+        
+        <span>2026/07/16 16:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">科技界存在很多恐华情绪，而 AI 竞赛似乎正在放大这种情绪。而且我要补充一点，这几乎没有什么证据支持——中国企业一直在定期发布高质量的开源权重模型，也没有迹象表明它们比 Grok 等模型受到更多审查或更具意识形态色彩。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931810">There's a lot of Sinophobia in the tech world, and the AI race seems to be magnifying that. With very little evidence to back it up, I might add - we've had regular releases of quality open-weight models from Chinese firms, and no sign they are more censored/ideological, than, say, Grok</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931810">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931810" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">smiths1999</span>
+        
+        <span>2026/07/16 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果公司与美国政府有任何形式的合作，直接拒绝使用中国背景的模型要比处理政府合同中所有的繁文缛节容易得多。由于几乎所有大型科技公司都有美国政府的合同，因此它们在使用中国模型时都必须非常谨慎。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48934698">If the company does any kind of work with the US Government it's far easier to just say no to Chinese-origin models rather than deal with all the overhead on the government contracts. Since just about every major tech company has US contracts they all have to be careful about the use of Chinese models.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48934698">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48934698" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mastermage</span>
+        
+        <span>2026/07/16 17:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">到目前为止，我发现唯一真正被审查的内容是天安门广场。而且这取决于你的用途，这其实不是什么大问题。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48932234">Only actualy censored thing i found so far was Tianmen Square. And depending on what you use it for thats realy not a big issue.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48932234">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48932234" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">neo_core</span>
+        
+        <span>2026/07/17 00:12</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48936502">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48936502">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48936502" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">berkes</span>
+        
+        <span>2026/07/16 15:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Mistral 发布了一些非常好的、非常有用的开放模型。这是欧洲的，也是非中国的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931447">Mistral has released some very good, very useful open models. It's European, that's also non-Chinese.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kzrdude</span>
+        
+        <span>2026/07/16 16:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谷歌也发布了一些非常好用的模型，比如 Gemma，但它们的规模不算太大。不过尺寸很实用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931960">Google has released some very good and useful models too, Gemma, but they are not so large. But they are in useful size.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931960">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931960" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jjice</span>
+        
+        <span>2026/07/16 21:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">GPT OSS 是在 Llama 3 之后发布的，当时表现相当强劲。不过没错，这确实是相当长一段时间以来，首个具备真正竞争力的非中国开源模型。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48934257">GPT OSS was post Llama 3 and pretty strong at the time. But yeah this is the first seriously competitive non-Chinese open model in a good bit now.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48934257">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48934257" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">daniela-scott</span>
+        
+        <span>2026/07/16 15:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">“有竞争力”这个词用得有点勉强了——它在 AA 指数上首次亮相仅排第 41 位，而且帖子本身也承认它并非整体最强。Mistral 和 Cohere 的 North 也是非中国的开源权重模型，所以 Llama 3 并不是最后一个。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931537">"Competitive" is doing a lot of work there — it debuts at #41 on the AA index and the post itself calls it not the strongest overall. Mistral and Cohere's North are also non-Chinese open weights, so Llama 3 wasn't the last.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931537">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931537" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">oehtXRwMkIs</span>
+        
+        <span>2026/07/16 07:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Gemma 4</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48928424">Gemma 4</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48928424">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48928424" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">paxys</span>
+        
+        <span>2026/07/16 07:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最大的 Gemma 4 模型拥有 310 亿参数。它不在同一个量级。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48928722">The largest Gemma 4 model has 31B parameters. It’s not in the same class.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48928722">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48928722" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

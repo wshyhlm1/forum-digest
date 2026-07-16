@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grok Build 是开源的 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-16/">返回日报</a>
+      <div class="source-chip">Hacker News #4</div>
+      <h1>Grok Build 是开源的</h1>
+      <p class="original-title">Grok Build is open source</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 skp1995</span>
+        <span>热度 539</span>
+        <span>回复 567</span>
+        <span>2026/07/16 04:24</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48926590" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://github.com/xai-org/grok-build" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48926590.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>xAI 开源了 Grok Build，一款基于终端的 AI 编程代理工具，支持全屏 TUI 交互、无头脚本/CI 模式及编辑器嵌入。</li><li>该工具使用 Rust 编写，能够理解代码库、编辑文件、执行 Shell 命令、搜索网页并管理长时间运行的任务。</li><li>支持 macOS、Linux 和 Windows 平台，提供预编译二进制文件和源码构建方式，并支持 Agent Client Protocol (ACP)。</li></ul>
+      <h3>看点</h3><ul><li>xAI 首个开源项目，代码从 SpaceXAI monorepo 同步而来</li><li>支持交互式 TUI、无头模式（CI/脚本）和编辑器嵌入三种运行方式</li><li>使用 Rust 开发，依赖 protoc 进行 proto 代码生成</li><li>支持 MCP 服务器、技能插件、钩子、沙箱等扩展机制</li><li>首次启动需通过浏览器进行身份认证</li></ul>
+      <p class="reason">Grok Build 是 xAI 开源的终端 AI 编程代理工具，基于 Rust 开发，支持代码理解、文件编辑、命令执行、Web 搜索等 AI 编程能力，与 AI、开源、开发工具、编程高度相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">simonw</span>
+        
+        <span>2026/07/16 08:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个代码库中有一些令人惊讶的东西。例如，<a href="https://github.com/xai-org/grok-build/blob/b189869b7755d2b482969acf6c92da3ecfeffd36/crates/codegen/xai-grok-markdown/src/mermaid.rs" target="_blank" rel="noopener noreferrer">https://github.com/xai-org/grok-build/blob/b189869b7755d2b48...</a> 是“美人鱼图的独立终端渲染器”，它使用 Unicode 方框图来渲染美人鱼图表类型的子集。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929053">There's some surprising stuff in this codebase. For example, <a href="https://github.com/xai-org/grok-build/blob/b189869b7755d2b482969acf6c92da3ecfeffd36/crates/codegen/xai-grok-markdown/src/mermaid.rs" target="_blank" rel="noopener noreferrer">https://github.com/xai-org/grok-build/blob/b189869b7755d2b48...</a> is a "self-contained terminal renderer for Mermaid diagrams", which renders a subset of Mermaid chart types using Unicode box-drawing.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929053">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929053" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">simonw</span>
+        
+        <span>2026/07/16 08:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我让 Fable 5 将 Rust 代码编译为 WebAssembly 并为其构建了一个基于浏览器的 Playground，因此您可以在此处使用美人鱼图进行尝试：<a href="https://tools.simonwillison.net/grok-mermaid" target="_blank" rel="noopener noreferrer">https://tools.simonwillison.net/grok-mermaid</a><p>在我的博客上还有一些关于我的 Grok 代码探索的注释：<a href="https://simonwillison.net/2026/Jul/15/grok-build/" target="_blank" rel="noopener noreferrer">https://simonwillison.net/2026/Jul/15/grok-build/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929092">I had Fable 5 compile that Rust code to WebAssembly and build a browser-based playground for it, so you can try it out with Mermaid diagrams here: <a href="https://tools.simonwillison.net/grok-mermaid" target="_blank" rel="noopener noreferrer">https://tools.simonwillison.net/grok-mermaid</a><p>A few more notes on my Grok code explorations on my blog: <a href="https://simonwillison.net/2026/Jul/15/grok-build/" target="_blank" rel="noopener noreferrer">https://simonwillison.net/2026/Jul/15/grok-build/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929092">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929092" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">thrdbndndn</span>
+        
+        <span>2026/07/16 09:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我喜欢这种东西（ASCII 艺术，如果你愿意的话），但一旦涉及 Unicode 字符（主要是 CJK，因为我是中国人）和字体，它就太容易崩溃了。<p>例如，在您的网站上，任何涉及水平箭头的图表或绘图都会崩溃，因为指定的字体系列（`ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`，最终在我的机器上为 Consolas）没有这样的字形。因此，它退回到 Segoe UI 符号，它与其他字符没有相同的固定宽度（或根本不是固定宽度）： <a href="https://i.imgur.com/d2DPGHE.png" target="_blank" rel="noopener noreferrer">https://i.imgur.com/d2DPGHE.png</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929520">I love this kind of stuff (ASCII art, if you will), but it just breaks down too easily as soon as Unicode characters (mainly CJK, as I'm Chinese) and fonts are involved.<p>For example, on your website, any chart or plot involving horizontal arrows breaks down because the assigned font-family (`ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`, which ends up as Consolas on my machine) has no such glyph. Thus, it falls back to Segoe UI Symbol, which does not have the same fixed width (or is not fixed-width at all) as other characters: <a href="https://i.imgur.com/d2DPGHE.png" target="_blank" rel="noopener noreferrer">https://i.imgur.com/d2DPGHE.png</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929520">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929520" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">uhoh-itsmaciek</span>
+        
+        <span>2026/07/16 10:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我最近在一篇博客文章中遇到了这个问题：我们使用了一些 Claude 输出，其中包括用 Unicode 线条画字符绘制的表格。但是，我们的等宽字体不包含这些字符，因此渲染回退到字体堆栈中具有不同宽度度量的另一种字体。我通过使用具有类似指标的字体来修复它，并且确实包含带有 `unicode-range` （仅选择我们需要的字符）和 `size-adjust` （以更准确地匹配字体宽度）的字符，并将其添加到堆栈中。虽然有点 hacky，但在实践中效果很好。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929616">I ran into this problem recently on one of our blog posts: we used some Claude output which included tables drawn with Unicode line drawing characters. However, our monospace font did not include these characters, and so rendering fell back to another font in our font stack with different width metrics. I fixed it by using a font that had similar metrics and did include those characters with `unicode-range` (to only select characters we needed) and `size-adjust` (to match font width more exactly), and adding it to the stack. It's a little hacky but works pretty well in practice.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929616">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929616" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dolmen</span>
+        
+        <span>2026/07/16 16:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">使用 Opus 4.8 的 Claude Code 也不擅长将框与法语内容对齐（带有重音字母，例如“é”，在 UTF-8 中是多字节）。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931650">Claude Code with Opus 4.8 is also bad at aligning boxes with content in French (with accentuated letters such as "é" which are multibyte in UTF-8).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931650">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931650" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dspillett</span>
+        
+        <span>2026/07/16 22:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>&gt; 因此，它会退回到 Segoe UI Symbol，它没有相同的固定宽度</i><p>这对我来说似乎是一个明显的遗漏。如果您正在渲染每个字符固定宽度的文本并且需要回退，那么保持相同的字符网格当然是有意义的，即使它确实在某种程度上扰乱了负空间的感觉（细字符周围有很多空间，宽字符稍微撞到了旁边的字符）。您已明确要求文本与网格对齐，无论是通过使用等宽字体、使用 </p><pre> 标签，还是使用其他相关的 CSS 选择，浏览器应该尝试实现这一点。<p></p></pre></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48934961"><i>&gt; Thus, it falls back to Segoe UI Symbol, which does not have the same fixed width</i><p>That seems like a glaring omission to me. If you are rendering fixed-width-per-character text and need to fall back, surely it makes sense to keep to the same character grid even if it does mess up the feel of your negative space somewhat (thin characters having a lot of space around them, wide characters butting into those beside them slightly). You've explicitly asked for text aligned to a grid, either by using a mono-spaced typeface, by using a &lt;pre&gt; tag, or with other relevant CSS choices, the browser should be trying to achieve that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48934961">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48934961" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">biztos</span>
+        
+        <span>2026/07/16 12:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有趣。泰语字符也可以把它吹出来，我想是因为将字形映射到宽度很困难：<p><a href="https://biztos.com/hey/thai-mermaid-chart.png" target="_blank" rel="noopener noreferrer">https://biztos.com/hey/thai-mermaid-chart.png</a></p><p>令我惊讶的是，Sublime Text 几乎正确：</p><p><a href="https://biztos.com/hey/sublime-thai-mermaid.png" target="_blank" rel="noopener noreferrer">https://biztos.com/hey/sublime-thai-mermaid.png</a></p><p>我尝试找到一个泰语字符等宽字体并在 HTML 中使用它，但更糟糕的是，可能没有框绘制字符。</p><p>仍然是一个有趣的工具，对许多 ASCII 情况很有用！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48930259">Interesting. Thai characters can also blow it out, I imagine because of the difficulty mapping glyphs to width:<p><a href="https://biztos.com/hey/thai-mermaid-chart.png" target="_blank" rel="noopener noreferrer">https://biztos.com/hey/thai-mermaid-chart.png</a></p><p>To my surprise, Sublime Text gets it almost right:</p><p><a href="https://biztos.com/hey/sublime-thai-mermaid.png" target="_blank" rel="noopener noreferrer">https://biztos.com/hey/sublime-thai-mermaid.png</a></p><p>I tried finding a Thai monospace font and using that in the HTML but it was worse, probably didn't have the box drawing chars.</p><p>Still a fun tool and useful for lots of ASCII cases!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48930259">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48930259" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sirn</span>
+        
+        <span>2026/07/16 13:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">第一个问题是由于字符数等于字符显示宽度的假设造成的。泰语音调标记通常[1] 不应该影响显示宽度（เพื่อน 字符= 6，宽度= 4），因此它导致布局变化。<p>第二个问题是由于程序的布局引擎没有将后备字体的字形宽度调整为主要字体的字形宽度。很多终端都会这样做，但对于文本编辑器或浏览器来说并不常见（可以说这是非终端的正确行为，因为您不能假设所有内容都必须捕捉到网格）。</p><p>对此进行有趣的测试：</p><p></p><pre><code> |กล้วยหอม|
+     |香蕉|
+</code></pre>
+这具有相同的字符宽度。 Ghostty 等将正确渲染它（| 对齐）。大多数浏览器和文本编辑器不会。<p>[1]：某些布局引擎将独立的色调标记呈现为 1 个字符；在这种情况下，此规则仅适用于声调标记跟随字符的情况。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48930693">The first issue is due to the assumption that character count equals character display width. Thai tone markers usually[1] should not contribute to the display width (เพื่อน is chars = 6, width = 4), so it caused a layout shift.<p>The second issue is due to the program's layout engine not adjusting the glyph width of a fallback font to that of the main font. A lot of terminals do this, but it's not common for text editors or browsers (arguably this is the correct behavior for non-terminals, since you cannot assume everything must be snapped to a grid).</p><p>Fun test for this:</p><p></p><pre><code>     |กล้วยหอม|
+     |Bananas|
+</code></pre>
+This has the same character width. Ghostty, etc., will render it correctly (| aligned). Most browsers and text editors will not.<p>[1]: some layout engines render free-standing tone markers as 1 character; in that case, this rule only applies to when tone markers are following a character.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48930693">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48930693" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">biztos</span>
+        
+        <span>2026/07/16 17:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感谢您的解释。<p>iPad 上的 Safari 几乎完美地排列了这些线 - 第二行稍微宽一点，我一开始甚至没有注意到。</p><p>那个示例有声调标记，但没有元音，所以我将尝试同时使用这两个线。 E&amp;OE。</p><p></p><pre><code> |ดื่มน้ำอยู่|
+    |abcdef|
+</code></pre>
+[编辑] 它们甚至更接近，但在我的 iPad 上仍然不完美对齐。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48932345">Thanks for the explanation.<p>Safari on iPad lines these up <i>almost</i> perfectly - the second line is a tiny bit wider, I didn’t even notice it at first.</p><p>That example had a tone mark but no vowels, so I will try one with both. E&amp;OE.</p><p></p><pre><code>    |ดื่มน้ำอยู่|
+    |abcdef|
+</code></pre>
+[edit] These are even closer, but still imperfectly aligned on my iPad.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48932345">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48932345" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">numpad0</span>
+        
+        <span>2026/07/16 18:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这不是渲染器错误，而是字体错误。比例字体在设计时根本没有考虑到对齐，并且您不能期望在随机系统上出现 ASCII 范围之外的所有语言的等宽字体，也不能期望单个字体或字体系列能够一致地支持多种不同的语言。<p>您无法真正控制深度 Unicode 字符（如泰语或“→”）与等宽字符的对齐，而不提供自己的等宽字体，这些字体保证适用于您要发送的字符，假设您始终可以在其中使用一种等宽字体。手。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48932852">This isn't a renderer bug, it's font. Proportional fonts aren't designed with alignment in mind at all, and you can't just expect monospace fonts for all languages outside of ASCII range to be present on random systems, or a single font or font family to support multiple different languages consistently.<p>You can't really control alignment of deeply Unicode characters like Thai or "→" against monospace characters without serving your own monospace fonts that are guaranteed to work for the characters you'll be sending out, assuming you can always have one in hand.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48932852">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48932852" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">vidarh</span>
+        
+        <span>2026/07/16 20:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你完全可以在渲染器中妥善处理这个问题，所以我仍然认为这是一个渲染器bug——例如，我的终端模拟器会缩放任何超出给定字符范围预期单元格数量所定义的边界框的字形。你不能指望随机字符的任意特征都能对齐，但我可以期望<i>包围</i>任意字符的制表符能正确对齐，否则就视为bug（我的终端几乎肯定会把中日韩和泰文处理错——因为完全没测试过——但如果是这样，那<i>确实</i>是个bug，而不是字体问题）。<p>这包括在我不得不回退时，甚至回退到比例字体，虽然看起来会很丑，但能正常工作并保持对齐。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48933356">You can still handle this well enough in the renderer, so I'd still consider this a renderer bug - e.g. my terminal emulator will scale any glyph that exceeds the bounding box as defined by the expected number of cells for a given character range. You can't expect any given feature of random characters to align, but I can expect box drawing characters <i>surrounding</i> any given characters to align correctly or consider it a bug (my terminal is almost certainly going to get CJK and Thai wrong - it's entirely untested -, but if so it <i>is</i> a bug, not a font issue).<p>That includes if I have to fall back, including fallback to proportional fonts, which will look ugly, but work and remain aligned.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48933356">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48933356" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">numpad0</span>
+        
+        <span>2026/07/16 23:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好吧……我不同意，无意冒犯，但需要考虑的上下文和细微差别太多了，对我们双方来说可能都不值得去尝试。我只能说，问题不在于管道符的宽度不一致，而在于非ASCII字符的宽度全都不一样且随机，如果你需要让包含▶、漢、ก等全角字符的文本在网格中对齐，你就必须为特定语言选择一种固定宽度（不是“等宽”）字体，并在该连续文本区域内专门使用该字体。或者你可以尝试修改Unicode，让符号变成可变宽度以便对齐网格之类的，但那需要耗费大量精力。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48936062">ok... I disagree, and I mean no offense, but there's going to be too much contexts and nuances to be taken into account that it's probably not worth trying for both of us. All I can say is that the problem is not that the pipe characters are given inconsistent width but that non-ASCII characters has all different random widths, and if you need texts with double-width characters like ▶, 漢, ก, etc., to align in a grid, you have to pick a fixed-width(not "monospace") font for the specific language and exclusively use that font for everything within that contiguous text area. Or you can try to fix Unicode so that symbols become variable width so to align to grid or something, but that's going to take a lot of effort.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48936062">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48936062" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">vidarh</span>
+        
+        <span>2026/07/17 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不，你不需要为此选择固定宽度字体。用固定宽度字体效果最好，但重新缩放字形也完全行得通。我写过字体渲染器，这并不难。<p>事实上，我的终端使用上述字体渲染器，默认就会缩放字形，因为即使是很多“固定宽度”字体也有bug，并非真正固定，所以强制网格对齐并缩放以适应是确保一致性的最简单方法。</p><p>混合搭配字体以实现全面覆盖效果很好，尤其是对宽字符而言。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48936630">No, you don't need to pick a fixed width font for that. You will get the best results with one, but rescaling the glyphs works just fine. I've written a font renderer. It's not hard.<p>In fact my terminal, using said font renderer, rescales glyphs by default because even a lot of "fixed width" fonts are buggy and not truly fixed, and so enforcing the grid alignment and scaling to fit was the easiest way to ensure consistency.</p><p>Mixing and matching fonts for full coverage works fine, especially for wide characters.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48936630">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48936630" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">numpad0</span>
+        
+        <span>2026/07/17 01:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我以为这个讨论更多是关于如何在现有控制台模拟器中以某种方式跨多行对齐管道符（这不可能），而不是关于为你的应用实现一个完整的自定义图形文本渲染系统，把字体文件大卸八块以便把字形放在你想要的任何地方？<p>这感觉像是在作弊，因为那时你根本不是在渲染提供的字体。再说了，你不如直接用SVG来画图，而不是假装只使用纯文本。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48937469">I thought this discussion is more about somehow aligning pipes over multiple lines in existing console emulators(impossible), than about implementing a complete custom graphical text rendering system specific to your app that butcher font files to put glyphs wherever you want?<p>That feels like cheating since you're not rendering provided font at that point. Besides you might as well just use SVG for diagrams than pretending to be text only.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48937469">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48937469" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oneeyedpigeon</span>
+        
+        <span>2026/07/16 15:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">该测试在 Chrome Android 中看起来像素完美。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931217">That test looks pixel perfect in Chrome Android.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931217">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931217" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">torginus</span>
+        
+        <span>2026/07/16 19:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">考虑到中国人是人工智能的主要贡献者之一，我认为这个问题现在已经解决了，至少在其他一些基于 CLI 的编码代理中是这样。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48932925">Considering the Chinese are one of the major contributors to AI, I would think this was a solved problem by now, at least in some other CLI based coding agent.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48932925">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48932925" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">numpad0</span>
+        
+        <span>2026/07/16 13:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这些非 ASCII“丰富”符号不是来自 PC-98/Win95 域周围的日语字体吗？对于我这样的背景来说，很明显，由于各种原因，在 ASCII 文本中混合<i>全角</i>字符永远不会顺利。对于 ASCII 艺术，很明显，垂直线永远不会对齐，并且将有大量浪费的空间和需要不同类型的空白来补偿这些空间。我想知道指定 MS Gothic 并重新调整它的宽度是否有帮助，至少对于 Windows/Linux 来说是这样。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48930833">Aren't those non-ASCII "rich" symbols from Japanese fonts around PC-98/Win95 domains anyway? For me with my background, it was always obvious that mixing <i>full-width</i> character in ASCII text never go well for various reasons. For ASCII arts, it is obvious that vertical lines never line up, and there are going to be tons of wasted spaces and different kinds of whitespaces needed to compensate for those. I wonder if specifying MS Gothic and retuning widths for it could help, at least for Windows/Linux.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48930833">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48930833" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jack1243star</span>
+        
+        <span>2026/07/16 14:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有趣的是，您提到了 MS Gothic（固定宽度），因为图像板上的老式日语 ASCII 艺术假定为 MS PGothic（比例！）。有些网站甚至尝试检测 ASCII 艺术并在该特定帖子上强制使用字体系列。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48930913">Funny you'd mention MS Gothic (fixed-width), since old school Japanese ASCII-art on image boards assume MS PGothic (proportional!) instead. Some sites even try to detect ASCII art and force font-family on that specific post.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48930913">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48930913" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">numpad0</span>
+        
+        <span>2026/07/16 16:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，2ch.net/5ch.net/5ch.io 使用 MS <i>P</i> Gothic，并且有应用程序功能和字体（例如 Mona Font）来模拟它。不过，它们不是图像板。<p>我只是认为 MS Gothic（非 P）应该得到广泛支持，拥有您需要的所有符号，同时也是等宽字体，与大多数仅支持 ASCII 符号的等宽字体不同。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48931569">Yup, 2ch.net/5ch.net/5ch.io uses the MS <i>P</i> Gothic and there were app features and fonts like Mona Font to emulate that. They were not imageboards, though.<p>I just thought that MS Gothic(non-P) should be kind of widely supported, have all the symbols you need, while also being a monospace, unlike most monospace fonts that only support ASCII symbols.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48931569">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48931569" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pmarreck</span>
+        
+        <span>2026/07/16 10:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我想说，也许生成一个失败的测试用例，但是测试正确的 unicode 渲染可能很棘手？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48929621">I was going to say, perhaps generate a failing test case, but testing for proper unicode rendering might be tricky??</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48929621">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48929621" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

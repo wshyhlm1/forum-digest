@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hacker News 日报 2026-07-16</title>
+  <style>
+    body { margin: 0; background: #f6f7f4; color: #202124; font-family: "Noto Sans SC", "PingFang SC", Arial, sans-serif; line-height: 1.62; }
+    main { width: min(920px, 100%); margin: 0 auto; padding: 18px 14px 64px; }
+    header, .card { background: #fff; border: 1px solid #d9ded8; border-radius: 8px; padding: 16px; }
+    header { margin-bottom: 14px; }
+    h1 { margin: 0; font-size: 1.5rem; }
+    h2 { margin: 0; font-size: 1.05rem; }
+    a { color: #c24f18; text-decoration: none; }
+    .card { display: grid; grid-template-columns: 46px 1fr; gap: 10px; margin-bottom: 10px; }
+    .rank { font-weight: 700; color: #276749; }
+    .original, .meta { color: #687076; }
+    .meta, .actions { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Hacker News 日报</h1>
+      <p class="original">日期 2026-07-16，轻量 JSON 保留每篇前 20 条高位评论。</p>
+    </header>
+    
+    <article class="card">
+      <div class="rank">#1</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48869989.html">你的“应用”本来可以只是个网页（所以我帮你改好了）</a></h2>
+        <p class="original">Your &#39;app&#39; could have been a webpage (so I fixed it for you)</p>
+        <div class="meta">
+          <span>871 分</span>
+          <span>532 评论</span>
+          <span>最高 #74</span>
+          <span>10 次快照出现</span>
+        </div>
+        <ul><li>Why is this an “app”? This summer, the kids’ performing arts school are singing and dancing in a show at Disneyland. We’re all very excited, but my excitement, at least, was muted a little when I was told to install the “Travelbound” app in order to get access to the itinerary, travel arrangements, and accommodation details. Fuck that noise. This should have been a webpage. Why do you want me to install a(nother) shitty app just to tell me something that could have been a (smaller, faster, more universally-accessible) document? I’m not remotely exaggerating. This app is literally text, images, and links to PDF files, delivered via the Web. There only seem to be two things that this “app” does, that a webpage might not have, and they’re both anti-features: It reports tracking data associated with your Google Account back to the developers. It shows you advertisements (which they call “inspirations”) for other trips organised by the same agency. Fuck. Everything. About. That. A webpage would have been so much better. Unlike this app, a webpage can be…1 Copy-pastable Printable Saveable Bookmarkable Searchable Usable on virtually any device (Potentially) more-accessible I’m annoyed enough… that I’m going to “fix” this app. Hold my beer. Intercepting app traffic It’s been a while since the last time I reverse-engineered an Android app from its network traffic, so I had to brush-up on the best way. Here’s what I ended up doing. Created a new virtual device in Android Studio’s Virtual Device Manager. Tested adb shell was working and used rootAVD to root it: ./rootAVD.sh system-images/android-33/google_apis_playstore/x86_64/ramdisk.img.2 Performed a cold boot, ran Magisk, and tweaked its settings to automatically grant su access to any app that asked.3 All your traffic are belong to me. At this point, it’s just like running Wireshark or TCPdump. Ran HTTP Toolkit and told it to intercept AVD traffic. It installed a (fake) VPN provider, routing the phone’s traffic through the proxy.4 Installed the Travelbound app from the Play Store. Configured HTTP Toolkit to proxy only the Travelbound app (more signal, less noise). With only a couple of minutes experimentation I discovered that the app works by concatenating the username and password5 and using it in a URL of the form: https://travelbound.api.vamoos.com/api/itineraries/{username}-{password} This returns a pile of JSON which, with a little interpretation, can be seen to represent all of the content the app “shows”. E.g., there’s: an array containing each leg of the itinerary, an array containing all of the “inspirations” advertisements to show you, a cross-referenced array containing all of the files (images etc.) that are referenced by the other sections, etc. They’re clearly producing HTML code anyway… so again, I ask: why isn’t this a webpage? A little experimentation showed me that the S3 image URLs were being delivered with moderately-short expiration times, so the JSON needs re-fetching periodically even if the content hasn’t been changed.6 Turning it into something better Now I had everything I needed to make something… better. I wrote a Ruby script that runs on a Cron schedule to pull the latest JSON and use it to build a HTML page. I chose to have it completely skip over the “inspirations” (“overlayRows” in the data schema) and just list: the items from the itinerary and all of the files not referenced by the inspirations nor itinerary, (a lazy way to collate the PDF download links). Then I hosted the page, protected by a password: the same one my tour group were given in the first place. I included the raw JSON it used in &lt;details&gt; elements so it can be checked if e.g. there are bits of the schema I didn’t see but that might appear later. My web page isn’t as “pretty” as the app from which it “borrows” its information. But it’s a fraction of the size and gets all of the Web’s standard features for free. Some people like an “app”, and that’s… fine, I guess. But some apps could have been a webpage. And especially where, like this one, the content they deliver is already written in HTML and delivered over HTTP… they should be a webpage, right? I can’t understand how we got to this place with “app culture”! Software companies are happy to make their lives harder (and more expensive: deploying to the big app stores isn’t free!), in order to deliver HTML content to fewer people and with fewer features7 than if they just published directly to the Web in the first place! There are (some) tasks for which an “app” is absolutely the right choice of medium. Travelbound is not one of them. But at least I (and the rest of our group, whom I’ve shared it with) now get the choice about how we access this content. Either a 43MB app (ballooning to 124MB when it’s finished downloading extra content) with tracking and advertisements… or a 0.05MB web page (with an optional extra 35MB of images) that provides more features and works on more devices. I know which one I’ll be using! Footnotes 1 And these are just the features that everybody can get behind. The webpage I ultimately ended up making to replace the app also has some user-friendly/developer-hostile features, like the fact that it removes the tracking code and doesn’t show advertisements. 2 You need to root the device in order to force applications that use Certificate Pinning to trust your man-in-the-middle proxy server. Without this, some applications – including the one I wanted to reverse-engineer – will recognise your self-signed TLS certificate as invalid and refuse to communicate. 3 Without changing this setting in Magisk, I found that HTTP Toolkit would request su access but not wait for the response, and go on to run in unprivileged mode before I had a chance to grant it! 4 Owing to Android security considerations I needed to manually install the root CA certificate it installed for me, but the instructions “just worked”. 5 The username and password is shared by an entire tour group. I’m guessing they don’t have a plan for if some credentials get leaked? Or possibly they consider all of the data they hold to be low-sensitivity enough that it doesn’t matter if it does… in which case I return to my original point: why the hell wasn’t it just a webpage in the first place? 6 Or else the images need caching locally, which seems to be what the app does, in the bloatiest possible way. 7 And, often, with worse accessibility. I’ve not audited the accessibility of this app, but there are things about it that suggest that it’d be harder to use using accessibility technologies than my plain, simple Web version. × × × ×</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48869989">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#2</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48924912.html">Inkling：我们的开放权重模型</a></h2>
+        <p class="original">Inkling: Our Open-Weights Model</p>
+        <div class="meta">
+          <span>1125 分</span>
+          <span>274 评论</span>
+          <span>最高 #1</span>
+          <span>17 次快照出现</span>
+        </div>
+        <ul><li>Thinking Machines 发布开源权重模型 Inkling，采用 MoE 架构，总参数 975B、活跃参数 41B，支持 1M token 上下文。</li><li>Inkling 为多模态基础模型，原生支持文本、图像和音频推理，并可通过 Tinker 平台进行微调。</li><li>同步推出轻量版 Inkling-Small（12B 活跃参数），并开放 Playground 供开发者体验与定制。</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48924912">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#3</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48905248.html">如何让Claude停止使用“承重”一词</a></h2>
+        <p class="original">How to stop Claude from saying load-bearing</p>
+        <div class="meta">
+          <span>595 分</span>
+          <span>602 评论</span>
+          <span>最高 #4</span>
+          <span>12 次快照出现</span>
+        </div>
+        <ul><li>作者分享了如何通过 Claude 的 MessageDisplay hook 机制，在输出显示前替换特定词汇（如将 &#39;load-bearing&#39; 替换为 &#39;cooked&#39;）。</li><li>提供了一个 Python 脚本示例，利用正则表达式匹配并替换 Claude 输出中的固定短语，并通过 JSON 配置加载 hook。</li><li>该方案旨在解决用户对 Claude 频繁使用某些特定表达（如 &#39;honest takes&#39;、&#39;load-bearing seams&#39;）的困扰。</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48905248">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#4</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48926590.html">Grok Build 是开源的</a></h2>
+        <p class="original">Grok Build is open source</p>
+        <div class="meta">
+          <span>539 分</span>
+          <span>567 评论</span>
+          <span>最高 #2</span>
+          <span>14 次快照出现</span>
+        </div>
+        <ul><li>xAI 开源了 Grok Build，一款基于终端的 AI 编程代理工具，支持全屏 TUI 交互、无头脚本/CI 模式及编辑器嵌入。</li><li>该工具使用 Rust 编写，能够理解代码库、编辑文件、执行 Shell 命令、搜索网页并管理长时间运行的任务。</li><li>支持 macOS、Linux 和 Windows 平台，提供预编译二进制文件和源码构建方式，并支持 Agent Client Protocol (ACP)。</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48926590">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#5</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48915709.html">巨细无遗解析《侏罗纪公园》中的电脑</a></h2>
+        <p class="original">Jurassic Park computers in excruciating detail</p>
+        <div class="meta">
+          <span>912 分</span>
+          <span>243 评论</span>
+          <span>最高 #1</span>
+          <span>20 次快照出现</span>
+        </div>
+        <ul><li>作者详细研究了电影《侏罗纪公园》中出现的所有计算机和软件设备</li><li>文章分析了 Apple Powerbook 100 等经典硬件的技术规格，包括 Motorola 68000 处理器、System 7.0.1 操作系统等</li><li>文章发布时恰逢饰演 Alan Grant 的演员 Sam Neill 去世</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48915709">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#6</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48908178.html">我们是否把太多的思考都外包给了人工智能？</a></h2>
+        <p class="original">Are we offloading too much of our thinking to AI?</p>
+        <div class="meta">
+          <span>517 分</span>
+          <span>474 评论</span>
+          <span>最高 #8</span>
+          <span>15 次快照出现</span>
+        </div>
+        <ul><li>作者观察到人们越来越倾向于将日常决策到复杂思考都外包给AI，从搜索引擎时代到AI时代，中间思考步骤被大幅省略。</li><li>文章引用科幻小说《完美匹配》和现实中“麦克风男”的案例，警示当AI被认为比人类更聪明时，人们可能丧失自主决策能力。</li><li>作者主张在快速答案与深度思考之间保持平衡，认为遗忘琐碎问题、自主推演复杂问题本身具有价值。</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48908178">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#7</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48903777.html">欧洲“年龄验证”“应用”强制所有人使用Android或iOS</a></h2>
+        <p class="original">European &quot;age verification&quot; &quot;app&quot; forcing everyone to use Android or iOS</p>
+        <div class="meta">
+          <span>563 分</span>
+          <span>420 评论</span>
+          <span>最高 #6</span>
+          <span>11 次快照出现</span>
+        </div>
+        <ul><li>欧洲年龄验证应用强制使用Android或iOS引发争议</li><li>Yivi隐私方案被指存在中心化依赖，护照数据需发送至中央服务器</li><li>生物识别匹配依赖第三方API，信任集中问题引发讨论</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48903777">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#8</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48910545.html">Bonsai 27B：一款可在手机上运行的27B级模型</a></h2>
+        <p class="original">Bonsai 27B: A 27B-Class model that runs on a phone</p>
+        <div class="meta">
+          <span>689 分</span>
+          <span>243 评论</span>
+          <span>最高 #3</span>
+          <span>20 次快照出现</span>
+        </div>
+        <ul><li>Today, we&#39;re announcing Bonsai 27B, based on Qwen3.6 27B, the new multimodal flagship of the Bonsai family and the first model of its capability class to run on a phone.Our earlier releases proved that models with 1-bit and ternary weights could produce commercially useful language models. Bonsai 27B extends that frontier to a new capability tier: multi-step reasoning, structured tool calls, vision tasks, and computer-use agentic loops that stay coherent across many steps. Until today, deploying that tier locally has been impractical for a concrete reason: a 27B model occupies roughly 54GB in 16-bit precision, and even a good 4-bit build, at 18GB, is too large for a phone and for most laptops.Bonsai 27B changes that. It comes in two variants:Ternary Bonsai 27B uses ternary {−1, 0, +1} weights with FP16 group-wise scaling, giving a true 1.71 effective bits per weight. At 5.9 GB, it is the quality-oriented variant: it runs on an everyday laptop with the full reasoning, tool-calling, and agentic capability.1-bit Bonsai 27B uses binary {−1, +1} weights with the same group-wise scaling, giving 1.125 effective bits per weight. At 3.9 GB, it is the footprint-oriented variant, which fits within the memory budget of an iPhone 17 Pro, bringing a 27B-class model onto a phone for the first time.As with every Bonsai release, the low-bit representation runs end to end across the language network, embeddings, attention, MLPs, and the LM head, with no higher-precision escape hatches. Both variants are multimodal, with the vision tower shipping in a compact 4-bit form so on-device workflows can see screenshots, documents, and camera input, not just text. Bonsai 27B carries a full 262K-token context, and supports speculative-decoding, compounding the speed with lossless draft-and-verify acceleration. Everything is available today under the Apache 2.0 License.Retaining the intelligenceAcross a 15-benchmark suite spanning knowledge, reasoning, math, coding, instruction following, tool calling, and vision (evaluated in thinking mode, where the model&#39;s full reasoning is exercised) Ternary Bonsai 27B retains 95% of the full-precision baseline, and 1-bit Bonsai 27B retains 90%. Category (benchmarks) Qwen 3.627B Ternary Bonsai27B 1-bit Bonsai27B Math (GSM8K, MATH-500, AIME25, AIME26) 95.3 93.4 91.7 Coding (HumanEval+, MBPP+, LiveCodeBench) 88.7 86.0 81.9 Agentic and Tool-calling (BFCL v3, TauBench) 80.0 74.0 66.0 Instruction following (IFEval, IFBench) 78.4 71.8 65.8 Knowledge / STEM (MMLU-Redux, MuSR) 83.1 77.0 73.4 Vision (MMMU Pro, OCRBench) 72.6 65.2 59.6 Overall (15 benchmarks) 85.0 80.5 76.1 ‍Fig I: Benchmark scores of Bonsai 27B (thinking mode) against the full-precision baseline. Full per-benchmark results are in the whitepaper.‍Read the table by capability and the story is sharper than the averages: math and coding are nearly untouched, tool calling stays within a few points of full precision - exactly the capabilities that agentic workloads depend on. For comparison, the most aggressive conventional low-bit build of the same base model scores significantly lower than 1-bit Bonsai 27B while occupying 2.5x more memory.This is the same Pareto shift we demonstrated with our earlier language and image models, now at 27B scale: 27B-class capability at a footprint smaller than a full-precision 2B model. By intelligence density — the measure we introduced with 1-bit Bonsai 8B — 1-bit Bonsai 27B delivers 0.53 per GB: more than 10x the full-precision baseline, and roughly 2.7x the best low-bit alternative available.Fig II: Intelligence density (per GB) of Bonsai 27B compared to other models in the same parameter class.Why this is an important paradigm shiftThe most valuable AI workloads are shifting from single responses to sustained work: assistants that operate real tools, workflows that run unattended before returning a result, and research that synthesizes dozens of documents. This shift changes the shape of the workload — an agent doesn&#39;t make one model call, it makes hundreds, each one carrying context, producing structured output, and feeding the next.Cloud APIs will remain the right choice for many products. But for agentic workloads, cloud-only execution imposes structural constraints: every step is a remote request, per-token cost accumulates with every iteration, and every plan, tool call, and intermediate result crosses the network including the user&#39;s private files, screen, and data. Carousel I: End-to-end agentic workflow with Hermes, powered by our Ternary Bonsai 27B model on NVIDIA GeForce RTX 5090. Local execution changes the equation. When a model capable of sustained agentic work fits on the device, the agent can live inside the product: the marginal cost of a hundred-step loop is zero, and the user&#39;s data never leaves the machine. Entire categories open up — persistent on-device agents, assistants that work offline, assistants that reason over private local data by construction. What has been missing is a model small enough to deploy this way and capable enough to trust with the work. Bonsai 27B is that model.It also unlocks a new system architecture: hybrid deployments that route non-frontier and privacy-sensitive tasks to a capable local model and reserve frontier cloud models for the hardest steps — collapsing the cost-per-task of agentic systems.Bonsai 27B reaches up to 163 tok/s in 1-bit and 134 tok/s in Ternary on an NVIDIA GeForce RTX 5090. On an M5 Max, it reaches up to 87 tok/s in 1-bit and 58 tok/s in Ternary.Fitting a phone is a stricter gate than storage numbers suggest. A phone never exposes its full memory to an app - a 12 GB iPhone offers about 6 GB for the model to use on-device, and the model shares that budget with its KV cache and activations. No conventional build of a 27B model comes close to clearing it. At about 4 GB, 1-bit Bonsai 27B is the first to pass through with room to work.That constraint is why the family ships two deliberate operating points, specifically keeping that in mind: ternary for laptop-class quality, 1-bit for phone-class footprint. Demo II: Multimodal agentic use-cases powered by 1-Bit Bonsai 27B on an iPhone 17 Pro Max (Demo Mode: Cached &amp; Prefilled Image Context) The frontier keeps movingEvery Bonsai release has moved the intelligence-per-gigabyte frontier left, and Bonsai 27B moves it past a practical threshold: the full capability set of a modern model with thinking, multimodal understanding, vision, reliable tool use, now fits on the devices people already own.We believe intelligence density will be one of the defining axes of the next stage of AI progress. Raw capability determines what a model can do; density determines where it can do it. Every leftward shift of the frontier expands the set of devices, products, and environments where advanced AI can operate and changes the economics of every deployment surface it touches, from phones to single-GPU serving. The methodology behind Bonsai is architecture-agnostic, and the frontier will keep moving: larger models and new architectures are already in progress.Early computers filled rooms; today they live in our pockets. Intelligence is making the same journey, and Bonsai 27B is its largest step yet.Platform CoverageBonsai 27B runs natively on Apple devices (Mac, iPhone, iPad) via MLX and on NVIDIA GPUs via CUDA, through custom low-bit kernels built for its hybrid-attention architecture. Model weights are available today under the Apache 2.0 License. With this release, we’re offering a free, limited-time developer preview API so developers can easily try our model.Full technical details of our compression, evaluation, and benchmarking processes are available in our whitepaper.Join UsPrismML emerged from a team of Caltech researchers and was founded with support from Khosla Ventures, Cerberus, and Google, with continuing support from Samsung. We&#39;ve spent years tackling one of the field&#39;s hardest problems: compressing neural networks without sacrificing their reasoning ability.If you want to help build the next generation of state-of-the-art AI, we&#39;d love to hear from you. Check out our careers page.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48910545">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#9</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48916975.html">我骗了Claude，让它泄露了你心底最深、最不可告人的秘密。</a></h2>
+        <p class="original">I tricked Claude into leaking your deepest, darkest secrets</p>
+        <div class="meta">
+          <span>649 分</span>
+          <span>290 评论</span>
+          <span>最高 #5</span>
+          <span>15 次快照出现</span>
+        </div>
+        <ul><li>作者发现 Claude 的记忆系统存储了大量用户敏感信息，但安全性被忽视。</li><li>通过构造恶意网页并利用 web_fetch 工具的链接跳转机制，成功绕过沙箱限制实现数据外泄。</li><li>Anthropic 虽对任意 URL 访问进行了限制，但基于链接跳转的间接访问方式仍存在漏洞。</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48916975">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#10</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48901569.html">日本开发出从废旧电动汽车电池中回收高达90%锂的新方法</a></h2>
+        <p class="original">Japan develops a method to recover up to 90% of lithium from used EV batteries</p>
+        <div class="meta">
+          <span>739 分</span>
+          <span>195 评论</span>
+          <span>最高 #2</span>
+          <span>5 次快照出现</span>
+        </div>
+        <ul><li>日本科学家研发出从废旧电动汽车电池中回收高达90%锂的新方法。</li><li>该技术有望显著改善电动汽车电池废弃物的处理问题，并可能改变未来电池制造与再利用的方式。</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=48901569">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-07-16-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+  </main>
+</body>
+</html>
