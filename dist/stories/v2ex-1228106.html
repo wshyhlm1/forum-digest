@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI + garlic 自动化逆向 Android 应用 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-17/">返回日报</a>
+      <div class="source-chip">V2EX #4</div>
+      <h1>AI + garlic 自动化逆向 Android 应用</h1>
+      <p class="original-title">AI + garlic 自动化逆向 Android App</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 neocanable</span>
+        <span>热度 8</span>
+        <span>回复 8</span>
+        <span>2026/07/17 20:34</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228106" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228106.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者搭建了 garlic decompiler MCP server，实现 AI 自动化逆向分析 Android APK。</li><li>以 Tinder 旧版本为例，AI 自动完成反编译、调用图构建、权限与架构分析，并深入分析登录认证模块源码。</li><li>展示了 AI 在移动应用安全分析、代码审计场景下的自动化能力。</li></ul>
+      <h3>看点</h3><ul><li>AI + MCP server 实现 APK 自动化逆向，反编译 9.8 万 Java 文件并构建百万级调用图。</li><li>AI 自动分析 Tinder 认证模块，梳理 8 种认证方式及完整状态机流程。</li><li>展示了 AI 代理在复杂代码库中自主搜索、阅读、总结源码的能力。</li><li>为移动应用安全研究、竞品分析提供了新的 AI 辅助工具思路。</li></ul>
+      <p class="reason">帖子介绍了使用 AI 结合 garlic decompiler MCP server 自动化逆向 Android App 的实践，涉及 AI 代理、反编译、代码分析等，属于 AI 与开发工具交叉领域。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>我给<a href="https://github.com/neocanable/garlic" target="_blank" rel="noopener noreferrer">大蒜反编译器 </a> mcp-server 可以跑起来了。</p>
+效果
+<p>以 Tinder 的一个旧版本为例：</p>
+<pre><code>
+ ▎ Meet Fable 5, our newest model for complex, long-running work. Switch anytime with /model.
+
+❯ 帮我分析一下 tinder.apk
+
+..... bla bla bla
+
+---
+Tinder APK 分析报告 — v17.24.0 (build 17240054)
+
+---
+📦 基本信息
+
+这里列出来 tinder 的基本信息
+
+✻ Sautéed for 1m 55s
+
+※ recap: You asked me to analyze tinder.apk. I've completed the full analysis — extracted the AndroidManifest, decompiled 98,603 Java files, built a call graph with 586K nodes and 1.49M edges, and produced a comprehensive report covering permissions, API endpoints, architecture, security, and monetization. The manifest and decompiled sources are in `/Users/neo/apks/tinder/inner_analyze/decompiled/`. Let me know what you'd like to dive deeper into. (disable recaps in /config)
+
+</code></pre>
+<p><em><strong>紧接着，我要求 AI 帮我分析 Tinder 的登录认证流程，结果如下：</strong></em></p>
+<pre><code>
+❯ 查看 feature/auth 模块的源码看看认证流程
+
+  Thought for 40s, searched for 2 patterns, read 1 file, listed 5 directories, searched memories
+
+分析完毕，以下是 Tinder 认证（ auth ）模块 的完整源码分析报告：
+
+---
+Tinder 认证模块源码分析
+
+目录结构
+
+feature/auth/
+├── captcha/          # Arkose Captcha / HCaptcha 验证
+├── collect/email/    # 邮箱收集
+├── consent/          # 用户同意
+├── email/otp/        # 邮箱 OTP 验证
+├── google/           # Google 登录
+├── inboundsms/       # 运营商 SMS 验证
+├── internal/         # 核心认证逻辑
+│   ├── activity/     #   AuthStartActivity, TermsOfServiceActivity
+│   ├── authflow/     #   ★ 认证流程状态机（核心）
+│   ├── di/           #   Hilt DI 模块
+│   ├── fragment/     #   LoginFragment （登录 UI ）
+│   ├── levers/       #   功能开关（ A/B 测试）
+│   ├── phoneverification/ # 手机验证子流程
+│   ├── presenter/    #   MVP Presenter
+│   ├── usecase/      #   用例层
+│   └── viewmodel/    #   LoginViewModel
+├── passkeys/         # Google Passkey 无密码认证
+├── phone/
+│   ├── number/       # 手机号输入
+│   └── otp/          # 手机 OTP 验证
+└── usecases/         # 暴露给外部的接口
+
+---
+1. 认证方式 (AuthType)
+
+8 种认证方式，每种对应一个 key 字符串：
+
+┌────────────────┬──────────────────┬───────────────────────────┐
+│      枚举      │       key        │           说明            │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ LINE           │ "line"           │ LINE 第三方登录           │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ GOOGLE         │ "google"         │ Google 登录               │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ TINDER_SMS     │ "sms"            │ 短信验证码（主流程）      │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ PUSH           │ "push"           │ Push 推送认证             │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ STACKS         │ "stacks"         │ Stacks 认证               │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ EMAIL          │ "email"          │ 邮箱验证                  │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ CREATE_ACCOUNT │ "create_account" │ 创建新账号                │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ LOGIN          │ "login"          │ 登录（通用）              │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ PASSKEY        │ "passkey"        │ Google Passkey 无密码认证 │
+└────────────────┴──────────────────┴───────────────────────────┘
+
+---
+2. 认证流程状态机 (AuthFlowStep)
+
+认证是一个状态机，每一步代表一个状态：
+
+                    ┌─────────────┐
+                    │  Processing │ (处理中)
+                    └──────┬──────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+      ┌────────────┐ ┌──────────┐ ┌──────────┐
+      │InitialStep │ │NextStep  │ │ConsentIs │
+      │Ready       │ │Ready     │ │Required  │
+      └─────┬──────┘ └─────┬────┘ └──────────┘
+            │              │
+            ▼              ▼
+    ┌──────────────┐ ┌──────────┐
+    │ Authenticated│ │  Error   │
+    └──────────────┘ └────┬─────┘
+                          │
+              ┌───────────┼──────────┐
+              ▼           ▼          ▼
+        ┌────────┐ ┌─────────┐ ┌────────┐
+        │  Ban   │ │ Warning │ │Cancelled│
+        └────────┘ └─────────┘ └────────┘
+
+认证完成后进入 AuthOutage （认证服务不可用）或 Authenticated 。
+
+---
+3. 认证 Step 栈 (AuthStepV2)
+
+认证过程由多个 Step 按顺序推进，支持回退。Step 类型：
+
+┌────────────────────────────────────┬─────────────────────────────┐
+│                Step                │            说明             │
+├────────────────────────────────────┼─────────────────────────────┤
+│ CaptchaStep                        │ 人机验证（ Arkose/HCaptcha ） │
+├────────────────────────────────────┼─────────────────────────────┤
+│ CollectEmail                       │ 收集邮箱地址                │
+├────────────────────────────────────┼─────────────────────────────┤
+│ EmailOtp                           │ 邮箱 OTP 验证码             │
+├────────────────────────────────────┼─────────────────────────────┤
+│ Onboarding                         │ 新用户引导流程              │
+├────────────────────────────────────┼─────────────────────────────┤
+│ Phone                              │ 收集手机号                  │
+├────────────────────────────────────┼─────────────────────────────┤
+│ PhoneOtp                           │ 手机 OTP 验证码             │
+├────────────────────────────────────┼─────────────────────────────┤
+│ InboundSms                         │ 运营商 SMSC 自动验证        │
+├────────────────────────────────────┼─────────────────────────────┤
+│ IneligibleTinderUEmail             │ 不符合 Tinder U 条件的邮箱  │
+├────────────────────────────────────┼─────────────────────────────┤
+│ AccountRecoveryAwaitEmailMagicLink │ 账户恢复等待邮件            │
+├────────────────────────────────────┼─────────────────────────────┤
+│ Passkey                            │ Passkey 验证                │
+└────────────────────────────────────┴─────────────────────────────┘
+
+Step 栈是有序列表：每次新 step 被 push 到栈顶，出错时可以 pop 回到上一个 step 。
+
+---
+4. 请求/响应模型 (AuthRequest / AuthResult)
+
+AuthRequest （ 27 种请求）：
+Captcha, CollectEmail, ChallengeRecovery,
+EmailForAccountRecovery, EmailMagicLinkOtp,
+EmailOtp, EmailOtpResend, DismissEmailOtp,
+DismissTinderUIneligibleEmail,
+Facebook, Google, Line,
+Phone, PhoneOtp, PhoneOtpResend,
+InboundSms, Refresh, PreEmail,
+ExistingPhoneOtp, ExistingPhoneOtpResend,
+CreateNewAccount, DismissPasskey,
+InitiatePasskey, ValidatePasskey,
+InitiateAuthenticatePasskey, AuthenticatePasskey
+
+AuthResult 类型：
+- Authenticated — 认证成功
+- Response — 需要下一步（携带 AuthStepV2 ）
+- Error — 各种错误（ Ban, Warning, IOError, 限流等）
+
+---
+5. AuthFlowViewModel 核心方法
+
+注入关键 (反混淆后推测)：
+
+┌───────────────────────────────┬────────────────────────────────────────────┐
+│             依赖              │                    用途                    │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ SubmitAuthRequestV2Impl       │ 提交认证请求到 AGS （ Auth Gateway Service ） │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ SaveInitialAuthTypeImpl       │ 保存初始认证方式                           │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ LoadInitialAuthTypeImpl       │ 恢复上次认证方式                           │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ ClearAuthTokensImpl           │ 清除 token                                 │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ SaveBanImpl                   │ 保存封禁记录                               │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ FireworksAuthTracker          │ 分析事件埋点                               │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ AuthInteractTracker           │ 交互跟踪                                   │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ PasskeyAuthFlowDiagnostics    │ Passkey 诊断                               │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ UpdatedEmailAddressRepository │ 邮箱更新仓库                               │
+└───────────────────────────────┴────────────────────────────────────────────┘
+
+关键词方法：
+- d0() — continueSetInitialAuthStep：设置初始认证 step
+- e0() — prePasskeyData：Passkey 前置检查
+- f0() — applyInitialAuthStep：应用初始 step
+- g0() — checkIfAuthIsUp：健康检查
+- h0() — 根据错误消息解析回退 step
+- i0() — handleBan：处理封禁/错误
+- j0() — handleAuthenticated：认证成功处理
+- k0() — 计算下一个可用 step
+- m0() / s0() — 显示错误/回退 UI
+- t0() — 从 AuthType 生成 Phone Step
+- u0() — 从 AuthType 生成认证请求
+- v0() — 更新 step 或显示错误
+
+---
+6. 完整认证流程
+
+AuthStartActivity
+  ├── onCreate() → 检查 Intent 中的 ban/onboarding/challenge 状态
+  ├── 启动 LoginFragment （登录 UI ）
+  │     └── 用户选择登录方式（ Google/SMS/Email/Passkey/LINE ）
+  │           └── LoginFragment.Listener.e(AuthType) 回调
+  │                 └── 调用 AuthFlowActivity
+  │
+  └── AuthFlowActivity ★ 认证流程 Activity
+        ├── AuthFlowViewModel 持有 StateFlow&lt;AuthFlowState&gt;
+        │
+        ├── 1) 首次进入：d0() → continueSetInitialAuthStep
+        │     ├── e0() 检查 Passkey 是否可用
+        │     ├── checkIfAuthIsUp() 健康检查
+        │     └── applyInitialAuthStep() 设置初始 Step
+        │
+        ├── 2) AuthStepLauncher 根据 AuthStepV2 类型启动目标 Activity：
+        │     ├── CaptchaStep → Captcha Activity (Arkose/HCaptcha)
+        │     ├── CollectEmail → 邮箱输入 Activity
+        │     ├── EmailOtp → 邮箱 OTP Activity
+        │     ├── Phone → 手机号输入 Activity ★
+        │     ├── PhoneOtp → 手机 OTP Activity ★
+        │     ├── InboundSms → 运营商自动验证
+        │     ├── Passkey → Passkey 全屏 Activity
+        │     ├── Google → Google Sign-In
+        │     ├── LINE → LINE 授权
+        │     ├── Onboarding → 新用户引导
+        │     └── IneligibleTinderUEmail → Tinder U 不兼容提示
+        │
+        ├── 3) 每个子 Activity 返回后，ViewModel 提交 AuthRequest
+        │     └── AGS (Auth Gateway Service) 返回 AuthResult
+        │           ├── Authenticated → j0() → 登录成功
+        │           ├── Response(NextStep) → 推入 step 栈继续
+        │           └── Error → i0() → 处理具体错误
+        │
+        └── 4) 错误处理 (i0)：
+              ├── Ban (40301, 40341) → 保存封禁 + 显示 Ban 页面
+              ├── Warning → 显示警告
+              ├── 各种限流 → 显示 toast + 回退
+              ├── InvalidPhone/OTP → 显示错误 + pop step
+              └── IOError/Unknown → 通用错误
+
+7. 手机验证子流程 (主要认证路径)
+
+PhoneVerificationAuthViewModel 管理手机验证的独立流程：
+
+PhoneNumberCollectionActivity
+  └── 用户输入手机号
+        └── SubmitNewPhoneNumberImpl → 提交到 AGS
+              ├── GoToPhoneOtpStep → PhoneOtpActivity
+              │     └── 用户输入验证码
+              │           └── VerifyUpdatedPhoneOtpImpl → 验证
+              │                 ├── PhoneOtpSuccess → 完成
+              │                 └── Error → 各种错误/重试
+              └── 错误 → 显示错误提示
+
+注入的分析事件跟踪器：AuthVerifySMSEvent — 标记 enterPhoneNumber / submit / enterOTP 各阶段的指标。
+
+---
+8. AuthStartActivity 入口
+
+AuthStartActivity 是认证入口 Activity （从 LaunchActivity 跳转），它：
+
+- 实现了 LoginTarget 接口（ 16+ 方法）
+- 处理 deep link 跳转：deep_link_uri, onboarding_token_extra
+- 处理封禁参数：extra_ban_error_type, extra_suspension_policy, extra_appeal_token
+- 处理多种启动场景：新用户引导、Challenge 、Selfie Challenge
+- 登录方式选择 UI 由 LoginFragment 渲染
+- 创建 LoginViewModel 管理登录状态
+
+关键方法 (LoginTarget 接口)：
+
+┌─────────────┬──────────────────────────────────────────┐
+│    方法     │                 触发场景                 │
+├─────────────┼──────────────────────────────────────────┤
+│ O()         │ 登录成功 → 跳转 MainActivity             │
+├─────────────┼──────────────────────────────────────────┤
+│ e(AuthType) │ 用户选择认证方式 → 启动 AuthFlowActivity │
+├─────────────┼──────────────────────────────────────────┤
+│ B2() / F1() │ 开启 overlay + 启动 AuthFlow             │
+├─────────────┼──────────────────────────────────────────┤
+│ P0() / Z0() │ 封禁 → 跳转 BanActivity                  │
+├─────────────┼──────────────────────────────────────────┤
+│ T0()        │ 账户恢复                                 │
+├─────────────┼──────────────────────────────────────────┤
+│ G2()        │ 版本过期提示                             │
+├─────────────┼──────────────────────────────────────────┤
+│ J2()        │ Selfie 验证                              │
+├─────────────┼──────────────────────────────────────────┤
+│ w0()        │ Passkey 不可用 BottomSheet               │
+├─────────────┼──────────────────────────────────────────┤
+│ Z1()        │ Passkey 登录                             │
+├─────────────┼──────────────────────────────────────────┤
+│ B1()        │ 年龄验证                                 │
+├─────────────┼──────────────────────────────────────────┤
+│ G0()        │ 邀请处理                                 │
+└─────────────┴──────────────────────────────────────────┘
+
+---
+9. 与 AGS (Auth Gateway Service) 通信
+
+认证请求通过 SubmitAuthRequestV2Impl 发送到 Auth Gateway Service （ api.gotinder.com 上的认证网关），这是 Tinder 后端 API 。发送的 AuthRequest 序列化后会包含：
+
+- App-Session-Id — App 会话
+- User-Session-Id — 用户会话（登录后有）
+- Install-Id — 设备安装 ID
+- Device/Carrier/SIM 信息 — 设备指纹
+- Auth token headers — TinderAuth 拦截器注入
+
+认证成功后，ViewModel 调用 j0() → 保存 token → 更新状态为 Authenticated → 关闭 AuthFlowActivity → 回到 AuthStartActivity → O() 启动 MainActivity 。
+
+</code></pre>
+2. 原理
+<p>garlic mcp server 和 garlic decompiler 都在一个二进制内, garlic mcp-server 没有 http 形式的，完全是 stdio 的形式，我试验了几个 http 形式的 mcp-server ，太慢了，感觉难以接受</p>
+<p>在 AI 分析一个 apk 的时候是什么流程呢？</p>
+<ul>
+<li>
+<p>反编译 APK</p>
+</li>
+<li>
+<p>反编译 AndroidManifest.xm</p>
+</li>
+<li>
+<p>生成 APK 的调用图</p>
+</li>
+<li>
+<p>生成 apk 的 strings 和 strings 的 xref</p>
+</li>
+<li>
+<p>导入 call graph/strings 到 duckdb</p>
+</li>
+</ul>
+3. 优点/缺点
+<p>速度快 - garlic 采用 C 语言编写，速度有保障</p>
+<p>资源占用少 - 分析完一个 APK 后，内存随即释放，定位文件/方法均可直接查询数据库。</p>
+<p>追踪程序执行速度快 - DuckDB 支持递归形式的查询，无需为追踪每条路径而去 grep 文件</p>
+<p>没有 Windows 的机器，Windows 版本没有仔细测试。</p>
+4. MCP 服务器配置方法
+<pre><code>{  
+  "command": "garlic", // 这里直接写 garlic 的路径就 ok 了  
+  "args": ["-m"]
+}
+</code></pre>
+5. 原生分析
+<p>native 的分析是我正在做的另外一个东西，现在只支持 arm64，现在能支持到的功能：</p>
+<ul>
+<li>
+<p>反汇编</p>
+</li>
+<li>
+<p>控制流分析</p>
+</li>
+<li>
+<p>控制流还原</p>
+</li>
+<li>
+<p>数据流分析</p>
+</li>
+<li>
+<p>红外</p>
+</li>
+<li>
+<p>跳转表还原</p>
+</li>
+<li>
+<p>虚表还原</p>
+</li>
+<li>
+<p>部分 blr 分析</p>
+</li>
+<li>
+<p>交叉引用分析</p>
+</li>
+</ul>
+<p>native 部分的分析同样采用 C 语言实现，完全可以衔接到 garlic 上，不依赖任何第三方库，比如 capstone 等。</p>
+<p>大部分功能还在调试，现在能实现的基础效果是将 Java 的 code 和 native 的流程关联起来。我相信在 AI 的加持下，可以更容易地从 Java 一直跟到 native 的代码，分析微信效果如下：</p>
+<pre><code>Waiting for analysis to start...[13:55:33] Started analysis for weixin.apk[13:55:33] Running aapt2 dump badging...[13:55:59] Generating Java call graph...[13:56:08] Building Java call graph index...[13:56:23] Call graph built: 770928 methods, 8998 native, 381196 strings[13:56:23] Decompilation completed successfully [39.6s][13:56:26] Extracting native function index...[13:56:40] Queueing native SO analysis...[13:56:40] Decompilation phase complete[13:56:40] Found 182 native SO files to analyze[13:56:40] [1/182] Analyzing libAdvanceP2P.so...[13:56:40] [1/182] libAdvanceP2P.so: imported successfully [0.43s][13:56:40] [2/182] Analyzing libAudioFFmpegDecode.so...[13:56:40] [2/182] libAudioFFmpegDecode.so: imported successfully [0.05s]# ... 这里略过了，是一堆 so 的分析 profile[13:58:41] [174/182] Analyzing libwxperf-tkill.so...[13:58:41] [174/182] libwxperf-tkill.so: imported successfully [0.02s][13:58:41] [175/182] Analyzing libxeffect_xlog.so...[13:58:51] [180/182] libxweb_linker.so: imported successfully [0.03s][13:58:51] [181/182] Analyzing libz-ng.so...[13:58:51] [181/182] libz-ng.so: imported successfully [0.03s][13:58:51] [182/182] Analyzing libzidl2.so...[13:58:51] [182/182] libzidl2.so: imported successfully [0.09s][13:58:51] Importing native strings and cross-references...[13:59:34] Native call graph analysis complete [174.2s]
+</code></pre>
+
+<p>项目地址： <a href="https://github.com/neocanable/garlic" target="_blank" rel="noopener noreferrer">https://github.com/neocanable/garlic</a> ，欢迎使用反馈。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>我给<a href="https://github.com/neocanable/garlic" target="_blank" rel="noopener noreferrer">garlic decompiler </a> mcp-server 可以跑起来了。</p>
+效果
+<p>拿 Tinder 一个旧版本举例：</p>
+<pre><code>
+ ▎ Meet Fable 5, our newest model for complex, long-running work. Switch anytime with /model.
+
+❯ 帮我分析一下 tinder.apk
+
+..... bla bla bla
+
+---
+Tinder APK 分析报告 — v17.24.0 (build 17240054)
+
+---
+📦 基本信息
+
+这里列出来 tinder 的基本信息
+
+✻ Sautéed for 1m 55s
+
+※ recap: You asked me to analyze tinder.apk. I've completed the full analysis — extracted the AndroidManifest, decompiled 98,603 Java files, built a call graph with 586K nodes and 1.49M edges, and produced a comprehensive report covering permissions, API endpoints, architecture, security, and monetization. The manifest and decompiled sources are in `/Users/neo/apks/tinder/inner_analyze/decompiled/`. Let me know what you'd like to dive deeper into. (disable recaps in /config)
+
+</code></pre>
+<p><em><strong>紧接着，我要求 ai 帮我分析 tinder 的登录认证的流程，结果如下：</strong></em></p>
+<pre><code>
+❯ 查看 feature/auth 模块的源码看看认证流程
+
+  Thought for 40s, searched for 2 patterns, read 1 file, listed 5 directories, searched memories
+
+分析完毕，以下是 Tinder 认证（ auth ）模块 的完整源码分析报告：
+
+---
+Tinder 认证模块源码分析
+
+目录结构
+
+feature/auth/
+├── captcha/          # Arkose Captcha / HCaptcha 验证
+├── collect/email/    # 邮箱收集
+├── consent/          # 用户同意
+├── email/otp/        # 邮箱 OTP 验证
+├── google/           # Google 登录
+├── inboundsms/       # 运营商 SMS 验证
+├── internal/         # 核心认证逻辑
+│   ├── activity/     #   AuthStartActivity, TermsOfServiceActivity
+│   ├── authflow/     #   ★ 认证流程状态机（核心）
+│   ├── di/           #   Hilt DI 模块
+│   ├── fragment/     #   LoginFragment （登录 UI ）
+│   ├── levers/       #   功能开关（ A/B 测试）
+│   ├── phoneverification/ # 手机验证子流程
+│   ├── presenter/    #   MVP Presenter
+│   ├── usecase/      #   用例层
+│   └── viewmodel/    #   LoginViewModel
+├── passkeys/         # Google Passkey 无密码认证
+├── phone/
+│   ├── number/       # 手机号输入
+│   └── otp/          # 手机 OTP 验证
+└── usecases/         # 暴露给外部的接口
+
+---
+1. 认证方式 (AuthType)
+
+8 种认证方式，每种对应一个 key 字符串：
+
+┌────────────────┬──────────────────┬───────────────────────────┐
+│      枚举      │       key        │           说明            │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ LINE           │ "line"           │ LINE 第三方登录           │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ GOOGLE         │ "google"         │ Google 登录               │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ TINDER_SMS     │ "sms"            │ 短信验证码（主流程）      │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ PUSH           │ "push"           │ Push 推送认证             │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ STACKS         │ "stacks"         │ Stacks 认证               │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ EMAIL          │ "email"          │ 邮箱验证                  │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ CREATE_ACCOUNT │ "create_account" │ 创建新账号                │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ LOGIN          │ "login"          │ 登录（通用）              │
+├────────────────┼──────────────────┼───────────────────────────┤
+│ PASSKEY        │ "passkey"        │ Google Passkey 无密码认证 │
+└────────────────┴──────────────────┴───────────────────────────┘
+
+---
+2. 认证流程状态机 (AuthFlowStep)
+
+认证是一个状态机，每一步代表一个状态：
+
+                    ┌─────────────┐
+                    │  Processing │ (处理中)
+                    └──────┬──────┘
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+      ┌────────────┐ ┌──────────┐ ┌──────────┐
+      │InitialStep │ │NextStep  │ │ConsentIs │
+      │Ready       │ │Ready     │ │Required  │
+      └─────┬──────┘ └─────┬────┘ └──────────┘
+            │              │
+            ▼              ▼
+    ┌──────────────┐ ┌──────────┐
+    │ Authenticated│ │  Error   │
+    └──────────────┘ └────┬─────┘
+                          │
+              ┌───────────┼──────────┐
+              ▼           ▼          ▼
+        ┌────────┐ ┌─────────┐ ┌────────┐
+        │  Ban   │ │ Warning │ │Cancelled│
+        └────────┘ └─────────┘ └────────┘
+
+认证完成后进入 AuthOutage （认证服务不可用）或 Authenticated 。
+
+---
+3. 认证 Step 栈 (AuthStepV2)
+
+认证过程由多个 Step 按顺序推进，支持回退。Step 类型：
+
+┌────────────────────────────────────┬─────────────────────────────┐
+│                Step                │            说明             │
+├────────────────────────────────────┼─────────────────────────────┤
+│ CaptchaStep                        │ 人机验证（ Arkose/HCaptcha ） │
+├────────────────────────────────────┼─────────────────────────────┤
+│ CollectEmail                       │ 收集邮箱地址                │
+├────────────────────────────────────┼─────────────────────────────┤
+│ EmailOtp                           │ 邮箱 OTP 验证码             │
+├────────────────────────────────────┼─────────────────────────────┤
+│ Onboarding                         │ 新用户引导流程              │
+├────────────────────────────────────┼─────────────────────────────┤
+│ Phone                              │ 收集手机号                  │
+├────────────────────────────────────┼─────────────────────────────┤
+│ PhoneOtp                           │ 手机 OTP 验证码             │
+├────────────────────────────────────┼─────────────────────────────┤
+│ InboundSms                         │ 运营商 SMSC 自动验证        │
+├────────────────────────────────────┼─────────────────────────────┤
+│ IneligibleTinderUEmail             │ 不符合 Tinder U 条件的邮箱  │
+├────────────────────────────────────┼─────────────────────────────┤
+│ AccountRecoveryAwaitEmailMagicLink │ 账户恢复等待邮件            │
+├────────────────────────────────────┼─────────────────────────────┤
+│ Passkey                            │ Passkey 验证                │
+└────────────────────────────────────┴─────────────────────────────┘
+
+Step 栈是有序列表：每次新 step 被 push 到栈顶，出错时可以 pop 回到上一个 step 。
+
+---
+4. 请求/响应模型 (AuthRequest / AuthResult)
+
+AuthRequest （ 27 种请求）：
+Captcha, CollectEmail, ChallengeRecovery,
+EmailForAccountRecovery, EmailMagicLinkOtp,
+EmailOtp, EmailOtpResend, DismissEmailOtp,
+DismissTinderUIneligibleEmail,
+Facebook, Google, Line,
+Phone, PhoneOtp, PhoneOtpResend,
+InboundSms, Refresh, PreEmail,
+ExistingPhoneOtp, ExistingPhoneOtpResend,
+CreateNewAccount, DismissPasskey,
+InitiatePasskey, ValidatePasskey,
+InitiateAuthenticatePasskey, AuthenticatePasskey
+
+AuthResult 类型：
+- Authenticated — 认证成功
+- Response — 需要下一步（携带 AuthStepV2 ）
+- Error — 各种错误（ Ban, Warning, IOError, 限流等）
+
+---
+5. AuthFlowViewModel 核心方法
+
+注入关键 (反混淆后推测)：
+
+┌───────────────────────────────┬────────────────────────────────────────────┐
+│             依赖              │                    用途                    │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ SubmitAuthRequestV2Impl       │ 提交认证请求到 AGS （ Auth Gateway Service ） │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ SaveInitialAuthTypeImpl       │ 保存初始认证方式                           │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ LoadInitialAuthTypeImpl       │ 恢复上次认证方式                           │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ ClearAuthTokensImpl           │ 清除 token                                 │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ SaveBanImpl                   │ 保存封禁记录                               │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ FireworksAuthTracker          │ 分析事件埋点                               │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ AuthInteractTracker           │ 交互跟踪                                   │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ PasskeyAuthFlowDiagnostics    │ Passkey 诊断                               │
+├───────────────────────────────┼────────────────────────────────────────────┤
+│ UpdatedEmailAddressRepository │ 邮箱更新仓库                               │
+└───────────────────────────────┴────────────────────────────────────────────┘
+
+关键词方法：
+- d0() — continueSetInitialAuthStep：设置初始认证 step
+- e0() — prePasskeyData：Passkey 前置检查
+- f0() — applyInitialAuthStep：应用初始 step
+- g0() — checkIfAuthIsUp：健康检查
+- h0() — 根据错误消息解析回退 step
+- i0() — handleBan：处理封禁/错误
+- j0() — handleAuthenticated：认证成功处理
+- k0() — 计算下一个可用 step
+- m0() / s0() — 显示错误/回退 UI
+- t0() — 从 AuthType 生成 Phone Step
+- u0() — 从 AuthType 生成认证请求
+- v0() — 更新 step 或显示错误
+
+---
+6. 完整认证流程
+
+AuthStartActivity
+  ├── onCreate() → 检查 Intent 中的 ban/onboarding/challenge 状态
+  ├── 启动 LoginFragment （登录 UI ）
+  │     └── 用户选择登录方式（ Google/SMS/Email/Passkey/LINE ）
+  │           └── LoginFragment.Listener.e(AuthType) 回调
+  │                 └── 调用 AuthFlowActivity
+  │
+  └── AuthFlowActivity ★ 认证流程 Activity
+        ├── AuthFlowViewModel 持有 StateFlow&lt;AuthFlowState&gt;
+        │
+        ├── 1) 首次进入：d0() → continueSetInitialAuthStep
+        │     ├── e0() 检查 Passkey 是否可用
+        │     ├── checkIfAuthIsUp() 健康检查
+        │     └── applyInitialAuthStep() 设置初始 Step
+        │
+        ├── 2) AuthStepLauncher 根据 AuthStepV2 类型启动目标 Activity：
+        │     ├── CaptchaStep → Captcha Activity (Arkose/HCaptcha)
+        │     ├── CollectEmail → 邮箱输入 Activity
+        │     ├── EmailOtp → 邮箱 OTP Activity
+        │     ├── Phone → 手机号输入 Activity ★
+        │     ├── PhoneOtp → 手机 OTP Activity ★
+        │     ├── InboundSms → 运营商自动验证
+        │     ├── Passkey → Passkey 全屏 Activity
+        │     ├── Google → Google Sign-In
+        │     ├── LINE → LINE 授权
+        │     ├── Onboarding → 新用户引导
+        │     └── IneligibleTinderUEmail → Tinder U 不兼容提示
+        │
+        ├── 3) 每个子 Activity 返回后，ViewModel 提交 AuthRequest
+        │     └── AGS (Auth Gateway Service) 返回 AuthResult
+        │           ├── Authenticated → j0() → 登录成功
+        │           ├── Response(NextStep) → 推入 step 栈继续
+        │           └── Error → i0() → 处理具体错误
+        │
+        └── 4) 错误处理 (i0)：
+              ├── Ban (40301, 40341) → 保存封禁 + 显示 Ban 页面
+              ├── Warning → 显示警告
+              ├── 各种限流 → 显示 toast + 回退
+              ├── InvalidPhone/OTP → 显示错误 + pop step
+              └── IOError/Unknown → 通用错误
+
+7. 手机验证子流程 (主要认证路径)
+
+PhoneVerificationAuthViewModel 管理手机验证的独立流程：
+
+PhoneNumberCollectionActivity
+  └── 用户输入手机号
+        └── SubmitNewPhoneNumberImpl → 提交到 AGS
+              ├── GoToPhoneOtpStep → PhoneOtpActivity
+              │     └── 用户输入验证码
+              │           └── VerifyUpdatedPhoneOtpImpl → 验证
+              │                 ├── PhoneOtpSuccess → 完成
+              │                 └── Error → 各种错误/重试
+              └── 错误 → 显示错误提示
+
+注入的分析事件跟踪器：AuthVerifySMSEvent — 标记 enterPhoneNumber / submit / enterOTP 各阶段的指标。
+
+---
+8. AuthStartActivity 入口
+
+AuthStartActivity 是认证入口 Activity （从 LaunchActivity 跳转），它：
+
+- 实现了 LoginTarget 接口（ 16+ 方法）
+- 处理 deep link 跳转：deep_link_uri, onboarding_token_extra
+- 处理封禁参数：extra_ban_error_type, extra_suspension_policy, extra_appeal_token
+- 处理多种启动场景：新用户引导、Challenge 、Selfie Challenge
+- 登录方式选择 UI 由 LoginFragment 渲染
+- 创建 LoginViewModel 管理登录状态
+
+关键方法 (LoginTarget 接口)：
+
+┌─────────────┬──────────────────────────────────────────┐
+│    方法     │                 触发场景                 │
+├─────────────┼──────────────────────────────────────────┤
+│ O()         │ 登录成功 → 跳转 MainActivity             │
+├─────────────┼──────────────────────────────────────────┤
+│ e(AuthType) │ 用户选择认证方式 → 启动 AuthFlowActivity │
+├─────────────┼──────────────────────────────────────────┤
+│ B2() / F1() │ 开启 overlay + 启动 AuthFlow             │
+├─────────────┼──────────────────────────────────────────┤
+│ P0() / Z0() │ 封禁 → 跳转 BanActivity                  │
+├─────────────┼──────────────────────────────────────────┤
+│ T0()        │ 账户恢复                                 │
+├─────────────┼──────────────────────────────────────────┤
+│ G2()        │ 版本过期提示                             │
+├─────────────┼──────────────────────────────────────────┤
+│ J2()        │ Selfie 验证                              │
+├─────────────┼──────────────────────────────────────────┤
+│ w0()        │ Passkey 不可用 BottomSheet               │
+├─────────────┼──────────────────────────────────────────┤
+│ Z1()        │ Passkey 登录                             │
+├─────────────┼──────────────────────────────────────────┤
+│ B1()        │ 年龄验证                                 │
+├─────────────┼──────────────────────────────────────────┤
+│ G0()        │ 邀请处理                                 │
+└─────────────┴──────────────────────────────────────────┘
+
+---
+9. 与 AGS (Auth Gateway Service) 通信
+
+认证请求通过 SubmitAuthRequestV2Impl 发送到 Auth Gateway Service （ api.gotinder.com 上的认证网关），这是 Tinder 后端 API 。发送的 AuthRequest 序列化后会包含：
+
+- App-Session-Id — App 会话
+- User-Session-Id — 用户会话（登录后有）
+- Install-Id — 设备安装 ID
+- Device/Carrier/SIM 信息 — 设备指纹
+- Auth token headers — TinderAuth 拦截器注入
+
+认证成功后，ViewModel 调用 j0() → 保存 token → 更新状态为 Authenticated → 关闭 AuthFlowActivity → 回到 AuthStartActivity → O() 启动 MainActivity 。
+
+</code></pre>
+2. 原理
+<p>garlic mcp server 和 garlic decompiler 都在一个二进制内, garlic mcp-server 没有 http 形式的，完全是 stdio 的形式，我试验了几个 http 形式的 mcp-server ，太慢了，感觉难以接受</p>
+<p>在 AI 分析一个 apk 的时候是什么流程呢？</p>
+<ul>
+<li>
+<p>反编译 apk</p>
+</li>
+<li>
+<p>反编译 AndroidManifest.xm</p>
+</li>
+<li>
+<p>生成 apk 的 call graph</p>
+</li>
+<li>
+<p>生成 apk 的 strings 和 strings 的 xref</p>
+</li>
+<li>
+<p>导入 call graph/strings 到 duckdb</p>
+</li>
+</ul>
+3. 优点/缺点
+<p>速度快 - garlic 是 c 写的，速度上能得到保证</p>
+<p>占用资源少 - 在分析完一个 apk 后，内存就释放掉，定位文件/方法都可以直接查 db</p>
+<p>追踪程序执行快 - duckdb 支持递归形式的查询，不用追踪每一条路径都去 grep file</p>
+<p>没有 windows 的机器，windows 版本的没有仔细测试。</p>
+4. mcp server 配置方法
+<pre><code>{  
+  "command": "garlic", // 这里直接写 garlic 的路径就 ok 了  
+  "args": ["-m"]
+}
+</code></pre>
+5. native 分析
+<p>native 的分析是我正在做的另外一个东西，现在只支持 arm64 ，现在能支持到的功能：</p>
+<ul>
+<li>
+<p>反汇编</p>
+</li>
+<li>
+<p>控制流分析</p>
+</li>
+<li>
+<p>控制流还原</p>
+</li>
+<li>
+<p>数据流分析</p>
+</li>
+<li>
+<p>IR</p>
+</li>
+<li>
+<p>jumptable 还原</p>
+</li>
+<li>
+<p>vtable 还原</p>
+</li>
+<li>
+<p>部分 blr 分析</p>
+</li>
+<li>
+<p>xref 分析</p>
+</li>
+</ul>
+<p>native 部分的分析也是 c 语言实现的，完全可以衔接到 garlic 上，没有任何三方库，比如 capstone 这些。</p>
+<p>大部分功能还在调试，现在能实现的基础效果是将 java 的 code 和 native 的流程关联起来，我相信有 AI 的加持下，可以更容易的从 java 一直跟到 native 的代码，分析微信效果如下：</p>
+<pre><code>Waiting for analysis to start...[13:55:33] Started analysis for weixin.apk[13:55:33] Running aapt2 dump badging...[13:55:59] Generating Java call graph...[13:56:08] Building Java call graph index...[13:56:23] Call graph built: 770928 methods, 8998 native, 381196 strings[13:56:23] Decompilation completed successfully [39.6s][13:56:26] Extracting native function index...[13:56:40] Queueing native SO analysis...[13:56:40] Decompilation phase complete[13:56:40] Found 182 native SO files to analyze[13:56:40] [1/182] Analyzing libAdvanceP2P.so...[13:56:40] [1/182] libAdvanceP2P.so: imported successfully [0.43s][13:56:40] [2/182] Analyzing libAudioFFmpegDecode.so...[13:56:40] [2/182] libAudioFFmpegDecode.so: imported successfully [0.05s]# ... 这里略过了，是一堆 so 的分析 profile[13:58:41] [174/182] Analyzing libwxperf-tkill.so...[13:58:41] [174/182] libwxperf-tkill.so: imported successfully [0.02s][13:58:41] [175/182] Analyzing libxeffect_xlog.so...[13:58:51] [180/182] libxweb_linker.so: imported successfully [0.03s][13:58:51] [181/182] Analyzing libz-ng.so...[13:58:51] [181/182] libz-ng.so: imported successfully [0.03s][13:58:51] [182/182] Analyzing libzidl2.so...[13:58:51] [182/182] libzidl2.so: imported successfully [0.09s][13:58:51] Importing native strings and cross-references...[13:59:34] Native call graph analysis complete [174.2s]
+</code></pre>
+
+<p>项目地址： <a href="https://github.com/neocanable/garlic" target="_blank" rel="noopener noreferrer">https://github.com/neocanable/garlic</a> ，欢迎使用反馈。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">8</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">longxk</span>
+        <span>#1</span>
+        <span>2026/07/17 21:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为啥我用 fable 干不了一点逆向的活</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878007">为啥我用 fable 干不了一点逆向的活</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878007">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878007" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zbinlin</span>
+        <span>#2</span>
+        <span>2026/07/17 22:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现在的 APK 都是加固的，怎么进行逆向好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878050">现在的 APK 都是加固的，怎么进行逆向好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878050">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878050" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">owen800q</span>
+        <span>#3</span>
+        <span>2026/07/17 22:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我用 fable 就标记切换到 opus, 你是怎么用的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878061">我用 fable 就标记切换到 opus, 你是怎么用的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878061">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878061" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">owen800q</span>
+        <span>#4</span>
+        <span>2026/07/17 22:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持 flutter app n 吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878064">支持 flutter app n 吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878064">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878064" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">neocanable</span>
+        <span>#5</span>
+        <span>2026/07/17 22:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 支持，但是 flutter 的 dartvm 要自己写 plugin ，native 部分我正在实现</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878095">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 支持，但是 flutter 的 dartvm 要自己写 plugin ，native 部分我正在实现</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878095">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878095" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">neocanable</span>
+        <span>#6</span>
+        <span>2026/07/17 22:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 我用的 deepseek ，mcp-server 就是 garlic 的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878098">@<a href="/member/owen800q" target="_blank" rel="noopener noreferrer">owen800q</a> 我用的 deepseek ，mcp-server 就是 garlic 的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878098">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878098" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ntdll</span>
+        <span>#7</span>
+        <span>2026/07/17 23:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zbinlin" target="_blank" rel="noopener noreferrer">zbinlin</a> #2 本身并不困难，大部分壳可以在 art::DexFile::OpenMemory 无痛拿出来，一些指令抽取类型的壳会需要一些额外的操作。但并不困难了。<br /><br />我甚至尝试过某大厂的，采用 OLLVM+VMP ，对人来说，很难死磕出来了，但是 AI （加上一些人类基于经验的指导），也仅仅跑了 3 天，被扒的明明白白。就这个，原本让我搞半年，我够呛能整出来，太折磨人了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878166">@<a href="/member/zbinlin" target="_blank" rel="noopener noreferrer">zbinlin</a> #2 本身并不困难，大部分壳可以在 art::DexFile::OpenMemory 无痛拿出来，一些指令抽取类型的壳会需要一些额外的操作。但并不困难了。<br /><br />我甚至尝试过某大厂的，采用 OLLVM+VMP ，对人来说，很难死磕出来了，但是 AI （加上一些人类基于经验的指导），也仅仅跑了 3 天，被扒的明明白白。就这个，原本让我搞半年，我够呛能整出来，太折磨人了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878166">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878166" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">neocanable</span>
+        <span>#8</span>
+        <span>2026/07/17 23:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zbinlin" target="_blank" rel="noopener noreferrer">zbinlin</a> token 够的话，整理完 native 的 control flow ，ai 可以把虚拟机猜出来 -- 我推测</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878167">@<a href="/member/zbinlin" target="_blank" rel="noopener noreferrer">zbinlin</a> token 够的话，整理完 native 的 control flow ，ai 可以把虚拟机猜出来 -- 我推测</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878167">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228106#reply17878167" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
