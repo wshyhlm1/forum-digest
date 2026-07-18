@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PowerShell 和 Codex 在打架？不妨试试这份提示词 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-18/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>PowerShell 和 Codex 在打架？不妨试试这份提示词</h1>
+      <p class="original-title">PowerShell 和 Codex 在打架？可以试试这份提示词</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 knowckx</span>
+        <span>热度 22</span>
+        <span>回复 22</span>
+        <span>2026/07/18 13:45</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228204" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228204.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者分享了在 Windows 下使用 Codex 开发时，解决 PowerShell 与 AI 生成命令冲突的经验。</li><li>建议将终端环境统一为 PowerShell 7 和 Windows Terminal，并安装 ripgrep 以提升搜索效率。</li><li>提供了一套针对 Codex 的提示词约束，明确禁止使用 Bash 语法，规范引号、管道和多行脚本写法，以提高命令执行成功率。</li></ul>
+      <h3>看点</h3><ul><li>解决 AI 编程工具在 Windows 环境下的水土不服问题。</li><li>提供具体的 PowerShell 7 和 Windows Terminal 安装及配置指南。</li><li>分享了一套实用的 Codex 提示词模板，用于约束 AI 生成符合 PowerShell 语法的命令。</li><li>详细解释了为何需要约束引号、转义、heredoc 替代方案及 rg 通配路径处理。</li><li>强调统一终端环境和明确提示词对提升 AI 辅助开发效率的重要性。</li></ul>
+      <p class="reason">帖子讨论了在 Windows 环境下使用 Codex（AI 编程工具）时与 PowerShell 的兼容性问题，并提供了通过统一终端环境（PowerShell 7、Windows Terminal、ripgrep）和编写特定提示词（约束 AI 生成 Bash 语法）来解决冲突的方案。内容涉及 AI 辅助编程、开发环境配置、命令行工具使用，高度相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>今天花时间写了篇关于在 codex 下使用 PowerShell 的文章，也在 V2EX 上发一份。</p>
+背景
+<p>最近半年一直在 Windows 下使用 <strong>法典</strong> 开发项目，逐渐把开发环境打造得更接近 Linux 下的开发体验。最近看到很多人反馈 PowerShell 和 Codex 打架的情况，因为这问题我之前就解决了，所以想分享下我的方案。  </p>
+<p>现在这套环境谈不上多复杂，主要有两个重点：<br />
+<strong>先统一终端环境，再用提示词把大模型的命令习惯纠正过来。</strong></p>
+先安装 pwsh 7 和 Windows Terminal
+<p>如果你还在使用系统自带的 Windows PowerShell 5.1 ，我建议先换成现代 shell：PowerShell 7 （ pwsh ）。至于 PowerShell 5.1 和 PowerShell 7 的区别，可以找 AI 给你解释一下，但是结论不变:<br />
+<strong>现代 Windows 开发环境最好统一到 pwsh 7 。</strong></p>
+<p>可以直接用 <code>winget</code>安装：</p>
+<pre><code>winget install --id Microsoft.PowerShell --source winget
+</code></pre>
+<p>也可以从 <a href="https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-windows" target="_blank" rel="noopener noreferrer">PowerShell 官方安装页面</a> 下载 MSI 安装包手动安装。</p>
+<p>安装后验证，在命令行中输出版本号：</p>
+<pre><code>PS C:\Users\AAA&gt; pwsh -v
+PowerShell 7.x
+</code></pre>
+<p>原生 PowerShell 界面实在太丑，所以必装另一款 Windows 神器。 <code>Windows Terminal</code><br />
+它的价值不只是好看，而是把 <code>pwsh</code>将 Git Bash、远程 SSH 等环境放在同一个窗口里管理，支持标签页、分屏、统一的字体和编码设置。平时一边让 Codex 在一个窗口里执行命令，一边查看日志或运行服务，效率会高很多。</p>
+<pre><code>winget install --id Microsoft.WindowsTerminal --source winget
+</code></pre>
+<p>也可以通过 <a href="https://learn.microsoft.com/zh-cn/windows/terminal/install" target="_blank" rel="noopener noreferrer">Windows 终端官方安装页面</a> 进入 GitHub Releases ，下载对应安装包手动安装。</p>
+<p>安装完成后，把 Windows Terminal 的默认配置文件设为 <strong>PowerShell 7</strong>这样打开后默认就是 pwsh7 的环境。所有提示词、命令和排错过程，都应该建立在同一个 shell 上。</p>
+安装 <code>rg</code>
+<p>rg 就是 <strong>ripgrep</strong>，一个非常适合在代码仓库里搜索文本的命令行工具，速度快，默认会遵守 <code>.gitignore</code>，输出也比 PowerShell 原生搜索更适合直接交给 AI 阅读。</p>
+<p>但要注意，<code>rg</code> 并不是 Windows 原生命令。需要提前安装一下。  </p>
+<pre><code># 使用 winget 安装
+winget install BurntSushi.ripgrep.MSVC
+
+# 或者使用 Scoop 进行安装
+scoop install ripgrep
+</code></pre>
+<p>当然也可以从 <a href="https://ripgrep.dev/download/" target="_blank" rel="noopener noreferrer">ripgrep 官方下载页面</a> 手动下载 Windows 安装包。</p>
+<p>安装后记得重新打开 Windows Terminal，否则当前终端可能还没有刷新 PATH。<br />
+安装完成后，可以用下面的命令确认是否生效：</p>
+<pre><code>rg --version
+</code></pre>
+加提示词约束
+<p>把终端环境换好只是第一步。真正影响体验的，是要明确告诉 Codex：<strong>当前项目使用的是 PowerShell，不是 Bash。</strong></p>
+<p>大模型在训练时接触过的编程语料、命令示例和工具调用记录里，Linux、Bash 的比例非常高。所以当你只说“执行一个命令”时，它很容易下意识写出 <code>grep</code>、<code>sed</code>、<code>cat</code> 或 <code>&amp;&amp;</code> 这一套 Bash 习惯。命令本身可能没错，但放到 <code>pwsh</code> 里就会报错，或者产生和预期不同的结果。</p>
+<p>这套提示词约束已经让我在 Windows 环境下顺畅工作了几个月，现在直接分享在下面：</p>
+<pre><code>## Windows 约束
+当前环境是 Windows 10 / pwsh7
+- 默认禁止使用 Bash 语法，除非确定此 shell 处在 Linux 环境
+- 不要使用 Bash 引号/转义习惯，在 PowerShell 命令里，复杂正则优先用单引号包裹。
+- 如果正则本身同时包含单引号和双引号，优先拆成多个简单 rg 命令。
+- 执行多行 Python 禁止使用 Bash heredoc ；改用 PowerShell here-string | python -
+- pwsh 中，语句块表达式（如 `foreach`、`if`）不能直接作为管道输入。 需要先使用 `$()` / `@()` 包裹，或先赋值给变量。 普通命令输出可直接进入管道，无需额外包裹。
+- PowerShell 使用 `rg` 时，通配目录必须先用 `Get-ChildItem -Filter` 展开为真实路径，禁止直接把含 `*` 的搜索路径传给 `rg`。
+</code></pre>
+<ul>
+<li>可以直接把这段提示词复制到 <code>C:/Users/&lt;userName&gt;/.codex/<a href="http://AGENTS.md" target="_blank" rel="noopener noreferrer">智能体.md</a></code></li>
+<li>我这边用的是 <code>Windows 10 LTSC</code>，你可以换成你的系统</li>
+</ul>
+<p>这套提示词不是为了限制 Codex，而是为了减少它在 shell 之间切换时的冲突。特别是引号、管道、正则和多行脚本，这几类问题经常会打架，一旦出错，让 AI 自动修正会浪费很多时间。</p>
+为什么这几条约束值得保留
+<ul>
+<li><strong>明确 shell</strong>：让 Codex 从一开始就知道命令要交给 <code>pwsh</code>，避免默认生成 Bash 命令。</li>
+<li><strong>约束引号和转义</strong>：PowerShell 的字符串、正则表达式和变量展开规则各不相同，先规范写法，能少踩一轮转义的坑。</li>
+<li><strong>替代 heredoc</strong>：Windows 下没有 Bash heredoc，PowerShell here-string 才是稳定的多行文本方案。</li>
+<li><strong>处理语句块管道</strong>：<code>foreach</code>、<code>if</code> 这类语句块不能直接作为常规管道输入，提前将其写入规则后，Codex 便不会反复生成同一种错误写法。</li>
+<li><strong>处理 <code>rg</code> 通配路径</strong>：先展开真实目录再搜索，比把 <code>*</code> 直接交给命令更符合 PowerShell 和 Windows 的路径行为。</li>
+</ul>
+<p>我的经验是，提示词不需要写得特别长，但要把<strong>最容易出错、而且会反复出错的地方</strong>说清楚。规则稳定下来之后，Codex 执行命令的成功率会明显提高，来回打架解释“这不是 Bash，请改成 PowerShell”的次数也少很多。</p>
+总结
+<p>Codex 下 PowerShell 执行时发生冲突的原因，就在于它在猜测你的 shell。<br />
+把环境写清楚，把容易错的语法提前约束好，Windows 下的开发体验会立刻稳定提升一截。</p>
+
+<blockquote>
+<p>原创声明: 本文首发于个人博客 <a href="https://blog.knowckx.de" target="_blank" rel="noopener noreferrer">原文地址</a> 欢迎各位大佬交流</p>
+</blockquote>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>今天花时间写了篇 codex 下使用 PowerShell 的文章 在 V2EX 上也发一份</p>
+背景
+<p>最近半年一直 Windows 下使用 <strong>Codex</strong> 开发项目，逐渐把开发环境打造得更接近 Linux 下的开发体验。最近看到很多人反馈 PowerShell 和 Codex 打架的情况，因为这问题我之前就解决了，所以想分享下我的方案。  </p>
+<p>现在这套环境谈不上多复杂，主要有两个重点：<br />
+<strong>先把终端环境统一，再用提示词把大模型的命令习惯掰过来。</strong></p>
+先安装 pwsh 7 和 Windows Terminal
+<p>如果你还在使用系统自带的 Windows PowerShell 5.1 ，我建议先换成现代 shell：PowerShell 7 （ pwsh ）。
+至于 PowerShell 5.1 和 PowerShell 7 的区别，可以找 AI 给你解释一下，但是结论不变:<br />
+<strong>现代 Windows 开发环境最好统一到 pwsh 7 。</strong></p>
+<p>可以直接用 <code>winget</code>安装：</p>
+<pre><code>winget install --id Microsoft.PowerShell --source winget
+</code></pre>
+<p>也可以从 <a href="https://learn.microsoft.com/zh-cn/powershell/scripting/install/install-powershell-on-windows" target="_blank" rel="noopener noreferrer">PowerShell 官方安装页面</a> 下载 MSI 安装包手动安装。</p>
+<p>安装后验证，在命令行中输出版本号:</p>
+<pre><code>PS C:\Users\AAA&gt; pwsh -v
+PowerShell 7.x
+</code></pre>
+<p>原生的 PowerShell 界面很丑，所以必安装另一个 Windows 神器 <code>Windows Terminal</code><br />
+它的价值不只是好看，而是把 <code>pwsh</code>、Git Bash 、远程 SSH 等环境放在同一个窗口里管理，支持标签页、分屏、统一的字体和编码设置。平时一边让 Codex 在一个窗口里执行命令，一边查看日志或运行服务，效率会高很多。</p>
+<pre><code>winget install --id Microsoft.WindowsTerminal --source winget
+</code></pre>
+<p>也可以通过 <a href="https://learn.microsoft.com/zh-cn/windows/terminal/install" target="_blank" rel="noopener noreferrer">Windows Terminal 官方安装页面</a> 进入 GitHub Releases ，下载对应安装包手动安装。</p>
+<p>安装完成后，把 Windows Terminal 的默认配置文件设为 <strong>PowerShell 7</strong>。这样打开后默认就是 pwsh7 的环境。所有提示词、命令和排错过程，都应该建立在同一个 shell 上。</p>
+安装 <code>rg</code>
+<p>rg 就是 <strong>ripgrep</strong>，一个非常适合在代码仓库里搜索文本的命令行工具，速度快，默认会遵守 <code>.gitignore</code>，输出也比 PowerShell 原生搜索更适合直接交给 AI 阅读。</p>
+<p>但要注意，<code>rg</code> 并不是 Windows 原生命令。需要提前安装一下。  </p>
+<pre><code># 使用 winget 安装
+winget install BurntSushi.ripgrep.MSVC
+
+# 或者使用 Scoop 进行安装
+scoop install ripgrep
+</code></pre>
+<p>当然也可以从 <a href="https://ripgrep.dev/download/" target="_blank" rel="noopener noreferrer">ripgrep 官方下载页面</a> 手动下载 Windows 安装包。</p>
+<p>安装后记得重新打开 Windows Terminal ，否则当前终端可能还没有刷新 PATH 。<br />
+安装完成后，可以用下面的命令确认是否生效：</p>
+<pre><code>rg --version
+</code></pre>
+加提示词约束
+<p>把终端环境换好只是第一步。真正影响体验的，是要明确告诉 Codex：<strong>当前项目使用的是 PowerShell ，不是 Bash 。</strong></p>
+<p>大模型在训练时接触过的编程语料、命令示例和工具调用记录里，Linux 、Bash 的比例非常高。所以当你只说“执行一个命令”时，它很容易下意识写出 <code>grep</code>、<code>sed</code>、<code>cat</code> 或 <code>&amp;&amp;</code> 这一套 Bash 习惯。命令本身可能没错，但放到 <code>pwsh</code> 里就会报错，或者产生和预期不同的结果。</p>
+<p>这套提示词约束已经让我在 Windows 环境下顺畅工作了几个月，现在直接分享在下面：</p>
+<pre><code>## Windows 约束
+当前环境是 Windows 10 / pwsh7
+- 默认禁止使用 Bash 语法，除非确定此 shell 处在 Linux 环境
+- 不要使用 Bash 引号/转义习惯，在 PowerShell 命令里，复杂正则优先用单引号包裹。
+- 如果正则本身同时包含单引号和双引号，优先拆成多个简单 rg 命令。
+- 执行多行 Python 禁止使用 Bash heredoc ；改用 PowerShell here-string | python -
+- pwsh 中，语句块表达式（如 `foreach`、`if`）不能直接作为管道输入。 需要先使用 `$()` / `@()` 包裹，或先赋值给变量。 普通命令输出可直接进入管道，无需额外包裹。
+- PowerShell 使用 `rg` 时，通配目录必须先用 `Get-ChildItem -Filter` 展开为真实路径，禁止直接把含 `*` 的搜索路径传给 `rg`。
+</code></pre>
+<ul>
+<li>可以直接把这段提示词复制到 <code>C:/Users/&lt;userName&gt;/.codex/<a href="http://AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a></code></li>
+<li>我这边用的是 <code>Windows 10 LTSC</code>, 你可以换成你的系统</li>
+</ul>
+<p>这套提示词不是为了限制 Codex ，而是为了减少它在 shell 之间切换时的冲突。特别是引号、管道、正则和多行脚本，这几类问题经常会打架，一旦出错，让 AI 自动修正会浪费很多时间</p>
+为什么这几条约束值得保留
+<ul>
+<li><strong>明确 shell</strong>：让 Codex 从一开始就知道命令要交给 <code>pwsh</code>，避免默认生成 Bash 命令。</li>
+<li><strong>约束引号和转义</strong>：PowerShell 的字符串、正则和变量展开规则不同，先规定写法，能少踩一轮转义的坑。</li>
+<li><strong>替代 heredoc</strong>：Windows 下没有 Bash heredoc ，PowerShell here-string 才是稳定的多行文本方案。</li>
+<li><strong>处理语句块管道</strong>：<code>foreach</code>、<code>if</code> 这类语句块不能直接当作普通管道输入，提前写进规则后，Codex 不会反复生成同一种错误写法。</li>
+<li><strong>处理 <code>rg</code> 通配路径</strong>：先展开真实目录再搜索，比把 <code>*</code> 直接交给命令更符合 PowerShell 和 Windows 的路径行为。</li>
+</ul>
+<p>我的经验是，提示词不需要写得特别长，但要把<strong>最容易出错、而且会反复出错的地方</strong>说清楚。规则稳定下来之后，Codex 执行命令的成功率会明显提高，来回打架解释“这不是 Bash ，请改成 PowerShell”的次数也少很多。</p>
+总结
+<p>Codex 下 PowerShell 执行时打架的原因，就是因为它在猜你的 shell 。<br />
+把环境写清楚，把容易错的语法提前约束好，Windows 下的开发体验会立刻稳定提升一截。</p>
+
+<blockquote>
+<p>原创声明: 本文首发于个人博客 <a href="https://blog.knowckx.de" target="_blank" rel="noopener noreferrer">原文地址</a> 欢迎各位大佬交流</p>
+</blockquote>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bytewalk</span>
+        <span>#1</span>
+        <span>2026/07/18 14:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">收藏了，现在用的 mac ，留着一个月后换工作时用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879051">收藏了，现在用的 mac ，留着一个月后换工作时用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879051">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879051" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">isAK47</span>
+        <span>#2</span>
+        <span>2026/07/18 14:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谢谢，已经设置了，先用用看</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879066">谢谢，已经设置了，先用用看</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879066">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879066" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">815377546</span>
+        <span>#3</span>
+        <span>2026/07/18 14:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感谢分享，每次看 ai 在写命令报错都很头疼</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879125">感谢分享，每次看 ai 在写命令报错都很头疼</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879125">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879125" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">knowckx</span>
+        <span>#4</span>
+        <span>2026/07/18 15:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bytewalk" target="_blank" rel="noopener noreferrer">bytewalk</a> 习惯了 mac 的话 没必要换 windows 需要折腾不少东西</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879143">@<a href="/member/bytewalk" target="_blank" rel="noopener noreferrer">bytewalk</a> 习惯了 mac 的话 没必要换 windows 需要折腾不少东西</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879143">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879143" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">815377546</span>
+        <span>#5</span>
+        <span>2026/07/18 15:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/815377546" target="_blank" rel="noopener noreferrer">815377546</a> #3  话说，我 win 里的终端（命令提示符），就是 windows terminal 。。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879144">@<a href="/member/815377546" target="_blank" rel="noopener noreferrer">815377546</a> #3  话说，我 win 里的终端（命令提示符），就是 windows terminal 。。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879144">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879144" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">knowckx</span>
+        <span>#6</span>
+        <span>2026/07/18 15:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/isAK47" target="_blank" rel="noopener noreferrer">isAK47</a> 嗯，有问题可以反馈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879145">@<a href="/member/isAK47" target="_blank" rel="noopener noreferrer">isAK47</a> 嗯，有问题可以反馈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879145">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879145" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">knowckx</span>
+        <span>#7</span>
+        <span>2026/07/18 15:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/815377546" target="_blank" rel="noopener noreferrer">815377546</a> 终端是一个壳 调用的 shell 走 pwsh7</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879149">@<a href="/member/815377546" target="_blank" rel="noopener noreferrer">815377546</a> 终端是一个壳 调用的 shell 走 pwsh7</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879149">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879149" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bytewalk</span>
+        <span>#8</span>
+        <span>2026/07/18 15:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/knowckx" target="_blank" rel="noopener noreferrer">knowckx</a> #4 没办法，新公司做设备软件的，mac 估计用不起来😐</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879150">@<a href="/member/knowckx" target="_blank" rel="noopener noreferrer">knowckx</a> #4 没办法，新公司做设备软件的，mac 估计用不起来😐</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879150">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879150" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shekou</span>
+        <span>#9</span>
+        <span>2026/07/18 15:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感谢分享！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879155">感谢分享!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879155">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879155" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lujiaosama</span>
+        <span>#10</span>
+        <span>2026/07/18 16:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我直接让 AI 帮我从头到尾撸了个部署环境包。包括安装 POWERSHELL7、RG、OHMYPOSH、换字体、Z 插件，以及在全局 <a href="http://AGENTS.MD" target="_blank" rel="noopener noreferrer">AGENTS.MD</a> 里写入各种约束。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879289">我直接让 AI 帮我从头到尾撸了个部署环境包了。包括安装 POWERSHELL7,RG,OHMYPOSH,换字体，Z 插件，全局 <a href="http://AGENTS.MD" target="_blank" rel="noopener noreferrer">AGENTS.MD</a> 里写入各种约束。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879289">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879289" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">HENQIGUAI</span>
+        <span>#11</span>
+        <span>2026/07/18 16:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感谢分享，已郑重加入 <a href="http://Agents.md" target="_blank" rel="noopener noreferrer">Agents.md</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879314">感谢分享，已严肃加入 <a href="http://Agents.md" target="_blank" rel="noopener noreferrer">Agents.md</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879314">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879314" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">halibut735</span>
+        <span>#12</span>
+        <span>2026/07/18 16:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为啥不用 WSL</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879336">为啥不用 wsl</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879336">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879336" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">knowckx</span>
+        <span>#13</span>
+        <span>2026/07/18 17:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bytewalk" target="_blank" rel="noopener noreferrer">bytewalk</a> 欢迎加入 Windows 环境的开发！<br />@<a href="/member/lujiaosama" target="_blank" rel="noopener noreferrer">lujiaosama</a> 你是指自己封装一个安装包？<br /><br />@<a href="/member/halibut735" target="_blank" rel="noopener noreferrer">halibut735</a> 可以上 WSL，但需要确保带来的收益大于折腾的成本<br />@<a href="/member/HENQIGUAI" target="_blank" rel="noopener noreferrer">HENQIGUAI</a> 有问题欢迎分享</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879386">@<a href="/member/bytewalk" target="_blank" rel="noopener noreferrer">bytewalk</a> 欢迎加入 windows 环境的开发！<br />@<a href="/member/lujiaosama" target="_blank" rel="noopener noreferrer">lujiaosama</a> 你是指自己封一个安装包？<br /><br />@<a href="/member/halibut735" target="_blank" rel="noopener noreferrer">halibut735</a> 可以上 wsl 但是需要确定带来的收益大于折腾的成本<br />@<a href="/member/HENQIGUAI" target="_blank" rel="noopener noreferrer">HENQIGUAI</a> 有问题欢迎分享</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879386">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879386" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">reiji</span>
+        <span>#14</span>
+        <span>2026/07/18 17:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">国产 IDE 在这些兼容性问题上下了很大功夫，pwsh5 真是万恶之源</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879404">国产的 IDE 在这些兼容上面下了很多力气，pwsh5 真的是万恶之源</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879404">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879404" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lujiaosama</span>
+        <span>#15</span>
+        <span>2026/07/18 17:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/knowckx" target="_blank" rel="noopener noreferrer">knowckx</a> 类似 SKILL 的工程，打包好各种离线资源和脚本，包括 WindowsTerminal+PowerShell7+WINGET+OhMyPosh+Ripgrep+NerdFonts+插件（zoxide、posh-git）+Codex 全局 <a href="http://AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a>。让 CODEX 帮忙安装。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879409">@<a href="/member/knowckx" target="_blank" rel="noopener noreferrer">knowckx</a> 类似 SKILL 的工程，打包好各种离线的资源和脚本,包括 WindowsTerminal+PowerShell7+WINGET+OhMyPosh+Ripgrep+NerdFonts+插件（ zoxide,posh-git ）+Codex 全局 <a href="http://AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> 。让 CODEX 帮忙安装。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879409">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879409" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lisxour</span>
+        <span>#16</span>
+        <span>2026/07/18 17:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/halibut735" target="_blank" rel="noopener noreferrer">halibut735</a> WSL 也一样让人绷不住 <a href="https://i.imgur.com/14cwgsI.png" target="_blank" rel="noopener noreferrer"></a><br /><br /><a href="https://i.imgur.com/RxZEOhN.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879438">@<a href="/member/halibut735" target="_blank" rel="noopener noreferrer">halibut735</a>  wsl 一样让人绷不住 <a href="https://i.imgur.com/14cwgsI.png" target="_blank" rel="noopener noreferrer"></a><br /><br /><a href="https://i.imgur.com/RxZEOhN.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">admirez</span>
+        <span>#17</span>
+        <span>2026/07/18 17:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在 Windows 下使用 YOLO 模式吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879443">windows 下用 yolo 模式吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879443">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879443" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">admirez</span>
+        <span>#18</span>
+        <span>2026/07/18 18:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">另外，5.6 sol 已经能自己搞定了，我只是在 <a href="http://agents.md" target="_blank" rel="noopener noreferrer">agents.md</a> 里告诉它我用的是 pw7+win11<br /><br /><br /><br />提问：多行 py 代码你是用 bash heredoc 吗？<br /><br /><br />• 不是。在 PowerShell 7 下，多行 Python 内联脚本使用的是 Here-String：<br /><br />  @'<br />  print("Hello")<br />  '@ | python -B -<br /><br />  不会使用 Bash 风格的 python - &lt;&lt;'PY'。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879447">另外 5.6 sol 已经自己能搞定了，我只是在 <a href="http://agents.md" target="_blank" rel="noopener noreferrer">agents.md</a> 告诉他我用 pw7+win11<br /><br /><br /><br />提问：多行 py 你是用 bash heredoc 吗<br /><br /><br />• 不是。PowerShell 7 下，多行 Python 内联脚本使用 Here-String：<br /><br />  @'<br />  print("Hello")<br />  '@ | python -B -<br /><br />  不会使用 Bash 风格的 python - &lt;&lt;'PY'。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xJogger</span>
+        <span>#19</span>
+        <span>2026/07/18 20:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我做事比较直接，先让它用了一个月，看着它跟 pw 搏斗了一个月，之后让它总结一下都遇到了哪些坑，写个约束条件，免得以后再踩同样的坑。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879622">我比较直接，先用了一个月，看他跟 pw 搏斗了一个月，之后让他总结搏斗了啥，写一个约束之后别再踩一样的坑。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879622">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879622" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shmilypeter</span>
+        <span>#20</span>
+        <span>2026/07/18 21:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在 Windows 上直接用 WSL 就好了，没必要跟 PowerShell 较劲。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879665">在 windows 上用 wsl 就好了，不用跟 powershell 打架。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879665">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228204#reply17879665" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

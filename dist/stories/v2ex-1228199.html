@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2026，我将博客部署到了 Cloudflare（CF） | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-18/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>2026，我将博客部署到了 Cloudflare（CF）</h1>
+      <p class="original-title">2026，我将博客部署到了 Cloudflare（CF）</p>
+      <div class="meta-line">
+        <span>云服务</span>
+        <span>作者 luojiedev</span>
+        <span>热度 27</span>
+        <span>回复 27</span>
+        <span>2026/07/18 12:57</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228199" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228199.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者分享了从国内云服务到 GitHub Pages 再到 Cloudflare 的博客部署演进历程。</li><li>Cloudflare 支持动态页面部署且免费额度充足，作者已将个人主页、博客、阅读管理网站等多个项目迁移至 CF。</li><li>作者建议利用 AI 辅助实现 Cloudflare 上的各类自定义功能，降低开发门槛。</li></ul>
+      <h3>看点</h3><ul><li>Cloudflare 被称为“赛博菩萨”，免费额度足够个人开发者玩出多种花样。</li><li>CF 支持绑定 GitHub 仓库，私有仓库代码也可轻松部署。</li><li>相比 GitHub Pages 仅支持静态页面，CF 无此限制，可随心自定义。</li><li>作者利用 CF 部署了家庭记账软件以屏蔽广告并保证流畅体验。</li><li>AI 辅助开发可帮助快速实现不清楚的功能需求。</li></ul>
+      <p class="reason">帖子主要讲述了作者将博客从国内云服务、GitHub Pages 迁移到 Cloudflare 的经历，涉及云服务部署、静态/动态页面托管、域名配置、HTTPS 证书管理等内容，与云服务、开发工具、编程高度相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>20 年的时候，我看别人写博客，自己也开始凑热闹，大多都是些没有啥价值的内容。当时想着，肯定要部署在国内的云服务上，于是发现成本还挺高的。要购买域名（还必须是 .com 后缀)，还要搞定备案，HTTPS 还要单独配置。</p>
+<p>并没有坚持写几篇内容，还要经常注意别让免费的证书过期了，虽然可以通过脚本来处理。但是当时自己的心智还不足以成熟到把一件事情做好。</p>
+<p>24 年的时候，我觉得自己维护服务器太麻烦了，于是将博客直接采用了 Github Pages 部署，因为再也不用担心服务器的维护问题了。</p>
+<p>反倒是在这个时候，我开始坚持发布我的读书笔记，慢慢习惯了将自己的阅读记录整理出来。</p>
+<p>虽然大多数读书笔记对于大多数人都没啥用，但是偶尔有一篇帮助到别人，就挺好的。</p>
+<p>这么多年坚持下来，也读了些书，算是没有浪费空闲的时间。</p>
+<p>今年，我突然接触了大家口中的赛博菩萨，算是开了新世界的大门。因为 Github Pages 只能部署静态页面，但是 CF 没有这个限制，可以随心自定义，并且免费的额度真的足够我们玩出好多花活了。</p>
+<p>CF 可以绑定 GitHub 仓库，只需要授权一下，<strong>私有仓库代码</strong>也能轻松部署。</p>
+<p>我已经将我几乎所有玩具都直接使用 CF 部署了，<a href="https://luojie.net/" target="_blank" rel="noopener noreferrer">个人主页</a>，<a href="https://blog.luojie.net/" target="_blank" rel="noopener noreferrer">个人博客</a>，还有专门给自己做了个<a href="https://books-ledger.luojie.dev/" target="_blank" rel="noopener noreferrer">阅读管理网站</a>，以及为了不看广告，足够流畅的<a href="https://qjz.luojie.dev/" target="_blank" rel="noopener noreferrer">家庭记账软件</a>。</p>
+<p>如果有 CF 账号，建议大家尝试一下，很多不太清楚的内容可以直接让 AI 协助实现，真的非常方便。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>20 年的时候，我看别人写博客，自己也开始凑热闹，大多都是些没有啥价值的内容。当时想着，肯定要部署在国内的云服务上，于是发现成本还挺高的。要购买域名（还必须是 .com 后缀)，还要搞定备案，HTTPS 还要单独配置。</p>
+<p>并没有坚持写几篇内容，还要经常注意别让免费的证书过期了，虽然可以通过脚本来处理。但是当时自己的心智还不足以成熟到把一件事情做好。</p>
+<p>24 年的时候，我觉得自己维护服务器太麻烦了，于是将博客直接采用了 Github Pages 部署，因为再也不用担心服务器的维护问题了。</p>
+<p>反倒是在这个时候，开始坚持发布我的读书笔记，慢慢了习惯了将自己的阅读记录整理出来。</p>
+<p>虽然大多数读书笔记对于大多数人都没啥用，但是偶尔有一篇帮助到别人，就挺好的。</p>
+<p>这么多年坚持下来，也读了些书，算是没有浪费空闲的时间。</p>
+<p>今年，我突然接触了大家口中的赛博菩萨，算是开了新世界的大门。因为 Github Pages 只能部署静态页面，但是 CF 没有这个限制，可以随心自定义，并且免费的额度真的足够我们玩出好多花活了。</p>
+<p>CF 可以绑定 Github 仓库，只需要授权一下，<strong>私有仓库代码</strong>也能轻松部署。</p>
+<p>我已经将我几乎所有玩具都直接使用 CF 部署了，<a href="https://luojie.net/" target="_blank" rel="noopener noreferrer">个人主页</a>，<a href="https://blog.luojie.net/" target="_blank" rel="noopener noreferrer">个人博客</a>，还有专门给自己做了个<a href="https://books-ledger.luojie.dev/" target="_blank" rel="noopener noreferrer">阅读管理的网站</a>，以及为了不看广告，足够流畅的<a href="https://qjz.luojie.dev/" target="_blank" rel="noopener noreferrer">家庭记账软件</a>。</p>
+<p>若有 CF 账号，建议建议大家尝试了，好多不清楚的内容，直接可以让 AI 来协助实现，真的很方便。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hubianluanma</span>
+        <span>#1</span>
+        <span>2026/07/18 13:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也逐步迁移到 Cloudflare 了，如果家里有闲置电脑或者长期运行 macmini 强烈建议结合 Tunnels 功能实现内网代理访问，自带 https ，速度还可以，家里跑一个 docker 想用什么服务外网直接访问</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878950">我也逐步迁移到 Cloudflare 了，如果家里有闲置电脑或者长期运行 macmini 强烈建议结合 Tunnels 功能实现内网代理访问，自带 https ，速度还可以，家里跑一个 docker 想用什么服务外网直接访问</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878950">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17878950" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">pchalme</span>
+        <span>#2</span>
+        <span>2026/07/18 13:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">AI 确实让很多之前想做的事情，都有动力去做了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878951">ai 确实让很多之前想做的事情，都有动力去做了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878951">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17878951" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">luojiedev</span>
+        <span>#3</span>
+        <span>2026/07/18 13:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/pchalme" target="_blank" rel="noopener noreferrer">pchalme</a> 和媳妇一起用的记账软件，软件我花钱去了广告，但是发现搜索功能要 VIP ，其次经常还因为网络还是啥原因卡卡的。果断花了一张 Codex 的重置卡做了一个。数据自己掌握，功能极简。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878972">@<a href="/member/pchalme" target="_blank" rel="noopener noreferrer">pchalme</a> 和媳妇一起 记账软件，软件我花钱去了广告，但是发现搜索功能要 VIP ，其次经常还因为网络还是啥原因卡卡的。果断花了一张 Codex 的重置卡做了一个。数据自己掌握，功能极简。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878972">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17878972" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jedihy</span>
+        <span>#4</span>
+        <span>2026/07/18 13:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">CF 员工在此 :) Workers 在国内没被墙吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878988">CF 员工在此 :) Workers 在国内没被墙吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878988">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17878988" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Pennys</span>
+        <span>#5</span>
+        <span>2026/07/18 13:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">难怪 CF 的股价蹭蹭涨。当时 170 的时候很想入手的，加入了观察仓，结果越来越高。波动非常大。我是比较喜欢 Cloudflare 的，虽然它的盈利率还是亏损。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878990">难怪 CF 的股价蹭蹭涨。当时 170 的时候很想入手的，加入了观察仓，结果越来越高。波动非常大。我是比较喜欢 cloudflare 的，虽然他的盈利率还是亏损。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878990">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17878990" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">AlexaZhou</span>
+        <span>#6</span>
+        <span>2026/07/18 13:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Cloudflare 的 Worker 平台很好用，我开发了一个大模型 API 网关，也是部署到 CF 平台上，数据库也是使用 CF 自带的 D1 ，维护成本几乎为 0 ，非常方便<br /><br /><a href="https://github.com/alexazhou/gt_ai_gateway" target="_blank" rel="noopener noreferrer">https://github.com/alexazhou/gt_ai_gateway</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17878992">cloudflare 的 worker 平台很好用，我开发了一个大模型 API 网关，也是部署到 cf 平台上，数据库也是使用 cf 自带的 D1 ，维护成本几乎为 0 ，非常方便<br /><br /><a href="https://github.com/alexazhou/gt_ai_gateway" target="_blank" rel="noopener noreferrer">https://github.com/alexazhou/gt_ai_gateway</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17878992">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17878992" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tiezhu</span>
+        <span>#7</span>
+        <span>2026/07/18 14:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我把网页部署到家里的服务器了，用 Tunnels 访问，然后做了一个 Telegram Bot，我发给 Bot 消息，就自动变成我的日志，有点像发推，随时记录。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879034">我把网页部署到家里的服务器了，用 Tunnels 访问，然后做了一个 Telegram Bot,我发给 Bot 消息，就自动变成我的日志， 有点像发推，随时记录。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879034">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879034" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sosme</span>
+        <span>#8</span>
+        <span>2026/07/18 15:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">只能说赛博菩萨还是太权威了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879147">只能说赛博菩萨还是太权威了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879147">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879147" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">docx</span>
+        <span>#9</span>
+        <span>2026/07/18 15:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">All on Cloudflare = All in Boom</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879152">All on Cloudflare = All in Boom</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879152">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879152" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">docx</span>
+        <span>#10</span>
+        <span>2026/07/18 15:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jedihy" target="_blank" rel="noopener noreferrer">jedihy</a> 貌似只是 <a href="http://workers.dev" target="_blank" rel="noopener noreferrer">workers.dev</a> 这个域名被污染了，自行绑定域名不受影响</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879157">@<a href="/member/jedihy" target="_blank" rel="noopener noreferrer">jedihy</a> 貌似只是 <a href="http://workers.dev" target="_blank" rel="noopener noreferrer">workers.dev</a> 这个域名被污染了，自行绑定域名不受影响</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879157">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879157" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cpalead</span>
+        <span>#11</span>
+        <span>2026/07/18 15:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我的网站也是在 cloudflare 上，完全免费</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879171">我的网站也是在 cloudflare 上，完全免费</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879171">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879171" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Folder</span>
+        <span>#12</span>
+        <span>2026/07/18 15:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有点好奇网站部署在 CF 上国内访问会不会很慢. 我用 CF 代理网站时慢到以为网站被墙了.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879188">有点好奇网站部署在 CF 上国内访问会不会很慢. 我用 CF 代理网站时慢到以为网站被墙了.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879188">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879188" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">misaka19000</span>
+        <span>#13</span>
+        <span>2026/07/18 15:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://www.nosuchfield.com/" target="_blank" rel="noopener noreferrer">https://www.nosuchfield.com/</a><br /><br />我是还是直接 github pages ，前面加了个又拍云的加速</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879191"><a href="https://www.nosuchfield.com/" target="_blank" rel="noopener noreferrer">https://www.nosuchfield.com/</a><br /><br />我是还是直接 github pages ，前面加了个又拍云的加速</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879191">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879191" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IsaacYoung</span>
+        <span>#14</span>
+        <span>2026/07/18 15:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">buy $NET</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879228">buy $NET</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879228">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879228" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">iislong</span>
+        <span>#15</span>
+        <span>2026/07/18 15:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Folder" target="_blank" rel="noopener noreferrer">Folder</a> 速度确实会慢些，有舍才有得</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879232">@<a href="/member/Folder" target="_blank" rel="noopener noreferrer">Folder</a> 速度确实会慢些，有舍才有得</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879232">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879232" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">couture</span>
+        <span>#16</span>
+        <span>2026/07/18 16:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">vercel 我感觉挺好的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879260">vercel 我感觉挺好的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879260">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879260" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#17</span>
+        <span>2026/07/18 16:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还是静态页面吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879284">还是静态页面吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879284">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879284" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">luojiedev</span>
+        <span>#18</span>
+        <span>2026/07/18 16:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 还是静态页面，但是我加了一些统计功能，用了 Workers 和 D1 数据库。为以后其他的自定义功能做准备哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879292">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 还是静态页面，但是我加了一些统计功能用了 workers 和 d1 数据库。为以后其它的自定义功能做准备哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879292">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879292" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">frankilla</span>
+        <span>#19</span>
+        <span>2026/07/18 16:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">静态的不会搞</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879338">静态的不会搞</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879338">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879338" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cpalead</span>
+        <span>#20</span>
+        <span>2026/07/18 17:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我的网站也是在 Cloudflare 上，完全免费<br />@<a href="/member/misaka19000" target="_blank" rel="noopener noreferrer">misaka19000</a> 你的网站放在 GitHub 上，怎么还能备案？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879396">我的网站也是在 cloudflare 上，完全免费<br />@<a href="/member/misaka19000" target="_blank" rel="noopener noreferrer">misaka19000</a> 你的网站放 github ，怎么还能备案？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879396">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228199#reply17879396" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

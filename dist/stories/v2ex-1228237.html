@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cursor 两天重构了小红书 uniapp 项目 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-18/">返回日报</a>
+      <div class="source-chip">V2EX #4</div>
+      <h1>Cursor 两天重构了小红书 uniapp 项目</h1>
+      <p class="original-title">cursor 两天重构了小红书 uniapp 项目</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 dadachirr</span>
+        <span>热度 9</span>
+        <span>回复 9</span>
+        <span>2026/07/18 18:58</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228237" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228237.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者使用 Cursor AI 编程工具在两天内完成了小红书 UniApp 项目的重构</li><li>重构后的页面基本实现了 100% 还原</li></ul>
+      <h3>看点</h3><ul><li>Cursor AI 工具在实际项目重构中的应用案例</li><li>两天内完成复杂项目重构，展示 AI 辅助编程的效率</li><li>UniApp 跨平台开发框架的实践</li><li>页面 100% 还原的技术实现</li></ul>
+      <p class="reason">帖子讨论了使用 Cursor（一款 AI 辅助编程工具）在两天内重构小红书 UniApp 项目，涉及 AI 编程工具、前端开发和代码重构，与开发工具和编程高度相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p><a href="http://8.146.211.120:8081/" target="_blank" rel="noopener noreferrer">http://8.146.211.120:8081/</a>页面基本100%还原</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p><a href="http://8.146.211.120:8081/" target="_blank" rel="noopener noreferrer">http://8.146.211.120:8081/</a>页面基本 100%还原</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">9</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dadachirr</span>
+        <span>#1</span>
+        <span>2026/07/18 19:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[管理端在这里 http://8.146.211.120:8088/]( http://8.146.211.120:8088/)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879515">[管理端在这里 http://8.146.211.120:8088/]( http://8.146.211.120:8088/)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879515">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879515" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GarethChu</span>
+        <span>#2</span>
+        <span>2026/07/18 19:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">cursor 里用的哪个模型？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879541">cursor 里用的哪个模型？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879541">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879541" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shakaraka</span>
+        <span>#3</span>
+        <span>2026/07/18 19:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">本来写这种随便用 gpt-5.6 、opus-4.8 、k3 、glm-5.2 等都能做。重要的是复杂的业务逻辑以及大项目的长时间迭代。<br /><br />我觉得像是在测评的一句话生成 XXX 在现在这个时间点都没啥意义（ qwen 及以下除外）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879561">本来写这种随便用 gpt-5.6 、opus-4.8 、k3 、glm-5.2 等都能做。重要的是复杂的业务逻辑以及大项目的长时间迭代。<br /><br />我觉得像是在测评的一句话生成 XXX 在现在这个时间点都没啥意义（ qwen 及一下除外）</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879561">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879561" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shakaraka</span>
+        <span>#4</span>
+        <span>2026/07/18 19:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">打个比方，例如金蝶、蓝凌 erp ，让他们内部人员从 php 改为 nodejs 这种规模。我觉得才有参考意义<br /><br />我认为他们的难点在于<br /><br />- 文档不全<br />- 业务混杂<br />- 架构复杂<br />- 插件生态<br />- 定制化开发</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879566">打个比方，例如金蝶、蓝凌 erp ，让他们内部人员从 php 改为 nodejs 这种规模。我觉得才有参考意义<br /><br />我认为他们的难点在于<br /><br />- 文档不全<br />- 业务混杂<br />- 架构复杂<br />- 插件生态<br />- 定制化开发</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879566">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879566" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dadachirr</span>
+        <span>#5</span>
+        <span>2026/07/18 20:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/GarethChu" target="_blank" rel="noopener noreferrer">GarethChu</a> auto</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879600">@<a href="/member/GarethChu" target="_blank" rel="noopener noreferrer">GarethChu</a> auto</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879600">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879600" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GarethChu</span>
+        <span>#6</span>
+        <span>2026/07/18 21:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/dadachirr" target="_blank" rel="noopener noreferrer">dadachirr</a> UI 如何让它 1:1 还原的？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879711">@<a href="/member/dadachirr" target="_blank" rel="noopener noreferrer">dadachirr</a> UI 如何让它 1:1 还原的？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879711">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879711" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dadachirr</span>
+        <span>#7</span>
+        <span>2026/07/18 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/GarethChu" target="_blank" rel="noopener noreferrer">GarethChu</a> ai 兴起之前自己手撸了一版 然后传入截图 就尽可能还原了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879742">@<a href="/member/GarethChu" target="_blank" rel="noopener noreferrer">GarethChu</a> ai 兴起之前自己手撸了一版 然后传入截图 就尽可能还原了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879742">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879742" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GarethChu</span>
+        <span>#8</span>
+        <span>2026/07/18 22:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/dadachirr" target="_blank" rel="noopener noreferrer">dadachirr</a> 现在的 auto 模式 强了不少</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879787">@<a href="/member/dadachirr" target="_blank" rel="noopener noreferrer">dadachirr</a> 现在的 auto 模式 强了不少</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879787">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879787" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jevonszmx</span>
+        <span>#9</span>
+        <span>2026/07/18 23:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/GarethChu" target="_blank" rel="noopener noreferrer">GarethChu</a> 推荐为 Cursor 配置 MCP，让它自行打开浏览器访问研究页面</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17879845">@<a href="/member/GarethChu" target="_blank" rel="noopener noreferrer">GarethChu</a> 推荐给 cursor 配 mcp ，让他打开浏览器自己去访问研究页面</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17879845">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228237#reply17879845" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
