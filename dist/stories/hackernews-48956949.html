@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一张图看懂AI对Stack Overflow的影响 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-19/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>一张图看懂AI对Stack Overflow的影响</h1>
+      <p class="original-title">What AI did to stackoverflow in a graph</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 secretslol</span>
+        <span>热度 416</span>
+        <span>回复 509</span>
+        <span>2026/07/18 19:12</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48956949" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://data.stackexchange.com/stackoverflow/query/1953768#graph" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48956949.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>通过Stack Overflow数据图表展示AI工具对开发者问答社区的冲击</li><li>反映AI代码助手普及后开发者提问行为和社区活跃度的变化趋势</li></ul>
+      <h3>看点</h3><ul><li>AI工具兴起导致Stack Overflow流量显著下降</li><li>开发者从社区问答转向直接使用AI生成答案</li><li>数据可视化直观呈现AI对传统开发者生态的颠覆性影响</li><li>引发关于AI时代开源社区价值与可持续性的讨论</li></ul>
+      <p class="reason">帖子讨论了AI对Stack Overflow平台的影响，通过数据图表展示了AI工具（如ChatGPT）对开发者问答社区流量和活跃度的冲击，属于AI与开发者生态交叉话题。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lynndotpy</span>
+        
+        <span>2026/07/18 20:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">任何社会组织都需要有意识地仔细考虑他们的包容-排除曲线。<p>我认为今天很多人可能会对“包容性”这个词犹豫不决，但 StackExchange 的参与门槛高得离谱，使其对网站上的长期用户具有包容性，但对那些发现自己无法提问的新手参与者来说是专有的。他们以这种方式慢慢地杀死了这个网站。</p><p>即使有了人工智能，社区也可能在这种愚蠢的行为中幸存下来，因为它仍然是那些对人工智能心存疑虑的人提出问题的最佳场所...除非 StackOverflow 管理层也疏远了这些用户，将人工智能强加在网站的各个方面。</p><p>即使我已经内化了 SO 社区的变幻无常和神经质，但我非常沉默寡言地提出问题，因为我知道我会考虑一下那些渴望利用自己权力的恶霸可能会误解我的所有方式。我无法想象在没有比典型的学士 + 硕士课程潜伏更长时间的情况下在那里提出问题。</p><p>峰值为 207K，最低为 588。这可能是一个不完整的日期点，因此使用下一个最新值 1226，StackOverflow 已经失去了 99.41% 的活动。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48957311">Any social organization needs to carefully consider their inclusion-exclusion curve with intentionality.<p>I think a lot of people might balk at the word "inclusivity" today, but StackExchange had ridiculously high barriers to participation, making it inclusive to the long-time users on the site, but exclusive to the newbie participants who found themselves blocked for asking questions. They slowly killed the site in this manner.</p><p>The community might have survived this folly, even with AI, because it was still the best place for people with qualms about AI to ask questions... Except until StackOverflow management alienated those users, too, by shoving AI down their throats in every facet of the site.</p><p>Even I had internalized the vagaries and neuroses of the SO community but I had heavy reticence to ask questions, knowing I'd have to consider all the ways a bully eager to use their powers might misunderstand me. I can't imagine asking a question there without having had lurked for longer than a typical Bachelor's + Masters program.</p><p>Peak at 207K, minimum at 588. That might be an incomplete date point, so using the next most recent value 1226, StackOverflow has lost 99.41% of its activity.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48957311">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48957311" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">DrewADesign</span>
+        
+        <span>2026/07/18 23:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们的规则（我相信是无意的）为铁腕封地统治者提供了一个以保护网站数据质量为幌子进行控制和疏远的工具箱。老实说，我什至不认为大多数控制狂模组能够客观地判断他们的行为是否恰当，因为这都是规则所鼓励的。 （我不认为这在模组中是普遍存在的，但它肯定是网站文化的特有现象。）嗯，结果是可以预见的。<p>在我成为一名网络开发人员之前，我是一名受过正规教育并获得认证的非计算机相关领域的专业人士，专业实践的门槛相当高，但有很多热情的业余爱好者。当我找到相关的低卷 SE 时，我兴奋地投入了几个小时来撰写权威的、消息灵通的、引用充分的、措辞深思熟虑的、简洁但外行友好的答案。我还向那些未达标的人提供了鼓励和积极但又有用的批评反馈。在使用 SO 多年后，我知道这种格式可能会带来多么负面的影响，所以我竭尽全力避免用惩罚性或专横的语气来劝阻新人。人们似乎发现我的贡献很有用，因为我在大约两周内成为了最大的贡献者，而且仍然经常为我十多年前写的东西获得积分。</p><p>一些模组——知识和经验远远不足的业余爱好者，但邓宁-克鲁格的严重案例——可能会因为我获得比他们更多的选票而感到恼火，因为有一天他们开始对我写的每一个该死的词吹毛求疵。我很快就厌倦了，并在开始一个月后停止参与。</p><p><i>::slow clap::</i> 好吧，他们可能没有保护他们知识库的实用性或完整性，但他们确实保护了一群人的自我的完整性。是这样的，对吧？！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48959058">Their rules, (I believe unintentionally) give iron-fisted fiefdom rulers a toolbox of justifications to control and alienate under the guise of protecting the quality of the site data. I honestly don’t even think most of the control freak mods could objectively judge the propriety of their actions because it was all encouraged by the rules. (And I do not think this was universal among the mods, but it was certainly endemic to the site culture.) Well, the outcome was predictable.<p>Before I worked as a web developer, I was a formally educated and credentialed professional in a non-computer-related field with a pretty high barrier to professional practice, but a lot of passionate hobbyists. When I found the related low-ish volume SE, I excitedly poured hours into writing authoritative, well-informed, well-cited, thoughtfully worded, and concise but layperson-friendly answers. I also provided encouraging and positive, but usefully critical feedback to people that missed the mark. I knew how negative the format could be after using SO for years, so I bent over backwards to avoid discouraging newcomers with a punitive or imperious tone. People seemed to find my contributions useful because I became the top contributor in something like two weeks, and still regularly get points for things I wrote over a decade ago.</p><p>Some mod— a hobbyist with far less knowledge and experience, but a serious case of Dunning-Krueger— probably got annoyed that I was getting more votes than them because one day they started nitpicking the hell out of every goddamned word I wrote. I pretty quickly got fed up, and stopped participating about a month after I started.</p><p><i>::slow clap::</i> Well they might not have protected the utility or integrity of their knowledge base, but they sure protected the integrity of a bunch of people’s egos. That’s something, right?!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48959058">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48959058" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">pygy_</span>
+        
+        <span>2026/07/19 01:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我记得我必须与一个 mod 进行斗争，才能恢复 Mike Pall 对 LuaJIT 问题的回复。<p>Mike Pall 是 LuaJIT 的作者。</p><p>该回复要么被删除，要么被编辑到错误的程度（记忆模糊），因为 Mike Pall 不是 SO 方面的专家，并且不知何故没有完全按照预期使用该网站。该模组非常轻蔑和居高临下。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48960198">I remember having to fight a mod for him to restore a reply penned by Mike Pall, to a LuaJIT question.<p>Mike Pall is the author of LuaJIT.</p><p>The reply had been either deleted or edited to the point of being wrong (memory is foggy), because Mike Pall wasn't an expert at SO, and had somehow not used the site exactly as intended. The mod was very dismissive and patronizing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48960198">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48960198" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">20k</span>
+        
+        <span>2026/07/19 02:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我在 stackoverflow 线程上浏览了一些答案，发现每个答案都是由同一个人编辑的，只是..添加了他自己的个人观点和“更正”，在这个过程中，它们普遍变得更糟和不太正确<p>答案应该是可编辑的想法，以及 stackoverflow 的游戏化，是一个绝对可怕的组合</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48960513">I was going through some answers on a stackoverflow thread, and noticed that every single one had been edited by the same guy, just.. adding his own personal opinions and 'corrections' to them, and in the process making them universally worse and less correct<p>The idea that answers should be editable, and the gamification of stackoverflow, was an absolutely terrible combination</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48960513">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48960513" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">xxs</span>
+        
+        <span>2026/07/19 02:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">15-16 年前，编辑曾经很好。就我个人而言，我将大部分内容发布为社区 wiki（没有获得声誉），因为无论如何我都获得了类似 mod 的声誉。<p>在某些时候（比如 2013-2014 年左右）该网站严重恶化，尽管人们认为 stackoverflow CV 值得材料...</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48960857">Editing used to be fine, back then like 15-16y ago. Personally I posted mostly everything as community wiki (no reputation gain) as I got the mod-alike reputation anyways.<p>At some point the (say 2013-2014 or so) the site deteriorated quite massively, though - as folks considered stackoverflow CV worthy material...</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48960857">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48960857" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kstrauser</span>
+        
+        <span>2026/07/19 09:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">除了明显的拼写错误之外，我几乎恢复了对答案的所有编辑。如果我的意思与我所说的不同，我就会说出来。您想在页面上看到自己的话吗？写下你自己的答案。<p>天哪，这曾经让我非常生气。我不想把别人的话归咎于我。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964054">I reverted nearly every single edit to my answers other than obvious typos. If I’d have meant something other than what I said, I’d have said it. You want to see your own words on the page? Write an answer of your own.<p>Lordy, that use to piss me off most fiercely. I don’t want someone else’s words attributed to me.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964054">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964054" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zahlman</span>
+        
+        <span>2026/07/19 09:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Stack Overflow 编辑政策非常重视，编辑不得违背作者的明显意图。但它<i>确实</i>涉及删除许多您可能想要答案说的内容，但不符合答案应包含的内容的准则。<p>当您加入该网站时，您同意条款和条件，其中除其他事项外，您的贡献<i>向社区授予知识共享许可</i>，这使他们<i>有权</i>进行这些编辑。</p><p>该网站明确不试图容纳那些想要说的人以特定的方式处理事情，因为这是他们的表达方式。该网站明确地试图满足那些想要<i>合作制作精美、连贯的参考书</i>的人们的需求。如果那不是你，那么讽刺的是，这就是技术博客的用途。</p><p>具有你在这里表现出的态度的人一直是元网站上行为最差、最难打交道的参与者，因为他们顽固地拒绝接受网站的核心原则。</p><p>（是的，鉴于网站的目标，声誉系统是一个<i>深不可测</i>糟糕的设计选择。回想起来。我真的不明白它是如何在 2011 年左右的时间里通过如此微小的调整而生存下来的。）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964316">It is taken very seriously in Stack Overflow editing policy that edits are not supposed to go against the author's apparent intent. But it <i>does</i> involve removing a lot of things that you might want the answer to say, but don't meet the guidelines for what answers are supposed to contain.<p>When you join the site, you agree to Terms and Conditions that, among other things, <i>grant a Creative Commons license</i> to the community over your contributions, which gives them the <i>right</i> to make those edits.</p><p>The site is explicitly not trying to accommodate people who want to say things in a specific way because it's their way of saying it. The site is explicitly trying to accommodate people who want to <i>collaborate to produce a polished, coherent work of reference</i>. If that isn't you, unironically, that's what tech blogs are for.</p><p>People with the attitude you demonstrate here are consistently among the worst-behaved and hardest-to-deal-with participants on the meta site, because of a stubborn refusal to accept a core principle of the site.</p><p>(Yes, the reputation system was an <i>unfathomably</i> bad design choice in light of the site's goals. In retrospect I genuinely don't understand how it survived past 2011 or so with tweaks as minor as it got.)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964316">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964316" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kstrauser</span>
+        
+        <span>2026/07/19 10:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这太荒谬了，你错了。我向他们授予我的内容的 CC 许可，允许他们出于自己的目的折叠、旋转和毁坏它，但<i>不</i>在折叠、旋转、毁坏的版本上留下我的名字。<p>我的答案<i>上面有我的名字</i>。就在那里写着“kstrauser 说了这些话”。如果我没有说过，我也不希望该网站撒谎并说我说过。我不介意是否有人修复了明显的拼写错误，或者更新了已损坏的 URL 。没关系。它们显然是我想说的。但我让人们添加了额外的句子或段落，哦，天哪，不。</p><p>这从来都不是该网站的核心原则，至少当我在你之前加入它时不是。如果这是一个明确的核心原则，即人们可以编辑我的话，归因于我，以便我的用户帐户最终说出我从未说过的话，我永远不会注册，也没有多少其他人会注册。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964397">That's ridiculous and you're wrong. I grant them a CC license to my content to fold, spindle and mutilate it for their own purposes, but <i>not</i> to leave my name attached to the folded, spindled, mutilated version.<p>My answer <i>has my name on it</i>. It's right there saying "kstrauser said these words". If I didn't say them, I don't want the site lying and saying that I did. I don't mind if someone fixes an obvious typo, or updates a URL that had bitrotted. That's fine. They're what I obvious intended to say. But I've had people add extra sentences or paragraphs, and oh hell no.</p><p>That was never a core principle of the site, at least not when I joined it before you. If it'd been an expressed core principle that people could edit my words, attributed to me, so that my user account ends up saying things I never said, I never would have signed up and not many other people would have, either.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964397">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964397" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">DrewADesign</span>
+        
+        <span>2026/07/19 11:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">但积分系统从根本上来说与网站的运营密不可分，而且它所奖励的多管闲事和傲慢意味着它永远不可能像任何人希望的那样好。做出内容决策的人经常被误导，而且他们的资格远远低于他们的作者干预……但他们的行为仍然得到了回报。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964765">But the points system was fundamentally inextricable from the site’s operation, and the officiousness and arrogance it rewarded meant it could never be as good as anybody hoped it would be. The people making the content decisions were often misguided, and vastly less qualified than the authors they meddled with… but were rewarded for their actions all the same.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964765">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964765" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">eecc</span>
+        
+        <span>2026/07/19 15:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">找到了 SO mod...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48965720">Found the SO mod…</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48965720">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48965720" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jay_kyburz</span>
+        
+        <span>2026/07/19 05:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">游戏化是该网站受欢迎的一个关键原因，但随着网站的发展，规则和游戏机制并没有发展。<p>导致反应更糟的编辑应该将模组打倒，这样他们就无法再进行模组了。编辑的质量应该由原作者确定。 “此编辑是否使您的问题变得更好？”</p><p>版主应根据其帮助和欢迎新用户的能力进行排名和评分。让新用户感到不受欢迎对他们来说成本应该很高。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48962569">The gamification was a key reason the site became popular, but as the site grew, the rules and game mechanics did not evolve.<p>An edit that made a response worse should have knocked the mod down so that they were unable to mod any more. The quality of the edit should have been determined by the original author. "Did this edit make your question better?"</p><p>Moderators should have been ranked and scored based on their ability to help and welcome new users. It should have been very costly for them to make a new users feel unwelcome.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48962569">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48962569" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zahlman</span>
+        
+        <span>2026/07/19 10:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 使响应变得更糟的编辑应该将 mod 击倒，以便他们无法再进行 mod。<p>从字面上看，网站上的每个人都可以提出编辑建议，并且每个拥有至少 2000 声誉的人都可以进行单方面编辑。这些提案得到了三分之二的随机单边编辑特权用户的批准。所有这些都不被视为“适度”，也不是由“mods”完成的。在<i>数百万</i>个 Stack Overflow 帐户中，只有几十个真正担任过版主，而且他们只负责管理。他们的主要工作是响应标记。</p><p>&gt; 让新用户感到不受欢迎对他们来说代价高昂。</p><p>绝大多数访问该网站的人希望该网站成为其根本上不想成为的东西，而且常常是它根本上<i>试图不</i>成为的东西。让此类用户“感到不受欢迎”是正确的，因为经验表明他们通常无法与他们推理或解释。统计数据清楚地表明，他们中的大多数人一开始就没有任何尝试加入社区的意图（或者说，在激发帐户创建的问题之后提出另一个问题）。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964358">&gt; An edit that made a response worse should have knocked the mod down so that they were unable to mod any more.<p>Literally everyone on the site is permitted to propose an edit, and everyone with at least 2000 reputation can make unilateral edits. The proposals are approved by a 2 out of 3 majority of random unilateral-edit-privileged users. None of this is considered "moderation" and is not done by "mods". Of <i>millions</i> of Stack Overflow accounts, only a few dozen have ever actually been moderators, and they do a tiny share of curation. Their main job is responding to flags.</p><p>&gt; It should have been very costly for them to make a new users feel unwelcome.</p><p>The overwhelming majority of people who came to the site wanted the site to be something that it was fundamentally not trying to be, and often something it was fundamentally <i>trying not</i> to be. It was correct to make such users "feel unwelcome", because experience has shown that they typically cannot be reasoned with or explained to. The statistics make it clear that most of them never had any intention of trying to join a community (or, say, ask another question after the one that motivated account creation) in the first place.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964358">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964358" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">chuckadams</span>
+        
+        <span>2026/07/19 11:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 绝大多数访问该网站的人希望该网站成为其根本不想成为的东西<p>我猜收到了消息，看看绝大多数人如何离开。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964711">&gt; The overwhelming majority of people who came to the site wanted the site to be something that it was fundamentally not trying to be<p>Message received I guess, seeing as how the overwhelming majority left.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964711">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964711" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">amanaplanacanal</span>
+        
+        <span>2026/07/19 10:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所以他们基本上已经杀死了这个网站。我想恭喜你了？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964556">So they have essentially killed the site. Congratulations I guess?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964556">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964556" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">psd1</span>
+        
+        <span>2026/07/19 17:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">真正杀死它的是 RAG，但让我们规定，是政策驱赶了用户。<p>杀死它的原因是让它变得突出。</p><p>根据一篇博文，我找不到更多关于“如何加速社交媒体”或类似内容的内容，考虑到投票机制和 mod 政策的杠杆，一旦建立社区，基本上不可能改变社区。 （我区分了Facebook和Reddit的enshittification和pivot。）</p><p>IOW，社区财产增长的种子也是其衰落的种子。类似地，迷人的村庄对新居民有吸引力，因为现有居民抵制新居民所体现的变化。</p><p>非常广泛，但绝不是普遍的：技术人员不喜欢 luser，因为 luser 不花精力去理解，他们只是想要交钥匙答案。这完全违背了典型的技术人员价值体系。</p><p>针对脾气暴躁的愤世嫉俗者而不是笨手笨脚的新手进行了优化，这在技术领域大致相当于针对有知识的人进行优化，而不是希望为他们完成作业的人。</p><p>问题不是稀缺资源 - 您可以浏览 Microsoft 社区答案来验证这一点。那里的答案相应地是无用的，这就是为什么“盲目地从 SO 复制”是一种模因，而“盲目地从 Microsoft 答案中复制”则不是。</p><p>在这里，ITT，以及更普遍的 HN 上，评论都在严厉批评新用户反感的成本。这些评论者应该认识到，这不是纯粹的成本，而是一种权衡，而且十年来，这种优势一直是一种财富。找到高质量答案的人们完成了 100 万个项目，主要是通过搜索现有问题。</p><p>除了最新的 Web 框架热门之外，该资源仍然与堆栈相关，而且我个人仍然从学习编码的古老爱好中受益。</p><p>该资源仍然与深度插入 AI 的程序员没有直接关系，但它确实训练了 AI。</p><p>这是网络上最成功的努力之一，也是一项崇高的社区成就。人们经历了把关，表面上是一种耻辱，但如果“把关”在你的词典中只有负面含义，那么我建议你妥协你的原则，并在你的网络上设置防火墙。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48966433">What killed it in truth was RAG, but let's stipulate that it was policy that drove users away.<p>The thing that killed it was the thing that made it prominent.</p><p>According to a blogpost i can't find any more about "how to speedrun social media" or similar, it's basically impossible to pivot a community once established given the levers of voting mechanics and mod policy. (I distinguish between Facebook's and Reddit's enshittification and a pivot.)</p><p>IOW, the seed of a community property's growth is also the seed of its decline. Analagously, the charming village is attractive to new residents because the existing residents resist the changes that new residents embody.</p><p>Very broadly and by no means universally: techies don't like lusers, because lusers don't put effort into understanding, they just want turnkey answers. This is totally counter to the archetypal techie value system.</p><p>SO optimised for grumpy misanthropes over bumbling newbies, which, in tech, is roughly congruent with optimising for people with knowledge to share over people who want their homework done for them.</p><p>The questions are not the scarce resource - you can browse Microsoft Community Answers to verify that. The answers there are correspondingly useless, which is why "blindly copy from SO" is a meme and "blindly copy from Microsoft Answers" is not.</p><p>Here ITT, and more generally on HN, comments are excoriating about the cost of being offputting to new users. Those commenters should recognise that it's not a pure cost, it's a tradeoff, and the upside has been a treasure for a decade. A million projects completed by people who found quality answers, mostly by searching for existing questions.</p><p>That resource is still relevant for stacks other than the latest web framework hotness, and i personally still get benefit from it in my archaic hobby of learning to code.</p><p>That resource is not still directly relevant for coders deeply plugged into AI, but it did train that AI.</p><p>It's one of the most successful endeavours on the web and a towering community achievement. It is a superficially a shame that people experienced gatekeeping, but if "gatekeeper" has only negative connotations in your lexicon, then I advise you to compromise your principles and firewall your network.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48966433">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48966433" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rcxdude</span>
+        
+        <span>2026/07/19 06:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">能够编辑答案甚至不是 mod 的事情。事实上，在 SO 一生的大部分时间里，这甚至不是“登录”的事情（你可以匿名编辑答案）。他们如何最终建立了一个问答网站，在那里你可以比留下评论更容易地编辑其他用户的答案，我仍然永远无法完全理解。<p>（IMO 确实将这种东西添加到了完全神秘的规则和约定集中，使其感觉如此难以访问）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48963126">Being able to edit answers isn't even a mod thing. In fact, for most of SO's life, it wasn't even a 'being logged in' thing (you could just edit an answer anonymously). How they wound up with a Q and A site where you could edit another user's answer far more easily than leaving a comment on it I still will never fully understand.<p>(this kind of thing IMO really added to the utterly arcane set of rules and conventions that makes it feel so inaccessible)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48963126">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48963126" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zahlman</span>
+        
+        <span>2026/07/19 10:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您不能单方面匿名编辑；您的编辑将被放入审核队列中。<p>留下评论很难，这<i>好</i>。首先，因为人们经过反复的惨痛教训才知道，消除这一障碍会导致大量的垃圾邮件。其次，因为即使是富有洞察力的评论也会偏离使用该网站的<i>主要预期流程</i>，即：您从搜索引擎找到一个问题，阅读该问题并验证它是否反映了您想要弄清楚的内容，然后向下滚动到答案并了解一些内容。重点是<i>不是</i>成为一个讨论论坛（这也是为什么在网站生命周期的大部分时间里没有评论的原因）。事实上，该网站的存在<i>主要是因为对人们可以无休止地讨论的讨论论坛上最终发生的事情感到沮丧</i>。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964373">You could not unilaterally edit anonymously; your edit would have been put in a review queue.<p>It is <i>good</i> that leaving comments is hard. First off, because it was learned repeatedly, the hard way, that removing that barrier leads to ungodly amounts of literal spam. Second because even insightful comments detract from the <i>main intended flow</i> of using the site, which is: you find a question from a search engine, read the question and verify that it reflects what you're trying to figure out, then scroll down to the answers and learn something. The entire point is to <i>not</i> be a discussion forum (which is also why comments were not threaded for most of the the site's life). In fact, the site came into existence <i>specifically because of frustration</i> with what ends up happening on a discussion forum where people can discuss endlessly.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964373">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964373" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rcxdude</span>
+        
+        <span>2026/07/19 16:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看，你所说的在真空中具有一定的逻辑意义，但它与任何其他网站的工作方式完全不同，除非你花费<i>巨大</i>的努力向人们解释这一点，<i>温和</i>，那么人们只是拒绝它就不足为奇了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48966019">See, what you're saying makes some logical sense in a vacuum but it's so utterly unlike how any other website works that unless you take a <i>huge</i> amount of effort to explain this to people, <i>gently</i>, then it's not at all surprising that people just bounce off of it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48966019">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48966019" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">zahlman</span>
+        
+        <span>2026/07/19 09:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 他们的规则（我相信是无意的）为铁腕封地统治者提供了一个以保护网站数据质量为幌子进行控制和疏远的工具箱。<p>事实并非如此。我知道很多很多人相信这就是所发生的事情，但从多年来对内部流程的观察我知道，在绝大多数情况下，这绝对不是所发生的情况。</p><p>“网站数据的质量”是一个 100% 诚实的动机，我不明白为什么人们不愿意接受这一点。我和其他人已经做了无数次尝试来解释它。</p><p>&gt;老实说，我什至不认为大多数控制狂模组</p><p>你所指的人不是控制狂，<i>也不是“主持人”</i>。网站上的大多数策展都需要多个通常不协调的人之间达成共识。</p><p>&gt; 一些模组——知识和经验远远不足的业余爱好者，但邓宁-克鲁格的严重案例——可能会因为我获得比他们更多的选票而感到恼火，因为有一天他们开始对我写的每一个该死的词吹毛求疵。我很快就厌倦了，并在开始一个月后停止参与。</p><p>我几乎可以保证您所指的人不是版主。如果是（旁边有菱形图标的人用户名以及出现在 <a href="https://stackoverflow.com/users?tab=moderators" target="_blank" rel="noopener noreferrer">https://stackoverflow.com/users?tab=moderators</a> 上的人），您应该在元网站上发布相关内容。您所描述的行为模式显然是滥用行为，违反了行为准则（并且在所有版本中都存在），并且绝对会采取行动。</p><p>如果“普通”（可能具有更高代表）用户像这样骚扰您，这就是为什么他们在每个问题和答案下放置一个“标记”链接，并在每个评论旁边放置图标，以举起标记以引起版主注意。这类事情一直以来都受到认真对待。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48964290">&gt; Their rules, (I believe unintentionally) give iron-fisted fiefdom rulers a toolbox of justifications to control and alienate under the guise of protecting the quality of the site data.<p>That isn't what happens. I know many, many people believe it to be what happens, but I know from years of seeing the process on the inside that it's absolutely not what happens in the overwhelming majority of cases.</p><p>The "quality of the site data" is a 100% honest motivation and I don't understand why people are unwilling to accept that. I and others have made countless attempts to explain it.</p><p>&gt; I honestly don’t even think most of the control freak mods</p><p>The people you're referring to are not control freaks, and <i>also are not "moderators"</i>. Most curation on the site requires consensus between multiple people who are generally not coordinating.</p><p>&gt; Some mod— a hobbyist with far less knowledge and experience, but a serious case of Dunning-Krueger— probably got annoyed that I was getting more votes than them because one day they started nitpicking the hell out of every goddamned word I wrote. I pretty quickly got fed up, and stopped participating about a month after I started.</p><p>I can practically guarantee that the person you're referring to was not a moderator. If it was (someone with the diamond icon beside the username, and who appeared on <a href="https://stackoverflow.com/users?tab=moderators" target="_blank" rel="noopener noreferrer">https://stackoverflow.com/users?tab=moderators</a>), you should have posted on the meta site about it. The pattern of behaviour you describe is clearly abusive and against the Code of Conduct (and would have been across all versions thereof), and would absolutely been acted upon.</p><p>If an "ordinary" (perhaps with higher rep) user was harassing you like this, that is why they put a "flag" link under every question and answer, and icon beside each comment, to raise a flag for moderator attention. This sort of thing is and always has been taken seriously.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48964290">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48964290" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">digitalPhonix</span>
+        
+        <span>2026/07/19 16:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 事实并非如此。我知道很多很多人相信这就是发生的事情，但从多年来对内部过程的了解，我知道这绝对不是在绝大多数情况下发生的情况。<p>如果几乎每个与我专业打交道的人都有关于这种情况发生的轶事，那么你关于它没有发生的轶事就不是很有说服力。</p><p>如果你确信它（如你声称的那样）不存在，你/SO工作人员/SO mods是否考虑过为什么这种印象如此普遍真的吗？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48965896">&gt; That isn't what happens. I know many, many people believe it to be what happens, but I know from years of seeing the process on the inside that it's absolutely not what happens in the overwhelming majority of cases.<p>If quite literally every person I interact with professionally has an anecdote about this happening, your anecdote about it not happening is not very convincing.</p><p>Have you/SO staff/SO mods considered why this impression is so prevalent if you’re confident it’s (as you claim) not actually true?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48965896">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48965896" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>实测 GPT-5.6 Sol 的 High/Max：修 bug 未必值得上 Max，重写/迁移可能值得 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-19/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>实测 GPT-5.6 Sol 的 High/Max：修 bug 未必值得上 Max，重写/迁移可能值得</h1>
+      <p class="original-title">实测 GPT-5.6 Sol 的 High/Max：修 bug 未必值得上 Max，重写/迁移可能值得</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 yohjisakamoto</span>
+        <span>热度 3</span>
+        <span>回复 3</span>
+        <span>2026/07/19 22:48</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228412" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228412.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者实测 GPT-5.6 Sol 的 High 与 Max 模式在 DeepSWE 和 eza 重写任务中的表现，发现 Max 并非全面优于 High。</li><li>结论建议按任务形态路由：范围明确的 bug 修复优先用 High，大范围重写或迁移更适合 Max。</li><li>Max 模式成本约为 High 的 2.4 倍，其额外价值主要体现在搜索、回滚和 agent 回合上，适用于不确定性较高的任务。</li></ul>
+      <h3>看点</h3><ul><li>范围明确的 bug 修复任务中，High 通过率 64.3% 反而高于 Max 的 57.1%。</li><li>功能实现任务 Max 通过率提升 4.4 个百分点，仓库重写任务提升 4.8–13.5 个百分点。</li><li>Max 模式成本为 High 的 2.42 倍，输出 token 2.11 倍，输入 2.91 倍，时间 1.90 倍。</li><li>作者提出“按任务不确定性决定 effort 升级”的路由策略，而非盲目使用最高配置。</li><li>作者为 Tura 维护者，提供了完整评测数据、图表和复现代码供社区验证。</li></ul>
+      <p class="reason">帖子实测了 GPT-5.6 Sol 的 High/Max 模式在不同编程任务（修 bug、功能实现、仓库重写）下的通过率与成本差异，属于 AI 编程工具评测与使用策略讨论。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">先声明：我是 [Tura]( <a href="https://github.com/Tura-AI/tura" target="_blank" rel="noopener noreferrer">https://github.com/Tura-AI/tura</a>) 的维护者。这不是独立评测；完整方法、图表和公开产物见文末链接。想请大家重点挑一挑，下面这个“按任务形态路由”的结论有没有遗漏。<br /><br />我把 DeepSWE v1.1 的记录和一次 eza（Rust → Python、52 项检查）的行为兼容重写放在一起看。结论不是“Max 总是更强”，而是 Max 多买到了搜索、回滚、再试和 agent 回合；这些回合有没有价值，取决于任务剩下多少不确定性。<br /><br />| 任务形态 | 高 | 最高 | 通过率变化 | 成本 |<br />| --- | ---: | ---: | ---: | ---: |<br />| 范围明确的修复（DeepSWE，7 个） | 64.3% | 57.1% | **-7.1 个百分点** | 2.53x |<br />| 功能实现（DeepSWE，95 个） | 70.2% | 74.6% | **+4.4 个百分点** | 2.43x |<br />| 仓库重写（ eza ，3 个 harness ） | 78.8–89.4% | 92.3–94.2% | **+4.8–13.5 个百分点** | 2.27–3.27x |<br /><br />113 个 DeepSWE 任务的总体平均是：High 69.4%、每任务 $3.47 ； Max 72.7%、每任务 $8.39 。也就是 **+3.3 个百分点，成本 2.42 倍**，输出 token 2.11 倍、输入 2.91 倍、时间 1.90 倍、步骤 1.66 倍。<br /><br />所以我现在倾向的操作规则是：<br /><br />1. 已经有 failing test、定位范围较小的 bug，先用 High；High 失败且定位仍不确定再升级。<br />2. 常规功能实现也是 High 起步，除非一次失败的代价足以覆盖约 2.4 倍成本。<br />3. 大范围重写或迁移，Max 往往更有意义，因为兼容性、构建、测试和架构路径都还要探索。<br />4. Greenfield目前仅有“可能更适合Max”的判断，尚无配对的High/Max数据，请勿将其写成已证实的结论。<br /><br />需要强调两个边界：DeepSWE 的 7 个修复任务不足以证明“Max 会让修 bug 变差”；eza 的 High 是每个 harness 两次运行的均值，而 Max 是一次选定运行。数据适合用于路由假设，不适合作为万能默认值。<br /><br />完整分析（19张表和原始图表）： <a href="https://turaai.net/blog.html#is-gpt-5-6-sol-max-worth-it" target="_blank" rel="noopener noreferrer">https://turaai.net/blog.html#is-gpt-5-6-sol-max-worth-it</a>  <br />复现数据： <a href="https://github.com/Tura-AI/benchmark/tree/main/blog_data/eza-replication-gpt56-max-20260717" target="_blank" rel="noopener noreferrer">https://github.com/Tura-AI/benchmark/tree/main/blog_data/eza-replication-gpt56-max-20260717</a><br /><br />如果大家有更合适的任务分桶、成本/通过率指标，或者认为这里的 DeepSWE 划分不够机械化，欢迎直接指出。更希望讨论“什么时候应该升级 effort”，而不是只比较某个模式的单点分数。</div>
+      <div class="post-body is-hidden" data-role="story-raw">先声明：我是 [Tura]( <a href="https://github.com/Tura-AI/tura" target="_blank" rel="noopener noreferrer">https://github.com/Tura-AI/tura</a>) 的维护者。这不是独立评测；完整方法、图表和公开产物在文末链接。想请大家重点挑一挑下面这个“按任务形态路由”的结论有没有遗漏。<br /><br />我把 DeepSWE v1.1 的记录和一次 eza （ Rust → Python 、52 项检查）的行为兼容重写放在一起看。结论不是“Max 总是更强”，而是 Max 多买到了搜索、回滚、再试和 agent 回合；这些回合有没有价值，取决于任务剩下多少不确定性。<br /><br />| 任务形态 | High | Max | 通过率变化 | 成本 |<br />| --- | ---: | ---: | ---: | ---: |<br />| 范围明确的修复（ DeepSWE ，7 个） | 64.3% | 57.1% | **-7.1 个百分点** | 2.53x |<br />| 功能实现（ DeepSWE ，95 个） | 70.2% | 74.6% | **+4.4 个百分点** | 2.43x |<br />| 仓库重写（ eza ，3 个 harness ） | 78.8–89.4% | 92.3–94.2% | **+4.8–13.5 个百分点** | 2.27–3.27x |<br /><br />113 个 DeepSWE 任务的总体平均是：High 69.4%、每任务 $3.47 ； Max 72.7%、每任务 $8.39 。也就是 **+3.3 个百分点，成本 2.42 倍**，输出 token 2.11 倍、输入 2.91 倍、时间 1.90 倍、步骤 1.66 倍。<br /><br />所以我现在倾向的操作规则是：<br /><br />1. 已经有 failing test 、定位范围较小的 bug ，先用 High ； High 失败且定位仍不确定再升级。<br />2. 常规功能实现也是 High 起步，除非一次失败的代价足以覆盖约 2.4 倍成本。<br />3. 大范围重写或迁移，Max 往往更有意义，因为兼容性、构建、测试和架构路径都还要探索。<br />4. Greenfield 目前只有“可能更适合 Max”的判断，没有配对的 High/Max 数据，别把它写成已证实结论。<br /><br />需要强调两个边界：DeepSWE 的 7 个修复任务不足以证明“Max 会让修 bug 变差”； eza 的 High 是每个 harness 两次的均值，而 Max 是一次选定运行。数字适合做路由假设，不适合做万能默认值。<br /><br />完整分析（ 19 张表和原始图表）： <a href="https://turaai.net/blog.html#is-gpt-5-6-sol-max-worth-it" target="_blank" rel="noopener noreferrer">https://turaai.net/blog.html#is-gpt-5-6-sol-max-worth-it</a>  <br />复现数据： <a href="https://github.com/Tura-AI/benchmark/tree/main/blog_data/eza-replication-gpt56-max-20260717" target="_blank" rel="noopener noreferrer">https://github.com/Tura-AI/benchmark/tree/main/blog_data/eza-replication-gpt56-max-20260717</a><br /><br />如果大家有更合适的任务分桶、成本/通过率指标，或者认为这里的 DeepSWE 划分不够机械化，欢迎直接指出。更希望讨论“什么时候应该升级 effort”，而不是只比较某个模式的单点分数。</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">2</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shilianmlxg</span>
+        <span>#1</span>
+        <span>2026/07/20 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">大佬，有个问题，比如有个超长的任务，必须是从 a 到 b 到 c 到 d 的递进关系，但这样线性完成太慢了，如何同时并行呢，但比如 c 的前提是需要 b 的数据，这种如何并行处理呢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17881444">大佬，有个问题，比如有个超长的任务，必须是从 a 到 b 到 c 到 d 的递进关系，但这样线性完成太慢了，如何同时并行呢，但比如 c 的前提是需要 b 的数据，这种如何并行处理呢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17881444">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228412#reply17881444" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">weiliw528</span>
+        <span>#2</span>
+        <span>2026/07/20 00:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">围观</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17881447">围观</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17881447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228412#reply17881447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
