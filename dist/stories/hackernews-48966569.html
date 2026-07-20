@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code 现已采用 Rust 编写的 Bun。 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-20/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Claude Code 现已采用 Rust 编写的 Bun。</h1>
+      <p class="original-title">Claude Code uses Bun written in Rust now</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 tosh</span>
+        <span>热度 584</span>
+        <span>回复 788</span>
+        <span>2026/07/19 18:03</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48966569" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://simonwillison.net/2026/Jul/19/claude-code-in-bun-in-rust/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48966569.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Claude Code v2.1.181 及之后版本已采用 Rust 重写的 Bun 作为运行时。</li><li>Simon Willison 通过二进制字符串分析验证了 Claude Code 使用了尚未正式发布的 Bun v1.4.0 预览版。</li><li>此次迁移使 Linux 上启动速度提升约 10%，整体变化较为平稳。</li></ul>
+      <h3>看点</h3><ul><li>Claude Code 悄然切换至 Rust 版 Bun 运行时，体现&#39;无聊即好&#39;的工程哲学。</li><li>通过 strings 命令可从二进制文件中提取 Bun 版本号和 Rust 源码路径作为证据。</li><li>Claude Code 使用了领先于官方发布的 Bun canary 版本（v1.4.0）。</li><li>Rust 重写 Bun 带来启动性能提升，但用户感知不明显。</li><li>展示了如何通过逆向手段验证软件底层依赖变更。</li></ul>
+      <p class="reason">帖子讨论了 Claude Code 底层运行时从原有实现迁移到用 Rust 重写的 Bun，涉及开发工具、编程语言（Rust）、运行时性能优化等科技主题。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mrothroc</span>
+        
+        <span>2026/07/20 02:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">深入研究 Jarred 解释更改背后原因的原始文章，很明显，在 zig 下，团队正在手工做一些在 rust 中自动完成的事情。<p>人类和智能体有一个共同点：他们都是不确定性的。他谈到了在 zig 中手动跟踪内存生命周期以便显式释放内存的问题。正如预期的那样，这会导致一长串错误，人们会错过一些事情。</p><p>Rust 会自动执行此操作。它消除了他积压的一整类错误。从工程管理的角度来看，这看起来是一笔相当不错的交易。</p><p>这里的好处是，编译器错误正是您需要在编码代理周围设置的确定性护栏。如果您给它一种测试正确性的方法，并且“使其编译”是一个非常好的目标，那么 Claude 会工作得非常好。</p><p>有一个通用版本：您公开的工件加上您在其上运行的测试。确定性测试将随机输出变成硬保证。如果有用的话，写在这里：<a href="https://michael.roth.rocks/blog/verification-surface/" target="_blank" rel="noopener noreferrer">https://michael.roth.rocks/blog/verification-surface/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48970377">Drilling into the original article where Jarred explained the reasoning behind the change, It's pretty clear that under zig the team was doing things by hand that are automatic in rust.<p>Humans and agents share one thing: they are both non-deterministic. He talks about the issue of tracking memory lifecycles manually in zig so it can be explicitly freed. As expected, this leads to a long list of bugs where people missed things.</p><p>Rust does this automatically. It removes an entire class of errors from his backlog. From an engineering management perspective, this looks like a pretty good trade.</p><p>The bonus here is that compiler errors are exactly the kind of deterministic guardrail you need to put around coding agents. Claude works really well if you give it a way to test for correctness and "make it compile" is a pretty good target.</p><p>There's a general version of this: the artifact you expose plus the test you run on it. Deterministic tests turn stochastic output into a hard guarantee. Wrote it up here if useful: <a href="https://michael.roth.rocks/blog/verification-surface/" target="_blank" rel="noopener noreferrer">https://michael.roth.rocks/blog/verification-surface/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48970377">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48970377" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">awesan</span>
+        
+        <span>2026/07/20 02:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果您要进行许多具有不相关生命周期的小型分配，Zig（如 C）根本不是一种好用的语言。要编写健壮的 Zig（或 C）代码，您必须自己管理生命周期，例如通过对竞技场上的分配进行分组或通过固定“事物”缓冲区。<p>您可以这样做，然后 Zig 的健壮性确实不亚于 Rust。但是，如果您想要执行“托管语言”样式的分配模式（就像 llms 通常喜欢的那样），那么使用它就没有意义。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48970444">Zig (like C) is simply not a good language to use if you're going to do many small allocations with uncorrelated lifetimes. To write robust Zig (or C) code, you must manage lifetimes yourself, for example by grouping allocations on an arena or by having fixed buffers of "things".<p>You can just do that, and then Zig is really no less robust than Rust. But if you want to do "managed language" style allocation patterns (like what llms generally prefer), it doesn't make sense to use it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48970444">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48970444" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Jarred</span>
+        
+        <span>2026/07/20 16:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">分组和竞技场分配在 Zig 中运行得非常好。有一段时间，我们尝试在 Bun 中的几乎所有地方使用这种模式，但是当存在一些 GC 管理的内存并且您想要增量释放内容以减少 RSS 时，它会变得非常棘手。此外，对不断增长的数组使用 arenas 会大量浪费内存，因为它保留了每个以前的版本（mimalloc arenas 对此稍好一些）<p>分组分配在生命周期非常有限的解析器和 AST 中效果特别好。自从 Rust 重写以来，我们仍然为 Bun 的解析器和捆绑器使用 arenas，但在其他地方不再使用。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48976043">Grouped and arena allocations work really well in Zig. For awhile, we tried to use this pattern almost everywhere in Bun but it gets really tricky when there’s some GC-managed memory and you want to free things incrementally to reduce RSS. Also, using arenas for arrays that grow wastes memory a lot since it keeps every previous version around (mimalloc arenas are slightly better for this)<p>Grouped allocations works especially well in parsers &amp; ASTs where the lifetime is very bounded. Since the Rust rewrite, we still use arenas for Bun’s parsers and the bundler but not a ton elsewhere.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48976043">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48976043" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HexDecOctBin</span>
+        
+        <span>2026/07/20 21:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 对不断增长的数组使用 arenas 会大量浪费内存，因为它会保留所有以前的版本<p>如果使用分段数组则不然</p><p><a href="https://danielchasehooper.com/posts/segment_array/" target="_blank" rel="noopener noreferrer">https://danielchasehooper.com/posts/segment_array/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48978674">&gt; using arenas for arrays that grow wastes memory a lot since it keeps every previous version around<p>Not if you use segmented arrays</p><p><a href="https://danielchasehooper.com/posts/segment_array/" target="_blank" rel="noopener noreferrer">https://danielchasehooper.com/posts/segment_array/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48978674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48978674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">kllrnohj</span>
+        
+        <span>2026/07/20 11:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 你可以这样做，然后 Zig 的健壮性确实不亚于 Rust。<p>如果你不写 bug，那么所有语言都同样健壮，包括汇编语言。</p><p>Zig 和 C 一样，根本就不是一种健壮的语言。我不知道为什么这感觉像是有争议的事情？它显然不是为了健壮？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48973944">&gt; You can just do that, and then Zig is really no less robust than Rust.<p>If you just don't write bugs, then yes all languages are equally robust, including assembly.</p><p>Zig, like C, is simply not a robust language. I don't know why this feels like something contentious? It's clearly not intended to be robust?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48973944">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48973944" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">audunw</span>
+        
+        <span>2026/07/20 11:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Zig 旨在尽可能健壮，只要它不隐式添加代码（没有析构函数运行您未显式调用的代码），或增加编译器复杂性和编译时间。<p>我认为说 Zig 总体上健壮或不健壮是没有意义的。就像，我们并不是说 Rust 不健壮，因为它没有添加依赖类型和通用静态验证来进行更通用的证明。它特别专注于消除一类内存错误，而这正是对 Bun 等软件和其他具有复杂生命周期的软件（它起源于 Mozilla，Rust 非常适合浏览器）面临的最大挑战的一类错误</p><p>Zig 旨在为 TigerBeetle 等软件或 Zig 编译器本身提供鲁棒性，因为这些软件的内存生命周期很简单。</p><p>我想说的是，重点是内置测试、模糊测试、调试内存分配器和安全模式表明 Zig 在语言目标范围内绝对是健壮的。远远超过 C 本身或大多数流行的编译器所做的事情。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48974161">Zig is intended to be as robust as it can be as long as it doesn’t implicitly add code (no destructors that run code you didn’t explicitly call), or increase compiler complexity and compilation time.<p>I don’t think it makes sense to say Zig is or isn’t intended to be robust in general. Like, we don’t say Rust isn’t robust since it doesn’t add dependent types and general purpose static verification that can do more general proofs. It’s focused on eliminating one class of memory bugs in particular, exactly the class of bugs that are the biggest challenge for software like Bun, and other software with complex lifetimes (it originated from Mozilla and Rust is perfect for browsers)</p><p>Zig is intended to be robust for software like TigerBeetle, or the Zig compiler itself, where memory lifetimes are simple.</p><p>I’d say the focus on built in tests, fuzzing, debug memory allocators and safe mode shows that Zig is absolutely intended to be robust, within the scope of what the language aims to be. Far more than C itself or most of its popular compilers ever did.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48974161">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48974161" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">KingMob</span>
+        
+        <span>2026/07/20 13:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">随意阅读一下 TigerBeetle 的实践就可以清楚地看出，他们在内存分配策略和测试/验证方面都在做一些非常不寻常的事情。<p>尽管 TigerBeetle 是最引人注目的剩余 Zig 项目之一，但实际上我认为它们根本不能代表普通的 Zig 项目。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48974584">A casual read of TigerBeetle's practices makes it clear they're doing some very unusual things, both in their memory allocation strategy and in their testing/verification.<p>Despite TigerBeetle being one of the highest-profile remaining Zig projects, I actually don't think they're representative of the average Zig project at all.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48974584">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48974584" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">GuB-42</span>
+        
+        <span>2026/07/20 20:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它非常具有代表性的嵌入式软件项目。 TigerBeetle 不是我们通常所说的嵌入式软件，但它的构建方式与此类似：静态内存分配、独立的可执行文件以及对确定性的强烈关注是该领域的典型特征，尤其是对于关键软件而言。<p>我认为嵌入式软件是 Zig 将发挥最佳作用的领域。唯一缺少的是成熟。当项目的生命周期以数十年为单位来衡量时，改变一个字节可能会花费数百万美元，没有一个头脑正常的人会选择一种语言仍在开发中。当达到1.0时事情就会变得有趣。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48978102">It is quite representative of an embedded software project. TigerBeetle is not what we usually call embedded software, but it is built like it: static memory allocation, a self-contained executable, and a strong focus on determinism are typical in that field, especially for critical software.<p>And I think embedded software is a field where Zig will be at its best. The only thing it is missing is maturity. When project lifetimes are measured in decades and changing a single byte can cost millions, no one in his right mind will pick a language that is still in development. Things will become interesting when it reaches 1.0.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48978102">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48978102" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jandrewrogers</span>
+        
+        <span>2026/07/20 22:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">静态内存分配在高性能软件中是惯用做法。如果你关心性能和可靠性，在C++中也会这么做。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48979605">Static memory allocation is idiomatic in high-performance software. You do the same in C++ if you care about performance and reliability.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48979605">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48979605" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Yokohiii</span>
+        
+        <span>2026/07/20 13:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你能详细说明一下不寻常的地方吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48974663">Can you elaborate on the unusual part?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48974663">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48974663" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">WD-42</span>
+        
+        <span>2026/07/20 13:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所有必要的内存都在初始化时分配。应用程序在正常运行期间不允许进行任何分配。这就是它避免内存错误的方法。<p>没有多少人会这样编写程序。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48974734">All necessary memory is allocated at initialization. The application is not allowed any allocations during it's normal runtime. This is how it avoid memory bugs.<p>Not a lot of people write programs this way.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48974734">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48974734" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">physicsguy</span>
+        
+        <span>2026/07/20 15:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">静态内存分配在大量嵌入式软件中被广泛使用，尤其是安全关键型软件。在那里，这通常与延迟有关，因为你不想在分配内存时出现卡顿。<p>我甚至在一些最初写于80年代的模拟软件核心中见过这种做法；当时内存要受限得多，因此提前分配意味着你可以提前检查模拟是否真的能运行，而不是运行到一半才崩溃。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975372">Static memory allocation is widely used in quite a bit of embedded software, particularly safety critical stuff. There it's often latency related since you don't want hangs while memory is allocated.<p>I've even seen it on some simulation software's core that was written in the 80s originally; at the time memory was much more constrained so allocating upfront meant you could check upfront whether the simulation could actually run or not vs crashing out part way through.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975372">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975372" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">z0ltan</span>
+        
+        <span>2026/07/20 16:15</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已失效]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975674">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ahoka</span>
+        
+        <span>2026/07/20 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">当可预测的延迟成为硬性要求时，很多人都会这样编写软件。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975020">A lot of people write software like this when predictable latency is a hard requirement.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975020">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975020" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">leonidasrup</span>
+        
+        <span>2026/07/20 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Andrew Kelley 创建 Zig 的最初动机是打造一种能够实现对实时音频处理进行精确底层控制的语言。<p>“Kelley 解释了为什么在已有 C、C++、Rust 和 Go 等选项的情况下，他还要创建 Zig。他说他着手开发一款数字音频工作站。他尝试了 Go，但发现与 C 库的互操作十分困难，而且垃圾回收机制会导致音频延迟。他尝试了 C++，或者用 C++ 编译器编写 C 风格的代码，但发现微小的错误就会导致内存损坏 bug，需要花费数周时间修复。他尝试了 Rust，但‘真的很难写出符合 Rust 规则的代码’，并且花了一个月时间试图让字体渲染正常运行。”</p><p><a href="https://www.theregister.com/software/2026/05/28/zig-creator-seeks-uncompromising-perfection-before-blessing-10/5247916" target="_blank" rel="noopener noreferrer">https://www.theregister.com/software/2026/05/28/zig-creator-...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48980547">Andrew Kelleys original motivation for creating Zig was language that allowed precise low-level control for real-time audio processing.<p>"Kelley describes why he created Zig, when other options including C, C++, Rust, and Go already exist. He said he set out to develop a digital audio workstation. He tried Go, but found interoperability with C libraries difficult, and said the garbage collector caused audio delays. He tried C++, or coding C-style using a C++ compiler, but found that small mistakes led to memory corruption bugs that took weeks to fix. He tried Rust but "really struggled to write code that would satisfy Rust's rules," and spent a month trying to make font rendering work."</p><p><a href="https://www.theregister.com/software/2026/05/28/zig-creator-seeks-uncompromising-perfection-before-blessing-10/5247916" target="_blank" rel="noopener noreferrer">https://www.theregister.com/software/2026/05/28/zig-creator-...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48980547">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48980547" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">n6242</span>
+        
+        <span>2026/07/20 15:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我昨天刚学到，GTA在PS2上正是这么做的，我觉得这很有意思。（并不是要贬低你的观点，只是举个例子）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975335">I was just learning yesterday that's exactly what GTA did on PS2, which I thought was interesting. (Not to belittle your point, just giving an example)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975335">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975335" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">adamrezich</span>
+        
+        <span>2026/07/20 22:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">基本上所有主机游戏都是这样运作的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48979648">This is how basically every console video game works.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48979648">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48979648" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/07/20 15:07</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[已删除]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975225"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975225">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975225" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">NothingAboutAny</span>
+        
+        <span>2026/07/20 15:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我在Unity中就是这么做的，因为内存分配/GC会导致卡顿。这是很常规的做法，甚至有内置的对象池库，所以你可以在游戏开始时预分配10000个游戏对象。我还没用过ECS/DOTS，但我猜它也是做类似的事情。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975300">I do this in Unity because allocations/GC cause hitches.
+it's pretty normal thing to do there's even the built in pooling libraries so you can pre-allocate 10,000 gameobjects when the game starts.
+I haven't played with ECS/DOTS yet but I assume it does something similar.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975300">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975300" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pton_xd</span>
+        
+        <span>2026/07/20 14:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是游戏行业的标准做法。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-48975109">This is standard practice in the games industry.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-48975109">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=48975109" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
