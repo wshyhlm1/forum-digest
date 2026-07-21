@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了一个完全本地的语音转文字工具，不想只做个 Whisper GUI | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-21/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>做了一个完全本地的语音转文字工具，不想只做个 Whisper GUI</h1>
+      <p class="original-title">做了一个完全本地的语音转文字工具，不想只做一个 Whisper GUI</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 retemlamb</span>
+        <span>热度 60</span>
+        <span>回复 60</span>
+        <span>2026/07/21 09:39</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228707" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228707.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>这几个月一直在做一个叫 OpenASR 的项目，今天来 V2EX 聊聊。</li><li>起因很简单。平时会议录音、视频素材、语音笔记需要转文字，也经常要给 Agent 口述比较长的需求。试了不少语音服务，要么要上传云端，要么只支持 Whisper ，要么需要自己搭 Python 环境装 CUDA 下权重改参数。</li></ul>
+      
+      <p class="reason">命中 9 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>这几个月一直在做一个叫 OpenASR 的项目，今天来 V2EX 聊聊。</p>
+<p>起因很简单。平时会议录音、视频素材、语音笔记需要转文字，也经常要给 Agent 口述比较长的需求。试了不少语音服务，要么要上传云端，要么只支持 Whisper ，要么需要自己搭 Python 环境装 CUDA 下权重改参数。</p>
+<p>其实本地 ASR 模型这两年发展得很快。Whisper 之外，Qwen3-ASR、SenseVoice、FireRed、Dolphin、X-ASR 都是非常优秀的模型，但普通用户想体验它们的门槛还是太高了——每个模型一套推理框架、一套依赖、一套配置方式。模型越来越多，使用体验还停留在开发者工具阶段。</p>
+<p>所以我想开发一款统一的本地 ASR 工具。音频无需上传服务器，模型下载完成后即可断网运行。支持本地音视频转文字、实时字幕、全局语音输入、CLI 以及本地 API，并支持多种模型一键切换。</p>
+<p><strong>为什么不只做 Whisper GUI？</strong></p>
+<p></p>
+<p>一方面，不同的 ASR 模型各有其优势。有的擅长中文场景，有的方言覆盖广泛，有的适合实时流式处理，有的对低配设备更加友好。一个优秀的本地 ASR 工具不应局限于单一模型。</p>
+<p>另一方面，目前各家模型的运行时其实非常割裂。有的跑在 ggml 上，有的用 ONNX，有的依赖 PyTorch，开放的推理接口也各不相同。如果你想同时使用 Whisper、FireRed 和 Dolphin，实际上需要安装三套环境、学习三套用法。OpenASR 旨在抹平这些差异——将其统一为一个引擎、一套模型格式、一个入口，用户无需关心底层运行的是什么。而且，统一引擎带来的不仅是便利，在同模型同参数下，我们的实测速度比 whisper.cpp 快约 8%。这一指标已通过 CI 门禁严格锁定，每次提交都会运行测试，严禁性能回退。</p>
+<p>目前已经接入了Whisper、Qwen3-ASR、SenseVoice、FireRed、Dolphin、X-ASR、Moonshine、Parakeet等十几个模型族，做了一个模型市场，打开就能搜索、下载、切换，不用碰命令行。</p>
+<p>聊几个我觉得比较有意思的：</p>
+<p>FireRedASR2 来自小红书团队，在公开中文测试集上表现非常强，很多场景可以到 SOTA 级别。不过 benchmark 只是参考，真实会议、噪声、口音环境下到底怎么样，我自己也没完全摸清，希望有人帮忙测。</p>
+<p>Dolphin 是 Dataocean AI 和清华联合做的，最大亮点是支持 22 种中文方言和地区口音。普通话模型"能听懂一点方言"和专门针对方言训练的模型，体验差别真的很明显。四川话、粤语、吴语、闽南语用户如果愿意试试，我特别想知道结果。</p>
+<p>X-ASR 来自上海交大、复旦等机构，是中英双语流式模型。不是“录完再识别”，而是边说边出字，特别适合实时字幕和语音输入。也是我自己 vibe coding 时最喜欢的模型。</p>
+<p><strong>一些技术细节</strong></p>
+<p></p>
+<p>底层并非套壳 whisper.cpp。而是基于 vendored ggml fork 自研的推理引擎，有一套自研的 .oasr 模型格式，支持 mmap 零拷贝加载。Whisper 同模型同参数下，实测比 whisper.cpp 快约 8%，其他模型族对比各自的最佳推理方案也保持更快或与 SOTA 持平。M1 上最快的模型可达 37 倍实时速度，几乎所有模型都能做到实时，除了两个特别大的 8B 模型。</p>
+<p>模型下载也不是裸 HTTP 拉文件。每个模型经过 sha256 校验 + Ed25519 catalog 签名 + GGUF 格式预检，通过了才原子安装。“不联网”不只是一句口号，信任链是完整的。</p>
+<p>另外 <code>openasr serve</code> 可以起一个本地 OpenAI 兼容 API （<code>/v1/audio/transcriptions</code>），改个 <code>base_url</code> 就能接现有的 OpenAI SDK 生态。如果你的 agent 工具链已经在用 OpenAI 的转录接口，换成本地几乎零改动。</p>
+<p>除了转录本身，还有标点恢复、说话人分离、声纹识别这些周边模型，不过这部分还在完善。后续也会计划支持实时翻译、转写后的文本润色、视频/音频总结等功能。</p>
+<p><strong>当前状态</strong></p>
+<p>项目还是 0.1.x 早期阶段。支持 macOS Apple Silicon 和 Windows x64(有对 vulkan/cuda/rocm 的支持)，有桌面端安装包和本地 CLI/API 。核心用 Rust 写，Apache-2.0 开源。</p>
+<p>接下来给自己定了个目标：尽量每周研究一个新的 ASR 模型族，适合本地跑的就接入，不适合的也记录原因。不会为了数量把"能启动"当成正式支持。</p>
+<p>官网： <a href="https://openasr.org" target="_blank" rel="noopener noreferrer">https://openasr.org</a>
+GitHub： <a href="https://github.com/QuintinShaw/openasr" target="_blank" rel="noopener noreferrer">https://github.com/QuintinShaw/openasr</a></p>
+<p><strong>最后想问几个问题</strong></p>
+<ol>
+<li>各位用过哪些 ASR 模型觉得效果好但比较小众的？不一定排行榜第一，某个场景特别强就很有价值。</li>
+<li>中文方言场景，有没有实际体验过 X-ASR / FireRed / Dolphin / SenseVoice 的？</li>
+<li>如果做一个本地 ASR 模型库，你觉得最需要什么功能？</li>
+</ol>
+<p>具体的问题、失败案例、模型推荐对我来说比点赞有用得多，欢迎直接吐槽</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>这几个月一直在做一个叫 OpenASR 的项目，今天来 V2EX 聊聊。</p>
+<p>起因很简单。平时会议录音、视频素材、语音笔记需要转文字，也经常要给 Agent 口述比较长的需求。试了不少语音服务，要么要上传云端，要么只支持 Whisper ，要么需要自己搭 Python 环境装 CUDA 下权重改参数。</p>
+<p>其实本地 ASR 模型这两年发展得很快。Whisper 之外，Qwen3-ASR 、SenseVoice 、FireRed 、Dolphin 、X-ASR 都是非常优秀的模型，但普通用户想体验它们的门槛还是太高了——每个模型一套推理框架、一套依赖、一套配置方式。模型越来越多，使用体验还停留在开发者工具阶段。</p>
+<p>所以我想做一个统一的本地 ASR 工具。音频不上传服务器，模型下完可以断网跑。支持本地音频视频转文字、实时字幕、全局语音输入、CLI 和本地 API ，多种模型一键切换。</p>
+<p><strong>为什么不只做 Whisper GUI ？</strong></p>
+<p></p>
+<p>一方面，不同 ASR 模型各有强项。有些中文场景强，有些方言覆盖广，有些适合实时流式，有些对低配设备友好。一个好的本地 ASR 工具不应该绑死在一个模型上。</p>
+<p>另一方面，现在各家模型的 runtime 其实很割裂。有的跑在 ggml 上，有的用 ONNX ，有的要 PyTorch ，开放的推理接口也不统一。如果你想同时用 Whisper 和 FireRed 和 Dolphin ，实际上要装三套环境、学三套用法。OpenASR 想把这层差异吃掉——统一成一个引擎、一套模型格式、一个入口，用户不需要关心底层跑的是什么。而且统一引擎不只是方便，同模型同参数下我们实测比 whisper.cpp 快约 8%，这个指标是 CI 门禁锁住的，每次提交都跑，不允许回归。</p>
+<p>目前已经接入了 Whisper 、Qwen3-ASR 、SenseVoice 、FireRed 、Dolphin 、X-ASR 、Moonshine 、Parakeet 等十几个模型族，做了一个模型市场，打开就能搜索、下载、切换，不用碰命令行。</p>
+<p>聊几个我觉得比较有意思的：</p>
+<p>FireRedASR2 来自小红书团队，在公开中文测试集上表现非常强，很多场景可以到 SOTA 级别。不过 benchmark 只是参考，真实会议、噪声、口音环境下到底怎么样，我自己也没完全摸清，希望有人帮忙测。</p>
+<p>Dolphin 是 Dataocean AI 和清华联合做的，最大亮点是支持 22 种中文方言和地区口音。普通话模型"能听懂一点方言"和专门针对方言训练的模型，体验差别真的很明显。四川话、粤语、吴语、闽南语用户如果愿意试试，我特别想知道结果。</p>
+<p>X-ASR 来自上海交大、复旦等机构，是中英双语流式模型。不是"录完再识别"，而是边说边出字，特别适合实时字幕和语音输入。也是我自己 vibe coding 时最喜欢的模型。</p>
+<p><strong>一些技术细节</strong></p>
+<p></p>
+<p>底层不是套壳 whisper.cpp 。基于 vendored ggml fork 自己写的推理引擎，有一套自研的 .oasr 模型格式，mmap 零拷贝加载。Whisper 同模型同参数下实测比 whisper.cpp 快约 8%，其他模型族对比各自的最佳推理方案也保持更快或与 SOTA 持平。M1 上最快的模型可以到 37 倍实时速度，几乎所有模型都可以做到实时，除了两个特别大的 8B 模型。</p>
+<p>模型下载也不是裸 HTTP 拉文件。每个模型经过 sha256 校验 + Ed25519 catalog 签名 + GGUF 格式预检，通过了才原子安装。"不联网"不只是一句口号，信任链是完整的。</p>
+<p>另外 <code>openasr serve</code> 可以起一个本地 OpenAI 兼容 API （<code>/v1/audio/transcriptions</code>），改个 <code>base_url</code> 就能接现有的 OpenAI SDK 生态。如果你的 agent 工具链已经在用 OpenAI 的转录接口，换成本地几乎零改动。</p>
+<p>除了转录本身，还有标点恢复、说话人分离、声纹识别这些周边模型，不过这部分还在完善。后续也会计划支持实时翻译、转写后的文本润色、视频/音频总结等功能。</p>
+<p><strong>当前状态</strong></p>
+<p>项目还是 0.1.x 早期阶段。支持 macOS Apple Silicon 和 Windows x64(有对 vulkan/cuda/rocm 的支持)，有桌面端安装包和本地 CLI/API 。核心用 Rust 写，Apache-2.0 开源。</p>
+<p>接下来给自己定了个目标：尽量每周研究一个新的 ASR 模型族，适合本地跑的就接入，不适合的也记录原因。不会为了数量把"能启动"当成正式支持。</p>
+<p>官网： <a href="https://openasr.org" target="_blank" rel="noopener noreferrer">https://openasr.org</a>
+GitHub： <a href="https://github.com/QuintinShaw/openasr" target="_blank" rel="noopener noreferrer">https://github.com/QuintinShaw/openasr</a></p>
+<p><strong>最后想问几个问题</strong></p>
+<ol>
+<li>各位用过哪些 ASR 模型觉得效果好但比较小众的？不一定排行榜第一，某个场景特别强就很有价值。</li>
+<li>中文方言场景，有没有实际体验过 X-ASR / FireRed / Dolphin / SenseVoice 的？</li>
+<li>如果做一个本地 ASR 模型库，你觉得最需要什么功能？</li>
+</ol>
+<p>具体的问题、失败案例、模型推荐对我来说比点赞有用得多，欢迎直接吐槽</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tangseng233</span>
+        <span>#1</span>
+        <span>2026/07/21 09:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">要不看看这个 <a href="https://github.com/OpenMOSS/MOSS-Transcribe-Diarize" target="_blank" rel="noopener noreferrer">https://github.com/OpenMOSS/MOSS-Transcribe-Diarize</a> ？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17886672">要不看看这个 <a href="https://github.com/OpenMOSS/MOSS-Transcribe-Diarize" target="_blank" rel="noopener noreferrer">https://github.com/OpenMOSS/MOSS-Transcribe-Diarize</a> ？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17886672">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17886672" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">manhere</span>
+        <span>#2</span>
+        <span>2026/07/21 09:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ASR 一定要做说话人识别啊，单纯的出字幕没啥意义</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17886719">ASR 一定要做说话人识别啊，单纯的出字幕没啥意义</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17886719">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17886719" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#3</span>
+        <span>2026/07/21 09:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tangseng233" target="_blank" rel="noopener noreferrer">tangseng233</a> 感谢推荐，这个之前没关注过。转写 + 说话人分离正好是后面想补的方向，我研究一下看能不能适配进来</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17886729">@<a href="/member/tangseng233" target="_blank" rel="noopener noreferrer">tangseng233</a> 感谢推荐，这个之前没关注过。转写 + 说话人分离正好是后面想补的方向，我研究一下看能不能适配进来</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17886729">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17886729" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#4</span>
+        <span>2026/07/21 09:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/manhere" target="_blank" rel="noopener noreferrer">manhere</a> 说话人识别确实是刚需。目前 cli 已经接了 pyannote segmentation 做说话人切换检测，加 wespeaker 做声纹聚类，--diarize 一个参数就能开。desktop 上这块还在打磨中</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17886762">@<a href="/member/manhere" target="_blank" rel="noopener noreferrer">manhere</a> 说话人识别确实是刚需。目前 cli 已经接了 pyannote segmentation 做说话人切换检测，加 wespeaker 做声纹聚类，--diarize 一个参数就能开。desktop 上这块还在打磨中</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17886762">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17886762" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bearqq</span>
+        <span>#5</span>
+        <span>2026/07/21 09:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">和这个项目水乳交融一下？ <a href="https://github.com/kigner/audio.cpp-webui" target="_blank" rel="noopener noreferrer">https://github.com/kigner/audio.cpp-webui</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17886782">和这个项目水乳交融一下？ <a href="https://github.com/kigner/audio.cpp-webui" target="_blank" rel="noopener noreferrer">https://github.com/kigner/audio.cpp-webui</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17886782">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17886782" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#6</span>
+        <span>2026/07/21 10:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bearqq" target="_blank" rel="noopener noreferrer">bearqq</a> 看了下这个项目，都是基于 ggml 的方向，不过定位不太一样。audio.cpp 覆盖面更广（ TTS 、语音转换、音乐生成都做），偏开发者框架； OpenASR 专注在 ASR 这一块，目标是让普通用户也能直接用起来。底层有一些可以互相参考的地方</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17886825">@<a href="/member/bearqq" target="_blank" rel="noopener noreferrer">bearqq</a> 看了下这个项目，都是基于 ggml 的方向，不过定位不太一样。audio.cpp 覆盖面更广（ TTS 、语音转换、音乐生成都做），偏开发者框架； OpenASR 专注在 ASR 这一块，目标是让普通用户也能直接用起来。底层有一些可以互相参考的地方</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17886825">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17886825" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Leon6868</span>
+        <span>#7</span>
+        <span>2026/07/21 10:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">实时可以做到说话人分割吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887040">实时可以做到说话人分割吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887040">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887040" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#8</span>
+        <span>2026/07/21 10:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Leon6868" target="_blank" rel="noopener noreferrer">Leon6868</a> 录音/会议转写的说话人分离已经支持了，预计本周上线 desktop 。实时字幕的说话人分离还在探索中，延迟和稳定性还没达到我满意的程度</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887133">@<a href="/member/Leon6868" target="_blank" rel="noopener noreferrer">Leon6868</a> 录音/会议转写的说话人分离已经支持了，预计本周上线 desktop 。实时字幕的说话人分离还在探索中，延迟和稳定性还没达到我满意的程度</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887133">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887133" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zshwdt22023</span>
+        <span>#9</span>
+        <span>2026/07/21 10:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">关注了，之前都是用硅基流动免费的 SenseVoiceSmall ，用来识别视频字幕，效果勉强能用。最近也研究好用的本地 asr 模型，不过都是你官网里列出来的。<br />方言场景我不怎么关注，不过在处理中文混杂英文的场景下，SenseVoiceSmall 效果很差。<br />如果做一个本地 ASR 模型库，我觉得最需要一些实际的测试结果，那 6 个推荐的模型，我也不知道哪个识别的准确率高。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887148">关注了，之前都是用硅基流动免费的 SenseVoiceSmall ，用来识别视频字幕，效果勉强能用。最近也研究好用的本地 asr 模型，不过都是你官网里列出来的。<br />方言场景我不怎么关注，不过在处理中文混杂英文的场景下，SenseVoiceSmall 效果很差。<br />如果做一个本地 ASR 模型库，我觉得最需要一些实际的测试结果，那 6 个推荐的模型，我也不知道哪个识别的准确率高。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887148">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887148" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#10</span>
+        <span>2026/07/21 10:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zshwdt22023" target="_blank" rel="noopener noreferrer">zshwdt22023</a> 中英混杂确实是 SenseVoice 的短板，这个场景推荐试试 X-ASR 或者 Qwen3-ASR ，体感好不少。测试对比这块确实该补上，我后面整理一份不同场景下的实测结果出来</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887224">@<a href="/member/zshwdt22023" target="_blank" rel="noopener noreferrer">zshwdt22023</a> 中英混杂确实是 SenseVoice 的短板，这个场景推荐试试 X-ASR 或者 Qwen3-ASR ，体感好不少。测试对比这块确实该补上，我后面整理一份不同场景下的实测结果出来</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887224">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887224" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DICK23</span>
+        <span>#11</span>
+        <span>2026/07/21 11:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我前两天让 ai 帮我试了一下 ios 的本地模型 SpeechTranscriber ，感觉效果也勉强能接受</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887352">我前两天让 ai 帮我试了一下 ios 的本地模型 SpeechTranscriber ，感觉效果也勉强能接受</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887352">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887352" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#12</span>
+        <span>2026/07/21 11:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/DICK23" target="_blank" rel="noopener noreferrer">DICK23</a> SpeechTranscriber 我也在关注，macOS/iOS 26 上中文确实差点意思，27 beta 上英文提升很明显，后续得看 Apple 会不会给中文换更强的语言模型。目前本地中文场景 OpenASR 接的几个模型体验会好不少，欢迎对比试试（ iOS 版也在开发中，近期会上线</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887416">@<a href="/member/DICK23" target="_blank" rel="noopener noreferrer">DICK23</a> SpeechTranscriber 我也在关注，macOS/iOS 26 上中文确实差点意思，27 beta 上英文提升很明显，后续得看 Apple 会不会给中文换更强的语言模型。目前本地中文场景 OpenASR 接的几个模型体验会好不少，欢迎对比试试（ iOS 版也在开发中，近期会上线</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887416">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887416" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">indexError</span>
+        <span>#13</span>
+        <span>2026/07/21 11:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">win10 cpu x86_64 版本双击没反应。<br />中文用户最期望的是方言语音转普通话文本，这个开源模型基本都做不到，痛点在这里。你既然做开源了，可以把这块补齐。<br />识别-用户手动纠错-上传（方言类型、使用模型、识别语句/纠正语句）。上传用户可以选择同步词库，至于最终怎么处理，你得自己想办法。（小红书春节发的那套 2s 里面有个 LID 模型，但是太大了）<br /><br />我的观点（ windows ）：<br />办公电脑+普通话+固定场景，sensevoicesmall + 文本替换 + pyannote 那套就是最优解了<br />个人电脑+普通话+各种 x 普，qwen3-0.6b + 热词 + pyannote 也够用了。<br /><br />最后打个广：windows 离线语音转文本 <a href="https://owlmeeting.com/" target="_blank" rel="noopener noreferrer">https://owlmeeting.com/</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887564">win10 cpu x86_64 版本双击没反应。<br />中文用户最期望的是方言语音转普通话文本，这个开源模型基本都做不到，痛点在这里。你既然做开源了，可以把这块补齐。<br />识别-用户手动纠错-上传（方言类型、使用模型、识别语句/纠正语句）。上传用户可以选择同步词库，至于最终怎么处理，你得自己想办法。（小红书春节发的那套 2s 里面有个 LID 模型，但是太大了）<br /><br />我的观点（ windows ）：<br />办公电脑+普通话+固定场景，sensevoicesmall + 文本替换 + pyannote 那套就是最优解了<br />个人电脑+普通话+各种 x 普，qwen3-0.6b + 热词 + pyannote 也够用了。<br /><br />最后打个广：windows 离线语音转文本 <a href="https://owlmeeting.com/" target="_blank" rel="noopener noreferrer">https://owlmeeting.com/</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887564">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887564" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#14</span>
+        <span>2026/07/21 11:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/indexError" target="_blank" rel="noopener noreferrer">indexError</a> Win10 双击没反应的话，你下的应该是 GitHub 上的 CLI 版本，那个是命令行工具。桌面端安装包在官网 <a href="http://openasr.org" target="_blank" rel="noopener noreferrer">openasr.org</a> 可以下，装完直接双击用。<br /><br />![Dolphin 模型详情]( <a href="https://openasr.org/assets/openasr-desktop-dolphin-zh.png" target="_blank" rel="noopener noreferrer">https://openasr.org/assets/openasr-desktop-dolphin-zh.png</a>)<br /><br />方言这块目前接了 Dolphin （ 22 种方言）和 FireRedASR2 AED-L （中文方言准确率很高），普通配置的电脑都能流畅跑（ FireRedASR2 LLM 也接入了，但是太占用内存了）。大部分模型也支持热词，可以针对特定术语或人名做纠正。方言转普通话文本这个方向确实是刚需，最终解法可能还是要靠方言微调，这块我也在探索中</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887690">@<a href="/member/indexError" target="_blank" rel="noopener noreferrer">indexError</a> Win10 双击没反应的话，你下的应该是 GitHub 上的 CLI 版本，那个是命令行工具。桌面端安装包在官网 <a href="http://openasr.org" target="_blank" rel="noopener noreferrer">openasr.org</a> 可以下，装完直接双击用。<br /><br />![Dolphin 模型详情]( <a href="https://openasr.org/assets/openasr-desktop-dolphin-zh.png" target="_blank" rel="noopener noreferrer">https://openasr.org/assets/openasr-desktop-dolphin-zh.png</a>)<br /><br />方言这块目前接了 Dolphin （ 22 种方言）和 FireRedASR2 AED-L （中文方言准确率很高），普通配置的电脑都能流畅跑（ FireRedASR2 LLM 也接入了，但是太占用内存了）。大部分模型也支持热词，可以针对特定术语或人名做纠正。方言转普通话文本这个方向确实是刚需，最终解法可能还是要靠方言微调，这块我也在探索中</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887690">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887690" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kelvinaltajiin</span>
+        <span>#15</span>
+        <span>2026/07/21 12:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">英文口音的表现如何？ 印度口音和苏格兰口音</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887898">英文口音的表现如何？ 印度口音和苏格兰口音</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">People11</span>
+        <span>#16</span>
+        <span>2026/07/21 13:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最近也做了个这个 <a href="http://transcript.people11.dev" target="_blank" rel="noopener noreferrer">transcript.people11.dev</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887957">最近也做了个这个 <a href="http://transcript.people11.dev" target="_blank" rel="noopener noreferrer">transcript.people11.dev</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887957">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887957" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#17</span>
+        <span>2026/07/21 13:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/kelvinaltajiin" target="_blank" rel="noopener noreferrer">kelvinaltajiin</a> 刚好最近看了 AppTek 发的多口音英语长对话 benchmark （ <a href="https://arxiv.org/abs/2604.27543" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2604.27543</a> ），129 小时真实呼叫中心数据，覆盖 14 种英语口音，比 LibriSpeech 更接近实际场景。<br /><br /><a href="https://openasr.org/assets/accent-wer-table.png" target="_blank" rel="noopener noreferrer">https://openasr.org/assets/accent-wer-table.png</a><br /><br />目前 OpenASR 里 Parakeet TDT v3 和 Qwen3-ASR 1.7B 都已经接入了，各有强项：印度英语 Parakeet v3 WER 约 9.7% 更优，苏格兰英语 Qwen3-ASR 1.7B WER 约 11.1% 更稳。总体英语口音上推荐先试 Qwen3-ASR （平均分是目前最高的），追求速度低延迟可以用 Parakeet</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17887974">@<a href="/member/kelvinaltajiin" target="_blank" rel="noopener noreferrer">kelvinaltajiin</a> 刚好最近看了 AppTek 发的多口音英语长对话 benchmark （ <a href="https://arxiv.org/abs/2604.27543" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2604.27543</a> ），129 小时真实呼叫中心数据，覆盖 14 种英语口音，比 LibriSpeech 更接近实际场景。<br /><br /><a href="https://openasr.org/assets/accent-wer-table.png" target="_blank" rel="noopener noreferrer">https://openasr.org/assets/accent-wer-table.png</a><br /><br />目前 OpenASR 里 Parakeet TDT v3 和 Qwen3-ASR 1.7B 都已经接入了，各有强项：印度英语 Parakeet v3 WER 约 9.7% 更优，苏格兰英语 Qwen3-ASR 1.7B WER 约 11.1% 更稳。总体英语口音上推荐先试 Qwen3-ASR （平均分是目前最高的），追求速度低延迟可以用 Parakeet</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17887974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17887974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">retemlamb</span>
+        <span>#18</span>
+        <span>2026/07/21 13:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/People11" target="_blank" rel="noopener noreferrer">People11</a> 刚试了一下，效果挺好的，在浏览器里运行还挺有意思的。Nemotron 这个模型我也在关注，后续看看能不能接进 OpenASR （之前主要在测试模型中文的效果，Nemotron 的这个模型 FLEURS CER 大概是 20 上下）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17888016">@<a href="/member/People11" target="_blank" rel="noopener noreferrer">People11</a> 刚试了一下，效果挺好的，在浏览器里运行还挺有意思的。Nemotron 这个模型我也在关注，后续看看能不能接进 OpenASR （之前主要在测试模型中文的效果，Nemotron 的这个模型 FLEURS CER 大概是 20 上下）</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17888016">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17888016" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Mithril</span>
+        <span>#19</span>
+        <span>2026/07/21 13:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以看一下 Handy ，但 Handy 之前的版本不能实时处理，相当于按键说话，用起来还是有点麻烦的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17888093">可以看一下 Handy ，但 Handy 之前的版本不能实时处理，相当于按键说话，用起来还是有点麻烦的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17888093">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17888093" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Leon6868</span>
+        <span>#20</span>
+        <span>2026/07/21 13:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/retemlamb" target="_blank" rel="noopener noreferrer">retemlamb</a> #8 之前我做过实时说话人分割，感觉问题主要是会持续飘逸，而且真实环境的录音效果不好，很难做到因果的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17888143">@<a href="/member/retemlamb" target="_blank" rel="noopener noreferrer">retemlamb</a> #8 之前我做过实时说话人分割，感觉问题主要是会持续飘逸，而且真实环境的录音效果不好，很难做到因果的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17888143">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228707#reply17888143" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
