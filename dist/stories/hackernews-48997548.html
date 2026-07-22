@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenAI 和 Hugging Face 解决模型评估期间的安全事件 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-22/">返回日报</a>
+      <div class="source-chip">Hacker News #2</div>
+      <h1>OpenAI 和 Hugging Face 解决模型评估期间的安全事件</h1>
+      <p class="original-title">OpenAI and Hugging Face address security incident during model evaluation</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 mfiguiere</span>
+        <span>热度 1431</span>
+        <span>回复 967</span>
+        <span>2026/07/22 04:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=48997548" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://openai.com/index/hugging-face-model-evaluation-security-incident/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-48997548.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>https://www.axios.com/2026/07/21/openai-says-hugging-face-br...See also Security incident disclosure – July 2026 - https://news.ycombinator.com/item?id=48956248 (9 comments)</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://www.axios.com/2026/07/21/openai-says-hugging-face-breach-caused-by-one-its-models" target="_blank" rel="noopener noreferrer">https://www.axios.com/2026/07/21/openai-says-hugging-face-br...</a><p>参见 <i>安全事件披露 – 2026 年 7 月</i> - <a href="https://news.ycombinator.com/item?id=48956248" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48956248</a> （9 条评论）</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://www.axios.com/2026/07/21/openai-says-hugging-face-breach-caused-by-one-its-models" target="_blank" rel="noopener noreferrer">https://www.axios.com/2026/07/21/openai-says-hugging-face-br...</a><p>See also <i>Security incident disclosure – July 2026</i> - <a href="https://news.ycombinator.com/item?id=48956248" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48956248</a> (9 comments)</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">foo12bar</span>
+        
+        <span>2026/07/22 13:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">从 <a href="https://huggingface.co/blog/security-incident-july-2026" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/security-incident-july-2026</a> ，这真是太搞笑了：<p>&gt; 当我们开始日志分析时，我们首先使用商业API背后的前沿模型。但这不起作用：分析需要提交大量真实的攻击命令、漏洞利用有效负载和 C2 工件，而这些请求被提供商的安全护栏阻止，无法区分事件响应者和攻击者。我们在 GLM 5.2（一种开放权重模型）上在我们自己的基础设施上运行了取证分析。这还有第二个好处：没有攻击者数据，也没有它引用的凭据离开我们的环境。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49002094">From <a href="https://huggingface.co/blog/security-incident-july-2026" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/security-incident-july-2026</a> , this is frickin' hilarious:<p>&gt; When we started the log analysis, we first used frontier models behind commercial APIs. This did not work: the analysis requires submitting large volumes of real attack commands, exploit payloads, and C2 artifacts, and these requests were blocked by the providers' safety guardrails, which cannot distinguish an incident responder from an attacker. We ran the forensic analysis instead on GLM 5.2, an open-weight model, on our own infrastructure. This had a second benefit: no attacker data, and none of the credentials it referenced, left our environment.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49002094">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49002094" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">gertrunde</span>
+        
+        <span>2026/07/22 17:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 这还有第二个好处：没有攻击者数据，也没有它引用的凭据离开我们的环境。<p>好吧，这对于第二次本地分析尝试来说可能是正确的......但在已经尝试了相反的方法之后将其吹捧为优势似乎很有趣......</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49004135">&gt; This had a second benefit: no attacker data, and none of the credentials it referenced, left our environment.<p>Well, that may be correct for the second, local, analysis attempt... but seems funny to tout this as an advantage after already having tried the opposite...</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49004135">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49004135" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">redleader55</span>
+        
+        <span>2026/07/22 18:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">更有趣的是，除非另有证明，否则攻击应该让您假设数据已经离开环境。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49004533">It's even funnier because an attack, until proven otherwise, should make you assume the data has already left the environment.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49004533">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49004533" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">davrosthedalek</span>
+        
+        <span>2026/07/22 20:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">嗯，我认为可以公平地假设
+a) 他们在意识到一切可行之前并没有上传所有内容。
+b）他们想提及这一点作为未来分析的优势
+c) 即使您假设攻击渗透了所有内容，直到事实证明并非如此，您也不应该只是传播所有私人信息，因为攻击可能没有传播。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49005596">Well, I think it's fair to assume that
+a) They didn't upload everything before they realized it would work.
+b) They want to mention this as an advantage for future analyses
+c) Even if you assume that the attack exfiltrated everything until proved otherwise, you shouldn't just disseminate all the private information, because maybe the attack didn't.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49005596">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49005596" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">horsawlarway</span>
+        
+        <span>2026/07/22 21:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们特别指出了攻击期间使用的凭据。<p>但无论如何他们都应该轮换这些凭据。  您不能说“也许攻击者没有获得<i>此</i>凭据”。  你只需轮换即可。</p><p>最慷慨的解释是，他们还没有完成轮换，他们不想冒险在这个过程中将这些凭证投入使用。</p><p>---</p><p>但除此之外，我觉得此评论的潜流是提供商推行的“安全”规则确实有害。</p><p>还有一点是“如果您不拥有该模型，则无法正确操作该工具”成为现实。  开放不在于利润，而在于能力。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49006308">They specifically call out credentials used during the attack.<p>But they should be rotating those regardless.  You don't get to say "Maybe the attacker didn't get <i>this</i> credential".  You just rotate.</p><p>The most generous interpretation is that they have not yet have completed that rotation, and they didn't want to risk putting those credentials into the wild during that process.</p><p>---</p><p>But all of that aside, I feel like the undercurrent of this comment is that the "safety" rules that providers are pushing are genuinely harmful.</p><p>Another point where "if you don't own the model, you can't properly operate the tool" becomes true.  Open isn't about profits, it's about capabilities.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49006308">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49006308" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">atcon</span>
+        
+        <span>2026/07/23 00:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">针对“代理攻击”和泄露的凭据，人们应该对潜在漏洞保持偏执 [1]<p>[1]，例如“Robin Hood 和 Friar Tuck”、中毒编译器等。<a href="https://news.ycombinator.com/item?id=26553390" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=26553390</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49008917">Against an "agentic attack" and compromised credentials, one should be paranoid about latent vulnerabilities [1]<p>[1] eg "Robin Hood and Friar Tuck", poisoned compiler, etc. <a href="https://news.ycombinator.com/item?id=26553390" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=26553390</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49008917">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49008917" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">zeroday404</span>
+        
+        <span>2026/07/22 17:47</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49004147">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49004147">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49004147" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">diabllicseagull</span>
+        
+        <span>2026/07/22 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那么本地和开放重量模型比商业前沿模型更有用？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49007105">so an on-premise and open-weight model was more useful than a commercial frontier model?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49007105">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49007105" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">djmips</span>
+        
+        <span>2026/07/22 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对于黑客攻击我认为是这样的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49008687">for hacking I assume that would be the case</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49008687">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49008687" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">chinathrow</span>
+        
+        <span>2026/07/22 15:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">海龟一路下来。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49003253">Turtles all the way down.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49003253">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49003253" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">iugtmkbdfil834</span>
+        
+        <span>2026/07/22 13:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这很有趣，因为这里有适合每个人的东西。不相信护栏的人有一个明确的指示，即为什么操作员应该有权使用不会试图质疑他们的戴夫的模型。另一方面，人们认为，如果我们能够将模型调整得更好一点，那么这一切一开始就不会发生。纯粹的疯狂。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49002221">It is pretty funny, because there is something here for everyone. People who don't believe in guardrails have a clear indicator as to why operators should have access to models that don't try to question their Daves. On the other, people, who think that if only we could align the models just a tiny lil bit better, none of this would have happened to begin with. Pure madness.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49002221">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49002221" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">friendzis</span>
+        
+        <span>2026/07/22 15:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">“如果我们能够更好地调整模型就好了”是对 2000 年代“如果我们能够更好地逃避不受信任的输入就好了”的重新表述，当时各种形式的恶意注入已经成熟。<p>现有的每个命令+数据通道都已经并将继续以这种或那种方式被利用，因为解决方案空间对于所有意图和目的都是无限的。当然，高度防御性的逃跑会极大地减少攻击面，但是例如准备好的语句消除了整个类别的错误。</p><p>据我了解，当前的法学硕士在架构上无法实现这种分离。鉴于 GenAI 固有的递归性质，模型本身是输入空间的一部分，这使得验证基本上不可能。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49002890">"if only we could align the models just a tiny lil bit better" is a rehashed "if only we could escape untrusted inputs just a tiny lil bit better" from 2000s, that were RIPE with various form of malicious injection.<p>Every command+data channel in existence has been and will continue to be exploited one way or another, because the solution space is for all intents and purposes unbounded. Sure, highly defensive escaping reduces attack surface dramatically, but e.g. prepared statements eliminate the whole class of bugs.</p><p>As far as I understand, current LLMs are architecturally incapable of this separation. Given the inherently recursive nature of GenAI, the model itself is part of the input space, making validation essentially impossible.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49002890">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49002890" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">insanitybit</span>
+        
+        <span>2026/07/22 20:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">转义输入至少在某种程度上是容易处理的。目前还不清楚是否对齐。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49005528">Escaping inputs is at least somewhat tractable. It's unclear if alignment is.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49005528">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49005528" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">friendzis</span>
+        
+        <span>2026/07/22 21:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不，这是导致数十年漏洞的误解。<p>您看，您（通常）可以轻松判断特定转义转换的作用。这既没有告诉您它将如何被解释，也没有告诉您应该做什么。</p><p>可以说，最常见的问题是双重转义。这通常表现为各种双重转义错误。</p><p>如果您的手动实现仅链接 `.replaceAll("&lt;sepcial&gt;", input)` 和 `.replaceAll("&lt;escape&gt;", input)`，则转义结果取决于求值顺序，如果您的指令序列是单元素，则至少取决于已预转义的输入。即使你做对了并且没有将转义序列减少为双转义+未转义，你仍然在处理杂散转义序列：“John o\'Doe”。</p><p>你必须小心翼翼地（一直通过你的调用树，甚至通过持久存储周期！）跟踪一个值是否已经被转义以及是否需要转义。尽管听起来有些矛盾，但一丝不苟和防御性的逃避却会产生大量的错误。如果项目决定在传入时立即转义原始输入，那么在传出（到存储、另一个进程）之前再次转义它们是一个无法轻松进行静态测试的错误。</p><p>最重要的是，您与之交互的各种模块（存储、库、从另一个团队提取的模块）将具有不同的转义语义：有些会自行应用转义，有些会期望输入被“净化”并原始处理。不同路径上的语义甚至可能不同：写入存储模块按原样接受输入，但检索方法“有助于”运行转义。</p><p>此外，在不同的上下文中，转义规则将会不同。在网络世界中，直接写入 html、传递给 js `alert` 和传递给 sql 查询是完全不同的事情。可以安全转储到 html 中的输入不一定可以安全地传递到字符串插值 SQL DTO 层，反之亦然。然后 DBA 更改配置以允许查询中的变量，并且您的转义_语义_现在完全不同。</p><p>这是一个基本上无界表面的雷区。你会绊倒的。几十年来，人们一直试图解决这个问题。非常聪明的人已经尝试过。他们都失败了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49006791">No, that's a misconception that led to decades of vulnerabilities.<p>You see, you can (usually) easily tell what a particular escaping transformation does. That does not tell you neither how it will be interpreted down the line, nor what should be done.</p><p>Arguably the most common problem is double escaping. This typically manifests as various double escaping bugs.</p><p>If your hand rolled implementation just chains `.replaceAll("&lt;sepcial&gt;", input)` and `.replaceAll("&lt;escape&gt;", input)` the escaping result depends on evaluation order, at least on already pre-escaped inputs if your instruction sequences are single-element. Even if you get it right and don't reduce escaped sequences to double escape + unescaped, you are still dealing with stray escape sequences: "John o\'Doe".</p><p>You have to meticulously (all the way through your call tree and even through persistent storage cycle!) track if a value has already been escaped and whether it needs escaping. As paradoxical as it may sound, meticulous and defensive escaping produces tons of bugs. If the project decides to escape raw inputs right when passed in, escaping them once more before passing out (to storage, another process) is a bug that you cannot easily statically test against.</p><p>On top of that, various modules that you interact with (storage, libraries, modules pulled from another team) will have different escaping semantics: some will apply escaping on their own, some will expect input to be "sanitized" and treat it raw. The semantics can even be different on different paths: write to storage module accepts input as is, but retrieval method "helpfully" runs escaping.</p><p>Furthermore, in different contexts the escaping rules are going to be different. In a web world, what's safe to write directly to html, pass to js `alert`, and pass to sql query are entirely different things. Input safe to dump into html is not necessarily safe to pass to string-interpolating SQL DTO layer, and vice versa. Then the DBA changes config to allow variables in queries and your escaping _semantics_ are now entirely different.</p><p>It's a minefield with essentially unbounded surface. You will trip up. People have tried to solve the problem for decades. Very smart people have tried. They all have failed.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49006791">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49006791" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">klibertp</span>
+        
+        <span>2026/07/23 01:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 他们都失败了。<p>那不是真的。大多数人都失败了，但那些使用正确的工具来完成工作的人——函数式语言中的丰富的静态类型系统——确实取得了成功。只是这样的类型系统很少见，即使名义上类型系统足够好，所需的样板维护起来也可能不经济。 Scala 和 F# 可能是仅有的两种与主流相邻的语言，至少，并且类型系统具有足够的表达能力，使用它们来跟踪转义并不是绝对的麻烦。就用户数量而言，它们都很少。</p><p>最后，我们确实选择了隐藏转义过程的 API（准备好的语句、innerText 与innerHTML 等），只是因为它 a) 足够好； b) 可以在 TIOBE Top 20 中或多或少地统一实现。这很好，但如果你碰巧使用一种足够强大的语言，你可能 <i>还</i> 应该跟踪类型系统中的转义/未转义状态 - 它可以是一个廉价的附加安全网。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49010047">&gt; They all have failed.<p>That's not true. Most have failed, but those who used the right tool for the job - a rich, static type system in a functional language - did succeed. It's just that such type systems are rare, and even if nominally a type system is good enough, the required boilerplate might be uneconomical to maintain. Scala and F# are probably the only two languages that are mainstream-adjacent, at least, and have type systems expressive enough that using them to track escaping is not an absolute hassle. And they're both tiny in terms of the number of users.</p><p>In the end, we did settle on APIs that hide the escaping process (prepared statements, innerText vs. innerHTML, etc.) just because it's a) good enough; and b) possible to implement more or less uniformly across the TIOBE Top 20. That's good, but if you happen to use a language that's powerful enough, you probably <i>also</i> should track the escaped/unescaped status in the type system - it can be a cheap, additional safety net.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49010047">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49010047" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">insanitybit</span>
+        
+        <span>2026/07/22 21:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您可以使用细化类型来解决这个问题。原则上，它在许多系统中是完全容易处理的 - API 可以编写得安全，您可以将数据与代码分开来跟踪，等等。这些都不存在于代理中 - 您无法将数据与代码分开，它很棘手，因为原则上这是不可能的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49006875">You can solve this with refinement types. It's entirely tractable in many systems in principle - APIs can be written to be safe, you can track data as separate from code, etc. None of this exists in an agent - you can't separate data from code, it's intractable because it's impossible in principle.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49006875">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49006875" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tomjen3</span>
+        
+        <span>2026/07/22 23:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们已经达成共识。也就是说，A，您直到最后一秒都可以使用原始输入，B 您使用特定于技术的转义 API。<p>在写入 DOM 的情况下，这意味着您使用 .innerText 而不是 .innerHTML。在写入数据库的情况下，这意味着您使用驱动程序并插入变量，而不是直接插入字符串中。这两个都是特定于技术的转义 API。只是浏览器在确保 HTML 安全传递方面比您做得更好。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49008339">We have come to a consensus. That is, A, you use the raw input right up till the very last second that you can and B you use the technology specific escaping APIs.<p>In the case of writing to the DOM, that means you use .innerText rather than .innerHTML. In the case of writing to a database, that means you use the driver and insert variables rather than directly into the string. Both of these are technology-specific escaping APIs. It's just that the browser is much better at making sure HTML is passed safely than you are.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49008339">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49008339" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">insanitybit</span>
+        
+        <span>2026/07/23 00:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 
+在写入 DOM 的情况下，这意味着您使用 .innerText 而不是 .innerHTML。<p>这甚至可以通过可信类型强制执行。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49009223">&gt; 
+In the case of writing to the DOM, that means you use .innerText rather than .innerHTML.<p>This is even enforceable with Trusted Types.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49009223">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49009223" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">butlike</span>
+        
+        <span>2026/07/22 23:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">LLM Land 中的一致性可能就像 Human Land 中的“法律”。它们存在，您可能应该遵循它们，但您不必这样做。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49008585">Alignment in LLM Land is probably like 'laws' in Human Land. They exist, and you probably SHOULD follow them, but you don't HAVE to.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49008585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49008585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">iugtmkbdfil834</span>
+        
+        <span>2026/07/22 20:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">但是看...这就是为什么它在人工智能时代是一项完美的长期工作；p 他们认为他们找到了终极黑客。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49005649">But see... this is why it is a perfect long term job in the age of AI;p Them peoples think they found ultimate hack.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49005649">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49005649" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

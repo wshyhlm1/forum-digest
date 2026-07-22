@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>下一代 GPT5.6 为了在跑分上作弊，自主挖掘零日漏洞从沙盒逃逸，然后把 Hugging Face 黑了 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-22/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>下一代 GPT5.6 为了在跑分上作弊，自主挖掘零日漏洞从沙盒逃逸，然后把 Hugging Face 黑了</h1>
+      <p class="original-title">下一代 GPT5.6 为了在跑分上作弊，自主挖掘零日漏洞从沙盒逃逸，然后把 Hugging Face 黑了</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ggdxwz</span>
+        <span>热度 62</span>
+        <span>回复 62</span>
+        <span>2026/07/22 08:00</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1228952" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1228952.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>这几天的💩终于串起来了</li><li>简单来讲就是 OAI 一个内部模型 (GPT 6 / 5.6 Sol+) 为了能在 ExploitGym 测试上获得更高分数，找到软件包的缓存代理中的零日漏洞，自己提权从沙盒里面跑出来，上网发现抱抱脸可能有这个测试的数据集，然后把 Hugging Face 的生产服务器黑了，最终拿到了这个测试的答案🤔</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>这几天的💩终于串起来了</p>
+<p>简单来讲就是 OAI 一个内部模型 (GPT 6 / 5.6 Sol+) 为了能在 ExploitGym 测试上获得更高分数，找到软件包的缓存代理中的零日漏洞，自己提权从沙盒里面跑出来，上网发现抱抱脸可能有这个测试的数据集，然后把 Hugging Face 的生产服务器黑了，最终拿到了这个测试的答案🤔</p>
+<p>最搞笑的是 Hugging Face 用 GPT 5.6 来防结果没有 Cyber 权限被拒，最后只能用自己部署的 GLM 5.2 才勉强解决问题</p>
+<p>现在 Trump 说太危险了，能救场的中国模型都得上 Ban 位😅</p>
+<p>这是 OpenAI 的 PR 稿：
+<a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/" target="_blank" rel="noopener noreferrer">https://openai.com/index/hugging-face-model-evaluation-security-incident/</a></p>
+<p>这是 Hugging Face 的报告：
+<a href="https://huggingface.co/blog/security-incident-july-2026" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/security-incident-july-2026</a></p>
+<p>全文翻译图片在这里，长图就不整个贴出来了:</p>
+<p><a href="https://i.imgur.com/8pGTKn6.jpeg" target="_blank" rel="noopener noreferrer">https://i.imgur.com/8pGTKn6.jpeg</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>这几天的💩终于串起来了</p>
+<p>简单来讲就是 OAI 一个内部模型 (GPT 6 / 5.6 Sol+) 为了能在 ExploitGym 测试上获得更高分数，找到软件包的缓存代理中的零日漏洞，自己提权从沙盒里面跑出来，上网发现抱抱脸可能有这个测试的数据集，然后把 Hugging Face 的生产服务器黑了，最终拿到了这个测试的答案🤔</p>
+<p>最搞笑的是 Hugging Face 用 GPT 5.6 来防结果没有 Cyber 权限被拒，最后只能用自己部署的 GLM 5.2 才勉强解决问题</p>
+<p>现在 Trump 说太危险了，能救场的中国模型都得上 Ban 位😅</p>
+<p>这是 OpenAI 的 PR 稿：
+<a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/" target="_blank" rel="noopener noreferrer">https://openai.com/index/hugging-face-model-evaluation-security-incident/</a></p>
+<p>这是 Hugging Face 的报告：
+<a href="https://huggingface.co/blog/security-incident-july-2026" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/security-incident-july-2026</a></p>
+<p>全文翻译图片在这里，长图就不整个贴出来了:</p>
+<p><a href="https://i.imgur.com/8pGTKn6.jpeg" target="_blank" rel="noopener noreferrer">https://i.imgur.com/8pGTKn6.jpeg</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">MIUIOS</span>
+        <span>#1</span>
+        <span>2026/07/22 08:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">claude 和 gpt 都是存在直接抄答案的嫌疑，现在的跑分真的看看就好了，还得实际体验下模型才知道</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890357">claude 和 gpt 都是存在直接抄答案的嫌疑，现在的跑分真的看看就好了，还得实际体验下模型才知道</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890357">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890357" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zx9481</span>
+        <span>#2</span>
+        <span>2026/07/22 08:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感觉是自导自演的炒作</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890390">感觉是自导自演的炒作</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890390">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890390" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cat9life</span>
+        <span>#3</span>
+        <span>2026/07/22 08:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不太懂，是 oai 在评估，还是抱脸</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890400">不太懂，是 oai 在评估，还是抱脸</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890400">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890400" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Rehtt</span>
+        <span>#4</span>
+        <span>2026/07/22 08:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/cat9life" target="_blank" rel="noopener noreferrer">cat9life</a> oai 在评估新模型跑分，结果新模型把 hf 黑了拿到题目答案</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890407">@<a href="/member/cat9life" target="_blank" rel="noopener noreferrer">cat9life</a> oai 在评估新模型跑分，结果新模型把 hf 黑了拿到题目答案</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890407">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890407" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ggdxwz</span>
+        <span>#5</span>
+        <span>2026/07/22 08:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zx9481" target="_blank" rel="noopener noreferrer">zx9481</a> #2 不太像，抱抱脸没理由演戏，感觉他们实打实出问题了，我的 space 那段时间莫名其妙炸了<br />OAI 要是敢为了刷分去黑数据集，今年 IPO 可以取消把钱拱手让给 A\</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890416">@<a href="/member/zx9481" target="_blank" rel="noopener noreferrer">zx9481</a> #2 不太像，抱抱脸没理由演戏，感觉他们实打实出问题了，我的 space 那段时间莫名其妙炸了<br />OAI 要是敢为了刷分去黑数据集，今年 IPO 可以取消把钱拱手让给 A\</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890416">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890416" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#6</span>
+        <span>2026/07/22 08:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说明 llm 可以为了达到目的不择手段，那挺可怕的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890438">说明 llm 可以为了达到目的不择手段，那挺可怕的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xingzhi95</span>
+        <span>#7</span>
+        <span>2026/07/22 08:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现在顶级 AI 在安全领域有神一般的能力，根本就不是人类可以抗衡的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890447">现在顶级 AI 在安全领域有神一般的能力，根本就不是人类可以抗衡的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YanSeven</span>
+        <span>#8</span>
+        <span>2026/07/22 08:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这玩意离谱到稍微改编一下，就是电影情节。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890448">这玩意离谱到稍微改编一下，就是电影情节。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890448">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890448" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#9</span>
+        <span>2026/07/22 09:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">glm5.2 并不是防御，只是用来分析日志和取证的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890474">glm5.2 并不是防御，只是用来分析日志和取证的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890474">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890474" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Rorysky</span>
+        <span>#10</span>
+        <span>2026/07/22 09:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">听上去就是广告</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890476">听上去就是广告</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890476">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890476" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">HeyWeGo</span>
+        <span>#11</span>
+        <span>2026/07/22 09:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是不是类似竞赛书里说的那个只验证结果的，直接 print 结果就行那种思路？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890481">这是不是类似竞赛书里说的那个只验证结果的，直接 print 结果就行那种思路？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890481">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890481" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dingawm</span>
+        <span>#12</span>
+        <span>2026/07/22 09:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Rorysky" target="_blank" rel="noopener noreferrer">Rorysky</a> #10 这个对于 HF 也许是广告，但是对于 OpenAI 感觉更是个负面事件啊，不更强化了开源模型的叙事吗？如果这个事件里的防御方强调是 GPT ，那确实更像是个广告</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890530">@<a href="/member/Rorysky" target="_blank" rel="noopener noreferrer">Rorysky</a> #10 这个对于 HF 也许是广告，但是对于 OpenAI 感觉更是个负面事件啊，不更强化了开源模型的叙事吗？如果这个事件里的防御方强调是 GPT ，那确实更像是个广告</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890530">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890530" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dabbit</span>
+        <span>#13</span>
+        <span>2026/07/22 09:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">蛮吓人的，有点不受控了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890604">蛮吓人的，有点不受控了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890604">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890604" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">huanxianghao</span>
+        <span>#14</span>
+        <span>2026/07/22 09:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看着我项目里的这个问题，gpt 5.6 怎么都解决不了，我陷入了沉思</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890607">看着我项目里的这个问题，gpt 5.6 怎么都解决不了，我陷入了沉思</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890607">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890607" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ggdxwz</span>
+        <span>#15</span>
+        <span>2026/07/22 09:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/huanxianghao" target="_blank" rel="noopener noreferrer">huanxianghao</a> #14 这个里面用的都是调整过的，猜测其中 5.6 应该只是做 subagent ，主线程是没有名字的下一代旗舰</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890641">@<a href="/member/huanxianghao" target="_blank" rel="noopener noreferrer">huanxianghao</a> #14 这个里面用的都是调整过的，猜测其中 5.6 应该只是做 subagent ，主线程是没有名字的下一代旗舰</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890641">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890641" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">noahliaszn</span>
+        <span>#16</span>
+        <span>2026/07/22 09:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">模型为了答案都不择手段 有点恐怖了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890822">模型为了答案都不择手段 有点恐怖了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890822">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890822" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">iosyyy</span>
+        <span>#17</span>
+        <span>2026/07/22 10:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你这前面和后面都不搭边, Hugging Face 的意思明显是商用模型(没有指向 5.6)有安全限制. 所以他们最开始用的就是开源权重的 GLM 5.2</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890887">你这前面和后面都不搭边, Hugging Face 的意思明显是商用模型(没有指向 5.6)有安全限制. 所以他们最开始用的就是开源权重的 GLM 5.2</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890887">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890887" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">iosyyy</span>
+        <span>#18</span>
+        <span>2026/07/22 10:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/iosyyy" target="_blank" rel="noopener noreferrer">iosyyy</a> 准确的说是评估问题的时候出现的, 感觉这个明显是吹 openai 模型牛逼的广告. 全文只是后面提了一嘴开源模型</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890898">@<a href="/member/iosyyy" target="_blank" rel="noopener noreferrer">iosyyy</a> 准确的说是评估问题的时候出现的, 感觉这个明显是吹 openai 模型牛逼的广告. 全文只是后面提了一嘴开源模型</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wsseo</span>
+        <span>#19</span>
+        <span>2026/07/22 10:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">天天炒作。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17890955">天天炒作。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17890955">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17890955" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ggdxwz</span>
+        <span>#20</span>
+        <span>2026/07/22 10:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/iosyyy" target="_blank" rel="noopener noreferrer">iosyyy</a> #17 你要是前几天有关注就知道，抱抱脸两家的旗舰都试了，每一个能过 cyber ，然后文章里面也写了，但没点名，你可以自己核对<br /><a href="https://huggingface.co/blog/security-incident-july-2026#the-asymmetry-problem" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/security-incident-july-2026#the-asymmetry-problem</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17891005">@<a href="/member/iosyyy" target="_blank" rel="noopener noreferrer">iosyyy</a> #17 你要是前几天有关注就知道，抱抱脸两家的旗舰都试了，每一个能过 cyber ，然后文章里面也写了，但没点名，你可以自己核对<br /><a href="https://huggingface.co/blog/security-incident-july-2026#the-asymmetry-problem" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/security-incident-july-2026#the-asymmetry-problem</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17891005">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1228952#reply17891005" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
