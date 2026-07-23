@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一个连 CSS 都写不利索的后端，靠 AI 做出了一个上线的旅行记账小程序 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-23/">返回日报</a>
+      <div class="source-chip">V2EX #9</div>
+      <h1>一个连 CSS 都写不利索的后端，靠 AI 做出了一个上线的旅行记账小程序</h1>
+      <p class="original-title">一个连 CSS 都写不利索的后端，靠 AI 做出了一个上线的旅行记账小程序</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 bluecode</span>
+        <span>热度 2</span>
+        <span>回复 2</span>
+        <span>2026/07/23 22:45</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1229405" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1229405.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>先自报家门：常年写后端，前端稀烂，CSS 全靠猜，审美更是负数——以前让我独立做个好看的界面，等于要命。</li><li>但旅行分账这个需求我惦记很久了：几个人出去玩，谁垫了钱、谁该分摊、出国一堆外币要换算，回来对账全靠一个人拉表格还老算错。市面上的 App 要么太重，要么得所有人下载注册，朋友根本不装。一直想自己做，却卡在&quot;我做出来的界面自己都不想用&quot;。</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>先自报家门：常年写后端，前端稀烂，CSS 全靠猜，审美更是负数——以前让我独立做个好看的界面，等于要命。</p>
+<p>但旅行分账这个需求我惦记很久了：几个人出去玩，谁垫了钱、谁该分摊、出国一堆外币要换算，回来对账全靠一个人拉表格还老算错。市面上的 App 要么太重，要么得所有人下载注册，朋友根本不装。一直想自己做，却卡在"我做出来的界面自己都不想用"。</p>
+<p>今年借着 AI ，把这事真干成了，一个人做出了完整的「<a href="https://splitrip.codefuture.fun/" target="_blank" rel="noopener noreferrer">旅行账单</a>」小程序。说几个让我挺震撼的点：</p>
+AI 到底帮我干了啥
+<ul>
+<li>UI/设计：配色、组件、间距、图标风格，我基本说需求，它出方案。它给的界面比我自己糊的好看太多个数量级，还能一次次迭代到我满意</li>
+<li>前端：小程序页面、交互、动画，代码它写，我读都不用读，直接验收功能就行</li>
+<li>硬骨头：结算这块我想要"最少转账"（最小现金流 / 债务简化那个经典问题），AI 直接帮我把算法讲清楚 + 写出来，5 个人一堆乱账压成尽量少的几笔转账</li>
+<li>多币种：外币按当天汇率自动折算，且记账时就把汇率锁进这笔账，历史金额不漂移——这套逻辑也是和 AI 一点点抠出来的</li>
+<li>连文案、落地页、分账海报样式都是一起弄的</li>
+</ul>
+真实体感（不吹不黑）
+<ul>
+<li>强的地方：把我这种"有想法没手艺"的人的下限拉得非常高，尤其是前端和设计，等于白嫖了个还不错的设计师+前端</li>
+<li>思维转变：前两年 AI 写的每一行代码我都会尝试去看去理解，然后及时去纠正它，这样会很累。而且会限制 AI 的泛化能力，这一次，我完全一行代码都不读，我只验收功能，不对就让他改。效果出奇得好。</li>
+<li>结论：它不是替你做决定，是把你的想法快速落地。后端出身反而是优势——逻辑我 hold 得住，短板（ UI/前端）正好被补上</li>
+</ul>
+<p>搁两年前，这种项目我一个人根本做不完、更做不好看。现在真的成了。</p>
+顺便求个试用
+<p>成果就是这个小程序，微信搜「分分游-AA 账单」，或扫码
+免费，不用下载注册，扫码就进。做旅行 AA 分账用，也欢迎来提意见。</p>
+<p>也很想跟同样在用 AI 做东西的老哥交流工作流。当然，以上这段水文也基本上是 AI 帮我写的。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>先自报家门：常年写后端，前端稀烂，CSS 全靠猜，审美更是负数——以前让我独立做个好看的界面，等于要命。</p>
+<p>但旅行分账这个需求我惦记很久了：几个人出去玩，谁垫了钱、谁该分摊、出国一堆外币要换算，回来对账全靠一个人拉表格还老算错。市面上的 App 要么太重，要么得所有人下载注册，朋友根本不装。一直想自己做，却卡在"我做出来的界面自己都不想用"。</p>
+<p>今年借着 AI ，把这事真干成了，一个人做出了完整的「<a href="https://splitrip.codefuture.fun/" target="_blank" rel="noopener noreferrer">旅行账单</a>」小程序。说几个让我挺震撼的点：</p>
+AI 到底帮我干了啥
+<ul>
+<li>UI/设计：配色、组件、间距、图标风格，我基本说需求，它出方案。它给的界面比我自己糊的好看太多个数量级，还能一次次迭代到我满意</li>
+<li>前端：小程序页面、交互、动画，代码它写，我读都不用读，直接验收功能就行</li>
+<li>硬骨头：结算这块我想要"最少转账"（最小现金流 / 债务简化那个经典问题），AI 直接帮我把算法讲清楚 + 写出来，5 个人一堆乱账压成尽量少的几笔转账</li>
+<li>多币种：外币按当天汇率自动折算，且记账时就把汇率锁进这笔账，历史金额不漂移——这套逻辑也是和 AI 一点点抠出来的</li>
+<li>连文案、落地页、分账海报样式都是一起弄的</li>
+</ul>
+真实体感（不吹不黑）
+<ul>
+<li>强的地方：把我这种"有想法没手艺"的人的下限拉得非常高，尤其是前端和设计，等于白嫖了个还不错的设计师+前端</li>
+<li>思维转变：前两年 AI 写的每一行代码我都会尝试去看去理解，然后及时去纠正它，这样会很累。而且会限制 AI 的泛化能力，这一次，我完全一行代码都不读，我只验收功能，不对就让他改。效果出奇得好。</li>
+<li>结论：它不是替你做决定，是把你的想法快速落地。后端出身反而是优势——逻辑我 hold 得住，短板（ UI/前端）正好被补上</li>
+</ul>
+<p>搁两年前，这种项目我一个人根本做不完、更做不好看。现在真的成了。</p>
+顺便求个试用
+<p>成果就是这个小程序，微信搜「分分游-AA 账单」，或扫码
+免费，不用下载注册，扫码就进。做旅行 AA 分账用，也欢迎来提意见。</p>
+<p>也很想跟同样在用 AI 做东西的老哥交流工作流。当然，以上这段水文也基本上是 AI 帮我写的。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">2</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bluecode</span>
+        <span>#1</span>
+        <span>2026/07/23 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">![Lark 小助手 2026-07-23 22.51.21.png]( <a href="https://s3.bmp.ovh/2026/07/23/DNFax7DY.png" target="_blank" rel="noopener noreferrer">https://s3.bmp.ovh/2026/07/23/DNFax7DY.png</a>)<br />目前数据</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17898115">![Lark Helper 2026-07-23 22.51.21.png]( <a href="https://s3.bmp.ovh/2026/07/23/DNFax7DY.png" target="_blank" rel="noopener noreferrer">https://s3.bmp.ovh/2026/07/23/DNFax7DY.png</a>)<br />目前数据</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17898115">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1229405#reply17898115" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bluecode</span>
+        <span>#2</span>
+        <span>2026/07/23 22:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">https://s3.bmp.ovh/2026/07/23/DNFax7DY.png" alt="飞书助手 2026-07-23 22.51.21.png" /&gt;</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17898116">&lt;img src="<a href="https://s3.bmp.ovh/2026/07/23/DNFax7DY.png" target="_blank" rel="noopener noreferrer">https://s3.bmp.ovh/2026/07/23/DNFax7DY.png</a>" alt="Lark Helper 2026-07-23 22.51.21.png" /&gt;</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17898116">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1229405#reply17898116" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

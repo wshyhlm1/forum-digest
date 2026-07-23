@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>显示 HN：Bento - 一个 HTML 文件中的整个 PowerPoint（编辑+查看+数据+协作） | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-23/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>显示 HN：Bento - 一个 HTML 文件中的整个 PowerPoint（编辑+查看+数据+协作）</h1>
+      <p class="original-title">Show HN: Bento - An entire PowerPoint in one HTML file (edit+view+data+collab)</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 starfallg</span>
+        <span>热度 952</span>
+        <span>回复 219</span>
+        <span>2026/07/22 23:19</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49008211" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://bento.page/slides/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49008211.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Over the past few months, our team has been building more and more slidedecks using web frontend technologies with coding harnesses like Claude Code, but a common complaint is to make even small edits we need to edit the code either manually or via the harness</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">在过去的几个月里，我们的团队一直在使用 Web 前端技术和 Claude Code 等编码工具构建越来越多的幻灯片，但一个常见的抱怨是，即使是很小的编辑，我们也需要手动或通过工具来编辑代码。<p>为了避免这种循环，我最终创建了 Bento，这是一个单一的 HTML 文件，其中包含幻灯片工具中所需的一切，包括动画和共享编辑。无需安装或云登录，一切都可以离线工作。默认的牌组大约为 560 KB，一旦获得它就不需要获取任何内容。</p><p>在浏览器中打开它，然后您可以编辑、演示、打印和保存。通过电子邮件或空投分享，他们所需要的只是一个浏览器来编辑、演示以及在幻灯片上进行实时协作。将其放入 Claude 或 ChatGPT，将现有 pptx 文件转换为 Bento 幻灯片。不涉及云，只有加密的盲中继以允许共享编辑。中继看不到任何数据。</p><p>检查一下： <a href="https://bento.page/slides/" target="_blank" rel="noopener noreferrer">https://bento.page/slides/</a> 这会将您直接带到编辑器。</p><p>前往 <a href="https://bento.page/guestbook/" target="_blank" rel="noopener noreferrer">https://bento.page/guestbook/</a> 尝试实时留言簿以体验共享编辑/协作。</p><p>网站上还有一个画廊，其中包含一些示例甲板 - <a href="https://bento.page/" target="_blank" rel="noopener noreferrer">https://bento.page/</a></p><p>所有代码均已获得麻省理工学院许可，您可以在这里找到它 - <a href="https://github.com/nyblnet/bento" target="_blank" rel="noopener noreferrer">https://github.com/nyblnet/bento</a> 。我将 Reveal.js 与其他几个库（包括一些自制的库）和 Claude Code 一起使用。</p></div>
+      <div class="post-body is-hidden" data-role="story-raw">Over the past few months, our team has been building more and more slidedecks using web frontend technologies with coding harnesses like Claude Code, but a common complaint is to make even small edits we need to edit the code either manually or via the harness.<p>To avoid this loop, I ended up creating Bento, a single HTML file with everything you need in a slide tool including animations and shared editing. There's no install or cloud login, everything works offline. The default deck is around 560 KB and it doesn't need to fetch anything once you got it.</p><p>Open it in a browser and then you can edit, present, print and save. Share it via email or via Airdrop and all they need is a browser to edit, present and also do live collab on the slides. Drop it in to Claude or ChatGPT to transform existing pptx files into Bento slides. There is no cloud involved, only an encrypted blind relay to allow for shared editing. The relay doesn't see any of the data.</p><p>Check it out at <a href="https://bento.page/slides/" target="_blank" rel="noopener noreferrer">https://bento.page/slides/</a> which takes you straight to the editor.</p><p>Go to <a href="https://bento.page/guestbook/" target="_blank" rel="noopener noreferrer">https://bento.page/guestbook/</a> to try out the live guestbook to experience share editing / collab.</p><p>There is also a gallery with some sample decks on the website - <a href="https://bento.page/" target="_blank" rel="noopener noreferrer">https://bento.page/</a></p><p>All the code is MIT licensed and you can find it here - <a href="https://github.com/nyblnet/bento" target="_blank" rel="noopener noreferrer">https://github.com/nyblnet/bento</a> . I used reveal.js with several other libraries (including some homegrown ones), and Claude Code.</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/22 23:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">嗨，我是 Bento 的创建者。除了 Github 中的内容外，我只是想分享更多关于我如何创建它的信息。<p>该文件或多或少包含两个部分。文件顶部附近有一个 JSON 的普通块，它是幻灯片数据。您可以阅读、grep 或将线束指向它。应用程序本身位于一个 base64 blob 中，通过一个小垫片加载，该垫片在浏览器中使用 DecompressionStream 进行压缩，从而使包保持较小，因此我们不需要在运行时获取任何外部文件。文件系统访问 API 用于将 JSON 写回同一文件，该文件会回退到 plian 下载，并且所有更新均经过 ECDSA 签名。</p><p>我从用作基础的 Reveal.js 开始，并合并了 GSAP/Flip 来处理动画。然后我用 echarts 添加了图表，但由于尺寸和工作方式方面的一些问题，我最终重新实现了这两个图表。</p><p>我最满意的是 CRDT 的无缝工作方式。盲中继是一个在 Cloudflare Durable Objects 上运行的小文件，它看到的只是来自客户端的加密数据。协作处于关闭状态，直到我们在应用程序中将其打开（通过邀请文件共享来启动会话），然后生成一些密钥集。访问权限由用户密钥处理，您可以拥有只读用户，也可以撤销用户的实时协作访问权限。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49008445">Hi, I'm the creator of Bento. Just wanted to share a bit more about how I created it beyond what's in Github.<p>The file contains more or less two sections. There is a plain block of JSON near the top of the file which is the slide data. You can read, grep, or point a harness at it. The app itself is in a base64 blob that loads through a small shim which deflates in the browser with DecompressionStream, which keeps the package small and so that we don't need to fetch any external files at runtime. File System Access API is used for JSON writeback into the same file, which falls back to a plian download and all updates are ECDSA signed.</p><p>I started with reveal.js which served as a base, and incorporated GSAP/Flip to handle the animation. Then I added charting with echarts, but due to a number of issues with size and how the worked, I ended up re-implementing both.</p><p>What I'm most pleased about is how seamless the CRDT works. The blind relay is a small file that runs on Cloudflare Durable Objects, and all it sees are the encrypted data from the clients. Collab is off until we turn it on in the app (by starting a session by sharing by invite file), and then some sets of keys are generated. Access is handled by user key, and you can have read-only users, and also revoke live collab access by user as well.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49008445">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49008445" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">inanutshellus</span>
+        
+        <span>2026/07/23 03:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Reveal.js 中最神奇的概念是垂直幻灯片。<p>例如<a href="https://revealjs.com/#/2/1" target="_blank" rel="noopener noreferrer">https://revealjs.com/#/2/1</a> &lt;-- 从这里您可以向上或向下，然后向右继续演示。</p><p>您只需使用轻量级高抽象幻灯片制作一组幻灯片，然后根据您的受众...点击向下箭头。砰。现在您已经进入了技术幻灯片。没有书呆子技术人员吗？太好了，不要点击幻灯片 3。相反，您与营销人员在一起，所以点击幻灯片 5。</p><p>无论如何 - 看起来您为了模仿 Powerpoint 而删除了它，但是...不要忘记它在那里。这是我最喜欢使用 Reveal.js 的部分！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49011759">The concept that's MAGICAL in Reveal.js is vertical slides.<p>e.g. <a href="https://revealjs.com/#/2/1" target="_blank" rel="noopener noreferrer">https://revealjs.com/#/2/1</a> &lt;-- from here you can go up or down, then go right to continue the presentation.</p><p>You just make one slide deck with lightweight high-abstraction slides and depending on the audience you just... hit the down arrow. bam. now you're inside the tech slides. no nerdy tech guys? sweet, don't hit down on slide 3. Instead you're with the marketing guys, so hit down on slide 5.</p><p>Anyway - looks like you got rid of that in order to mimic Powerpoint, but... don't forget it's there. it's my favorite part of using Reveal.js!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49011759">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49011759" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">gcanyon</span>
+        
+        <span>2026/07/23 21:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我想我明白了（如您所描述的垂直幻灯片），但我想知道二维是否受到限制 - 幻灯片<i>可能</i>是一个流程图，一路上有各种分叉/支线任务。显然，构建像巨大洞穴一样令人困惑的东西是可能的，但垂直幻灯片用例很容易成为该更大功能的子集，并且将由用户决定他们对复杂性的需求/容忍程度。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49021428">I guess I get the clarity (of vertical slides as you describe), but I'm wondering if two dimensions is limiting -- slides <i>could</i> be a flow chart, with various forks/side quests along the way. Obviously it would be possible to build something as confusing as the Colossal Cave, but the vertical slides use case would easily be a subset of that larger functionality, and it would leave it up to the user to decide their level of need for/tolerance of complexity.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49021428">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49021428" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/23 03:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是一个很好的观点。为了处理类似类型的用例，我沿着状态幻灯片路线走下去，但我会研究这个，看看我们是否可以以某种方式合并它。这似乎是实现某些状态幻灯片用例的一种非常优雅的方式。感谢您对此的提醒！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49011815">That's a great point. I went down the state slide route in order to handle a similar type of use-case, but I'll look into this and see if we can incorporate that somehow. It seems like a really elegant way to implement some state slide use cases. And thanks for the heads-up on this!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49011815">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49011815" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sdoering</span>
+        
+        <span>2026/07/23 17:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">隐藏状态幻灯片是否可以“仅”对向下箭头按下以及单击做出反应？但他们可能必须以某种方式收到订单？<p>只是我的两分钱。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49018845">Could the hidden state slides "just" react to a down arrow press as well as to the click? But then they probably would have to have an order somehow?<p>Just my two cents.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49018845">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49018845" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/23 17:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">从技术上讲是的，顺序仅取决于触发幻灯片更改的按键事件链。将研究执行此操作的最佳方法。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49019144">Technically yes, and the order is just dependent on the chain of the keypress event triggering slide changes. Will investigate the best way to do this.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49019144">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49019144" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">chrisweekly</span>
+        
+        <span>2026/07/23 05:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果能在reveal.js 平台上添加第三个维度，那就太酷了。过渡动画选项之一是“缩放”，其视觉效果就像进入/穿过当前幻灯片。可以增强概览模式以显示 3D 地图（一堆 2D 图层）。各种有趣的迷宫/游戏/互动小说用例浮现在脑海中......</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49013848">It'd be cool to add a third dimension to reveal.js decks. One of the transition animation options is "zoom", which visual effect is like going into / through the current slide. The Overview mode could be enhanced to show a 3D map (a stack of 2D layers). All kinds of fun mazes / games / interactive fiction use cases come to mind....</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49013848">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49013848" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gchamonlive</span>
+        
+        <span>2026/07/23 08:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你们正在重塑 Prezi，我对此很感兴趣</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49015130">You guys are reinventing Prezi and I'm into it</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49015130">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49015130" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/23 15:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们尝试了很多人工智能演示制作器，但大公司有需要遵守的品牌标准，而这些标准在处理这些标准方面很糟糕。这就是我们开始手动滚动 Web 应用程序作为演示文稿的原因。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49017900">We tried so many AI presentation makers but larger companies have brand standards to adhere to and these are terrible at handling them. That's the reason we started to hand roll web apps as presentations.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49017900">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49017900" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">RuminaAI</span>
+        
+        <span>2026/07/23 19:12</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49019720">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49019720">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49019720" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">mbreese</span>
+        
+        <span>2026/07/23 00:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是我最大的问题。感谢您抢先回答（并感到自豪！）。<p>当我玩这个时，我立即想到了 TiddlyWikis，我一直很喜欢它，但他们从来没有把我当回事。然而，一个易于编辑的演示文稿——这是我可以理解的一个用例。</p><p>当我只处理单个文件时，我看不到如何存在 CDRT。我试图找出服务器在哪里。那么——这适合所有人吗？您是否担心您的 Cloudflare 帐户会因此受到攻击？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49009020">This was my biggest question. Thanks for preemptively answering (and being proud!).<p>When I was playing with this, I immediately thought of TiddlyWikis, which I've always been fond of, but they never took for me. However, an easily editable presentation -- that's a use case I can understand.</p><p>I couldn't see how there was a CDRT when I'm just working with a single file. I was trying to figure out where the server was. So -- this is just on for everyone? Are you concerned that your Cloudflare account will be hammered with this?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49009020">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49009020" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">rpdillon</span>
+        
+        <span>2026/07/23 01:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">过去几年我的项目称为 AppDeck，这是一组独立的 HTML 文件，这些文件知道如何将自己保存回 AppDeck 服务器，即 WebDAV。人工智能对于构建一套可以做到这一点的应用程序非常有帮助。到目前为止，我有一个可以生成 SVG 的图表编辑器，一个支持 Markdown 的所有内容的多文档编辑器，但支持 Kandan 看板、文档、日志和日历。我还有一个工作流畅的克隆，我非常喜欢在工作中用它来组织想法。有一个图库应用程序可以内嵌所有图像，并可以在灯箱中全屏显示它们，并带有定时幻灯片，还支持字幕和加密。<p>所有这些都只是在磁盘上的一个文件夹中运行，并且可以部署在本地或登录后的服务器上。我打算将其开源，但我对某些实现方面还不够自豪。希望今年夏天能做到！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49010318">My project for the past few years is called AppDeck, collection of self-contained HTML files that know how to save themselves back to the AppDeck server, which is just WebDAV. AI has been enormously helpful in building out a suite of apps that can do this. So far I have a diagram editor that can produce SVGs, a multi-document editor that backs everything with markdown, but supports Kandan boards, documents, logs, and calendars. I also have a work flowy clone that I've really been enjoying organizing ideas with at work. There's a gallery app that inlines all of the images and can display them full screen in a light box and with a timed slideshow that  also supports captions and encryption.<p>All of it just runs out of a folder on disk and can either be deployed locally or on a server behind a login. I intend to open source it, but I'm not quite proud enough yet of some of the implementation aspects to do so. Hope to do it this summer though!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49010318">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49010318" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Mtinie</span>
+        
+        <span>2026/07/23 09:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我最初的反应是“哇哦，你刚刚描述了 HyperCard”。回想起来，这并不完全正确，但值得称赞的是，我抓住了一项形成性技术的希望（至少对我来说），它微妙地（而不是那么微妙地）影响了我们今天所知道的网络。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49015826">My initial reaction was “woah, you just described HyperCard”. Which isn’t exactly true in retrospect, but kudos for capturing the promise of (at least for me) one of the formative technologies that subtly, and not so subtly, influenced the web we know today.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49015826">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49015826" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/23 00:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您可以在留言簿中玩耍。我现在就在里面，你可以看到我正在编辑东西。<p>Cloudflare Durable Objects 非常便宜，我像使用一个非常基本的 pub/sub 一样使用它，每个牌组都有自己的 DO。我做了一些计算，它应该完全在我的支出限制之内。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49009107">You can play around in the guestbook. I'm in it right now and you can see me editing things.<p>Cloudflare Durable Objects are pretty cheap and I'm using it like a very basic pub/sub with each deck having it's own DO. I did some calculations and it should be well within my spend limits.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49009107">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49009107" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">francozanardi</span>
+        
+        <span>2026/07/23 01:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我在留言簿中注意到了一些非常小的事情：由于有很多人联系，我注意到每次收到更新时，我都会失去文本元素的焦点，所以写东西有点困难。<p>如果两个用户同时在同一个项目中工作，这可能会很烦人。</p><p>再说一遍，非常酷的项目！ :)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49010341">Something super small that I've noticed in the guestbook: since there're a lot of people connected, I noticed that every time I received an update, I lost the focus of my text element, so it was a little bit difficult to write something.<p>It may be annoying if two users are working at the same time in the same project.</p><p>Again, very cool project! :)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49010341">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49010341" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/23 05:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，我已经记录了这一点，并会在 Show HN 流量稍微缓解后修复它。感谢您的反馈和客气话！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49013874">Yup, I've made a note of this and will fix it once the Show HN traffic eases off a bit. Thanks for the feedback and the kind words!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49013874">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49013874" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">PhilippGille</span>
+        
+        <span>2026/07/23 05:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">该项目看起来非常有趣，感谢分享！<p>您似乎一周前专门为此项目创建了一个新的 GitHub 帐户。您是否有任何其他 GitHub 帐户可以让我们查看您的工作记录（维护、安全）？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49013421">The project looks very interesting, thanks for sharing!<p>You seem to have created a new GitHub account just for this project a week ago. Do you have any other GitHub accounts that enable us to see a track record of your work (maintenance, security)?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49013421">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49013421" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">moontear</span>
+        
+        <span>2026/07/23 15:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一旦底层引擎获得新功能，我们如何更新它？由于这是一个独立的 HTML 文件，我不确定它是如何工作的。<p>一次编辑多个内容（通过 CTRL 选择）需要更多选项（例如文本居中）。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49018056">How do we UPDATE the underlying engine once it gets new features? Since this is a self contained HTML file I am not sure how this works.<p>Editing multiple things at once (select via CTRL) needs some more options (like text centering).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49018056">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49018056" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">starfallg</span>
+        
+        <span>2026/07/23 18:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Bento 内置了自动更新功能。它会检查清单中是否有已签名的更新，下载它，用新文件重写文件结构，然后用新文件重新加载。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49019232">Bento has auto-update baked in. It checks for signed updates in a manifest, downloads it, rewrite the file structure with the new and reloads with the new file.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49019232">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49019232" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">akserg</span>
+        
+        <span>2026/07/23 23:39</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49023368">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49023368">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49023368" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
