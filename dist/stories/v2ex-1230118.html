@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>个人业余项目，做了一个可以物理操作 iPhone 的 agent，不知道有商业前景吗？ | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-27/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>个人业余项目，做了一个可以物理操作 iPhone 的 agent，不知道有商业前景吗？</h1>
+      <p class="original-title">个人业余项目，做了一个可以物理操作 iPhone 的 agent，不知道有商业前景吗？</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 fzuccq</span>
+        <span>热度 119</span>
+        <span>回复 119</span>
+        <span>2026/07/27 14:24</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1230118" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1230118.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>淘宝美团常用的 app ，都没有 API ，agent 没法直接调用。走 ADB 容易被风控，豆包手机那条路似乎也很坎坷不好走。</li><li>我想，如果能用硬件直接托管 iPhone ，用摄像头观察屏幕，用机械臂点击，或许能绕过大部分风控检测。搞了几个月，agent 跑通了，使用起来还可以。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>淘宝美团常用的 app ，都没有 API ，agent 没法直接调用。走 ADB 容易被风控，豆包手机那条路似乎也很坎坷不好走。</p>
+<p>我想，如果能用硬件直接托管 iPhone ，用摄像头观察屏幕，用机械臂点击，或许能绕过大部分风控检测。搞了几个月，agent 跑通了，使用起来还可以。</p>
+<p>目前，最大的问题不是可行性的问题，是 token 太贵，点击一次 token 花费 0.2 元。</p>
+<p>大家觉得这种 agent 有商业前景吗？</p>
+<p>项目地址： <a href="https://github.com/physiclaw/PhysiClaw" target="_blank" rel="noopener noreferrer">https://github.com/physiclaw/PhysiClaw</a></p>
+<p>硬件组装手册和代码都开源，硬件 DIY 成本 1000 元左右。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>淘宝美团常用的 app ，都没有 API ，agent 没法直接调用。走 ADB 容易被风控，豆包手机那条路似乎也很坎坷不好走。</p>
+<p>我想，如果能用硬件直接托管 iPhone ，用摄像头观察屏幕，用机械臂点击，或许能绕过大部分风控检测。搞了几个月，agent 跑通了，使用起来还可以。</p>
+<p>目前，最大的问题不是可行性的问题，是 token 太贵，点击一次 token 花费 0.2 元。</p>
+<p>大家觉得这种 agent 有商业前景吗？</p>
+<p>项目地址： <a href="https://github.com/physiclaw/PhysiClaw" target="_blank" rel="noopener noreferrer">https://github.com/physiclaw/PhysiClaw</a></p>
+<p>硬件组装手册和代码都开源，硬件 DIY 成本 1000 元左右。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sillydaddy</span>
+        <span>#1</span>
+        <span>2026/07/27 14:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有没有钱景不知道，不过我一直在找呢：  <a href="/t/1004095" target="_blank" rel="noopener noreferrer">/t/1004095</a><br />另外问下，耗费贵是因为图片太耗 token 吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907660">有没有钱景不知道，不过我一直在找呢：  <a href="/t/1004095" target="_blank" rel="noopener noreferrer">/t/1004095</a><br />另外问下，耗费贵是因为图片太耗 token 吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907660">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907660" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">network127001</span>
+        <span>#2</span>
+        <span>2026/07/27 14:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你这种大规模应用后不就是主板机，恶意刷单</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907675">你这种大规模应用后不就是主板机，恶意刷单</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907675">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907675" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bwnjnOEI</span>
+        <span>#3</span>
+        <span>2026/07/27 14:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我刚在 x 上刷到这个东西叫 lumi 吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907677">我刚在 x 上刷到这个东西叫 lumi 吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907677">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907677" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flyqie</span>
+        <span>#4</span>
+        <span>2026/07/27 14:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这种感觉得考虑法律风险。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907695">这种感觉得考虑法律风险。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907695">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907695" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#5</span>
+        <span>2026/07/27 14:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/sillydaddy" target="_blank" rel="noopener noreferrer">sillydaddy</a> 每一次点击动作，agent 都需要观察屏幕才能决策，prompt 需要把图片放到 context 里面，当然 context 做了很多优化，但 token 还是很贵。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907698">@<a href="/member/sillydaddy" target="_blank" rel="noopener noreferrer">sillydaddy</a> 每一次点击动作，agent 都需要观察屏幕才能决策，prompt 需要把图片放到 context 里面，当然 context 做了很多优化，但 token 还是很贵。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907698">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907698" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#6</span>
+        <span>2026/07/27 14:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/flyqie" target="_blank" rel="noopener noreferrer">flyqie</a> 法律风险肯定要考虑，不过这是开源软件，我只做 harness ，不运营。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907709">@<a href="/member/flyqie" target="_blank" rel="noopener noreferrer">flyqie</a> 法律风险肯定要考虑，不过这是开源软件，我只做 harness ，不运营。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907709">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907709" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bwnjnOEI</span>
+        <span>#7</span>
+        <span>2026/07/27 14:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bwnjnOEI" target="_blank" rel="noopener noreferrer">bwnjnOEI</a> <a href="https://x.com/saameeey/status/2081422451418743066?s=61" target="_blank" rel="noopener noreferrer">https://x.com/saameeey/status/2081422451418743066?s=61</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907718">@<a href="/member/bwnjnOEI" target="_blank" rel="noopener noreferrer">bwnjnOEI</a> <a href="https://x.com/saameeey/status/2081422451418743066?s=61" target="_blank" rel="noopener noreferrer">https://x.com/saameeey/status/2081422451418743066?s=61</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907718">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907718" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#8</span>
+        <span>2026/07/27 14:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/network127001" target="_blank" rel="noopener noreferrer">network127001</a> 只是觉得日常点外卖、买火车票、挂号，这些事，应该 AI 来做，人们只需要交代一声就行了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907725">@<a href="/member/network127001" target="_blank" rel="noopener noreferrer">network127001</a> 只是觉得日常点外卖、买火车票、挂号，这些事，应该 AI 来做，人们只需要交代一声就行了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907725">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907725" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sillydaddy</span>
+        <span>#9</span>
+        <span>2026/07/27 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我记得看到过 Google 有 Gemini Live API ，也就是流式处理图片和声音，延迟很低。价格不知道怎么样。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907731">我记得看到过 Google 有 Gemini Live API ，也就是流式处理图片和声音，延迟很低。价格不知道怎么样。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907731">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907731" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">timethinker</span>
+        <span>#10</span>
+        <span>2026/07/27 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">黑灰产自动化可能会有用，可以将一些常规且重复的操作流程，利用 AI 烘培为基于 OCR 的程序化操作，类似于生成一次性的中间脚本，这样就不用经过 AI ，也不用消耗 Token ，只在某些意外情况无法解决的时候，再由 AI 介入进行修复，然后更新 Case 。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907735">黑灰产自动化可能会有用，可以将一些常规且重复的操作流程，利用 AI 烘培为基于 OCR 的程序化操作，类似于生成一次性的中间脚本，这样就不用经过 AI ，也不用消耗 Token ，只在某些意外情况无法解决的时候，再由 AI 介入进行修复，然后更新 Case 。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907735">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907735" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jayeli</span>
+        <span>#11</span>
+        <span>2026/07/27 14:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">本地部署的大模型可以跑吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907736">本地部署的大模型可以跑吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907736">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907736" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#12</span>
+        <span>2026/07/27 14:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bwnjnOEI" target="_blank" rel="noopener noreferrer">bwnjnOEI</a> 不知道他这多少钱一套？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907738">@<a href="/member/bwnjnOEI" target="_blank" rel="noopener noreferrer">bwnjnOEI</a> 不知道他这多少钱一套？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907738">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907738" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#13</span>
+        <span>2026/07/27 14:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jayeli" target="_blank" rel="noopener noreferrer">jayeli</a> 本地模型，一是太慢，二是能力不行，容易在陌生界面卡住。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907746">@<a href="/member/jayeli" target="_blank" rel="noopener noreferrer">jayeli</a> 本地模型，一是太慢，二是能力不行，容易在陌生界面卡住。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907746">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907746" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#14</span>
+        <span>2026/07/27 14:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/timethinker" target="_blank" rel="noopener noreferrer">timethinker</a> 你这烘培称 OCR 的程序化操作思路非常不错，我看看能不能加进来，减少 token 消耗，速度还快。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907761">@<a href="/member/timethinker" target="_blank" rel="noopener noreferrer">timethinker</a> 你这烘培称 OCR 的程序化操作思路非常不错，我看看能不能加进来，减少 token 消耗，速度还快。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907761">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907761" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DeadLion</span>
+        <span>#15</span>
+        <span>2026/07/27 14:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感觉没有前景，中间产物。  <br />未来“豆包手机”这种更可能是主流。  <br />或者再进一步没有 app 了，都是 xx-cli ，自己部署一个 xxclaw 就能用了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907796">感觉没有前景，中间产物。  <br />未来“豆包手机”这种更可能是主流。  <br />或者再进一步没有 app 了，都是 xx-cli ，自己部署一个 xxclaw 就能用了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907796">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907796" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#16</span>
+        <span>2026/07/27 14:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/DeadLion" target="_blank" rel="noopener noreferrer">DeadLion</a> 豆包也是命途多舛，agent 是大厂必争之地，能让豆包这没有硬件基础的公司垄断吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907815">@<a href="/member/DeadLion" target="_blank" rel="noopener noreferrer">DeadLion</a> 豆包也是命途多舛，agent 是大厂必争之地，能让豆包这没有硬件基础的公司垄断吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907815">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907815" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">network127001</span>
+        <span>#17</span>
+        <span>2026/07/27 14:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">系统自带的 ai agent 才是趋势，有厂家兜底，这玩意最大的问题就是安全隐私了吧，豆包手机不就被下架了。万一模型投毒 给你钱包刷爆就完了 ：（<br />@<a href="/member/fzuccq" target="_blank" rel="noopener noreferrer">fzuccq</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907823">系统自带的 ai agent 才是趋势，有厂家兜底，这玩意最大的问题就是安全隐私了吧，豆包手机不就被下架了。万一模型投毒 给你钱包刷爆就完了 ：（<br />@<a href="/member/fzuccq" target="_blank" rel="noopener noreferrer">fzuccq</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907823">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907823" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fzuccq</span>
+        <span>#18</span>
+        <span>2026/07/27 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/network127001" target="_blank" rel="noopener noreferrer">network127001</a> 安全性是很大的问题，给 agent 权限越大，越方便，出了问题越严重，咱们的许多身家可都在手机上呢。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907836">@<a href="/member/network127001" target="_blank" rel="noopener noreferrer">network127001</a> 安全性是很大的问题，给 agent 权限越大，越方便，出了问题越严重，咱们的许多身家可都在手机上呢。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907836">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907836" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nilaoda</span>
+        <span>#19</span>
+        <span>2026/07/27 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">极客湾测续航似乎也是这种</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907838">极客湾测续航似乎也是这种</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kulove</span>
+        <span>#20</span>
+        <span>2026/07/27 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没有前景 自己做也做不到完美 而且手机厂商会自己做的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17907839">没有前景 自己做也做不到完美 而且手机厂商会自己做的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17907839">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230118#reply17907839" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zedis：用 Rust 写的 Redis GUI，以及让 AI 帮忙改界面的一点感想 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-27/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>Zedis：用 Rust 写的 Redis GUI，以及让 AI 帮忙改界面的一点感想</h1>
+      <p class="original-title">Zedis：用 Rust 写的 Redis GUI，以及让 AI 帮忙改界面的一点感想</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 treexie</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/07/27 21:35</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1230237" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1230237.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近把自用的 Redis 客户端 Zedis 又打磨了一轮，发出来给大家看看。 项目地址： https://github.com/vicanso/zedis</li><li>Zedis 是原生 GUI （ Rust + GPUI ，和 Zed 同一套 UI 栈），不是套一层 WebView 。目标很简单：日常连 Redis 、翻 key 、改数据、偶尔排个障，开着不别扭。</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近把自用的 Redis 客户端 Zedis 又打磨了一轮，发出来给大家看看。
+项目地址： <a href="https://github.com/vicanso/zedis" target="_blank" rel="noopener noreferrer">https://github.com/vicanso/zedis</a></p>
+<p>Zedis 是原生 GUI （ Rust + GPUI ，和 Zed 同一套 UI 栈），不是套一层 WebView 。目标很简单：日常连 Redis 、翻 key 、改数据、偶尔排个障，开着不别扭。
+ </p>
+主要特性（按使用频率）
+连接与工作区
+<p>• 多服务器管理，支持常见连接方式（含 SSH 隧道等）
+• 多 Tab：不同实例 / 不同上下文可以并排开着
+• 状态栏看延迟、内存、连接状态，点一下能进对应工具页</p>
+键空间
+<p>• 按分隔符分层的键树（默认 :，可配最大深度）
+• 类型 / TTL / 关键词筛选
+• 收藏、最近打开、右键批量操作（删、设 TTL 、导出等）</p>
+数据类型编辑
+<p>• 基础五件套：String / Hash / List / Set / ZSet
+• Stream 、RedisJSON 、Bitmap 、HyperLogLog 、TimeSeries
+• GEO 有单独的「雷达图」视图，不是干巴巴一张表
+• 大 value 有门槛，避免一把把几百万字节拖进编辑器</p>
+搜索与命令
+<p>• 命令面板、最近 key （类似 ⌘P ）
+• 跨连接的多库 key 搜索（⌘⇧F 一类快捷键）
+• 内嵌终端跑命令，键盘快捷键覆盖常用路径</p>
+运维向工具
+<p>• Metrics / 慢日志 / 内存分析 / 客户端列表 / MONITOR
+• 配置编辑、ACL 、拓扑（含 Cluster 相关）、持久化状态
+• Lua 脚本库、Functions 、键空间通知
+• 只读 / 安全模式，少误点生产</p>
+安全与体验
+<p>• 配置里的密码等敏感字段可按本机密钥加密
+• 危险操作有确认（生产环境文案会更狠一点）
+• 多语言、主题、持续小版本迭代</p>
+<p>平台：macOS / Windows / Linux ，Release 页直接下：
+<a href="https://github.com/vicanso/zedis/releases" target="_blank" rel="noopener noreferrer">https://github.com/vicanso/zedis/releases</a></p>
+<p>界面这块我自己设计太土，就让 Grok 一起改。AI 味有是有，但总好过土味。更麻烦的是 GPUI 渲染结果模型感知不到，只能瞎改代码。后来写了个截图程序，把真机界面截下来给 AI 对照代码看，反馈闭环才通——有图可比，比纯文字描述靠谱多了。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近把自用的 Redis 客户端 Zedis 又打磨了一轮，发出来给大家看看。
+项目地址： <a href="https://github.com/vicanso/zedis" target="_blank" rel="noopener noreferrer">https://github.com/vicanso/zedis</a></p>
+<p>Zedis 是原生 GUI （ Rust + GPUI ，和 Zed 同一套 UI 栈），不是套一层 WebView 。目标很简单：日常连 Redis 、翻 key 、改数据、偶尔排个障，开着不别扭。
+ </p>
+主要特性（按使用频率）
+连接与工作区
+<p>• 多服务器管理，支持常见连接方式（含 SSH 隧道等）
+• 多 Tab：不同实例 / 不同上下文可以并排开着
+• 状态栏看延迟、内存、连接状态，点一下能进对应工具页</p>
+键空间
+<p>• 按分隔符分层的键树（默认 :，可配最大深度）
+• 类型 / TTL / 关键词筛选
+• 收藏、最近打开、右键批量操作（删、设 TTL 、导出等）</p>
+数据类型编辑
+<p>• 基础五件套：String / Hash / List / Set / ZSet
+• Stream 、RedisJSON 、Bitmap 、HyperLogLog 、TimeSeries
+• GEO 有单独的「雷达图」视图，不是干巴巴一张表
+• 大 value 有门槛，避免一把把几百万字节拖进编辑器</p>
+搜索与命令
+<p>• 命令面板、最近 key （类似 ⌘P ）
+• 跨连接的多库 key 搜索（⌘⇧F 一类快捷键）
+• 内嵌终端跑命令，键盘快捷键覆盖常用路径</p>
+运维向工具
+<p>• Metrics / 慢日志 / 内存分析 / 客户端列表 / MONITOR
+• 配置编辑、ACL 、拓扑（含 Cluster 相关）、持久化状态
+• Lua 脚本库、Functions 、键空间通知
+• 只读 / 安全模式，少误点生产</p>
+安全与体验
+<p>• 配置里的密码等敏感字段可按本机密钥加密
+• 危险操作有确认（生产环境文案会更狠一点）
+• 多语言、主题、持续小版本迭代</p>
+<p>平台：macOS / Windows / Linux ，Release 页直接下：
+<a href="https://github.com/vicanso/zedis/releases" target="_blank" rel="noopener noreferrer">https://github.com/vicanso/zedis/releases</a></p>
+<p>界面这块我自己设计太土，就让 Grok 一起改。AI 味有是有，但总好过土味。更麻烦的是 GPUI 渲染结果模型感知不到，只能瞎改代码。后来写了个截图程序，把真机界面截下来给 AI 对照代码看，反馈闭环才通——有图可比，比纯文字描述靠谱多了。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mephisto</span>
+        <span>#1</span>
+        <span>2026/07/27 21:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">牛的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17909698">牛的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17909698">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230237#reply17909698" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Oktfolio</span>
+        <span>#2</span>
+        <span>2026/07/27 23:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">GPUI 在 mac 上没有字体渲染的问题吗？我用 slint 、iced 都存在字体渲染的问题，不知道是不是我没用对...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17909812">GPUI 在 mac 上没有字体渲染的问题吗？我用 slint 、iced 都存在字体渲染的问题，不知道是不是我没用对...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17909812">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230237#reply17909812" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">luodan</span>
+        <span>#3</span>
+        <span>2026/07/27 23:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">能不能加一个 connection string 解析，比如 redis://user:pass@somewhere.com:1234</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17909836">能不能加一个 connection string 解析，比如 redis://user:pass@somewhere.com:1234</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17909836">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230237#reply17909836" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Barry5753</span>
+        <span>#4</span>
+        <span>2026/07/28 01:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">截图回传这个思路挺实用，光看代码改 UI 确实容易瞎猜。你现在是每轮截整屏，还是只截改动区域？感觉再带上组件层级和坐标，定位应该会快不少。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17909955">截图回传这个思路挺实用，光看代码改 UI 确实容易瞎猜。你现在是每轮截整屏，还是只截改动区域？感觉再带上组件层级和坐标，定位应该会快不少。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17909955">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230237#reply17909955" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
