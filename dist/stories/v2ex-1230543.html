@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>探讨一下比较节省 token 的 coding agent | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-28/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>探讨一下比较节省 token 的 coding agent</h1>
+      <p class="original-title">探讨一下比较节省 token 的 coding agent</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 fightff</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/07/28 22:33</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1230543" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1230543.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>作者使用 Copilot 订阅并自建中转 gateway 接入多种 AI 编程工具，但面临 token 消耗过快的问题。</li><li>作者因公司政策限制无法使用 Claude 模型，主要使用 GPT 模型，并询问社区对 pi-coding-agent 的使用体验。</li></ul>
+      <h3>看点</h3><ul><li>自建 OpenAI 格式 API 中转 gateway 接入 opencode/codex CLI/claude code 的实践经验。</li><li>探讨不同任务粒度下 token 消耗策略（如 xhigh 模式的使用习惯）。</li><li>pi-coding-agent 作为节省 token 的流行解决方案的社区反馈。</li><li>企业政策对 AI 模型选择的影响（中国区无法使用 Claude）。</li></ul>
+      <p class="reason">帖子讨论了节省 token 的 coding agent 使用经验，涉及 Copilot、OpenAI API、Claude Code、pi-coding-agent 等 AI 编程工具，属于 AI 与开发工具交叉领域。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>背景是这样的，公司给每个人都开通了 Copilot 订阅。目前我的使用方法是，自己搭建了一个中转网关，在本地构造一个 OpenAI 格式的 API，然后接入 opencode/codex CLI/claude code 中使用。但是最近 5.6-sol 上线后，感觉消耗太快了，token 额度很紧张。可能是我的使用习惯不好，不管任务大小都直接开启 xhigh。</p>
+<p>我平时比较多用 GPT 模型，因为公司说由于政策原因，不向中国区员工开放 Claude 模型。</p>
+<p>自己搜索了一下，发现 pi-coding-agent 似乎是一个比较流行的解决方案，想问下大家的使用感受。</p>
+<p>如果有其他解决方法的话也欢迎分享。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>背景是这样的，公司给每个人开了 copilot 订阅。目前使用的方法是我自己搓了个中转的 gateway ，本地构造一个 openai 格式的 API ，然后接入 opencode/codex CLI/claude code 里面使用。但是最近 5.6-sol 上来之后感觉用起来太快了，token 紧张。可能是我使用习惯不好，不管大小任务都是直接开 xhigh 。</p>
+<p>我平时比较多用 gpt 模型，因为公司说由于政策原因，不开放 Claude 模型给中国区员工。</p>
+<p>自己搜索了一下发现 pi-coding-agent 似乎是一个比较流行的解决方案，想问下大家的使用感受。</p>
+<p>如果有其他解决方法的话也欢迎分享。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ericguo</span>
+        <span>#1</span>
+        <span>2026/07/28 23:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不用省，订阅 OpenAI Plus 就是最佳选择，天天 reset，用出 Plus 的效果<br /><br />Codex 作为第一方 coding agent，多少人维护，OpenAI 能进去的都不是凡人，不会差的。<br /><br />使用习惯的确应该改一下，通常任务开 Medium 就够了，当然你所有任务都直接开 xhigh 的使用习惯和我一样，没啥对错，但是前提是你知道怎么写程序，而且既然开了，就要在旁边盯一下，Sol 想多了，让它跳过即可。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17914218">不用省，订阅 OpenAI Plus 就是最佳选择，天天 reset ，用出 Plus 的效果<br /><br />Codex 作为第一方 coding agent ，多少人维护，OpenAI 能进去的都也不是凡人，不会差的。<br /><br />使用习惯的确应该改一下，通常任务开 Medium 就够了，当然你所有任务都直接开 xhigh 的使用习惯和我一样，没啥对错，但是前提是你知道怎么写程序，而且既然开了，就要旁边盯一下，Sol 想多了，让祂跳过即可。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17914218">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230543#reply17914218" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ericguo</span>
+        <span>#2</span>
+        <span>2026/07/28 23:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">pi-coding-agent 就是垃圾，没错，我就是直接称它为垃圾，试想一下，如果你是程序员，你会只带 read、write、grep、bash 这四个工具上班吗？既然你自己都不愿意只用这 4 个工具，为啥会让大模型只带这 4 个工具上班呢？行为艺术？跑分优化？<br /><br />pi 的**理念**就是错的，正确的是 opencode、codex、claude code，正常的工具数量在 20 个左右，可以有 tool search，可以有 code mode，反正作为用户，这些其实也不用太关心。<br /><br />但是基本的判断还是要有的，那就是：pi-coding-agent 就是垃圾，如果觉得攻击性有点太强了，那充其量也就是个玩具。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17914225">pi-coding-agent 就是垃圾，没错，我就是直接称为垃圾，试想一下，如果你是程序员，你会只带 read ，write ，grep ，bash 四个工具上班吗？既然你都不愿意只用这 4 个工具，为啥会你会让大模型只带这 4 个工具上班呢？行为艺术？跑分优化？<br /><br />pi 的**理念**就是错的，正确的是 opencode ，codex ，claude code ，正常的工具数量在 20 左右，可以有 tool search ，可以有 code mode ，反正作为用户，这些其实也不用太关心。<br /><br />但是基本的判断还是要有的，就是：pi-coding-agent ，就是垃圾，如果攻击性有点太强了，那充其量就是玩具。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17914225">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230543#reply17914225" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">clemente</span>
+        <span>#3</span>
+        <span>2026/07/29 00:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1. cache 命中率是第一<br />2. 尽量一次性把 prompt 给够、给精准，能用术语就不用废话，减少对话次数</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17914269">1.cache 命中率是第一<br />2.尽量一次性 prompt 给够 给精准 能用术语不用废话 减少对话次数</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17914269">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230543#reply17914269" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">techmale</span>
+        <span>#4</span>
+        <span>2026/07/29 00:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最聪明的 model (GPT 5.6 Sol)<br />  + 差不多最好的 harness (Codex CLI/Desktop)<br />  + 用脑子写的完备 context 和验收标准的 prompt</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17914312">最聪明的 model (GPT 5.6 Sol)<br />  + 差不多最好的 harness (Codex CLI/Desktop)<br />  + 用脑子写的完备 context 和验收标准的 prompt</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17914312">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1230543#reply17914312" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

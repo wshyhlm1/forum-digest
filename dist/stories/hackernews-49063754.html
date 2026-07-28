@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PGSimCity - PostgreSQL 的工作原理 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-28/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>PGSimCity - PostgreSQL 的工作原理</h1>
+      <p class="original-title">PGSimCity - How PostgreSQL Works</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 jonbaer</span>
+        <span>热度 912</span>
+        <span>回复 89</span>
+        <span>2026/07/27 08:19</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49063754" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://nikolays.github.io/PGSimCity/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49063754.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>PGSimCity 是一个独立、非商业的教育项目，通过可视化方式展示 PostgreSQL 数据库的内部工作原理。</li><li>该项目以类似《模拟城市》的游戏形式呈现 PostgreSQL 引擎的工作模型，帮助开发者更直观地理解数据库运行机制。</li><li>目前为早期原型版本，可能存在模型和解释上的不准确之处，欢迎社区反馈和改进。</li></ul>
+      <h3>看点</h3><ul><li>创新地将复杂的数据库内部机制以游戏化、可视化的方式呈现，降低学习门槛。</li><li>专注于 PostgreSQL 这一主流开源数据库，对开发者具有实用价值。</li><li>项目为非商业性质，强调教育目的，适合技术社区推广。</li><li>目前为早期原型，存在改进空间，鼓励社区参与完善。</li><li>通过互动形式帮助开发者深入理解数据库性能优化和内部逻辑。</li></ul>
+      <p class="reason">PGSimCity 是一个关于 PostgreSQL 内部机制的教育性可视化项目，属于数据库开发工具和技术范畴，与编程和开源技术密切相关。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">layoric</span>
+        
+        <span>2026/07/27 09:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我喜欢这里所做的事情。一些需要改进的反馈是通过“Taketour”消除大量噪音。屏幕上有太多的方框和变化的东西，无法了解正在发生的事情。还要使其具有交互性，而不是自动切换到下一个主题。作为一个被动的观察者，试图传达如此多的信息是非常令人困惑的。<p>我真的很喜欢这种展示不同技术内部运作方式的方法，所以我认为这是成为一个非常有用的工具的良好途径，但需要一些关注，而不是更多的数据/图表/信息框。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064136">I love what is trying to be done here. Some feedback to improve would be to cut out a lot of the noise with the "Take tour". There are too many boxes and things changing on the screen to get a sense of what is happening. Also make it interactive rather than automatically switch onto the next subject. Being a passive observer to so much information trying to be conveyed is very confusing.<p>I really do like these kinds of approaches to showing the inner workings of different kinds of tech, so think this is on the good path to being a very useful tool, but needs some focus rather than more data/graphs/info boxes.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064136">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064136" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">titzer</span>
+        
+        <span>2026/07/27 09:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是令人惊叹的 3D 效果，然后 80% 的视觉空间都是弹出窗口，完全挡住了它。它将有一个很好的显着方法来减少噪音，并且弹出部分是透明的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064209">It's amazing 3D going on, and then 80% of the visual space is popups that completely block it. It'd be have a nice prominent ways of reducing the noise, and that pops were partially transparent.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064209">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064209" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">npl</span>
+        
+        <span>2026/07/27 09:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，尤其是在移动设备上</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064265">Yea on mobile especially</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064265">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064265" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">samokhvalov</span>
+        
+        <span>2026/07/27 10:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我理解你的意思。还在完善中！<p>感谢所有的反馈。对我也来说这太不可思议了。这一切都始于昨天，当时我只是出于好奇，用了一个提示词想看看 Opus 5 能做什么。</p><p>到目前为止大约使用了 38.6 亿个 token（不包括 GPT 5.6 Sol，它在某个阶段开始承担了大量编码的基础工作）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064658">I hear you. WIP!<p>thanks for all the feedback. It's amazing for me too. It all started yesterday with a single prompt and curiosity what Opus 5 can do.</p><p>~3.86B tokens used so far (not counting GPT 5.6 Sol that at some point started to do a lot of legwork for coding)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064658">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064658" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">svobodamartin</span>
+        
+        <span>2026/07/28 04:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">38.6亿个 token，真的是数十亿吗？<p>拿我来说，在 Max20 上每天写半天代码，同时高强度推进 3 个项目，每周的 token 消耗量是 5500 万。</p><p>多出来的大约两个数量级是从哪来的？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49074859">3.8B tokens, really Billions?<p>In my case token consumption per week of kinda intense 3 simultaneous projects coding half of the day on Max20 is 55M tokens.</p><p>Where do the extra ~2 orders of magnitude come from?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49074859">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49074859" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nugator</span>
+        
+        <span>2026/07/27 18:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">约 38.6 亿 * 5 美元/百万 token ≈ 1.93 万美元<p>这是你为此支付的费用，还是我的计算完全错了？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49067366">~3.86B * $5/M tokens ≈ $19.3k<p>Is that the cost you've payed for this or is my calculation completely wrong?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49067366">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49067366" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hectormalot</span>
+        
+        <span>2026/07/27 21:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很可能其中大量的 token 都被缓存了。而且因为这是一个个人项目，所以很可能使用的是个人版 Claude Max 20x 套餐。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49069213">Likely a lot of those tokens are cached. And because it’s an individual project it’s likely this is under a personal Claude Max 20x plan.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49069213">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49069213" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">samokhvalov</span>
+        
+        <span>2026/07/27 23:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">两点都说对了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49070879">correct on both counts</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49070879">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49070879" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nugator</span>
+        
+        <span>2026/07/28 16:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那么到目前为止，你觉得这花了你多少钱？就这个月 200 美元吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49080919">So how much would you say this have cost you so far? Just $200 for this month?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49080919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49080919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">saransh12345</span>
+        
+        <span>2026/07/27 15:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">能在这里分享一下提示词吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49066211">Share the prompt here please?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49066211">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49066211" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">samokhvalov</span>
+        
+        <span>2026/07/27 23:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一开始只是心血来潮，出于好奇随便看看 Opus 5 能做什么——结果第一眼看到的东西就太惊艳了，让我整个周末都花了好几个小时去打磨它<p>这是从历史记录里直接拿出来的，没做过修改</p><p>&gt; 你是一位资深的 Postgres 黑客和专家。我想要一个在浏览器里运行的 Postgres 工作原理 3D 可视化模型——包含所有主要组件，呈现为一个复杂的 3D 模型，所有部分都可缩放、带动画、带控制——包括 checkpointer、bgwriter、autovacuum、walwriter、backends、walsender 等等等等。想象一下我们需要建一个整个城市的 3D 模型。就是这种级别的复杂度。我们需要这个来让非数据库专家的工程师们也能轻松理解它的工作原理。设计必须酷炫、现代、超级酷炫，完全在浏览器中运行，带控制，能用方向键和鼠标控制相机视角飞行，可缩放等等。深入思考如何实现，使用哪些现代酷炫的技术，并用 ultracode 在一个新目录中实现（我们稍后再提交）。可以使用最酷、最现代的东西。深入思考，明智地选择工具，让我们一起构建一个超赞的浏览器内 Postgres 引擎 3D 模型</p><p>（后来我又找了很多关于内部机制和行为的资料，然后我们开始打磨/改进）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49071077">it was silly, quick check out of curiosity what Opus 5 can do – and the first thing I saw was so impressive that it made me spend hours during weekend polishing it<p>here it is from history, without edits</p><p>&gt; you're a veteran Postgres hacker and expert. I want 3D visualization of how Postgres works, for browser -- all its major components, presented as a 3d model, complex, with all parts zoomable, and animated, with controls -- checkpointer, bgwriter, autovacuum, walwriter, backends, walsender, etc etc etc. Imagine we need to build a 3d model of whole city. That's same level. We need this so engineers who are non-DB-experts would easily understand how it works. Design must be cool, modern, super cool, running all in browser, with controls, with camera position flying with arrow keys and mouse, zoomable, etc. Think deep how to implement it, which modern cool tech to use, and use ultracode to implement in a new directory (we'll commit it later). OK to use the most cool and most modern stuff. Think deep choose tools wisely and let's build an awesome in-browser 3d model of Postgres engine</p><p>(later I came with lots of materials about internals and behavior and we started to polish / improve)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49071077">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49071077" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">npl</span>
+        
+        <span>2026/07/28 00:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我经常让 Claude 给我解释一些我不懂的不同软件架构知识，因为我没有受过正规的技术训练——比如“把 Django 解释成一座城市，不同部分扮演不同角色”。我是视觉型学习者，所以这对我帮助很大，也给了我灵感，让我知道如何在不同抽象层级上对其他事物进行类似的可视化。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072270">I frequently have asked Claude to explain different software architecture things that I don’t know because I’m not formally technically trained - like “explain Django as though it’s a city with different parts having different roles”. I’m a visual learner so this helps a lot and gives me ideas for how to have similar visualizing for other stuff at various levels of abstraction.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072270">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072270" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">yieldcrv</span>
+        
+        <span>2026/07/27 11:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在放入 Claude Code 之前，只用了一个提示词在 Claude Design 里生成</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064797">single prompt Claude Design before putting it in Claude Code</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064797">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064797" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">derac</span>
+        
+        <span>2026/07/27 14:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">也许可以尝试在游览中添加 tts？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49065891">maybe try adding tts to the tour?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49065891">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49065891" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">andyfilms1</span>
+        
+        <span>2026/07/27 10:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是很好的一般性建议。如果您的软件需要“游览”，那么这是一个很好的指示，您应该在用户体验上工作。如果您只是很高兴向用户介绍一项新功能，他们会在需要时发现它。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064661">This is good general advice. If your software needs a "tour," that's a good indicator you should work on your UX instead. If you're just excited to tell the user about a new feature, they'll discover it when they need it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064661">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064661" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">appplication</span>
+        
+        <span>2026/07/27 11:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我认为在这种情况下，做个导览挺好的，这也正是重点所在。但我总体上不同意你的看法。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064890">I think in this case a tour is fine and sort of the point. But I disagree with you generally.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064890">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064890" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">vixen99</span>
+        
+        <span>2026/07/27 13:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">并不是每个人都会从相同的视角来看待这个模型。有些人只是单纯地对一些他们碰巧没用过的知名软件感到好奇。所以导览是个极好的主意。展示得很棒。恭喜。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49065565">Not everyone will come to view this model from the same vantage point. Some will simply be curious about some famous software that they don't happen to use. So the tour is an excellent idea. Great presentation. Congratulations.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49065565">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49065565" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">graypegg</span>
+        
+        <span>2026/07/28 07:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">人脑的限制因素与读者必须面对的限制因素相同。你可以让法学硕士来帮助你制作一些东西，但在一定程度的问候语中，[0]它只是感觉不应该由另一个人来体验，你知道吗？如果你不通过法学硕士来构建这个项目，你必须做出牺牲，因为你无法适应你头脑中发生的一切的心理模型。用户有相似的大脑，也有相似的限制。<p>我试图理解这里的隐喻，或者所有的动画和闪烁的灯光是如何代表正在发生的事情，但一切都迷失在酱汁中。我不确定为什么一个新过程用一个正方形表示，该正方形穿过管道并最终到达建筑物，然后弹球开关发出红光。我点击一个东西，然后弹出一个窗口，上面写着“会话是受害者”，还有另一段小文本，然后几秒钟后就消失了？什么？</p><p>公平地说，我不会认为这是为了教我！我总是有可能出现技能问题，而我只是缺乏知识。从表面上看，它是一件整洁的事情，它很整洁。</p><p>[0] <a href="https://en.wikipedia.org/wiki/Greeble" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Greeble</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076842">The limiting factor of your human brain is the same limiting factor the reader has to function with. You can get the LLM to aid in making something, but at a certain level of greebling, [0] it just doesn't feel like it's meant to be experienced by another human being, you know? The sacrifices you'd have to make by NOT building this with an LLM would be made because you COULDN'T fit the mental model of everything going on here in your head. The user has got a similar brain with similar limits.<p>I'm trying to understand the metaphors here, or how all of the animations and flashing lights are meant to represent something going on, but it all sort of gets lost in the sauce. I'm not sure why a new process is represented by a square that goes through a tube and ends up at a building and then the pinball switch glows red. I click on a thing and a popup says "sessions is the victim" with another paragraph of small text, then disappears a couple seconds later? What?</p><p>To be fair, I wont assume this is meant to teach me! Always the possibility of a skill issue on my part and I just lack knowledge here. Taking it at face value as a neat thing, it's neat.</p><p>[0] <a href="https://en.wikipedia.org/wiki/Greeble" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Greeble</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076842">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076842" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">narmiouh</span>
+        
+        <span>2026/07/27 09:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我想象，当我看到最初的视觉效果时，我能够以某种方式输入查询，它会引导我完成整个系统的流程，从输入解析开始一直到交付输出，也许一路上理解一些并行发生的自治进程，这些进程不是特定于查询的，而是不断运行。<p>其他人所说的 - 很棒的尝试，但不知道从哪里开始或从哪里结束。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49064172">I imagined as soon I saw the initial visual that I would somehow be able to enter a query and it would walk me through the flow through the entire system starting from input parsing to all the way to delivering output and perhaps along the way understand some of the autonomous processes that happen in parallel that aren't query specific but run constantly.<p>What others are saying - fantastic attempt, but don't know where to start or where to end.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49064172">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49064172" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">samokhvalov</span>
+        
+        <span>2026/07/27 11:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">尝试按 T</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49065015">try pressing T</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49065015">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49065015" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

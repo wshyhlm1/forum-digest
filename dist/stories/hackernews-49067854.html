@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bun 用 Rust 重写的进展如何？ | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-28/">返回日报</a>
+      <div class="source-chip">Hacker News #7</div>
+      <h1>Bun 用 Rust 重写的进展如何？</h1>
+      <p class="original-title">How is the Bun rewrite in Rust going?</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 tomlockwood</span>
+        <span>热度 480</span>
+        <span>回复 380</span>
+        <span>2026/07/27 19:12</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49067854" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://lockwood.dev/ai/2026/07/27/how-is-the-bun-rewrite-in-rust-going.html" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49067854.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>I think it’s important to be very Canny when someone makes a claim that supports a company’s large valuation.</li><li>The Bun rewrite seems well positioned as proof-positive that AI and specifically Anthropic’s AI can do the work of open-source maintainers, for some money, but faster.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Jarred</span>
+        
+        <span>2026/07/27 21:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Bun 的 Rust 重写在一个多月前在 Claude Code 中发布，但几乎没有人注意到。克劳德码被广泛使用。 Rust 重写总体进展顺利。<p>在 Bun v1.4 视频中，我承诺添加一定数量的新通过的 Node.js 测试来迫使我们提高兼容性，但这个数字还不是真的。发布时间将被推迟，直到消息属实为止。实现这一目标的 PR 已发布，但尚未合并。我们很可能会在下周二发布 1.4。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49069787">Bun’s Rust rewrite shipped in Claude Code over a month ago and barely anyone noticed. Claude Code is widely used. The Rust rewrite is going well overall.<p>In the Bun v1.4 video, I promised a certain number of newly passing Node.js tests were added to force us to improve compatibility, and that number is not true  yet. The release is delayed until it is true. The PRs to make it true are up but not merged yet. Most likely next Tuesday we’ll do the release of 1.4.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49069787">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49069787" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">inglor</span>
+        
+        <span>2026/07/27 22:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">只要您需要，就可以确保软件质量。一个月没有发布版本并不是什么大问题，任何需要特定功能的人都可以贡献或构建自己。<p>Node 几乎每年 12 月都会有 4-6 周没有发布有意义的版本（安全性内容除外）。我认为文章中的批评是没有根据的，任何需要/想要发布的人都应该先提出要求，而不是写一篇“愤怒”的博客文章。</p><p>（我是 Node.js 维护者）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49070481">Take as long as you need to ensure software quality. A month without a release isn't a big deal and whomever needs a specific feature can offer to contribute or build themselves.<p>Node has 4-6 weeks without a meaningful release (other than security stuff) pretty much every December. I think the criticism in the article is unfounded and whomever needed/wanted a release should have asked first instead of writing an "angry" blog post.</p><p>(I'm a Node.js maintainer)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49070481">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49070481" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">inigyou</span>
+        
+        <span>2026/07/28 00:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Node 每 4-6 周就会得到什么，这使得它在没有得到的时候值得注意？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072433">What is Node getting every 4-6 weeks that makes it noteworthy when it doesn't?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072433">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072433" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">inglor</span>
+        
+        <span>2026/07/28 05:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">文本导入（实验性）、原生插件 ESM 支持、blob textStream()、ReadableStreamTee、readFile 的 byob 支持、更好的事件循环监控，以及大量安全修复和更多小错误修复与改进。（过去 4-6 周）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076007">Text imports (experimental), native addon ESM support, blob textStream(), ReadableStreamTee, byob for readFile, better event loop monitoring and lots of security fixes as well as more minor bug fixes and improvements. (Last 4-6 weeks)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076007">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076007" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nonethewiser</span>
+        
+        <span>2026/07/28 07:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">另一种遍历数组的函数式方法</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49077257">Another functional way to iterate over an array</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49077257">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49077257" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tomlockwood</span>
+        
+        <span>2026/07/27 23:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">作者：我不需要或想要另一个 Bun 版本或 NPM 版本或类似的东西。就像我在文章中非常明确地说的那样，我刚刚与一位同行讨论了 Bun 重写，我决定看一下。<p>我一直对新技术持怀疑态度，无论是 NoSQL、区块链还是无服务器。有些我怀疑的事情会失败，有些会成功。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49070877">Author here: I don't need or want another Bun release or an NPM release or anything like that. Like I very clearly say in the article I just got chatting with a peer about the Bun rewrite and I decided to take a look.<p>I'm consistently skeptical about new tech whether it is NoSQL or Blockchain or Serverless. Some of the things I'm skeptical about fail and some succeed.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49070877">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49070877" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">inglor</span>
+        
+        <span>2026/07/28 06:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Bun 的移植是一项了不起的工程成就，以前一个团队可能需要一两年才能完成——看看 TypeScript 的移植就知道了（而且他们还有大语言模型辅助）。<p>虽然发布花了一些时间，但速度依然快得惊人。我相信过程中可能会遇到一些波折。</p><p>保持怀疑态度是好事，有些项目成功了，有些则没有——但构建工具依然是一件有趣且很酷的事情，无论它是否有用或是否被广泛采用 :)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076038">The bun Port is a phenomenal engineering achievement that would have taken a team of people over a year or two to deliver previously - look at the TypeScript port for example (and they had llms).<p>The fact it's taking a while to release is still insanely fast. I'm sure they may be some bumps.</p><p>Being skeptical is good and some stuff succeeds and some doesn't - but building tools is still fun and cool, whether it's useful or widely adopted or not :)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076038">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076038" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tomlockwood</span>
+        
+        <span>2026/07/28 12:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，如果你愿意，可以去看看我的 GitHub 页面，上面有一些工具失败的案例。不过，可没人对这些大肆炒作。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49079264">Yeah if you want you can check out my github page to see some tool failures. Nobody is hyping those up, though.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49079264">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49079264" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jojobas</span>
+        
+        <span>2026/07/28 06:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最初“10天16.5万美元”的预估还是有点过于乐观了，你不觉得吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076178">The initial "10 days and $165k" was still a tad optimistic dontchathink?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076178">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076178" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throw1234567891</span>
+        
+        <span>2026/07/28 04:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是个很棒的方法。无论如何，你总能找到理由感到惊喜！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075059">That’s a great approach. No matter what you will always find a reason to be positively surprised!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075059">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075059" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">WhitneyLand</span>
+        
+        <span>2026/07/28 08:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">问题在于，你所怀疑的真正成本，可能是最不重要的部分。<p>它真的花了 100 万美元，而不是到处流传的 15 万美元吗？</p><p>如果你现在不喜欢这个价格，那就再等等看。</p><p>重点是，这类英雄壮举现在确实行得通，而且成本只会越来越低。</p><p>我并不是想对你写的内容泼冷水，读起来很有意思。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49077837">The problem is what you’re skeptical about, the true cost, is probably the least important part.<p>Did it really cost $1 million instead of the 150k that’s been floating around?</p><p>If you don’t like the price now just give it some time.</p><p>The point is that these kind of heroics can actually work now and they’re only going to get cheaper.</p><p>I don’t mean to sound negative about what you wrote, it was an interesting read.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49077837">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49077837" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tomlockwood</span>
+        
+        <span>2026/07/28 13:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我个人认为成本确实很重要。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49079625">Personally I think the cost does matter.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49079625">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49079625" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">da02</span>
+        
+        <span>2026/07/28 00:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">过去几年里，你采用过哪些最喜欢的工具或服务？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072058">What are some of your favorite tools or services that you adopted in the past few years?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072058">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072058" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tomlockwood</span>
+        
+        <span>2026/07/28 06:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">uv</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076354">uv</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076354">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076354" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">thayne</span>
+        
+        <span>2026/07/28 04:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这并不奇怪。 Claude 代码有足够多的 bug，而且发布版本经常会破坏一些东西，我不希望用户能够区分通过切换到 rust-based-bun 所引入的 bug 和普通的花园品种 bug。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49074858">That's not surprising. Claude code is buggy enough, and releases break things often enough, that I wouldn't expect users to distinguish bugs introduced by switching to rust-based-bun from the normal garden variety bugs.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49074858">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49074858" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">AlexErrant</span>
+        
+        <span>2026/07/28 05:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我可以数出@文件引用没有自动完成的次数一百手。或者倒带如何不会重置“此文件是否已读取”标记。或者一个分支（分叉一个 convo）实际上需要 5 秒以上的时间才能运行。或者，如果用户专用的斜杠命令位于提示符中间，则该命令将无法工作。或者 ctrl-r 搜索如何匹配不包含任何搜索词的结果。或者你如何无法在给定会话 ID 的情况下恢复分支。<p>是的，鲍里斯，告诉我更多有关“编码是如何解决的”的信息。</p><p>编辑：实际上，就在刚才，在编写克劳德代码挂钩时，opus5 给了我这个 LOC，因为显然更改日志和记录中的内容_不同_；很棒的文档 d00ds。</p><p></p><pre><code> # 仅适用于子代理的呼叫。两种拼写均被接受：变更日志
+    # 名称 `agent_id`，成绩单使用 `agentId`，我们不需要关心是哪个土地。
+    agent=$(printf '%s' "$input" | jq -r '.agent_id // .agentId // 空')</code></pre></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075729">I can count the number of times an @ file reference doesn't autocomplete on a hundred hands. Or how a rewind won't reset the "is this file Read" marker. Or how a Branch (forking a convo) takes literally 5+secs to run. Or how a slashcommand that's user-only will not work if its in the middle of a prompt. Or how ctrl-r search will match results that don't include any search terms. Or how you can't resume a branch given its session id.<p>Yes Boris, tell me more about how "coding is solved".</p><p>Edit: literally just now, while writing a claude code hook, opus5 gave me this LOC because apparently the changelog and what's in the transcripts _differs_; great docs d00ds.</p><p></p><pre><code>    # Present only for a subagent's calls. Both spellings accepted: the changelog
+    # names `agent_id`, transcripts use `agentId`, and we need not care which lands.
+    agent=$(printf '%s' "$input" | jq -r '.agent_id // .agentId // empty')</code></pre></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075729">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075729" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">maxbond</span>
+        
+        <span>2026/07/28 05:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Claude 代码有很多错误，但通常不会崩溃，如果它交付了一个月不成熟的后端，这正是您所期望的。也许重写充满了错误，它们碰巧导致了 UI 故障或设置文件被删除，或者克劳德代码经常出现而不是崩溃的任何其他应用程序级错误，但这将是相当令人惊讶的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075792">Claude Code is quite buggy but doesn't generally crash, which is what you would expect if it shipped an immature backend for a month. Maybe the rewrite is full of bugs and they happened to result in the UI glitches or trashed settings files or whatever other application-level bugs that Claude Code has routinely rather than crashes but that would be pretty surprising.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075792">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075792" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">denverllc</span>
+        
+        <span>2026/07/28 04:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我只是期望我的 CC 实例会随机“空白”，并且我必须调整终端大小/使用向上翻页/向下翻页才能使其再次显示。<p>据说他们使用游戏引擎来渲染 TUI，但我从未让 FPS 游戏这样做。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075029">I’ve come to just expect that my CC instance will randomly “blank” and that I have to resize my terminal / use page up/page down to get it to show again.<p>Supposedly they used a game engine to render their TUI but I’ve never had an FPS game do that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075029">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075029" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Daviey</span>
+        
+        <span>2026/07/28 04:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们让 TUI 和实际执行任务的代码运行在同一个线程里……导致频繁卡死。<p>没有哪个 GUI 开发者会把这俩放在同一个线程。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075252">They drive the TUI from the same thread that actual does stuff.. causing frequent freezes.<p>No GUI developer would ever put this on the same thread.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075252">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075252" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">FridgeSeal</span>
+        
+        <span>2026/07/28 07:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">直接让Claude修一下不就行了，有什么问题吗？？？？？？？/s</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076731">Just ask Claude to fix it, what’s the problem??????? /s</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076731">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076731" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

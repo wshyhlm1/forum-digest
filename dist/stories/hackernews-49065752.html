@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HuggingFace 上的 Kimi-K3 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-28/">返回日报</a>
+      <div class="source-chip">Hacker News #3</div>
+      <h1>HuggingFace 上的 Kimi-K3</h1>
+      <p class="original-title">Kimi-K3 on HuggingFace</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 nateb2022</span>
+        <span>热度 1357</span>
+        <span>回复 536</span>
+        <span>2026/07/27 14:18</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49065752" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://huggingface.co/moonshotai/Kimi-K3" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49065752.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>📰 Tech Blog | 📄 Full Report</li><li>1. Model Introduction</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">相关： <i>Kimi-K3 技术报告 [pdf]</i> - <a href="https://news.ycombinator.com/item?id=49070985" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49070985</a></div>
+      <div class="post-body is-hidden" data-role="story-raw">Related: <i>Kimi-K3 Technical Report [pdf]</i> - <a href="https://news.ycombinator.com/item?id=49070985" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49070985</a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">NitpickLawyer</span>
+        
+        <span>2026/07/27 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">由于几个原因，这会很有趣。首先，根据与第三方提供商达成的中间定价，我们将了解提供 3T 模型的成本是多少。由于它将是 mxfp4 原生的，因此需要大约 1.5TB 的 VRAM 来托管它，这刚好达到 8xb200 的限制（但实际上，您需要 16x 来进行上下文/吞吐量优化）。托管费用并不便宜，但至少我们应该为 3T 模型获得一定范围的 $/MTok。然后我们将能够猜测“实验室是否在 API 定价上补贴代币”。<p>看看需要付出什么努力来微调这个野兽也很有趣。 Cyber​​sec 上的最新 AISI 基准使其高于 glm5.2，但仍远远落后于 SotA 封闭模型。这里可能需要一些微调。另外，有趣的是看看 Cursor 是否对其进行了另一轮训练，以直接将其与 kimi2.6/2.7 微调（作曲家系列）和 grok4.5 进行比较。</p><p>此外，有趣的是看看是否有人将其蒸馏（适当的蒸馏，w/训练整个分布）从此变成更小的模型。 （dsv4-kimi 应该非常好，因为 dsv4 的服务非常便宜）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49065868">This will be interesting for a few reasons. First, depending on where the median pricing settles w/ 3rd party providers will tell us what it costs to serve a 3T model. Since it's going to be mxfp4 native, it'll take ~1.5TB of VRAM to host this, which is juuust at the limit of 8xb200s (but realistically you'll need 16x for context / throughput optimisation). Won't be cheap to host, but at least we should get some range of $/MTok for a 3T model. Then we'll be able to guesstimate if "labs are subsidising tokens on API pricing".<p>Also interesting to see what effort it will take to fine-tune this beast. The latest AISI benchmarks on cybersec place it above glm5.2, but still way way behind SotA closed models. Some fine-tuning might be needed here. Also, interesting to see if Cursor does another training round on it, to directly compare it w/ kimi2.6/2.7 fine-tunes (composer series) and grok4.5.</p><p>Also also, interesting to see if someone takes on distilling (proper distillation, w/ training the entire distribution) from this into smaller models. (dsv4-kimi should be really good, since dsv4 is very cheap to serve)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49065868">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49065868" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">walrus01</span>
+        
+        <span>2026/07/27 16:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看看人们在没有 GPU 但有大量 RAM 服务器（例如具有 1.5 到 3TB RAM 的双路或四路 Xeon）上运行它会得到什么样的“慢”性能，这将是非常有趣的。目的是给它更长的持续时间的任务来生成一些东西，然后回来检查它在 4 或 6 小时内做了什么。即使输出约为 5-6 tok/s，也可能可用于某些目的。<p>购买二手 4U 机架式服务器并在其中放入 3TB RAM（64GB DIMM x 四插槽 Xeon 中的数量为 32 个，您可以在 eBay 上看到一些 16 或 32 组匹配的 64GB ECC DIMM 的基准价格）与成本相比，价格差异巨大，成本为 &lt;30,000 美元尝试在真正的 GPU 硬件上运行它。</p><p>现在显然，截至我写这篇文章时，完整的精度尚未发布，也没有像 unsloth 这样的人通过量化运行它来产生它的“Q8”或“Q8-XL”变体。但我认为它将需要超过 1536GB 的 RAM，具有可用且大量的上下文，更像是 2TB，最好是 2.5 到 3TB。</p><p>我还预测，尝试在第四季度和第六季度运行它的人将得到两全其美的结果：精度较低/丢失知识，但输出也不可靠，而且输出速度太慢。以我个人的观点，如果我要处理一些智能但缓慢且在有限的预算硬件上运行的东西，我需要它是 Q8。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49066583">It will be very interesting to see what kind of 'slow' performance people get from running it on a no GPU, but tons of RAM server (like a dual or quad socket xeon with 1.5 to 3TB of RAM). For the purpose of giving it longer duration tasks to generate a piece of something and come back and check on what it has done in 4 or 6 hours. Even if the output is like 5-6 tok/s, that might be usable for some purposes.<p>Huge price difference in what you can do with buying a used 4U rackmount server and putting 3TB of RAM in it (64GB DIMMs x quantity 32 in a quad socket xeon, you can see some benchmark prices on eBay for sets of 16 or 32 matched 64GB ECC DIMMs) for &lt;$30,000, vs the cost of trying to run it on real GPU hardware.</p><p>Now obviously, as of the time I write this, the full precision hasn't been released nor has anyone like unsloth run it through quantization yet to produce a "Q8" or "Q8-XL" variant of it. But I think it's going to need more than 1536GB of RAM, with a usable and large amount of context, more like 2TB and preferably 2.5 to 3TB.</p><p>I also predict that people who try to run it in Q4 and Q6 will get the worst of both worlds, less precision/lost knowledge but also not reliable output that comes out too slow. In my personal opinion if I'm going to deal with something that is smart but slow and running on limited budget hardware, I need it to be Q8.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49066583">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49066583" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">fooker</span>
+        
+        <span>2026/07/27 16:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 即使输出约为 5-6 tok/s，也可能可用于某些目的。<p>要让它以每秒数百个令牌的速度在别人的 GPU 上运行，您将花费比 API 成本多约 100 倍的电力。</p><p>我认为某种极端的数据隐私要求是证明这一点的唯一情况，但 {需要绝对数据隐私、需要运行 SOTA 模型、买不起 GPU} 真的很狭窄。如果这是一个空集，我不会感到惊讶。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49066701">&gt;  Even if the output is like 5-6 tok/s, that might be usable for some purposes.<p>You'll spend ~100x more on electricity than the API cost to have it run on someone else's GPU at several hundred tokens per second.</p><p>I think some sort of extreme data privacy requirement is the only situation that justifies this, but the intersection of {needs absolute data privacy, needs to run SOTA model, cannot afford GPUs} is really really narrow. I wouldn't be surprised if this is an empty set.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49066701">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49066701" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">walrus01</span>
+        
+        <span>2026/07/27 16:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在许多用例中，将上下文内容和提示（以及结果输出）发送到第三方服务是不可行的，人们会为了数据主权而牺牲速度。而且并不是每个人的电费都一样贵，我每千瓦时支付约 0.075 美元。例如，运行四路戴尔 R940 一个月需要花费大约 48 美元的电费（不包括冷却成本）。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49066711">There are a number of use cases where sending the contents of your context and prompts (and the resulting output) to a 3rd party service is off the table as an option, and people will compromise speed for data sovereignty. And not everyone's electricity is equally expensive, I pay about $0.075 USD per kWh. It would for example cost me about $48 a month of electricity (not counting cost of cooling) to run a quad socket Dell R940 for a month.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49066711">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49066711" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mdasen</span>
+        
+        <span>2026/07/27 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对于美国来说，这是一个异常低的电费 - 远低于最低的州平均电价爱达荷州的 12.4 美分。当然，你可能会得到 7.5 美分（包括运费），但我有朋友说，在马萨诸塞州，他们“每千瓦时得到 13 美分”，但这只是供电率，运费还要大约 18 美分。<p>华盛顿州格兰特县等部分地区拥有廉价的水力发电，但在美国，电力如此便宜的情况很少见。即使这适用于您，也不适用于这里的绝大多数人，他们的电价将高出 2-4 倍。</p><p>按地区划分的平均电价：</p><p></p><pre><code> 新英格兰 28.1 美分
+    大西洋中部 25.1 美分
+    东北中部 20.8 美分
+    西北中部 14.8 美分
+    南大西洋 16.1 美分
+    东南中部 15.5 美分
+    山14.6美分
+    太平洋连续 26.1 美分
+    太平洋非连续 42.1 美分
+</code></pre>
+<a href="https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a" target="_blank" rel="noopener noreferrer">https://www.eia.gov/electricity/monthly/epm_table_grapher.ph...</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49069946">That's an unusually low electric rate for the US - way below the lowest state average which is Idaho at 12.4 cents. It's certainly possible that you are getting 7.5 cents including delivery, but I've had friends say that they're "getting 13 cents per kWh" here in Massachusetts, but that's just the supply rate and the delivery is another ~18 cents.<p>There are parts of states like Grant County Washington that have cheap hydro power, but it's very rare for power to be that cheap in the US. Even if this applies to you, it won't apply to the vast majority of people on here who will have electric rates 2-4x higher.</p><p>Average electric rates by region:</p><p></p><pre><code>    New England            28.1 cents
+    Mid Atlantic           25.1 cents
+    East North Central     20.8 cents
+    West North Central     14.8 cents
+    South Atlantic         16.1 cents
+    East South Central     15.5 cents
+    Mountain               14.6 cents
+    Pacific Contiguous     26.1 cents
+    Pacific Noncontiguous  42.1 cents
+</code></pre>
+<a href="https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_6_a" target="_blank" rel="noopener noreferrer">https://www.eia.gov/electricity/monthly/epm_table_grapher.ph...</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49069946">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49069946" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zdragnar</span>
+        
+        <span>2026/07/28 03:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">实际上，我冬天的工资是 11 美分，夏天的工资是 13 美分，但我的公用事业公司是一家合作社。我认为我所在州的平均费用是 19 美分。<p>如果您愿意，我认为您可以降低到 8 美分左右签约可中断负载或专用非高峰负载，具体取决于公司，但是，标准费率并没有那么低。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49074198">I'm actually getting 11 cents in winter, 13 in summer, but my utility company is a co-op. Average for my state is I think 19 cents.<p>I think you can get down to around 8 if you are signed up for an interruptible load, or a dedicated off peak load, depending on the company, but yeah, standard rates aren't that low.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49074198">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49074198" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">murderfs</span>
+        
+        <span>2026/07/28 01:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 太平洋连续 26.1 美分<p>这有点误导，因为它结合了加利福尼亚州的 50 美分/千瓦时与俄勒冈州和华盛顿州的 15 美分/千瓦时。例如，西雅图城市之光的统一费率定价为 13.38 美分/千瓦时，而按使用时间计费则要低得多（非高峰时段为 8 美分/千瓦时）。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072723">&gt; Pacific Contiguous     26.1 cents<p>This is a bit misleading, because it's combining the 50 cents/kWh from California with 15ish cents/kWh in Oregon and Washington. Seattle City Light, for example, charges 13.38 cents/kWh on flat rate pricing, and far less with time-of-use billing (8 cents/kWh on off-peak).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072723">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072723" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">radium3d</span>
+        
+        <span>2026/07/28 01:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果您使用太阳能并配有备用电池，您可以获得比这些更低的费率！查看使用时间费率。一旦您将TOU与太阳能+电池配对，超级离峰费率立即成为最高价格点。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072858">If you run off solar with battery backup, you can achieve lower than those rates! Look at Time of Use rates. The super off peak rates instantly  become the max price point once you pair TOU with Solar + battery.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072858">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072858" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rootusrootus</span>
+        
+        <span>2026/07/28 00:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">许多人引用的低费率也只是指非高峰费率。  这在电动汽车讨论中很常见。  这也不完全是一个公平的论点，因为非高峰费率的另一面是高峰费率通常要高得多。  所以真正的有效率要高一点，在中间的某个地方，具体取决于使用模式。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072133">A lot of people quoting low rates are also just referring to their off-peak rate.  This is pretty common in EV discussions.  It's not exactly a fair argument there, either, because the flip side of having an off-peak rate is that the on-peak rate is usually quite a lot higher.  So the true effective rate is a bit higher, somewhere in the middle depending on usage pattern.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072133">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072133" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/07/28 03:22</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[已删除]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49074431"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49074431">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49074431" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">searealist</span>
+        
+        <span>2026/07/28 01:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不过，让您的电动汽车只在非高峰时段充电很容易。这只是一个设置。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072544">It's easy to have your EV only charge off-peak, though. It's just a setting.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072544">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072544" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rootusrootus</span>
+        
+        <span>2026/07/28 01:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我的观点是，获得非高峰定价的代价是高峰时段的价格要贵得多。  因此，您可以在非高峰时段为电动汽车充电以最大限度地节省费用，但在高峰时段您所做的所有其他事情都会花费更多。<p>以我自己为例：</p><p>如果可能的话，我将空调调整为在下午 5 点至晚上 9 点（高峰）之外运行，我们尽量避免在同一时间段内无意义的高消耗使用，并且我们的两辆电动汽车都将充电推迟到晚上 9 点之后。</p><p>我下午 5 点至晚上 9 点的费率是0.43/千瓦时。  我晚上 9 点后的电价是 0.09/kWh。  如果我不想担心一天中的时间，统一费率替代方案为 0.21/kWh。  这些价格是全部价格，包括输电和配电等。</p><p>如果说我的电动汽车运行成本仅为 0.09/kWh，那是不诚实的，从表面上看，这是在声称要少付 50% 以上。  事实上，与统一费率相比，按时段定价通常可以在平均一个月内节省 10% 到 15% 的费用。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072776">My point is that the tradeoff to get off-peak pricing is that on-peak is way, way more expensive.  So you can charge the EV off-peak to maximize the savings, but everything else you do during on-peak time costs way more.<p>Using myself as an example:</p><p>I adjust my A/C to run outside of 5pm-9pm (peak) if at all possible, we try to avoid pointless high-draw usage during that same window, and both of our EVs hold off charging until after 9pm.</p><p>My rate from 5pm-9pm is 0.43/kWh.  My rate after 9pm is 0.09/kWh.  The flat rate alternative, if I did not want to worry about time of day, would be 0.21/kWh.  These prices are all-in, including transmission and distribution/whatever.</p><p>It would be dishonest to say that my EVs only cost me 0.09/kWh to operate, which on it's face is a claim to paying over 50% less.  In reality, time of day pricing typically saves me somewhere between 10% and 15% in an average month compared with flat rate.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072776">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072776" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mindslight</span>
+        
+        <span>2026/07/28 02:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果您将电动汽车充电排除在您的消费之外，一天中的某个时段计划是否还能为您节省剩余使用费用？或者这需要你付出代价吗？如果它能为您省钱，那么无论电动汽车充电如何，采用 ​​ToD 计划都是有意义的。这意味着将额外的电动汽车消耗视为非高峰费率的边际费率是有意义的。从本质上讲，电动汽车负载具有可调度的宝贵特性。<p>您可以使用地下室的除湿机进行相同的思想实验。它可以很容易地在高峰使用期间关闭并仍然完成其工作，因此其电费也是边际离峰电价。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49073621">If you leave the EV charging out of your consumption, does a time of day plan still save you money on the remaining usage? Or does it cost you? If it saves you money, then it would make sense to be on a ToD plan regardless of EV charging. Which means it makes sense to consider your additional EV draw as costing the <i>marginal</i> off-peak rate. Essentially the EV load has the valuable property of being dispatchable.<p>You can do the same thought experiment with say a dehumidifier in your basement. It can easily be off during peak usage and still accomplish its job, so its cost of electricity is also the marginal off-peak rate.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49073621">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49073621" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rootusrootus</span>
+        
+        <span>2026/07/28 04:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 如果把电动汽车充电从用电量中剔除，分时电价计划还能让你在剩余用电上省钱吗？还是会让你花更多钱？<p>如果不算电动汽车，使用分时电价反而会让我花更多钱（幅度不大，不到10%）。当然，这因用户而异，我估计电力公司设计分时电价时，是让普通用户的总费用基本持平。他们甚至保证第一年的费用不会<i>超过</i>固定电价的10%，否则就退还差价。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075192">&gt; If you leave the EV charging out of your consumption, does a time of day plan still save you money on the remaining usage? Or does it cost you?<p>It would cost me more (modestly so, less than 10%) to be on TOD without the EVs.  This will vary by customer, of course, and I expect that the power company designs TOD to be a wash for the average customer.  They even guarantee it won't be <i>more</i> than 10% more expensive over the first year or they will refund the difference.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075192">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075192" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mindslight</span>
+        
+        <span>2026/07/28 05:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那么是的，我同意你的看法，把你的电动汽车充电成本说成是每千瓦时0.09美元是不合理的，毕竟你大概只是为了电动汽车才选择了这个稍微贵一点的分时电价计划。<p>就我个人而言，我非常希望能用上分时电价计划，特别是你列出的那种费率结构——盈亏平衡点似乎是在高峰时段使用不到全天三分之一的用电量，而高峰时段只占全天的六分之一？我有一堆固定负载（电脑），还有一些本来就倾向于在夜间运行的设备（洗碗机、烘干机等）。</p><p>顺便说一句，我认为分时电价与固定电价之间的定价差异，更多是与电力公司自身如何购电以及如何对一天中不同时段的需求进行建模和对冲有关，而不仅仅是为了让消费者的成本持平。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49075840">Then yes I'd agree with you, it doesn't make sense to describe your EV charging as costing $0.09/kWh since you're presumably only on the slightly more expensive ToD plan due to the EV.<p>Personally I'd love to have a ToD plan, especially with the rate structure you've laid out - break even seems to be using less than 1/3 of your daily electricity usage during the on-peak hours, which is only 1/6 of the day? I've got a bunch of fixed loads (computers) plus ones that tend to run overnight anyway (dishwasher, dryer, etc).</p><p>FWIW I'd think the pricing of the ToD plan versus the fixed rate plan has more to do with how the power company themselves has to buy power and model/hedge against demand at various parts of the day, rather than simply trying to make the costs even for the consumer.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49075840">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49075840" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rootusrootus</span>
+        
+        <span>2026/07/28 06:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 顺便说一句，我认为分时电价与固定电价之间的定价差异，更多是与电力公司自身如何购电以及如何对一天中不同时段的需求进行建模和对冲有关，而不仅仅是为了让消费者的成本持平。<p>我同意，我支持自己观点的唯一证据是，电力公司在宣传分时电价计划时，会向普通用户展示他们典型一天的用电明细，然后逐项列出固定电价和分时电价下的费用对比。最终得出的数字只差几分钱。我认为这并非巧合，但也可能是我错了，这完全是巧合。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49076095">&gt; FWIW I'd think the pricing of the ToD plan versus the fixed rate plan has more to do with how the power company themselves has to buy power and model/hedge against demand at various parts of the day, rather than simply trying to make the costs even for the consumer.<p>I agree, my single point of evidence to support my theory is that the power company advertises the TOD plan by presenting an average customer with their breakdown of usage throughout a typical day, and then itemizes how it would look with flat-rate versus TOD.  The resulting figure is within a few pennies.  I figure that is not accidental, but I could be wrong and it is entirely coincidence.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49076095">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49076095" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">searealist</span>
+        
+        <span>2026/07/28 01:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">公平点。<p>我想这取决于您是否会使用 ToU。</p><p>看起来大约 50% 的加州人使用 ToU 计划，但全国范围内这个数字只有 10%。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49073049">Fair point.<p>I guess it depends on if you would be using ToU otherwise.</p><p>It looks like about 50% of Californians use ToU plans, but the number is only 10% nation-wide.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49073049">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49073049" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/07/28 01:28</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[已删除]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49072863"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49072863">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49072863" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nightski</span>
+        
+        <span>2026/07/28 02:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不是家长，但这里有一个在美国具有该范围费率的地点<p><a href="https://casscountyelectric.com/rates" target="_blank" rel="noopener noreferrer">https://casscountyelectric.com/rates</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49073816">Not the parent, but here is one location that has rates in that range in the U.S.<p><a href="https://casscountyelectric.com/rates" target="_blank" rel="noopener noreferrer">https://casscountyelectric.com/rates</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49073816">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49073816" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nextaccountic</span>
+        
+        <span>2026/07/28 11:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 对于美国来说，电价异常低<p>购买自己的太阳能电池板和电池怎么样？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49079014">&gt; That's an unusually low electric rate for the US<p>What about buying your own solar panels and batteries?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49079014">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49079014" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
