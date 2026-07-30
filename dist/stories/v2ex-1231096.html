@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>memU：给 Claude Code、OpenClaw、Hermes 装上共享内存层 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-07-30/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>memU：给 Claude Code、OpenClaw、Hermes 装上共享内存层</h1>
+      <p class="original-title">memU：给 Claude Code、OpenClaw、Hermes 装上共享 memory 层</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 Daniel6606</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/07/30 23:16</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1231096" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1231096.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>hihi 朋友们，我是 memU 团队的工程师</li><li>今天想给大家分享一个我们一直在打磨的开源项目：memU ，一个面向个人开发者和极客的轻量级 Agent 记忆层。说人话就是：给你常用的几个 Agent 装上同一个大脑，让它们之间互相认识。 定位和 mem0 ，Zep ，Letta （原 MemGPT ）差不多，都是 AI 记忆层的赛道，但我们走了和他们完全不同的路：我们摒弃了传统的记忆框架的臃肿，把代码从 3 万行缩短到了 500 行，只要会用 Agent 的人都可一行 prompt 以轻松部署</li></ul>
+      
+      <p class="reason">命中 8 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>嗨嗨，朋友们，我是 memU 团队的工程师</p>
+<p>今天想给大家分享一个我们一直在打磨的开源项目：memU ，<strong>一个面向个人开发者和极客的轻量级 Agent 记忆层</strong>。说人话就是：<strong>为你常用的几个 Agent 装上同一个大脑，让它们彼此相互认识。</strong>
+定位与 mem0、Zep、Letta（原 MemGPT）差不多，都是 AI 记忆层的赛道，但我们走了和他们完全不同的路：我们摒弃了传统记忆框架的臃肿，把代码从 3 万行缩短到了 500 行，只要会用 Agent 的人都可以用一行 prompt 轻松部署。</p>
+<p>GitHub：<a href="http://github.com/NevaMind-AI/memU" target="_blank" rel="noopener noreferrer">github.com/NevaMind-AI/memU</a> （求个 Star ～⭐）</p>
+<p>官网：<a href="http://memu.pro" target="_blank" rel="noopener noreferrer">memu.pro</a></p>
+一、为什么做这件事
+<p>现在用 AI Agent 干活的人越来越多：用 Claude Code 写代码、Cursor 改前端、Hermes 跑 cron job 自动化任务；但用过一段时间，绝大多数人都会撞上同一堵墙：<strong>记忆孤岛。</strong></p>
+<p>每个 Agent 都是独立的会话。早上用 Claude Code 配好的项目环境，下午切到 Cursor 又要重新讲一遍。台式机上调教好的偏好设置，换到 MacBook 上一切归零。</p>
+<p>市面上不是没有记忆方案，但要么太重（Docker + 向量数据库 + 多阶段 LLM Pipeline），要么只绑死在一个工具上（比如只能给 Claude 用）。</p>
+<p>我们想要的是一个能让所有 Agent 都接入、部署足够轻、数据自己能掌控的记忆层。</p>
+<p><strong>这就是今天的 memU 。</strong></p>
+二、就三个功能，没有第四个
+① 跨 Agent 、跨设备共享记忆
+<p>Claude Code、Codex、Cursor、Hermes、OpenClaw 全部共用同一层记忆库。上午在台式机用 Claude Code 学到的项目上下文，下午笔记本上的 Cursor 直接就能检索到。</p>
+<p></p>
+② 极致轻量的架构
+<p>新版的 memU 核心大约 500 行代码（旧版有 3 万行）</p>
+<p>删掉的是什么？</p>
+<p>多阶段 LLM 提取链、查询改写器、重排器、自定义提示词模板库</p>
+<p>为什么能删？</p>
+<p>因为现在的 Agent 本身就是高级推理模型，不需要外部 Harness 替它思考。
+Agent 负责思考，memU 只做存储和检索。</p>
+③ 检索速度快，数据可读
+<p>检索仅进行一次向量计算，无需额外调用 LLM。</p>
+<p>500行核心带来的直接好处：每轮检索零额外LLM调用，p95延迟不到35ms。</p>
+<p>所有记忆以纯 Markdown 文件存储在本地。你可以用 VS Code 打开、用 grep 搜索、用 Git 备份。不是黑盒向量数据库。</p>
+<p></p>
+三、直接亮数据：检索路径对比
+<p>不是砍功能换性能，是<strong>把不该由 memory 层做的事交还给了 Agent 本身。</strong></p>
+
+
+
+指标
+旧版 memU （ 3 万行）
+新版 memU （ 500 行）
+
+检索额外 LLM 调用
+每轮 2–4 次
+0 次
+
+检索延迟（ P95 ）
+~1,200 ms
+&lt; 35 ms
+
+每轮 Token 额外开销
+~850 tokens
+~120 tokens
+
+四、怎么安装
+<p><strong>不需要配 Docker，不需要起服务，不需要装额外的数据库。</strong></p>
+<p>先到官网 <a href="https://memu.so/quick-start" target="_blank" rel="noopener noreferrer">https://memu.so/quick-start</a> 拿到你的 API Key，然后带着这个 API key 一起，把下面这段 Prompt 发给 Agent 就行：</p>
+<pre><code>read https://raw.githubusercontent.com/NevaMind-AI/MemU/main/SKILL.md and follow it to install memU.
+</code></pre>
+<p>Agent 读取该 Skill 规范后，会自动完成配置。支持本地模式（完全离线）和云端同步模式（多机同步）。</p>
+五、坦白说几句
+<p>距离“完美”还有多远，先把几件事说清楚：</p>
+<ol>
+<li>还在早期：Dashboard 支持浏览、编辑、删除记忆，但还不算完整的可视化管理后台。</li>
+<li>依赖 Agent 自身能力：如果宿主 Agent 的指令遵循能力较弱，记忆提取质量会受影响。这不是 MemU 能代劳的</li>
+<li>检索依赖 Embedding 模型：本地模式需要配置一个 Embedding API（OpenAI / Ollama 等），不是完全零配置。</li>
+</ol>
+六、谁用谁爽
+<p>多 Agent 用户：同时使用 Claude Code、Cursor 和 Hermes 的用户，安装一个 memU 即可让它们共享上下文，无需每次切换工具时都重新自我介绍。
+自部署爱好者：可配合 Ollama 本地 Embedding 实现完全离线运行，数据不出本机。
+自由职业者 / 一人公司：项目背景、客户偏好、技术方案，一次教会 Agent，更换设备也不会丢失。</p>
+七、最后
+<p>memU 是 Apache 2.0 开源项目，代码全在 GitHub 上，欢迎点 Star、提 PR、提 issue。
+GitHub：<a href="http://github.com/NevaMind-AI/memU" target="_blank" rel="noopener noreferrer">github.com/NevaMind-AI/memU</a> ⭐</p>
+<p>官网：<a href="http://memu.pro" target="_blank" rel="noopener noreferrer">memu.pro</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>hihi 朋友们，我是 memU 团队的工程师</p>
+<p>今天想给大家分享一个我们一直在打磨的开源项目：memU ，<strong>一个面向个人开发者和极客的轻量级 Agent 记忆层</strong>。说人话就是：<strong>给你常用的几个 Agent 装上同一个大脑，让它们之间互相认识。</strong>
+定位和 mem0 ，Zep ，Letta （原 MemGPT ）差不多，都是 AI 记忆层的赛道，但我们走了和他们完全不同的路：我们摒弃了传统的记忆框架的臃肿，把代码从 3 万行缩短到了 500 行，只要会用 Agent 的人都可一行 prompt 以轻松部署</p>
+<p>GitHub：<a href="http://github.com/NevaMind-AI/memU" target="_blank" rel="noopener noreferrer">github.com/NevaMind-AI/memU</a> （求个 Star ～⭐）</p>
+<p>官网：<a href="http://memu.pro" target="_blank" rel="noopener noreferrer">memu.pro</a></p>
+一、为什么做这件事
+<p>现在用 AI Agent 干活的人越来越多：用 Claude Code 写代码、Cursor 改前端、Hermes 跑 cron job 自动化任务；但用过一段时间，绝大多数人都会撞上同一堵墙：<strong>记忆孤岛。</strong></p>
+<p>每个 Agent 都是独立的会话。早上用 Claude Code 配好的项目环境，下午切到 Cursor 又要重新讲一遍。台式机上调教好的偏好设置，换到 macbook 上一切归零</p>
+<p>市面上不是没有记忆方案，但要么太重（ Docker + 向量数据库 + 多阶段 LLM Pipeline ），要么只绑死在一个工具上（比如只能给 Claude 用）。</p>
+<p>我们想要的是一个能让所有 Agent 都接入、部署足够轻、数据自己能掌控的记忆层。</p>
+<p><strong>这就是今天的 memU 。</strong></p>
+二、就三个功能，没有第四个
+① 跨 Agent 、跨设备共享记忆
+<p>Claude Code 、Codex 、Cursor 、Hermes 、OpenClaw 全部共用同一层记忆库。上午在台式机用 Claude Code 学到的项目上下文，下午笔记本上的 Cursor 直接就能检索到。</p>
+<p></p>
+② 极致轻量的架构
+<p>新版的 memU 核心大约 500 行代码（旧版有 3 万行）</p>
+<p>删掉的是什么？</p>
+<p>多阶段 LLM 提取链、查询改写器、重排器、自定义 Prompt 模板库</p>
+<p>为什么能删？</p>
+<p>因为现在的 Agent 本身就是高级推理模型，不需要一个外部 Harness 替它做思考。
+Agent 负责思考，memU 只做存储和检索</p>
+③ 检索速度快，数据可读
+<p>检索只做一次向量计算，不需要额外调 LLM 。</p>
+<p>500 行核心带来的直接好处：每轮检索零额外 LLM 调用，p95 延迟不到 35ms 。</p>
+<p>所有记忆以纯 Markdown 文件存储在本地。你可以用 VS Code 打开、用 grep 搜索、用 Git 备份。不是黑盒向量数据库。</p>
+<p></p>
+三、直接亮数据：检索路径对比
+<p>不是砍功能换性能，是<strong>把不该 memory 层做的事还给了 Agent 本身。</strong></p>
+
+
+
+指标
+旧版 memU （ 3 万行）
+新版 memU （ 500 行）
+
+
+
+
+检索额外 LLM 调用
+每轮 2–4 次
+0 次
+
+
+检索延迟（ P95 ）
+~1,200 ms
+&lt; 35 ms
+
+
+每轮 Token 额外开销
+~850 tokens
+~120 tokens
+
+四、怎么安装
+<p><strong>不需要配 Docker ，不需要起服务，不需要装额外的数据库。</strong></p>
+<p>先到官网 <a href="https://memu.so/quick-start" target="_blank" rel="noopener noreferrer">https://memu.so/quick-start</a> 拿到你的 API Key ，然后带着这个 API key 一起，把下面这段 Prompt 发给 Agent 就行：</p>
+<pre><code>read https://raw.githubusercontent.com/NevaMind-AI/MemU/main/SKILL.md and follow it to install memU.
+</code></pre>
+<p>Agent 读到这条 Skill 规范后，会自动完成配置。支持本地模式（完全离线）和云端同步模式（多机同步）。</p>
+五、坦白说几句
+<p>距离「完美」还有多远，先把几件事说清楚：</p>
+<ol>
+<li>还在早期：Dashboard 支持浏览、编辑、删除记忆，但还不算完整的可视化管理后台。</li>
+<li>依赖 Agent 自身能力：如果宿主 Agent 的指令遵循能力较弱，记忆提取质量会受影响。这不是 MemU 能代劳的</li>
+<li>检索依赖 Embedding 模型：本地模式需要配置一个 Embedding API （ OpenAI / Ollama 等），不是完全零配置。</li>
+</ol>
+六、谁用谁爽
+<p>多 Agent 用户：同时用 Claude Code + Cursor + Hermes 的人，装一个 memU 就能让它们共享上下文，不用每次切工具都重新自我介绍。
+自部署爱好者：可以配合 Ollama 本地 Embedding 完全离线运行，数据不出本机。
+自由职业 / 一人公司：项目背景、客户偏好、技术方案，一次教会 Agent ，换设备也不会丢。</p>
+七、最后
+<p>memU 是 Apache 2.0 开源项目，代码全在 GitHub 上，欢迎点 Star 、欢迎提 PR ，题 issue 。
+GitHub：<a href="http://github.com/NevaMind-AI/memU" target="_blank" rel="noopener noreferrer">github.com/NevaMind-AI/memU</a> ⭐</p>
+<p>官网：<a href="http://memu.pro" target="_blank" rel="noopener noreferrer">memu.pro</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yidinghe</span>
+        <span>#1</span>
+        <span>2026/07/30 23:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这样的项目早就应该有了。我在用 opencode/pi 就有人开发了 MagicContext 来管理上下文，非常好用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17922641">这样的项目早就应该有了。我在用 opencode/pi 就有人开发了 MagicContext 来管理上下文，非常好用。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17922641">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1231096#reply17922641" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">greatbody</span>
+        <span>#2</span>
+        <span>2026/07/30 23:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要申请 key ？你们这个插件会回传数据到你们服务器么？回传什么数据？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17922660">需要申请 key ？你们这个插件会回传数据到你们服务器么？回传什么数据？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17922660">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1231096#reply17922660" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yidinghe</span>
+        <span>#3</span>
+        <span>2026/07/31 01:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/greatbody" target="_blank" rel="noopener noreferrer">greatbody</a> 恐怕是把整个上下文都传到服务器上，介绍里面说了“跨设备”</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17922721">@<a href="/member/greatbody" target="_blank" rel="noopener noreferrer">greatbody</a> 恐怕是把整个上下文都传到服务器上，介绍里面说了 'Across Devices'</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17922721">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1231096#reply17922721" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">66450146</span>
+        <span>#4</span>
+        <span>2026/07/31 01:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">本地部署也需要 API key 吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17922728">本地部署也需要 API key 吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17922728">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1231096#reply17922728" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
