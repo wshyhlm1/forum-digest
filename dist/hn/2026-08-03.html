@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hacker News 日报 2026-08-03</title>
+  <style>
+    body { margin: 0; background: #f6f7f4; color: #202124; font-family: "Noto Sans SC", "PingFang SC", Arial, sans-serif; line-height: 1.62; }
+    main { width: min(920px, 100%); margin: 0 auto; padding: 18px 14px 64px; }
+    header, .card { background: #fff; border: 1px solid #d9ded8; border-radius: 8px; padding: 16px; }
+    header { margin-bottom: 14px; }
+    h1 { margin: 0; font-size: 1.5rem; }
+    h2 { margin: 0; font-size: 1.05rem; }
+    a { color: #c24f18; text-decoration: none; }
+    .card { display: grid; grid-template-columns: 46px 1fr; gap: 10px; margin-bottom: 10px; }
+    .rank { font-weight: 700; color: #276749; }
+    .original, .meta { color: #687076; }
+    .meta, .actions { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Hacker News 日报</h1>
+      <p class="original">日期 2026-08-03，轻量 JSON 保留每篇前 20 条高位评论。</p>
+    </header>
+    
+    <article class="card">
+      <div class="rank">#1</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49124218.html">显示 HN：电梯</a></h2>
+        <p class="original">Show HN: Elevators</p>
+        <div class="meta">
+          <span>1641 分</span>
+          <span>401 评论</span>
+          <span>最高 #40</span>
+          <span>8 次快照出现</span>
+        </div>
+        <ul><li>Everyone has shared the frustration of waiting for an elevator that never seems to arrive. &quot;I pressed the button, why isn&#39;t it coming?&quot; you ask. For something as commonplace as elevators, they are far more complex than meets the eye.Over the course of this article, we&#39;ll unravel the mysteries of elevators. The way you push their buttons, and how they push yours.4321One CarThe simplest elevator algorithm is called SCAN and was patented in 1961. The elevator starts at the lobby and goes all the way to the top floor before reversing and coming back down. It picks up and drops off anybody on the way.Most of the time you don&#39;t actually need to go to the TOP floor. If the elevator goes only as high as requested before reversing, the algorithm is called the LOOK algorithm. This is the algorithm most people know and expect.4321Multiple CarsHere&#39;s where the mystery begins. If there are multiple elevators, how do the cars coordinate who picks up who?In the most basic system, there&#39;s a central scheduler that tells each elevator which floors to stop on. When a new request comes in, it&#39;s assigned to the closest elevator. As we&#39;ll soon see however, we can do better.4321Long WaitsHow do you actually measure how good an elevator algorithm is? The obvious metric is how long you wait for the elevator to arrive.A very simple measure is &quot;how often does the elevator arrive within 30 seconds?&quot; Or &quot;how often does the elevator arrive within 90 seconds?&quot;-wait &lt; 30s-wait &lt; 90s654321flow14/minApplied StatsMore rigorously, we want to look at the DISTRIBUTION of wait times. If we plot the wait time across thousands of rides, we get the histogram below.654321010sp50—p90—flow14/minA p90 of 2m means 90% of the time, riders wait 2m or less for the elevator. A p50 of 1m means half the time the elevator arrives within 1m.People don&#39;t usually remember the average amount of time they wait. They fixate on those times when the elevator took FOREVER, the p90 case.Morning RushNot all passenger traffic is created equal. Imagine a large corporate office building. In the mornings, nearly all traffic is dominated by trips from the lobby to the upper levels.In the evening this flips as everyone leaves the building. The lunch rush is a bit of both, and the remaining traffic is often from floor to floor.-wait &lt; 30s-wait &lt; 90s654321flow14/minThe distribution of wait times varies drastically depending on the time of day and the traffic patterns the elevators are facing. Morning rush notoriously has the worst wait statistics.Smarter ElevatorsWhen analyzing the LOOK elevator algorithm, we LOOKED (ha ha) at how riders are assigned to cars. We naively assigned each request to the nearest car but said we could do better.What if the nearest car is full? We can get smarter with Otis&#39; RSR (Relative System Response) algorithm. RSR scores each car for how well suited it is to pick up a passenger. Lower scores being better.RSR pickup scoreScore=ETA to pickup+onboard load penalty+same-direction anti-bunching penalty-direction-match bonus-idle-nearby bonus-low-load bonusAnti-BunchingPenalize a car if another car is already headed to the same floor in the same direction.Idle NearbyReward idle cars within two floors of the caller.RSR also re-optimizes every 5 seconds. A passenger that&#39;s going to be picked up by elevator A can be re-routed to elevator B if elevator A encounters delays. This re-optimization turns out to be key for streamlining traffic flow.In the graphic below, each elevator lights up when it&#39;s the best choice to service a call from floor 3 if the button happened to be pressed at that exact moment. This constantly changes as the elevators move, showing the optimizer in motion.4321ABCDAScore 1LOOK vs RSRArmed with our elevator analysis toolkit, we can benchmark the performance of LOOK vs RSR to see how much a smarter elevator algorithm actually improves wait time.LOOK-wait &lt; 30s-wait &lt; 90s10987654321RSR-wait &lt; 30s-wait &lt; 90s10987654321flow8/minInterestingly as the flow rate gets higher, LOOK actually starts to outperform RSR. When the elevators are always full and stopping on every floor, the extra rules don&#39;t matter as much.LOOK also tends to outperform RSR in small buildings with fewer elevators per bank. Sometimes it&#39;s better to just keep things simple.Another metric you can track is journey time, how long you&#39;re actually waiting in the elevator before getting to your floor. RSR and LOOK have different characteristics here as well but that&#39;s beyond the scope of this article.Destination DispatchNot all elevators have buttons in them. Some of the fancy new elevators have a kiosk on each floor that allows you to specify what floor you&#39;re heading to before the elevator even arrives. The kiosk then points you to which elevator you should wait for.This is called Destination Dispatch. At first glance, it seems great. The elevator optimizer now has full knowledge of who is going where, certainly we can use this to reduce wait times right?RSR-wait &lt; 30s-wait &lt; 90s87654321Destination Dispatch-wait &lt; 30s-wait &lt; 90s876543217flow8/minIt turns out these fancy kiosks are in general worse for wait times compared to the traditional good ol&#39; up and down buttons. There are certainly edge cases when the kiosks can win out (extremely tall buildings with 8+ cars per elevator bank) but for the majority of cases, simple up down buttons reign supreme.This counterintuitive result is all thanks to the rebalancing step where every 5 seconds, the system re-optimizes each elevator&#39;s path. The kiosk enforces rigidity, you must get in the assigned elevator.The state of the world 30sec after you called your elevator might be very different but the system is unable to adapt. Turns out the loss in flexibility is not worth the extra information for the optimizer.Full SimHere&#39;s a simulation with all the buttons and knobs to play with. Go crazy!-wait &lt; 30s-wait &lt; 90s87654321floors8cars4flow18/minConclusionThis article just scratches the surface of elevator algorithms. Next time you&#39;re stuck waiting for an elevator, try not to take it personally. The elevator did hear you, it just has a lot to think about.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49124218">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#2</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49151933.html">不要成为肉类代理</a></h2>
+        <p class="original">Don&#39;t be a meat proxy</p>
+        <div class="meta">
+          <span>888 分</span>
+          <span>381 评论</span>
+          <span>最高 #1</span>
+          <span>4 次快照出现</span>
+        </div>
+        <ul><li>Aug 03, 2026</li><li>Too often I ask a question in Slack or leave feedback under a merge/pull request or argue with friends in a WhatsApp group and get back:</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49151933">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#3</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49120097.html">得益于人工智能，谷歌6月修复的Chrome漏洞数量超过了过去两年的总和。</a></h2>
+        <p class="original">Google fixed more Chrome bugs in June than over the past two years, thanks to AI</p>
+        <div class="meta">
+          <span>568 分</span>
+          <span>613 评论</span>
+          <span>最高 #91</span>
+          <span>3 次快照出现</span>
+        </div>
+        <ul><li>Jul 30, 2026 |</li><li>How Chrome is using AI to improve vulnerability discovery, triage, and patching.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49120097">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#4</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49150470.html">Qwen3.8-Max：编码和协作的新标杆</a></h2>
+        <p class="original">Qwen3.8-Max: A New Bar for Coding and Cowork</p>
+        <div class="meta">
+          <span>709 分</span>
+          <span>362 评论</span>
+          <span>最高 #1</span>
+          <span>6 次快照出现</span>
+        </div>
+        <ul><li>Qwen Studio offers comprehensive functionality spanning chatbot, image and video understanding, image generation, document processing, web search integration, tool utilization, and artifacts.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49150470">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#5</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49140998.html">卡帕蒂鹈鹕</a></h2>
+        <p class="original">Karpathy’s Pelican</p>
+        <div class="meta">
+          <span>583 分</span>
+          <span>397 评论</span>
+          <span>最高 #1</span>
+          <span>14 次快照出现</span>
+        </div>
+        <ul><li>We&#39;re starting to leave the territory where you&#39;d test an LLM by e.g. &quot;create an svg of pelican on a bicycle&quot;. As one idea to generalize it, I was interested what Opus 5 would do if I gave it the first paragraph of the Lord of the Rings, a 1M token budget (~$10) and asked for three js render of it. Opus went off for ~2 hours and wrote 5500 lines of code that (procedurally) rendered the story. It&#39;s kind of janky but fun. But it&#39;s a bit mindboggling that the LLM has to place and orchestrate various polygon assets in (x,y,z) coordinates and write code that animates it all, and that it even does anything at all.</li><li>I also like this kind of examples because no one in their right mind would ever spend the time to write something this custom but LLMs have all the stamina and patience in the world, so it&#39;s an example where we go from &quot;no one would ever do this&quot; to &quot;sure, why not, it&#39;s ~free&quot;. There might be a lot more. But I&#39;m excited about creating hyper custom worlds that you can imagine dropping players into, e.g. here to participate in the LoTR story as a spectator NPC, or one of the characters, or etc. Something like an ephemeral GTA of X on demand.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49140998">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#6</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49119559.html">DeepSeek-V4-Flash 更新</a></h2>
+        <p class="original">DeepSeek-V4-Flash Update</p>
+        <div class="meta">
+          <span>737 分</span>
+          <span>344 评论</span>
+          <span>最高 #94</span>
+          <span>3 次快照出现</span>
+        </div>
+        <ul><li>Date: 2026-07-31​ DeepSeek-V4-Flash Update​ The official release of the DeepSeek-V4-Flash API is now in public beta. The API calling method remains unchanged — simply set the model name to deepseek-v4-flash to use the latest version. Significantly enhanced agent capabilities, with benchmark results far exceeding V4-Pro-Preview: Terminal Bench 2.1: 82.7 NL2Repo: 54.2 Cybergym: 76.7 DeepSWE: 54.4 Toolathlon verified: 70.3 Agent Last Exam: 25.2 Automation Bench (Public): 25.1 DSBench-FullStack: 68.7 DSBench-Hard: 59.6</li><li>Note 1: For the Code Agent tasks in the public benchmark sets, the official DeepSeek-V4-Flash was tested using the DeepSeek Harness minimal mode (to be released soon) as the framework, with the max effort level, topp=0.95, and temperature=1.0 Note 2: DSBench-FullStack is an internal full-stack development test set, and DSBench-Hard is an internal Coding Agent hard-problem test set The official V4-Flash natively supports the Responses API format and is specifically adapted for Codex. For the specific configuration, please refer to the documentation.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49119559">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#7</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49136821.html">Google 如何帮助破坏 RSS 提要的采用（2023）</a></h2>
+        <p class="original">How Google helped destroy adoption of RSS feeds (2023)</p>
+        <div class="meta">
+          <span>621 分</span>
+          <span>235 评论</span>
+          <span>最高 #1</span>
+          <span>16 次快照出现</span>
+        </div>
+        <ul><li>August 14, 2023 Although RSS feeds are alive and still heavily used today, their level of adoption has suffered because of how difficult a handful of popular technology companies have made it to use them. Google, especially, has relied on the open web RSS protocol to gain so much market share and influence, but continues to engage in behavior that exploits the open web at the expense of its users. As a result, Google has single-handedly contributed to the reason many users who once relied on RSS feeds have stopped using them.</li><li>Below, we dive deeper into Google&#39;s track record of what appears to be an Embrace, Extend, and Extinguish model. The company has continuously built and extended their products around the free and open RSS protocol to gain user trust, only to then remove RSS support once they&#39;ve locked users in, and ignore any complaints or requests to restore it. Not only is it a blatant disregard for RSS and a huge disappointment to those who use it, it poses one of the biggest threats to the freedom and openness of the internet. Google removes RSS button from Chrome browser Early versions of Chromium (on which the Google Chrome browser is based) once came with RSS integration baked in. The browser had a built-in RSS button that would display in the browser location bar when any website you&#39;re on had an RSS feed available. Clicking the button would then take you to the RSS feed for that web page, allowing a user to easily subscribe.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49136821">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#8</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49121980.html">一个时代的终结</a></h2>
+        <p class="original">The End of an Era</p>
+        <div class="meta">
+          <span>441 分</span>
+          <span>447 评论</span>
+          <span>最高 #110</span>
+          <span>2 次快照出现</span>
+        </div>
+        <ul><li>We knew this day would come.</li><li>Some of us have known for decades, have been writing and pontificating about this since Ken Jennings lost at Jeopardy and Kasparov lost at chess. The writing was on the wall, and now the writing is everywhere. Literally. Artificial Intelligence is writing about as well as humans — at least well enough to cause confusion and speculation — and that’s creating an existential crisis among authors, confusion among readers, and legal action within the industry.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49121980">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#9</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49132058.html">数学和理论计算机科学的十大进展</a></h2>
+        <p class="original">Ten advances in mathematics and theoretical computer science</p>
+        <div class="meta">
+          <span>457 分</span>
+          <span>324 评论</span>
+          <span>最高 #3</span>
+          <span>6 次快照出现</span>
+        </div>
+        
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49132058">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+    <article class="card">
+      <div class="rank">#10</div>
+      <div>
+        <h2><a href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49139102.html">人工智能的财务建议出奇地好，特别是如果你提出正确的问题</a></h2>
+        <p class="original">AI financial advice is surprisingly good, especially if you ask right questions</p>
+        <div class="meta">
+          <span>342 分</span>
+          <span>388 评论</span>
+          <span>最高 #7</span>
+          <span>11 次快照出现</span>
+        </div>
+        <ul><li>People are increasingly turning to artificial intelligence for financial advice, but will following it improve their financial standing?</li><li>“Half of Americans say they are using AI to get financial advice, but we know very little about what kind of advice they’re getting and whether they’re acting on it,” said Taha Choukhmane, an assistant professor of finance at the MIT Sloan School of Management and co-author of a new paper that measures and analyzes the quality of financial advice given by large language models.Research by Choukhmane and co-authors showed that following AI recommendations can result in sizable saving buffers for virtually all individuals above age 30.AI consistently advised people to save during their working years, draw down savings in retirement, invest heavily in diversified stock funds, and reduce stock exposure after age 45. However, AI chatbots were less successful in adjusting to shocks like unemployment, and they allowed portfolios to drift rather than actively rebalancing them.The quality of financial advice given by LLMs improved when the researchers introduced more structured prompts, but the AI still often generated too little active portfolio rebalancing. How the study was conductedThe researchers built a model reflecting how people’s incomes, jobs, investments, and taxes typically evolve over their lives, which gave them a benchmark for what “good” financial decisions look like. Then they asked a sample of 1,000 adults to write their own prompts seeking spending and investing advice from GPT-5.2, GPT-5.6, or Gemini 3 Flash. Next, they simulated what would happen if people from 22 to 89 years of age followed that advice over time, repeatedly asking AI these same types of questions and following its advice on spending, saving, and investing.</li></ul>
+        <div class="actions">
+          <a href="https://news.ycombinator.com/item?id=49139102">HN 原帖</a>
+          <a href="https://wshyhlm1.github.io/forum-digest/hn/2026-08-03-full-comments.json">完整评论 JSON</a>
+        </div>
+      </div>
+    </article>
+  
+  </main>
+</body>
+</html>

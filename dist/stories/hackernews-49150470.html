@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qwen3.8-Max：编码和协作的新标杆 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-03/">返回日报</a>
+      <div class="source-chip">Hacker News #4</div>
+      <h1>Qwen3.8-Max：编码和协作的新标杆</h1>
+      <p class="original-title">Qwen3.8-Max: A New Bar for Coding and Cowork</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ai2027</span>
+        <span>热度 709</span>
+        <span>回复 362</span>
+        <span>2026/08/03 10:16</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49150470" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://qwen.ai/blog?id=qwen3.8" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49150470.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Qwen Studio offers comprehensive functionality spanning chatbot, image and video understanding, image generation, document processing, web search integration, tool utilization, and artifacts.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ilaksh</span>
+        
+        <span>2026/08/03 23:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">作为一个正在寻找新的编程合同的人，阅读这里所有令人难以置信的能力是相当令人恐惧的。特别是因为我几乎所有的项目都是从外包网站 Upwork 获得的。<p>我相信在某些情况下我正在与这些前沿模型直接竞争。就像以前有大量程序员将工作外包给该网站一样，但现在他们将同样的工作分配给人工智能代理。</p><p>自从 2022 年 11 月 ChatGPT 爆发以来，我一直专注于代理，以试图领先一步。但我还没有成功开展代理业务，而是在该网站上从事报酬微薄的代理项目。</p><p>但是现在每个人都在构建代理，而这份疯狂的成就列表使我们看起来已经接近代理构建代理的阶段。</p><p>事实上，下次我为另一个代理获得 Upwork 合同时，我实际上应该通过我的代理来运行它，看看它能走多远。我现在看到的很多都是要求尽可能多地实现业务自动化。</p><p>无论如何，重点是这些模型能够完成分析小型企业、构建所有代理并与企业主一起迭代它们的全部工作。</p><p>这实际上是我应该构建的 SaaS。如果我不是迫切希望在本周获得另一份合同，我会这么做的。</p><p>而且我知道 Upwork 很糟糕，但我在短时间内就没有在其他选择上取得太大成功。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49157077">As someone who is searching for a new programming contract right now, reading all of the incredible abilities here is pretty intimidating. Especially since I get almost all of my projects from Upwork which is an outsourcing site.<p>I believe I am competing directly with these frontier models in some circumstances. Like there are a ton of programmers who previously would be outsourcing work to that site, but now they assign that same work to AI agents.</p><p>Ever since November 2022 when ChatGPT blew up, I have been focusing on agents in order to try to get ahead of the curve. But I haven't managed to get an agent business off the ground and have been doing poorly paid agentic projects from that site instead.</p><p>But now everyone is building agents, and this crazy list of accomplishments makes it look like we are close to the point where the agents are building agents.</p><p>In fact the next time I get an Upwork contract for another agent, I actually should run it through my agent and see how far it can get. What I'm seeing a lot of now is requests to automate as much of a business as possible.</p><p>Anyway the point is these models are just about capable of doing the entire job of analyzing a small business and building out all the agents and iterating on them with the business owner.</p><p>That's actually what I should build is a SaaS that does that. Which I would if I wasn't basically desperate to get another contract this week.</p><p>And I know Upwork is bad but I have not had much success with other options on short notice.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49157077">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49157077" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">gtirloni</span>
+        
+        <span>2026/08/04 00:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 无论如何，重点是这些模型几乎能够完成分析小型企业、构建所有代理并与企业主一起迭代它们的全部工作。<p>如果您搜索专注于现实世界任务的 LLM 基准，您很快就会发现情况并非如此。不过，告诉企业主这一点毫无意义，他们需要自己去看/学习。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49157849">&gt; Anyway the point is these models are just about capable of doing the entire job of analyzing a small business and building out all the agents and iterating on them with the business owner.<p>If you search for LLM benchmarks focused on real-world tasks, you'll quickly learn this ain't the case. No point in telling business owners about that though, they need to see/learn by themselves.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49157849">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49157849" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jychang</span>
+        
+        <span>2026/08/04 00:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果 LLM 基准测试能够在第一天对其进行基准测试就好了！<p>仍然没有人工分析基准测试。或者是 Laguna S 2.1 或美团模型或许多其他模型的基准。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49158316">If only LLM benchmarks could benchmark it in the first day!<p>Still no Artificial Analysis benchmark yet. Or benchmark for Laguna S 2.1 or Meituan models or lots of other models.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49158316">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49158316" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">eli</span>
+        
+        <span>2026/08/04 01:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">根据我的个人编码基准测试中的一些任务，它非常擅长编码，但在网页设计方面有点糟糕。 （在“给我画一张图”一次性提示方面也<i>非常出色</i>，不管它的价值如何）<p>在涉及解析 MIME 标头和处理字符编码的偷偷摸摸的提示中，它比 Kimi K3 Max 表现更好，而且成本低 38%。</p><p>有趣的是，它似乎明显比他们几周前提供的 qwen3.8-max-preview 模型要好。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49159249">According to a few tasks from my little personal coding benchmark it's very good at coding and kinda bad at web design. (Also <i>excellent</i> at "draw me a picture" one-shot prompts, for whatever that's worth)<p>On a sneaky one that involved parsing MIME headers and dealing with character encodings it did better than Kimi K3 at Max and for 38% lower cost.</p><p>Interestingly it seems noticeably better than the qwen3.8-max-preview model they offered just a few weeks ago.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49159249">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49159249" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tomjen3</span>
+        
+        <span>2026/08/04 02:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">作为 IT 顾问。<p>您需要远离任何认为您的主要目的是编写代码的客户。如果你认为你的主要目的是写代码，你就必须逃离这个业务。</p><p>你应该能够写代码并把它做好，但是人工智能，我什至不是在谈论那些处于前沿的人工智能，已经能够比我更快地编写代码相当长一段时间了。</p><p>你需要向客户解释的是与编写代码有关的所有事情：软件架构、性能等等。还要确保您对客户的业务有一定的了解，以便您可以提出其他方法来改善他们的生活/赚更多的钱。</p><p>软件开发人员有机会。代码猴子？无。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49159327">As someone else who is an IT consultant.<p>You need to run away from any client who thinks your primary purpose is to write code. You must run away from the business if YOU think your primary purpose is to write code.</p><p>You should be able to write code and do it well, But the AIs, and I'm not even talking about the ones on the frontier, have been able to write code faster than I have for quite some time.</p><p>What you need to explain to your customers is all the things around writing code: software architecture, performance, and so on. Also make sure you have some understanding of the customers business, so you can suggest additional ways to make their lives better/make more money.</p><p>Software developers have a chance. Code monkeys? None.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49159327">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49159327" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">neversupervised</span>
+        
+        <span>2026/08/04 00:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很遗憾得知您的情况。你写过博客吗？我很好奇您的工作类型在过去 2-3 年里发生了怎样的变化。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49157836">Im sorry to hear about your situation. Have you blogged about it? I’m curious about how the volume of your type of work has been changing over the past 2-3 years.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49157836">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49157836" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jasongill</span>
+        
+        <span>2026/08/04 00:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 得知您的情况，我感到很遗憾。你在博客上写过它吗？<p>我不知道为什么，但这让我笑出了声。我知道你想帮忙，但这只是一个有趣的跳跃</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49157974">&gt; Im sorry to hear about your situation. Have you blogged about it?<p>I don't know why but this made me laugh out loud. I know you're trying to help but just a funny jump</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49157974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49157974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">crossroadsguy</span>
+        
+        <span>2026/08/04 01:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">工作就像大学辍学生成为成功企业家一样不常见。但两者都成为刻板印象。但我知道您可能也只是想阅读相关内容。<p>PS。并不是每个人（事实上是极少数）都像没有人在阅读一样写作。对于大多数人来说，实际上没有人读过：D</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49159106">That working is as not common as college dropouts becoming successful entrepreneurs. But both become stereotypes. But I know you might also just want to read about it.<p>PS. Not everyone (in fact the rare few) write as if no one is reading. For most, literally no one ever reads :D</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49159106">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49159106" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ilaksh</span>
+        
+        <span>2026/08/04 00:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">几年前，当我意识到只有机器人在阅读帖子时，我就不再写博客了。<p>我认为自定义代理的数量可能比以往任何时候都高，但这项工作的竞争也越来越激烈。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49158062">I stopped blogging years ago when I realized that only bots were reading the posts.<p>I think the volume for custom agents is probably higher than ever but so is the competition for that work.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49158062">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49158062" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">benatkin</span>
+        
+        <span>2026/08/04 01:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说您正在构建代理，是基于一种根本不普遍的看待事物的方式。有些人可能会说您正在构建一个客户支持聊天机器人。我想，如果你使用 LangChain，那么将构建代理视为一项常见活动是有道理的，它的标题是“开源 AI 代理框架 | 更快地构建代理”。但例如，YC 刚刚发布了 qm，在其 README 中谈到了<i>自定义</i>代理，这与随意删除“我正在构建代理”这句话有很大不同。 <a href="https://github.com/yc-software/qm" target="_blank" rel="noopener noreferrer">https://github.com/yc-software/qm</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49159073">To say that you're building agents, is based on a way of viewing things that isn't at all pervasive. Some might say you're building a customer support chatbot. To talk of building agents as a common activity makes sense if you use LangChain I guess, where its title is "Open Source AI Agent Framework | Build Agents Faster". But for instance, YC just released qm, and in its README it talks about <i>customizing</i> the agent, which is quite a bit different from just casually dropping the phrase "I'm building an agent". <a href="https://github.com/yc-software/qm" target="_blank" rel="noopener noreferrer">https://github.com/yc-software/qm</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49159073">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49159073" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">toshinoriyagi</span>
+        
+        <span>2026/08/03 11:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们还宣布 Qwen3.8-27B 将于下周公开发布。 Qwen3.6-27B 被广泛认为是最好的本地型号之一，特别是因为没有其他型号可以与其相媲美，它不是 benchmaxxed，又没有明显更大。如果 3.8 真的对其进行了改进，那就太棒了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49150809">They've also announced Qwen3.8-27B being released open-weight next week. Qwen3.6-27B is widely regarded as one of the best local models, especially since nothing else comes close to it, that isn't benchmaxxed, without being significantly larger. If 3.8 truly improves upon it that would be awesome.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49150809">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49150809" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nozzlegear</span>
+        
+        <span>2026/08/03 11:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Qwen3.6-35B 是我日常的 AI 驱动力，也是我在 4 月份取消 Claude 订阅的原因。 Qwen3.6系列无疑是我尝试过的最好的本地型号，而且我已经尝试了很多。我现在正在我的笔记本电脑上勤奋地研究它，检查并修复我的 F# 代码中的一些错误。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49150929">Qwen3.6-35B is my daily driver for AI, and what convinced me to cancel my Claude subscription back in April. The Qwen3.6 line is easily the best local model I've tried, and I've tried a lot. I've got it diligently grinding away on my laptop right now, reviewing and fixing some bugs in my F# code.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49150929">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49150929" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">trollbridge</span>
+        
+        <span>2026/08/03 14:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Qwen-3.6-35B-A3B 是将我们的组织转变为代理/安全带优先编码的“入门药物”。<p>特别是，我有一位团队成员对 AI/LLM/安全带极度怀疑并拒绝使用它们。有一天，他说：“好吧，我有一个 RTX 5090，什么也没做……我应该尝试在它上面做点什么吗？”几分钟后，他加载了 3.6-35B，运行 OpenCode。</p><p>直到今天，它仍然是一台主力机器，在我的本地 Mac 上运行各种类型的工作，在办公室的 AMD R9700 上运行，并表示团队成员仍在他的 5090 上使用它，尽管实际上我们现在使用 DS-V4-Flash-0731 做了更多工作。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49151827">Qwen-3.6-35B-A3B was our "gateway drug" into switching our organisation to agent/harness-first coding.<p>Particularly, I had one team member who was extremely sceptical of AIs/LLMs/harnesses and refused to use them. One day he said "Well, I have an RTX 5090 doing nothing... should I try to get something up on it?" and a few minutes later he had 3.6-35B loaded up, running OpenCode.</p><p>It continues to be a workhorse to this day, running on both my local Mac for various types of jobs, an AMD R9700 at the office, and said teammember still uses it on his 5090, although in practical terms we do a lot more with DS-V4-Flash-0731 these days.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49151827">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49151827" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/08/03 21:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我已在本地 32GB 上运行 3.6-27B 和 3.6-35B，以执行大量批量非代码任务。让它运行一整夜，醒来后就会得到价值数百万个输出代币的结果，而无需数据离开我的房子，这一切都是为了电费。<p>我还没有发现它对代码非常有用。它可以执行一些代码，但我尝试了十几种不同的定量和上下文长度，但输出总是很糟糕，以至于必须将其丢弃，以完成除真正简单的任务之外的任何任务。不过，它对于探索搜索和摘要的代码库很有用。</p><p>DS Flash 是本地模型开始对编码有用的地方，但我们在本地运行的量化在智能方面与完整模型的基准相比急剧下降。</p><p>对于数据无法离开本地网络的应用程序，拥有它们是很好的。对于实际的编码工作，与托管 API 相比，我实际上无法证明电力和冷却的力量是合理的，更不用说昂贵的硬件了。</p><p>但我承认无论如何我确实喜欢使用它们。我认为这是最有趣的爱好之一，如果你从不计算你为这种特权付出了多少钱。当然，如果有人要求数据保留在本地，那就不同了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49155775">I’ve run 3.6-27B and 3.6-35B on 32GB locally for a lot of bulk non-code tasks. Let it run overnight and wake up to millions of output tokens worth of results without data having left my house, all for the price of electricity.<p>I haven’t found it very useful for code. It can do some code, but I’ve tried a dozen different quants and context lengths and the output is always bad enough that it has to be discarded for anything other than really easy tasks. It has been useful for exploring codebases for search and summary, though.</p><p>DS Flash is where local models begin to feel useful for coding, but the quants we run locally are sharply reduced in intelligence from the benchmarks for the full models.</p><p>For applications where data cannot leave the local network it’s good to have them. For actual coding work I can’t actually justify the power of electricity and cooling, let alone the expensive hardware, compared to hosted APIs.</p><p>But I admit I do enjoy playing with them anyway. I think it’s one of those hobbies where it’s most fun if you never do the math on how much you’re paying for the privilege. If someone has a requirement that data stay local then it’s different, of course.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49155775">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49155775" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">beltsazar</span>
+        
+        <span>2026/08/03 22:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我已在本地 32GB 上运行 3.6-27B 和 3.6-35B，以执行大量批量非代码任务。<p>您介意分享您的用例吗？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49156109">&gt; I’ve run 3.6-27B and 3.6-35B on 32GB locally for a lot of bulk non-code tasks.<p>Do you mind sharing your use cases?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49156109">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49156109" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">AbsurdCensor</span>
+        
+        <span>2026/08/03 23:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不是OP，但我用它来做很多小事情。我将它连接到 Hermes 中，并一直使用它来帮助批量重命名我的媒体文件夹，以便它们都遵循通用格式，添加标题之类不容易“编写脚本”的东西。我用它的另一件事是比较数据集，查看我导出的 Spotify 艺术家并与我本地的艺术家进行比较，让我知道哪里缺少艺术家或专辑，以及基于我本地可能没有的类似艺术家的推荐。<p>当然，很多事情可以在没有 AI 的情况下完成，但它肯定更快更容易，而且由于我的 AI 盒子使用太阳能，因此只需太阳的力量即可保持其运转。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49156910">Not OP, but I use it for a ton of smaller things. I have it hooked into Hermes and have been using it to help bulk rename my media folders so they all follow a common format, add titles that sort of thing which wouldn't be easy to 'script'. Another thing I use it for is comparing data sets, looking at my exported Spotify artists and compare to what I have locally, and letting me know where there are missing artists, or albums, and recommendations based on similar artists that I may not have locally.<p>Sure a lot of this could be done without AI, but it's certainly quicker and easier, and since my AI box is on solar, it's just the power of the sun to keep it going.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49156910">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49156910" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">aka-rider</span>
+        
+        <span>2026/08/04 00:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不是OP，但驱动知识库是我的典型用例<a href="https://github.com/aka-rider/llm-wiki" target="_blank" rel="noopener noreferrer">https://github.com/aka-rider/llm-wiki</a><p>我从Karpathy的LLM wiki开始，做了他说不要做的一切 - 将模型降级为纯粹的工具使用和总结，效果很好。</p><p>我是一个数据囤积者，最后我可以只需转储我远程喜欢的所有内容，然后获取一些有趣的内容来浏览电价即可。</p><p>代理长期运行的任务，正如其他人提到的：</p><p>- 代理 SWE 工作流程的整理和分类票据</p><p>- bug 搜寻 - Qwen 修复复杂错误的概率是 50/50，但通常它能够识别根本原因，或者至少为更强大的模型选择它奠定基础向上。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49157727">Not OP, but driving knowledge bases is the poster child use case for me <a href="https://github.com/aka-rider/llm-wiki" target="_blank" rel="noopener noreferrer">https://github.com/aka-rider/llm-wiki</a><p>I started with Karpathy's LLM wiki, and did everything he said not to do - downgraded the model to mere tool usage and summarization, and it works great.</p><p>I am a data hoarder, and finally I can just dump all the content I remotely like, and get something interesting to browse for the price of electricity.</p><p>Agentic long-running tasks, as others have mentioned:</p><p>- Groom and triage tickets for agentic SWE workflows</p><p>- bug hunt — the probability of Qwen fixing a complex bug is 50/50 but often it is capable of identifying the root cause or at least laying the ground work for a more capable model to pick it up.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49157727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49157727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jkingsman</span>
+        
+        <span>2026/08/04 00:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不是OP，但我用它来完成一些不值得克劳德代币的个人任务——通过历史医疗记录来统一处方历史，对数千个PDF页面进行超级OCR（即超越PDF转储——视觉意味着它可以查看表格，理解棘手的事情，比如块引用的延续或下一页的旁白等），当电力便宜时，我只会让它在我的小项目上工作数据。上周，在我经纪人的“空闲时间”，我给它提供了一个非常开放式的提示，它对我的​​短信在浪漫关系的准备、开始、维持和结束过程中如何变化进行了语言分析。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49157744">Not OP, but I use it for personal tasks that are just not worth the claude tokens -- rooting through historical medical records to unify prescription history, super-OCR'ing thousands of PDF pages (i.e. beyond PDF dumping -- vision means it can look at tables, understand tricky things like a continuation of a block quote or aside on the next page, etc.), and when power is cheap I'll just let it noodle on little projects on my data. During my agent's "free time" I give it with a tremendously open ended prompt last week, it did a linguistic analysis of how my texting changes in the lead up to, initiation, maintenance, and ending of romantic relationships.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49157744">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49157744" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dofm</span>
+        
+        <span>2026/08/04 00:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这正是让我克服了愤世嫉俗并开始开始的原因。我仍然愤世嫉俗，但现在我有了有意义的知识。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49158404">That is exactly what got me past just enough of my cynicism to get started. I am still cynical but now I have meaningful knowledge.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49158404">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49158404" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">cptskippy</span>
+        
+        <span>2026/08/04 01:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Qwen-3.6-35B-A3B<p>A3B 模型非常快，但我发现 A3B Q4 模型绕了很多圈，最终比 27B Q6 花费更长的时间来完成任务，因为它一直需要重做/重新思考/修复某些东西。</p><p>我正在编写大量提示来控制它，但它仍然会忽略基本指令，例如“永远不要强制推送存储库，而是问我”。  经过大约一周的挫败感和生产力下降后，我最终切换回 27B。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49158976">&gt; Qwen-3.6-35B-A3B<p>The A3B models are super fast but I found the A3B Q4 model ran in circles a lot and ended up taking longer to complete tasks that 27B Q6 because it kept having to redo/rethink/fix something.</p><p>I was writing extensive prompts to rein it in and it would still ignore basic directives like "never force push on the repo, ask me instead".  I ended up switching back to 27B after about a week of frustration and lost productivity.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49158976">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49158976" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
