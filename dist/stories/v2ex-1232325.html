@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>利用精确时间轴精确识别日语字幕 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-05/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>利用精确时间轴精确识别日语字幕</h1>
+      <p class="original-title">利用精确时间轴精确识别日语字幕</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 weiyunjun</span>
+        <span>热度 8</span>
+        <span>回复 8</span>
+        <span>2026/08/05 23:24</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1232325" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1232325.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>之前尝试过各种本地大模型识别日语字幕，但是准确率都不够满意，尤其是时间轴很混乱，没法正常用。</li><li>时隔数月，突然想到，时间轴如果是确定的，那把音频切割开来，一句一句识别，加上 Codex 根据本地识别结果和中文翻译再联网 review ，可能可行。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><ol>
+<li>之前尝试过各种本地大模型识别日语字幕，但是准确率都不够满意，尤其是时间轴很混乱，没法正常用。</li>
+<li>时隔数月，突然想到，时间轴如果是确定的，那把音频切割开来，一句一句识别，加上 Codex 根据本地识别结果和中文翻译再联网 review ，可能可行。</li>
+<li>本地用 whipser-v3 做初步识别，置信度低的找 whisper-v2 再次识别，随后让 Codex 对有争议的结果进行判断和联网查询。最后仍然会有个别结果不确定需要人工确认，但一集动漫一般就几句。</li>
+<li>之所以要这么做是因为一些动漫只有精确的中文字幕，但网上公开的日语字幕，例如 <a href="http://jimaku.cc" target="_blank" rel="noopener noreferrer">jimaku.cc</a> 下载的，不太符合中国人的使用习惯，经常将 2 句合并到一起，而且有不少内部换行。</li>
+<li>另外，Bang Dream 的第二季和第三季我没找到任何日语字幕，中文字幕是有的，利用这个我今天制作了几集双语字幕，准确率接近 100%了。</li>
+<li>所以大家可以考虑用这个方法复活自己喜欢的动漫的日语字幕了，大部分动漫还是有外挂中文字幕的。</li>
+</ol>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><ol>
+<li>之前尝试过各种本地大模型识别日语字幕，但是准确率都不够满意，尤其是时间轴很混乱，没法正常用。</li>
+<li>时隔数月，突然想到，时间轴如果是确定的，那把音频切割开来，一句一句识别，加上 Codex 根据本地识别结果和中文翻译再联网 review ，可能可行。</li>
+<li>本地用 whipser-v3 做初步识别，置信度低的找 whisper-v2 再次识别，随后让 Codex 对有争议的结果进行判断和联网查询。最后仍然会有个别结果不确定需要人工确认，但一集动漫一般就几句。</li>
+<li>之所以要这么做是因为一些动漫只有精确的中文字幕，但网上公开的日语字幕，例如 <a href="http://jimaku.cc" target="_blank" rel="noopener noreferrer">jimaku.cc</a> 下载的，不太符合中国人的使用习惯，经常将 2 句合并到一起，而且有不少内部换行。</li>
+<li>另外，Bang Dream 的第二季和第三季我没找到任何日语字幕，中文字幕是有的，利用这个我今天制作了几集双语字幕，准确率接近 100%了。</li>
+<li>所以大家可以考虑用这个方法复活自己喜欢的动漫的日语字幕了，大部分动漫还是有外挂中文字幕的。</li>
+</ol>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">8</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiny</span>
+        <span>#1</span>
+        <span>2026/08/05 23:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">qwen3-asr-1.7B 有没有试过</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942418">qwen3-asr-1.7B 有没有试过</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942418">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942418" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiny</span>
+        <span>#2</span>
+        <span>2026/08/05 23:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">处理英语和中文的时候可以精确到每一个单词的时间戳</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942419">处理英语和中文的时候可以精确到每一个单词的时间戳</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942419">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942419" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">win8en</span>
+        <span>#3</span>
+        <span>2026/08/05 23:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">voice box 能做吗？我之前试过一段 5 分钟的 YouTube 视频 丢给他很快就能出带时间轴的双语字幕</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942425">voice box 能做吗？我之前试过一段 5 分钟的 YouTube 视频 丢给他很快就能出带时间轴的双语字幕</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942425">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942425" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">win8en</span>
+        <span>#4</span>
+        <span>2026/08/05 23:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说错了，是卡卡字幕助手</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942429">说错了，是卡卡字幕助手</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942429">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942429" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">win8en</span>
+        <span>#5</span>
+        <span>2026/08/05 23:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/iLaNZNC.jpeg" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942431"><a href="https://i.imgur.com/iLaNZNC.jpeg" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942431">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942431" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">weiyunjun</span>
+        <span>#6</span>
+        <span>2026/08/05 23:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/shiny" target="_blank" rel="noopener noreferrer">shiny</a> 英文没这个困扰捏，几个月前就可以轻松生成准确率很高的字幕了，一次喂几十分钟的音频都可以，日语一直是老大难问题~</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942434">@<a href="/member/shiny" target="_blank" rel="noopener noreferrer">shiny</a> 英文没这个困扰捏，几个月前就可以轻松生成准确率很高的字幕了，一次喂几十分钟的音频都可以，日语一直是老大难问题~</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942434">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942434" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">weiyunjun</span>
+        <span>#7</span>
+        <span>2026/08/05 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/win8en" target="_blank" rel="noopener noreferrer">win8en</a> 没懂，你这不是有精确时间戳了吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942440">@<a href="/member/win8en" target="_blank" rel="noopener noreferrer">win8en</a> 没懂，你这不是有精确时间戳了吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">weiyunjun</span>
+        <span>#8</span>
+        <span>2026/08/05 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/win8en" target="_blank" rel="noopener noreferrer">win8en</a> 你这不是有精确时间戳和日语文字字幕了吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17942442">@<a href="/member/win8en" target="_blank" rel="noopener noreferrer">win8en</a> 你这不是有精确时间戳和日语文字字幕了吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17942442">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232325#reply17942442" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
