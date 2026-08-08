@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grok 4.5 做的江湖武侠游戏 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-08/">返回日报</a>
+      <div class="source-chip">V2EX #9</div>
+      <h1>Grok 4.5 做的江湖武侠游戏</h1>
+      <p class="original-title">Grok 4.5 做的江湖武侠游戏</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 shiyu2001</span>
+        <span>热度 29</span>
+        <span>回复 29</span>
+        <span>2026/08/08 10:58</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1232867" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1232867.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>前段时间发现 Grok 印度区年费只要 400 多，果断开通了。 开通后想着拿来玩玩做游戏，结果效果出乎意料的好！ Grok 生成游戏素材的效率真的太高了，Grok Build 也超级好用。整个游戏绝大部分内容都是用 Grok Build + Grok 4.5 生成的，只有部分素材用了 Image2~</li><li>体验地址: https://wx.shiyu.dev 欢迎来玩</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>前段时间发现 Grok 印度区年费只要 400 多，果断开通了。
+开通后想着拿来玩玩做游戏，结果效果出乎意料的好！
+Grok 生成游戏素材的效率真的太高了，Grok Build 也超级好用。整个游戏绝大部分内容都是用 Grok Build + Grok 4.5 生成的，只有部分素材用了 Image2~</p>
+<p>体验地址: <a href="https://wx.shiyu.dev" target="_blank" rel="noopener noreferrer">https://wx.shiyu.dev</a>
+欢迎来玩</p>
+<p>
+
+
+
+
+</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>前段时间发现 Grok 印度区年费只要 400 多，果断开通了。
+开通后想着拿来玩玩做游戏，结果效果出乎意料的好！
+Grok 生成游戏素材的效率真的太高了，Grok Build 也超级好用。整个游戏绝大部分内容都是用 Grok Build + Grok 4.5 生成的，只有部分素材用了 Image2~</p>
+<p>体验地址: <a href="https://wx.shiyu.dev" target="_blank" rel="noopener noreferrer">https://wx.shiyu.dev</a>
+欢迎来玩</p>
+<p>
+
+
+
+
+</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">MIUIOS</span>
+        <span>#1</span>
+        <span>2026/08/08 11:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不知道为啥 只要是 AI 搓的游戏我都感觉 AI 味特别重。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951428">不知道为啥 只要是 AI 搓的游戏我都感觉 AI 味特别重。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951428">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951428" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yinmin</span>
+        <span>#2</span>
+        <span>2026/08/08 11:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你用的应该是 30 刀/月的 supergrok 吧？ 开发够用吗？ grok build 有什么使用心得吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951451">你用的应该是 30 刀/月的 supergrok 吧？ 开发够用吗？ grok build 有什么使用心得吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951451">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951451" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiyu2001</span>
+        <span>#3</span>
+        <span>2026/08/08 11:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/MIUIOS" target="_blank" rel="noopener noreferrer">MIUIOS</a> 素材上就比较 ai 风格吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951460">@<a href="/member/MIUIOS" target="_blank" rel="noopener noreferrer">MIUIOS</a> 素材上就比较 ai 风格吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951460">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951460" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiyu2001</span>
+        <span>#4</span>
+        <span>2026/08/08 11:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/yinmin" target="_blank" rel="noopener noreferrer">yinmin</a> 目前是够用的，grok 量很大，心得倒是没啥，之前咋用 codex 就怎么用 grok</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951461">@<a href="/member/yinmin" target="_blank" rel="noopener noreferrer">yinmin</a> 目前是够用的，grok 量很大，心得倒是没啥，之前咋用 codex 就怎么用 grok</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951461">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951461" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">uiosun</span>
+        <span>#5</span>
+        <span>2026/08/08 11:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/MIUIOS" target="_blank" rel="noopener noreferrer">MIUIOS</a> 这个还好，明显不算 AI 味道，应该属于萌新的 UI 设计水平导致的<br /><br />实际上，程序员自己写 UI ，他设计出来的风格就很容易变成这样</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951479">@<a href="/member/MIUIOS" target="_blank" rel="noopener noreferrer">MIUIOS</a> 这个还好，明显不算 AI 味道，应该属于萌新的 UI 设计水平导致的<br /><br />实际上，程序员自己写 UI ，他设计出来的风格就很容易变成这样</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951479">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951479" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">liuliuliuliu</span>
+        <span>#6</span>
+        <span>2026/08/08 11:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个看起来还行啊，ai 游戏里算不错的了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951483">这个看起来还行啊，ai 游戏里算不错的了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951483">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951483" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kneo</span>
+        <span>#7</span>
+        <span>2026/08/08 11:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">挺好，没觉得有 AI 味儿，就是看着没什么特点。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951485">挺好，没觉得有 AI 味儿，就是看着没什么特点。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951485">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951485" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sn0wdr1am</span>
+        <span>#8</span>
+        <span>2026/08/08 12:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看起来很不错了👍</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951495">看起来很不错了👍</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951495">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951495" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Ryanzlab</span>
+        <span>#9</span>
+        <span>2026/08/08 12:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很好奇 AI 从哪找的素材？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951526">很好奇 AI 从哪找的素材？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951526">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951526" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rb6221</span>
+        <span>#10</span>
+        <span>2026/08/08 12:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">确实 AI 味，我说几个点<br />中文字体，这思源黑吧，太出戏了，不求艺术字体，至少大小标题正文得分开一下<br />区域设计，这个统一的边距看着特别像手机 app 的设计，不能说难看吧，但是放在游戏里就很奇怪<br />还有顶上那个金钱和水滴的圆角，也是经典现代化设计，其实有时候都不需要搞边框，直接图+字就很好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951543">确实 AI 味，我说几个点<br />中文字体，这思源黑吧，太出戏了，不求艺术字体，至少大小标题正文得分开一下<br />区域设计，这个统一的边距看着特别像手机 app 的设计，不能说难看吧，但是放在游戏里就很奇怪<br />还有顶上那个金钱和水滴的圆角，也是经典现代化设计，其实有时候都不需要搞边框，直接图+字就很好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951543">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951543" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiyu2001</span>
+        <span>#11</span>
+        <span>2026/08/08 12:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Ryanzlab" target="_blank" rel="noopener noreferrer">Ryanzlab</a> ai 直接生成的，grok 有生图能力</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951546">@<a href="/member/Ryanzlab" target="_blank" rel="noopener noreferrer">Ryanzlab</a> ai 直接生成的，grok 有生图能力</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951546">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951546" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiyu2001</span>
+        <span>#12</span>
+        <span>2026/08/08 12:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/rb6221" target="_blank" rel="noopener noreferrer">rb6221</a> 学到了，大佬说的很有道理，先调整下 ai 和圆角边框</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951548">@<a href="/member/rb6221" target="_blank" rel="noopener noreferrer">rb6221</a> 学到了，大佬说的很有道理，先调整下 ai 和圆角边框</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951548">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951548" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#13</span>
+        <span>2026/08/08 12:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">印度区 supergrok 是咋开通的呀，OP 指点下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951574">印度区 supergrok 是咋开通的呀，OP 指点下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951574">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951574" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tonytonychopper</span>
+        <span>#14</span>
+        <span>2026/08/08 13:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以让 AI 把输出的素材稍微做旧一点，现在的挺好看就是有点出戏</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951578">可以让 AI 把输出的素材稍微做旧一点，现在的挺好看就是有点出戏</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951578">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951578" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tonytonychopper</span>
+        <span>#15</span>
+        <span>2026/08/08 13:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tonytonychopper" target="_blank" rel="noopener noreferrer">tonytonychopper</a> 而且画面里的框框尽量不要太方正，可以有一个统一的风格，但是太方正就有点奇怪</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951582">@<a href="/member/tonytonychopper" target="_blank" rel="noopener noreferrer">tonytonychopper</a> 而且画面里的框框尽量不要太方正，可以有一个统一的风格，但是太方正就有点奇怪</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xuhengjs</span>
+        <span>#16</span>
+        <span>2026/08/08 14:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">要自己交流都费劲，没那个感觉</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951716">要自己交流都费劲，没那个感觉</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951716">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951716" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">UnluckyNinja</span>
+        <span>#17</span>
+        <span>2026/08/08 14:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">AI 喜欢每个层级都一定要用边框来明确区分，按钮大量使用方角，赘余的文字图标，配色上用力过猛，背景带内阴影或渐变。不是说不能用，但是一眼就能看出来用了 AI</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951727">AI 喜欢每个层级都一定要用边框来明确区分，按钮大量使用方角，赘余的文字图标，配色上用力过猛，背景带内阴影或渐变。不是说不能用，但是一眼就能看出来用了 AI</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">qweruiop</span>
+        <span>#18</span>
+        <span>2026/08/08 15:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个 ui 太出戏，没有游戏的感觉。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951867">这个 ui 太出戏，没有游戏的感觉。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951867">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951867" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jtacm</span>
+        <span>#19</span>
+        <span>2026/08/08 15:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">印度区 supergrok 是咋开通的呀，OP 指点下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951883">印度区 supergrok 是咋开通的呀，OP 指点下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951883">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951883" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shiyu2001</span>
+        <span>#20</span>
+        <span>2026/08/08 16:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jtacm" target="_blank" rel="noopener noreferrer">jtacm</a> 已经拉闸了，现在印度一年也要 300 刀了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17951964">@<a href="/member/jtacm" target="_blank" rel="noopener noreferrer">jtacm</a> 已经拉闸了，现在印度一年也要 300 刀了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17951964">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232867#reply17951964" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
