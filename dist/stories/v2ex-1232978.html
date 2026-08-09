@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了一款终端优先的 AI 编程环境 Termio.sh, 比 Ghostty/ iTem2 / cmux 好用 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-09/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>做了一款终端优先的 AI 编程环境 Termio.sh, 比 Ghostty/ iTem2 / cmux 好用</h1>
+      <p class="original-title">做了一款终端优先的 AI 编程环境 Termio.sh, 比 Ghostty/ iTem2 / cmux 好用</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 YuanJiwei</span>
+        <span>热度 28</span>
+        <span>回复 28</span>
+        <span>2026/08/09 07:25</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1232978" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1232978.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>2026 年，软件编程的范式已经彻底变化了。 我们大部分时间已经不是敲键盘写代码，而是一个项目开着十几个 Agent 会话, Claude Code 、Codex 、OpenCode, Pi... 给 Agent 描述编程意图， 编排他们执行这些意图。传统为手写代码进行优化的 IDE ，其布局功能已经不再适合 AI 编程了，这也是最近很多人在做 ADE （ Agent Development Environment ）的原因。</li><li>我最近也开发了一个 ADE ，Termio ，一个原生 Mac 终端 ADE ，内核用 libghostty （和 Ghostty 同款），agent 的 TUI 渲染性能很强， 使用极为流畅。更重要的产品设计围绕 AI 编程进行设计，项目管理和 Session 管理的状态一目了然，文件树和 diff 直接在终端旁边显示，给 Agent 提供 context 十分方便。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>2026 年，软件编程的范式已经彻底变化了。 我们大部分时间已经不是敲键盘写代码，而是一个项目开着十几个 Agent 会话, Claude Code 、Codex 、OpenCode, Pi... 给 Agent 描述编程意图， 编排他们执行这些意图。传统为手写代码进行优化的 IDE ，其布局功能已经不再适合 AI 编程了，这也是最近很多人在做 ADE （ Agent Development Environment ）的原因。</p>
+<p>我最近也开发了一个 ADE ，Termio ，一个原生 Mac 终端 ADE ，内核用 libghostty （和 Ghostty 同款），agent 的 TUI 渲染性能很强， 使用极为流畅。更重要的产品设计围绕 AI 编程进行设计，项目管理和 Session 管理的状态一目了然，文件树和 diff 直接在终端旁边显示，给 Agent 提供 context 十分方便。</p>
+<p>另外也开发了 iOS ，随时随地通过手机进行 AI 编程。比如陪家人下楼散步时把想法告诉 Agent ，让它立即开始执行。等散步回来，Agent 可能已经完成了任务。然后你再坐回电脑前，检查和验收它的工作。</p>
+<p>Termio 应该是当前市面上当前最漂亮的 ADE 终端了，无论客户端还是 iOS 设计都极为漂亮。如果你想要一款漂亮，稳定的 ADE 终端，可以下载试一试 <a href="http://termio.sh" target="_blank" rel="noopener noreferrer">termio.sh</a></p>
+<p></p>
+<p></p>
+<ul>
+<li>GitHub： <a href="https://github.com/termio-sh/termio" target="_blank" rel="noopener noreferrer">https://github.com/termio-sh/termio</a></li>
+<li>官网： <a href="https://termio.sh" target="_blank" rel="noopener noreferrer">https://termio.sh</a></li>
+<li>iPhone 公测： <a href="https://testflight.apple.com/join/1Arf1UKR" target="_blank" rel="noopener noreferrer">https://testflight.apple.com/join/1Arf1UKR</a></li>
+</ul>
+<p>经过一个月的内测打磨，很多朋友反馈十分好用，如果大家感兴趣可以试用一下哈？遇到什么问题可以留言反馈哈。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>2026 年，软件编程的范式已经彻底变化了。 我们大部分时间已经不是敲键盘写代码，而是一个项目开着十几个 Agent 会话, Claude Code 、Codex 、OpenCode, Pi... 给 Agent 描述编程意图， 编排他们执行这些意图。传统为手写代码进行优化的 IDE ，其布局功能已经不再适合 AI 编程了，这也是最近很多人在做 ADE （ Agent Development Environment ）的原因。</p>
+<p>我最近也开发了一个 ADE ，Termio ，一个原生 Mac 终端 ADE ，内核用 libghostty （和 Ghostty 同款），agent 的 TUI 渲染性能很强， 使用极为流畅。更重要的产品设计围绕 AI 编程进行设计，项目管理和 Session 管理的状态一目了然，文件树和 diff 直接在终端旁边显示，给 Agent 提供 context 十分方便。</p>
+<p>另外也开发了 iOS ，随时随地通过手机进行 AI 编程。比如陪家人下楼散步时把想法告诉 Agent ，让它立即开始执行。等散步回来，Agent 可能已经完成了任务。然后你再坐回电脑前，检查和验收它的工作。</p>
+<p>Termio 应该是当前市面上当前最漂亮的 ADE 终端了，无论客户端还是 iOS 设计都极为漂亮。如果你想要一款漂亮，稳定的 ADE 终端，可以下载试一试 <a href="http://termio.sh" target="_blank" rel="noopener noreferrer">termio.sh</a></p>
+<p></p>
+<p></p>
+<ul>
+<li>GitHub： <a href="https://github.com/termio-sh/termio" target="_blank" rel="noopener noreferrer">https://github.com/termio-sh/termio</a></li>
+<li>官网： <a href="https://termio.sh" target="_blank" rel="noopener noreferrer">https://termio.sh</a></li>
+<li>iPhone 公测： <a href="https://testflight.apple.com/join/1Arf1UKR" target="_blank" rel="noopener noreferrer">https://testflight.apple.com/join/1Arf1UKR</a></li>
+</ul>
+<p>经过一个月的内测打磨，很多朋友反馈十分好用，如果大家感兴趣可以试用一下哈？遇到什么问题可以留言反馈哈。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nelzomal</span>
+        <span>#1</span>
+        <span>2026/08/09 07:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持开源。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952783">支持开源。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952783">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952783" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#2</span>
+        <span>2026/08/09 07:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/nelzomal" target="_blank" rel="noopener noreferrer">nelzomal</a> 感谢，如果方便，希望点个 Github star 支持一下，哈哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952794">@<a href="/member/nelzomal" target="_blank" rel="noopener noreferrer">nelzomal</a> 感谢，如果方便，希望点个 Github star 支持一下，哈哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952794">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952794" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chjqpmain</span>
+        <span>#3</span>
+        <span>2026/08/09 09:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/YuanJiwei" target="_blank" rel="noopener noreferrer">YuanJiwei</a> #2 您这个相比 cmux 这些优化了哪些部分啊？内核一样的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952887">@<a href="/member/YuanJiwei" target="_blank" rel="noopener noreferrer">YuanJiwei</a> #2 您这个相比 cmux 这些优化了哪些部分啊？内核一样的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952887">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952887" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">iwolfor</span>
+        <span>#4</span>
+        <span>2026/08/09 09:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">期待 windows 版</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952902">期待 windows 版</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952902">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952902" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gaoyanchen</span>
+        <span>#5</span>
+        <span>2026/08/09 09:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">希望 qodercli 支持下呢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952912">希望 qodercli 支持下呢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952912">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952912" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ggmood</span>
+        <span>#6</span>
+        <span>2026/08/09 09:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952944">支持！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952944">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952944" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Wcowin</span>
+        <span>#7</span>
+        <span>2026/08/09 09:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持一波</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17952952">支持一波</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17952952">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17952952" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Vogan</span>
+        <span>#8</span>
+        <span>2026/08/09 10:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">和 otty 对比呢？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953048">和 otty 对比呢？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953048">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953048" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lscho</span>
+        <span>#9</span>
+        <span>2026/08/09 10:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">试了一下感觉挺不错，完成度也挺高，就是设置页面切换感觉略微有点卡顿<br /><br />但是我一直不太明白为啥一直有人来中文社区宣传，但是自己的产品和官网不支持中文。。。现在 AI 加个语言包不是很简单的事吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953060">试了一下感觉挺不错，完成度也挺高，就是设置页面切换感觉略微有点卡顿<br /><br />但是我一直不太明白为啥一直有人来中文社区宣传，但是自己的产品和官网不支持中文。。。现在 AI 加个语言包不是很简单的事吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953060">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953060" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">laogui</span>
+        <span>#10</span>
+        <span>2026/08/09 11:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不错，带全文搜索这点给好评</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953108">不错，带全文搜索这点给好评</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953108">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953108" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nidhogger</span>
+        <span>#11</span>
+        <span>2026/08/09 11:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">期待 windows 版本</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953155">期待 windows 版本</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953155">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953155" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zuosiruan</span>
+        <span>#12</span>
+        <span>2026/08/09 12:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">期待 windows 版本</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953213">期待 windows 版本</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953213">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953213" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">youngxhui</span>
+        <span>#13</span>
+        <span>2026/08/09 12:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持一波！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953220">支持一波！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953220">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953220" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#14</span>
+        <span>2026/08/09 16:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/chjqpmain" target="_blank" rel="noopener noreferrer">chjqpmain</a> <br />哈哈，确实我们的内核都是基于 libghostty, 目前和 cmux 的区别主要在产品设计的差异<br />1. 支持文件树和编辑器<br />2. 支持 Github 原生集成<br />3. UI/UX 更丝滑（每个细节有手工打磨）<br />4. iOS 更漂亮<br />目前主要集中于产品层面的差异， 当然 cmux 也是很优秀的作品，给大家多提供一个选项。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953605">@<a href="/member/chjqpmain" target="_blank" rel="noopener noreferrer">chjqpmain</a> <br />哈哈，确实我们的内核都是基于 libghostty, 目前和 cmux 的区别主要在产品设计的差异<br />1. 支持文件树和编辑器<br />2. 支持 Github 原生集成<br />3. UI/UX 更丝滑（每个细节有手工打磨）<br />4. iOS 更漂亮<br />目前主要集中于产品层面的差异， 当然 cmux 也是很优秀的作品，给大家多提供一个选项。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953605">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953605" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#15</span>
+        <span>2026/08/09 16:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/gaoyanchen" target="_blank" rel="noopener noreferrer">gaoyanchen</a> 好滴，后续一定优先支持一下 Qodercli 的集成</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953608">@<a href="/member/gaoyanchen" target="_blank" rel="noopener noreferrer">gaoyanchen</a> 好滴，后续一定优先支持一下 Qodercli 的集成</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953608">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953608" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#16</span>
+        <span>2026/08/09 16:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lscho" target="_blank" rel="noopener noreferrer">lscho</a> 关于官网语言，认可你的批评哈。后续尽快支持一下多语言。Setting Page 切换卡顿，可能是 Animation 设计有些问题，我后续优化一下。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953610">@<a href="/member/lscho" target="_blank" rel="noopener noreferrer">lscho</a> 关于官网语言，认可你的批评哈。后续尽快支持一下多语言。Setting Page 切换卡顿，可能是 Animation 设计有些问题，我后续优化一下。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953610">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953610" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#17</span>
+        <span>2026/08/09 16:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Vogan" target="_blank" rel="noopener noreferrer">Vogan</a> 目前和 Otty 的主要区别是定位不同，Otty 更多是 Terminal 工具, 我的定位是 Terminal-first Agent Development Environment 。 所以对于 Agent 集成做了很多优化（比如 Agent 通知/状态显示，Agent 编排 API ， 后续还会做 Remote Server ）另外我这个支持开箱即用的移动端哈，Otty 近期还没有移动端计划。<br /><br />但这个产品借鉴了 Otty 的一些设计的，比如文件树，Info tab 。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953621">@<a href="/member/Vogan" target="_blank" rel="noopener noreferrer">Vogan</a> 目前和 Otty 的主要区别是定位不同，Otty 更多是 Terminal 工具, 我的定位是 Terminal-first Agent Development Environment 。 所以对于 Agent 集成做了很多优化（比如 Agent 通知/状态显示，Agent 编排 API ， 后续还会做 Remote Server ）另外我这个支持开箱即用的移动端哈，Otty 近期还没有移动端计划。<br /><br />但这个产品借鉴了 Otty 的一些设计的，比如文件树，Info tab 。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953621">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953621" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#18</span>
+        <span>2026/08/09 16:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/laogui" target="_blank" rel="noopener noreferrer">laogui</a> 谢谢认可哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953622">@<a href="/member/laogui" target="_blank" rel="noopener noreferrer">laogui</a> 谢谢认可哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953622">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953622" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chjqpmain</span>
+        <span>#19</span>
+        <span>2026/08/09 17:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/YuanJiwei" target="_blank" rel="noopener noreferrer">YuanJiwei</a> 嗯嗯，移动端的开箱即用是靠前的点，文件树和编辑器是您这里是手搓开发的？   文件树这些 cmux 也有，编辑文件我是装了 nvim ，这里也自带一个文件树，cmux 的我也没更细的探索，不清楚是否祂只能只读，内置的浏览器也没用过，目前还是直接调我的外部浏览器，毕竟我的很多扩展都在外部，比如 Vimium</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953641">@<a href="/member/YuanJiwei" target="_blank" rel="noopener noreferrer">YuanJiwei</a> 嗯嗯，移动端的开箱即用是靠前的点，文件树和编辑器是您这里是手搓开发的？   文件树这些 cmux 也有，编辑文件我是装了 nvim ，这里也自带一个文件树，cmux 的我也没更细的探索，不清楚是否祂只能只读，内置的浏览器也没用过，目前还是直接调我的外部浏览器，毕竟我的很多扩展都在外部，比如 Vimium</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953641">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953641" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YuanJiwei</span>
+        <span>#20</span>
+        <span>2026/08/09 17:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/chjqpmain" target="_blank" rel="noopener noreferrer">chjqpmain</a> 代码都是 AI 编程的，只是重要的技术实现方案都有把控的。不过 UI/UX 都是用心打磨的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953656">@<a href="/member/chjqpmain" target="_blank" rel="noopener noreferrer">chjqpmain</a> 代码都是 AI 编程的，只是重要的技术实现方案都有把控的。不过 UI/UX 都是用心打磨的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953656">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1232978#reply17953656" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

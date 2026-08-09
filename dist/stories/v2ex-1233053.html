@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>使用网页版本的 AI，有办法导出对话记录吗？ | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-09/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>使用网页版本的 AI，有办法导出对话记录吗？</h1>
+      <p class="original-title">使用网页版本的 AI，有办法导出对话记录吗？</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 BaiLinfeng</span>
+        <span>热度 16</span>
+        <span>回复 16</span>
+        <span>2026/08/09 16:55</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1233053" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1233053.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>平常使用网页版本的 DS 、gemini 等……，但是对话多了后，ai 的上下文都存满了，不得不重新另开新窗口，来对话，但是之前旧的会话里有对话历史记录，推理过程，需要使用到，新窗口又没有之前的对话记录，这个就很蛋疼，我在网上弄了插件，但是我发现插件无法导出对话中的文件文档内容。又什么好的解决办法吗？</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>平常使用网页版本的 DS 、gemini 等……，但是对话多了后，ai 的上下文都存满了，不得不重新另开新窗口，来对话，但是之前旧的会话里有对话历史记录，推理过程，需要使用到，新窗口又没有之前的对话记录，这个就很蛋疼，我在网上弄了插件，但是我发现插件无法导出对话中的文件文档内容。又什么好的解决办法吗？</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>平常使用网页版本的 DS 、gemini 等……，但是对话多了后，ai 的上下文都存满了，不得不重新另开新窗口，来对话，但是之前旧的会话里有对话历史记录，推理过程，需要使用到，新窗口又没有之前的对话记录，这个就很蛋疼，我在网上弄了插件，但是我发现插件无法导出对话中的文件文档内容。又什么好的解决办法吗？</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">16</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ruxuan1306</span>
+        <span>#1</span>
+        <span>2026/08/09 18:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">用任何一个有浏览器的 AI 工具，告诉它你要什么，它就会去打开网页抓接口写出。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953745">用任何一个有浏览器的 AI 工具，告诉它你要什么，它就会去打开网页抓接口写出。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953745">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17953745" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shintendo</span>
+        <span>#2</span>
+        <span>2026/08/09 19:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你说的这两个，都有官方导出功能啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953798">你说的这两个，都有官方导出功能啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953798">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17953798" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">9321106</span>
+        <span>#3</span>
+        <span>2026/08/09 19:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在旧的对话窗口中，让 AI 帮你总结你们的对话过程。你可以直接复制到任何一个新的 AI 对话。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953844">在旧的对话窗口中，让 AI 帮你总结你们的对话过程。你可以直接复制到任何一个新的 AI 对话。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953844">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17953844" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#4</span>
+        <span>2026/08/09 20:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">chatgpt 官方就支持，我什至能导出来再导回给 gemini 用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17953857">chatgpt 官方就支持，我甚至能导出来再导回给 gemini 用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17953857">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17953857" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#5</span>
+        <span>2026/08/09 22:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/shintendo" target="_blank" rel="noopener noreferrer">shintendo</a> #2 网页在线 ai 有导出功能吗？在哪里，我都没看到</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954038">@<a href="/member/shintendo" target="_blank" rel="noopener noreferrer">shintendo</a> #2 网页在线 ai 有导出功能吗？在哪里，我都没看到</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954038">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954038" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#6</span>
+        <span>2026/08/09 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/9321106" target="_blank" rel="noopener noreferrer">9321106</a> #3 还有其它办法吗？这也是个思路</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954041">@<a href="/member/9321106" target="_blank" rel="noopener noreferrer">9321106</a> #3 还有其它办法吗？这也是个思路</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954041">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954041" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#7</span>
+        <span>2026/08/09 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ruxuan1306" target="_blank" rel="noopener noreferrer">ruxuan1306</a> #1 这也是个思路</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954044">@<a href="/member/ruxuan1306" target="_blank" rel="noopener noreferrer">ruxuan1306</a> #1 这也是个思路</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954044">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954044" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#8</span>
+        <span>2026/08/09 22:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/9321106" target="_blank" rel="noopener noreferrer">9321106</a> #3 但是旧窗口已经不允许在发消息了，你根本就不知道好久上下文爆满，所以旧窗口无法发任何消息了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954055">@<a href="/member/9321106" target="_blank" rel="noopener noreferrer">9321106</a> #3 但是旧窗口已经不允许在发消息了，你根本就不知道好久上下文爆满，所以旧窗口无法发任何消息了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954055">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954055" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shintendo</span>
+        <span>#9</span>
+        <span>2026/08/09 23:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/BaiLinfeng" target="_blank" rel="noopener noreferrer">BaiLinfeng</a> deepseek 在设置里面，有个数据管理→历史对话导出。gemini 在谷歌的账号管理里面，有个大概是导出我的活动记录，里面有一个类别是 gemini 对话记录</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954134">@<a href="/member/BaiLinfeng" target="_blank" rel="noopener noreferrer">BaiLinfeng</a> deepseek 在设置里面，有个数据管理→历史对话导出。gemini 在谷歌的账号管理里面，有个大概是导出我的活动记录，里面有一个类别是 gemini 对话记录</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954134">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954134" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shintendo</span>
+        <span>#10</span>
+        <span>2026/08/09 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">但我好奇你导出来想干嘛，再喂给新的对话不就又满了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954138">但我好奇你导出来想干嘛，再喂给新的对话不就又满了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954138">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954138" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">9321106</span>
+        <span>#11</span>
+        <span>2026/08/09 23:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/BaiLinfeng" target="_blank" rel="noopener noreferrer">BaiLinfeng</a> 还有个办法，可以尝试，复制旧的对话专属编号链接之类的，如果没有，尝试在新的对话中输入“旧对话的标题”，让 AI 尝试内部索引。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954176">@<a href="/member/BaiLinfeng" target="_blank" rel="noopener noreferrer">BaiLinfeng</a> 还有个办法，可以尝试，复制旧的对话专属编号链接之类的，如果没有，尝试在新的对话中输入“旧对话的标题”，让 AI 尝试内部索引。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954176">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954176" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kirory</span>
+        <span>#12</span>
+        <span>2026/08/10 00:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">稍微花点钱，用 API 接各种客户端<br />/compact</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954182">稍微花点钱，用 API 接各种客户端<br />/compact</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954182">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954182" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#13</span>
+        <span>2026/08/10 00:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/shintendo" target="_blank" rel="noopener noreferrer">shintendo</a> #10 对啊， 你说的很有道理，如果我导出来的话，新窗口肯定很快爆满了，我导出来备份着，免费版本的上下文存不了多少，我只有把导出来的内容，继续发给付费的 ai 分析了，</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954186">@<a href="/member/shintendo" target="_blank" rel="noopener noreferrer">shintendo</a> #10 对啊， 你说的很有道理，如果我导出来的话，新窗口肯定很快爆满了，我导出来备份着，免费版本的上下文存不了多少，我只有把导出来的内容，继续发给付费的 ai 分析了，</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954186">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954186" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#14</span>
+        <span>2026/08/10 00:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/9321106" target="_blank" rel="noopener noreferrer">9321106</a> #11 这个我试过了，是不对的，就是分享链接，是无法知道这个链接内容的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954187">@<a href="/member/9321106" target="_blank" rel="noopener noreferrer">9321106</a> #11 这个我试过了，是不对的，就是分享链接，是无法知道这个链接内容的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954187">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954187" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BaiLinfeng</span>
+        <span>#15</span>
+        <span>2026/08/10 00:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/kirory" target="_blank" rel="noopener noreferrer">kirory</a> #12 这个确实是最有效的办法，就是要付费……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954188">@<a href="/member/kirory" target="_blank" rel="noopener noreferrer">kirory</a> #12 这个确实是最有效的办法，就是要付费……</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954188">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954188" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mb4555</span>
+        <span>#16</span>
+        <span>2026/08/10 00:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://github.com/urzeye/ophel/blob/main/README_zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/urzeye/ophel/blob/main/README_zh-CN.md</a><br /><br />试下这个</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17954203"><a href="https://github.com/urzeye/ophel/blob/main/README_zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/urzeye/ophel/blob/main/README_zh-CN.md</a><br /><br />试下这个</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17954203">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233053#reply17954203" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
