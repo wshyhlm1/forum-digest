@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>重新掌握信息选择权， AI 原生 RSS 阅读器分享，送永久会员 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-10/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>重新掌握信息选择权， AI 原生 RSS 阅读器分享，送永久会员</h1>
+      <p class="original-title">重新掌握信息选择权， AI 原生 RSS 阅读器分享，送永久会员</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 fuxiao11</span>
+        <span>热度 66</span>
+        <span>回复 66</span>
+        <span>2026/08/10 19:22</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1233346" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1233346.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>大家好，最近把自己一直在用的 AI 原生 RSS 阅读器 Tidings 正式上线了(官网:https://tidings.info)。</li><li>做它的原因很简单：我不太想把阅读完全交给推荐算法，形成信息茧房。RSS 能让我自己决定关注谁，但传统阅读器面对大量未读、长文章和论坛讨论时，整理信息的效率还是不够高。所以我做了一个本地优先、AI 原生的桌面阅读器，希望既保留 RSS 的控制权，又减少筛选和消化信息的成本。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>大家好，最近把自己一直在用的 AI 原生 RSS 阅读器 <strong>消息</strong> 正式上线了(官网:<a href="https://tidings.info" target="_blank" rel="noopener noreferrer">https://tidings.info</a>)。</p>
+<p>做它的原因很简单：我不太想把阅读完全交给推荐算法，形成信息茧房。RSS 能让我自己决定关注谁，但传统阅读器面对大量未读、长文章和论坛讨论时，整理信息的效率还是不够高。所以我做了一个本地优先、AI 原生的桌面阅读器，希望既保留 RSS 的控制权，又减少筛选和消化信息的成本。</p>
+主要亮点功能
+<p>AI 是 Tidings 阅读流程里最重要的一部分：先从整个未读队列里找出值得关注的主题，再进入单篇文章做摘要、翻译和连续追问。主要功能包括：</p>
+<ul>
+<li><strong>AI 雷达</strong>：全局分析 RSS 未读内容，把相互关联的进展聚合成主题简报。每条判断都保留来源引用，快速筛选高价值值得读内容，并可一键查看原文。</li>
+<li><strong>AI 摘要、双语翻译和文章追问</strong>：摘要直接生成在原文上方；翻译按段落与原文对照展示；追问始终围绕当前文章的上下文，不需要把正文复制到另一个聊天工具里。</li>
+<li><strong>自选 AI Provider</strong>：可以配置自己的 AI Provider 、模型和 API Key 。请求从 Mac 直接发送给所选 Provider ，不经过 Tidings 的服务器。</li>
+<li><strong>适配不同内容类型</strong>：文章、论坛、图片和视频都有独立视图，同时支持 RSS / Atom / JSON Feed 以及 OPML 导入导出。</li>
+</ul>
+<p></p>
+<p></p>
+<p>翻译不会把原文顶掉，译文按段落紧挨着原文显示：</p>
+<p></p>
+<p>遇到没讲透的地方，可以直接围绕当前文章继续追问：</p>
+<p></p>
+<p>视频订阅也没有硬塞进文章列表，而是单独做成了网格视图：</p>
+<p></p>
+专门适配了 V2EX 这类论坛内容
+<p>市面已有的 RSS 阅读器只把论坛 Feed 当成普通文章列表，点进去仍然只能看到主帖。Tidings 会把 V2EX 识别为论坛源，放进独立的社区视图；除了获取帖子正文，也会<strong>继续深度解析并抓取获取回复</strong>，并按楼层和对话顺序展示。这样可以在应用里从主题列表一路读完整个讨论，不需要在阅读器与浏览器之间反复切换。</p>
+<p></p>
+<p>Tidings 首次启动不会塞入任何默认订阅源，也没有算法信息流。订阅源由你自己添加或通过 OPML 导入，阅读数据优先保存在本机。</p>
+<p>版本也尽量做得简单：<strong>RSS 基础功能永久免费</strong>，免费版最多可以添加 150 个订阅源。需要 AI Radar 、摘要、翻译、文章追问、不限订阅源、Markdown 、Obsidian 等第三方集成或 iCloud Sync 时，可以一次性买断 Pro 终身版，没有按月或按年订阅。</p>
+<p>目前支持 <strong>macOS 12 及以上</strong>，官网可以直接下载：</p>
+<p><strong><a href="https://tidings.info" target="_blank" rel="noopener noreferrer">https://tidings.info</a></strong></p>
+另外分享 627 个我自己整理的 RSS 源
+<p>我把平时自用的 RSS 目录整理成了一个开源项目，共 627 个源，覆盖 AI 、新闻、科研、独立博客、工程技术、视频、播客和中文内容。其中有不少来自模型公司、研究机构、工程团队和独立作者的一手更新，也收录了 V2EX 等社区源。</p>
+<p>即使以前没用过 RSS 也没关系：下载安装 Tidings ，在项目页面下载 <code>tidings-all.opml</code>，然后从软件里导入，整个过程一分钟左右。导入后就能按现有分类阅读，也可以直接在社区视图里刷 V2EX 帖子和回帖。各个主题包都是标准 OPML ，也可以导入其他兼容的 RSS 阅读器。</p>
+<p></p>
+<p>项目地址：<a href="https://github.com/fuxiaoai/tidings-rss" target="_blank" rel="noopener noreferrer">付小爱/消息-RSS</a></p>
+<p>中文介绍与下载：<a href="https://github.com/fuxiaoai/tidings-rss/blob/main/README.zh-CN.md" target="_blank" rel="noopener noreferrer">README.zh-CN.md</a></p>
+给 V2EX 用户的小福利
+<ul>
+<li>前 30 位在本帖评论并加入微信群的用户，可以免费领取 Tidings <strong>永久 Pro 会员</strong>。</li>
+<li>群二维码在 <strong>8 月 17 日前有效</strong>。本周末二维码过期后，我会在微信群里再抽取 20 位用户，额外送出 <strong>永久 Pro 会员</strong>。</li>
+</ul>
+<p></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>大家好，最近把自己一直在用的 AI 原生 RSS 阅读器 <strong>Tidings</strong> 正式上线了(官网:<a href="https://tidings.info" target="_blank" rel="noopener noreferrer">https://tidings.info</a>)。</p>
+<p>做它的原因很简单：我不太想把阅读完全交给推荐算法，形成信息茧房。RSS 能让我自己决定关注谁，但传统阅读器面对大量未读、长文章和论坛讨论时，整理信息的效率还是不够高。所以我做了一个本地优先、AI 原生的桌面阅读器，希望既保留 RSS 的控制权，又减少筛选和消化信息的成本。</p>
+主要亮点功能
+<p>AI 是 Tidings 阅读流程里最重要的一部分：先从整个未读队列里找出值得关注的主题，再进入单篇文章做摘要、翻译和连续追问。主要功能包括：</p>
+<ul>
+<li><strong>AI 雷达</strong>：全局分析 RSS 未读内容，把相互关联的进展聚合成主题简报。每条判断都保留来源引用，快速筛选高价值值得读内容，并可一键查看原文。</li>
+<li><strong>AI 摘要、双语翻译和文章追问</strong>：摘要直接生成在原文上方；翻译按段落与原文对照展示；追问始终围绕当前文章的上下文，不需要把正文复制到另一个聊天工具里。</li>
+<li><strong>自选 AI Provider</strong>：可以配置自己的 AI Provider 、模型和 API Key 。请求从 Mac 直接发送给所选 Provider ，不经过 Tidings 的服务器。</li>
+<li><strong>适配不同内容类型</strong>：文章、论坛、图片和视频都有独立视图，同时支持 RSS / Atom / JSON Feed 以及 OPML 导入导出。</li>
+</ul>
+<p></p>
+<p></p>
+<p>翻译不会把原文顶掉，译文按段落紧挨着原文显示：</p>
+<p></p>
+<p>遇到没讲透的地方，可以直接围绕当前文章继续追问：</p>
+<p></p>
+<p>视频订阅也没有硬塞进文章列表，而是单独做成了网格视图：</p>
+<p></p>
+专门适配了 V2EX 这类论坛内容
+<p>市面已有的 RSS 阅读器只把论坛 Feed 当成普通文章列表，点进去仍然只能看到主帖。Tidings 会把 V2EX 识别为论坛源，放进独立的社区视图；除了获取帖子正文，也会<strong>继续深度解析并抓取获取回复</strong>，并按楼层和对话顺序展示。这样可以在应用里从主题列表一路读完整个讨论，不需要在阅读器与浏览器之间反复切换。</p>
+<p></p>
+<p>Tidings 首次启动不会塞入任何默认订阅源，也没有算法信息流。订阅源由你自己添加或通过 OPML 导入，阅读数据优先保存在本机。</p>
+<p>版本也尽量做得简单：<strong>RSS 基础功能永久免费</strong>，免费版最多可以添加 150 个订阅源。需要 AI Radar 、摘要、翻译、文章追问、不限订阅源、Markdown 、Obsidian 等第三方集成或 iCloud Sync 时，可以一次性买断 Pro 终身版，没有按月或按年订阅。</p>
+<p>目前支持 <strong>macOS 12 及以上</strong>，官网可以直接下载：</p>
+<p><strong><a href="https://tidings.info" target="_blank" rel="noopener noreferrer">https://tidings.info</a></strong></p>
+另外分享 627 个我自己整理的 RSS 源
+<p>我把平时自用的 RSS 目录整理成了一个开源项目，共 627 个源，覆盖 AI 、新闻、科研、独立博客、工程技术、视频、播客和中文内容。其中有不少来自模型公司、研究机构、工程团队和独立作者的一手更新，也收录了 V2EX 等社区源。</p>
+<p>即使以前没用过 RSS 也没关系：下载安装 Tidings ，在项目页面下载 <code>tidings-all.opml</code>，然后从软件里导入，整个过程一分钟左右。导入后就能按现有分类阅读，也可以直接在社区视图里刷 V2EX 帖子和回帖。各个主题包都是标准 OPML ，也可以导入其他兼容的 RSS 阅读器。</p>
+<p></p>
+<p>项目地址：<a href="https://github.com/fuxiaoai/tidings-rss" target="_blank" rel="noopener noreferrer">fuxiaoai/tidings-rss</a></p>
+<p>中文介绍与下载：<a href="https://github.com/fuxiaoai/tidings-rss/blob/main/README.zh-CN.md" target="_blank" rel="noopener noreferrer">README.zh-CN.md</a></p>
+给 V2EX 用户的小福利
+<ul>
+<li>前 30 位在本帖评论并加入微信群的用户，可以免费领取 Tidings <strong>永久 Pro 会员</strong>。</li>
+<li>群二维码在 <strong>8 月 17 日前有效</strong>。本周末二维码过期后，我会在微信群里再抽取 20 位用户，额外送出 <strong>永久 Pro 会员</strong>。</li>
+</ul>
+<p></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lesir</span>
+        <span>#1</span>
+        <span>2026/08/10 19:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感谢分享，已加入</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958240">感谢分享，已加入</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958240">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958240" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#2</span>
+        <span>2026/08/10 19:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lesir" target="_blank" rel="noopener noreferrer">lesir</a> 欢迎一楼回复，明日送上永久会员～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958251">@<a href="/member/lesir" target="_blank" rel="noopener noreferrer">lesir</a> 欢迎一楼回复，明日送上永久会员～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958251">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958251" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Shum1n</span>
+        <span>#3</span>
+        <span>2026/08/10 19:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已加入 NTQwODQyOTMwQHFxLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958262">已加入 NTQwODQyOTMwQHFxLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958262">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958262" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#4</span>
+        <span>2026/08/10 19:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Shum1n" target="_blank" rel="noopener noreferrer">Shum1n</a> 感谢支持～ <a href="https://i.imgur.com/pmNOo2w.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958269">@<a href="/member/Shum1n" target="_blank" rel="noopener noreferrer">Shum1n</a> 感谢支持～ <a href="https://i.imgur.com/pmNOo2w.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958269">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958269" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">alfawei</span>
+        <span>#5</span>
+        <span>2026/08/10 19:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">楼主很厉害，可惜我只有 iOS 设备 没有 mac 设备。 目前是 Freshrss 长期用户</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958276">楼主很厉害，可惜我只有 iOS 设备 没有 mac 设备。 目前是 Freshrss 长期用户</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958276">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958276" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cntjpu</span>
+        <span>#6</span>
+        <span>2026/08/10 19:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谢谢分享，已加入。<br />Y250anB1QGdtYWlsLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958279">谢谢分享，已加入。<br />Y250anB1QGdtYWlsLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958279">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958279" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#7</span>
+        <span>2026/08/10 19:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/alfawei" target="_blank" rel="noopener noreferrer">alfawei</a> 感谢前排评论支持，后续如果需要 MAC 上 RSS 阅读器，可直接联系我，送你永久订阅</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958284">@<a href="/member/alfawei" target="_blank" rel="noopener noreferrer">alfawei</a> 感谢前排评论支持，后续如果需要 MAC 上 RSS 阅读器，可直接联系我，送你永久订阅</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958284">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958284" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">RshMan</span>
+        <span>#8</span>
+        <span>2026/08/10 19:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已加入 多谢<br />cnNoZW5nMjFAZ21haWwuY29t</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958286">已加入 多谢<br />cnNoZW5nMjFAZ21haWwuY29t</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958286">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958286" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">emberzhang</span>
+        <span>#9</span>
+        <span>2026/08/10 19:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已加群，感谢 ZW1iZXJ6aGFuZ0BnbWFpbC5jb20=</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958287">已加群，感谢 ZW1iZXJ6aGFuZ0BnbWFpbC5jb20=</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958287">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958287" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nidhogger</span>
+        <span>#10</span>
+        <span>2026/08/10 19:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已加群，感谢。Mjg2Mzk3MTkxQHFxLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958297">已加群，感谢。Mjg2Mzk3MTkxQHFxLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958297">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958297" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#11</span>
+        <span>2026/08/10 19:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/cntjpu" target="_blank" rel="noopener noreferrer">cntjpu</a> 感谢支持，激活码微信送上</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958299">@<a href="/member/cntjpu" target="_blank" rel="noopener noreferrer">cntjpu</a> 感谢支持，激活码微信送上</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958299">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958299" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#12</span>
+        <span>2026/08/10 19:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/emberzhang" target="_blank" rel="noopener noreferrer">emberzhang</a> 收到，会员已预定～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958301">@<a href="/member/emberzhang" target="_blank" rel="noopener noreferrer">emberzhang</a> 收到，会员已预定～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958301">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958301" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#13</span>
+        <span>2026/08/10 19:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/RshMan" target="_blank" rel="noopener noreferrer">RshMan</a> 感谢支持</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958304">@<a href="/member/RshMan" target="_blank" rel="noopener noreferrer">RshMan</a> 感谢支持</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958304">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958304" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#14</span>
+        <span>2026/08/10 19:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/nidhogger" target="_blank" rel="noopener noreferrer">nidhogger</a> OK ，WX 送上会员～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958307">@<a href="/member/nidhogger" target="_blank" rel="noopener noreferrer">nidhogger</a> OK ，WX 送上会员～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958307">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958307" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">qiudays</span>
+        <span>#15</span>
+        <span>2026/08/10 19:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">居然需要花钱吗....</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958308">居然需要花钱吗....</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958308">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958308" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bao626</span>
+        <span>#16</span>
+        <span>2026/08/10 19:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已加，谢谢大佬 ZGRkaW5nZGRkaW5nQDE2My5jb20=</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958311">已加，谢谢大佬 ZGRkaW5nZGRkaW5nQDE2My5jb20=</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958311">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958311" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chenghonour</span>
+        <span>#17</span>
+        <span>2026/08/10 19:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已加群，支持🤟</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958312">已加群，支持🤟</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958312">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958312" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#18</span>
+        <span>2026/08/10 19:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/qiudays" target="_blank" rel="noopener noreferrer">qiudays</a> 当前还在前排楼层，加群可免费送你会员</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958313">@<a href="/member/qiudays" target="_blank" rel="noopener noreferrer">qiudays</a> 当前还在前排楼层，加群可免费送你会员</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958313">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958313" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#19</span>
+        <span>2026/08/10 19:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bao626" target="_blank" rel="noopener noreferrer">bao626</a> 感谢支持～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958314">@<a href="/member/bao626" target="_blank" rel="noopener noreferrer">bao626</a> 感谢支持～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958314">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958314" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuxiao11</span>
+        <span>#20</span>
+        <span>2026/08/10 19:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/chenghonour" target="_blank" rel="noopener noreferrer">chenghonour</a> 收到，感谢～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17958315">@<a href="/member/chenghonour" target="_blank" rel="noopener noreferrer">chenghonour</a> 收到，感谢～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17958315">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1233346#reply17958315" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
