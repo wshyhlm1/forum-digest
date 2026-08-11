@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docker Sandboxes – 用于 AI 代理的一次性隔离沙箱 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-11/">返回日报</a>
+      <div class="source-chip">Hacker News #7</div>
+      <h1>Docker Sandboxes – 用于 AI 代理的一次性隔离沙箱</h1>
+      <p class="original-title">Docker Sandboxes – Disposable, isolated sandboxes for AI agents</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 etoxin</span>
+        <span>热度 667</span>
+        <span>回复 372</span>
+        <span>2026/08/10 14:02</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49239751" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://www.docker.com/products/docker-sandboxes/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49239751.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Docker Sandboxes</li><li>Run AI agents safely in local sandboxes.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">srini-docker</span>
+        
+        <span>2026/08/10 23:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我在 Docker 工作。我们正在密切关注这里的许多有效且有用的反馈。<p>更正：这不是容器。每个会话都是一个 microVM，在平台的本机管理程序上拥有自己的内核：Hypervisor.framework、WHP、KVM。我们编写了一个新的 VMM（不是 Firecracker），以使其在跨平台上更加有效。</p><p>此处详细解释了该架构以及做出这些选择的原因：<a href="https://www.docker.com/blog/why-microvms-the-architecture-behind-docker-sandboxes/" target="_blank" rel="noopener noreferrer">https://www.docker.com/blog/why-microvms-the-architecture-be...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49245030">I work at Docker. Lot of valid and useful feedback here that we're looking closely at.<p>One correction: this isn't containers. Each session is a microVM with its own kernel on the platform's native hypervisor: Hypervisor.framework, WHP, KVM. We wrote a new VMM (not Firecracker) to make it more effective across platforms.</p><p>Explained a bit more here about the architecture and why those choices were made: <a href="https://www.docker.com/blog/why-microvms-the-architecture-behind-docker-sandboxes/" target="_blank" rel="noopener noreferrer">https://www.docker.com/blog/why-microvms-the-architecture-be...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49245030">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49245030" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">bradgessler</span>
+        
+        <span>2026/08/11 04:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我希望看到将 microVM 之前的 Docker Desktop for macOS 与 microVM 之后的 Docker Desktop 进行比较的真实数据。<p>我停止在 macOS 上使用 Docker，因为主机文件系统性能太慢，即使所有的缓存黑客都堆积在其上，这使得整个系统实际上无法用于开发。</p><p>从方向上看，分享的帖子听起来很棒，但我们认为“好得令人难以置信”。适用于 macOS 的高性能 microVM。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49249052">I'd like to see real numbers that compare Docker Desktop for macOS before microVMs to post-microVMs.<p>I stopped using Docker on macOS because host file system performance was so slow, even with all of the caching hacks piled on top of it, that it made the whole thing effectively unusable for development.</p><p>Directionally the post shared sounds great, but it seems "too good to be true" that we'd have a performant microVM for macOS.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49249052">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49249052" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">exographicskip</span>
+        
+        <span>2026/08/11 05:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">相同。使用 orbstack 已经有几年了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49249705">Same. Been using orbstack for a couple years now</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49249705">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49249705" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jbverschoor</span>
+        
+        <span>2026/08/11 15:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我写了<a href="https://github.com/jrz/container-shell" target="_blank" rel="noopener noreferrer">https://github.com/jrz/container-shell</a>，我每天都用它来处理克劳德和其他事情。与Orbstack兼容</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49254582">I wrote <a href="https://github.com/jrz/container-shell" target="_blank" rel="noopener noreferrer">https://github.com/jrz/container-shell</a> which I use daily for both claude and other things. Compatible with Orbstack</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49254582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49254582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tanepiper</span>
+        
+        <span>2026/08/11 00:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我很高兴现在有了这个 - fwiw 大约十年前，我就致力于 <a href="https://github.com/takeoff-env/takeoff" target="_blank" rel="noopener noreferrer">https://github.com/takeoff-env/takeoff</a> 作为一种解决方案，使热重载堆栈变得更容易，值得庆幸的是，这在今天是多余的，有趣的是，您发现的问题列表也是我一直在研究的事情。<p>最近，我还一直在研究 VM 堆栈代理平台使用预构建映像和一些云注入脚本，简化了私有代理集群的部署 - 最后，我使用了完整的虚拟机，主代理有 4vCpu/8gb，2vCPU/4Gb - 只有主代理有 docker-in-docker，其余的无根 docker，但我同意这仍然是一个较高的风险。</p><p>我肯定要试一试，看看是否可以用这个将其简化为一个更大的盒子解决方案。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49245974">I'm very glad this now exists - fwiw almost a decade ago I worked on <a href="https://github.com/takeoff-env/takeoff" target="_blank" rel="noopener noreferrer">https://github.com/takeoff-env/takeoff</a> as a solution for making it easier for hot reloading your stack which is thankfully redundant today, and funnily enough the list of problems you identify is also something I've been working on.<p>Recently I've also been working on a VM stack for an agentic platform using pre-build images with some cloud injection scripts that simplifies the deployment of a private agentic cluster - in the end I went with full VM with a 4vCpu/8gb for the main agent and 2vCPU/4Gb - only the main agent had docker-in-docker, the rest rootless docker but I agree it's still an elevated risk.</p><p>I'll definitely have to give this a spin and see if I can simplify it to one larger box with this solution.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49245974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49245974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Humphrey</span>
+        
+        <span>2026/08/11 07:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我对 sbx 的反馈：<p>概念很棒 - 效果很好 - 我经常同时运行多个短暂的沙箱。</p><p>有关覆盖身份验证的文档 [1] 不正确。 Sbx 忽略基本身份验证的注入[].username，而存储的秘密需要是完整的授权标头。  这应该明确或修复。</p><p>每隔几天就必须登录一次真是太糟糕了！  打开浏览器以便我可以登录（我们不应该这样做）会干扰我在需要时创建和销毁沙箱的脚本。</p><p>我怀念旧的工作树功能 - 我不喜欢新的克隆概念 - 因此我创建了自己的脚本，为某个功能创建工作树，并从那里运行 sbx create/run。</p><p>[1] <a href="https://docs.docker.com/ai/sandboxes/customize/kit-reference/#apikey" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/customize/kit-reference...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49251284">My feedback on sbx:<p>Concept is great - works quite well - I often have multiple short lived sandboxes running at once.</p><p>Docs [1] on overriding auth are incorrect. Sbx ignores inject[].username for basic auth and instead the stored secret needs to be the complete Authorization header.  This should be made clear, or fixed.</p><p>Having to log in every couple of days SUCKS!!  Opening the browser so I can login (which we shouldn't have to do) interfers with my scripts that create and destroy sandboxes as I need them.</p><p>I miss the old worktree functionality - I dislike the new clone concept - So I've created my own scripts that create a worktree for a feature, and run sbx create/run from there.</p><p>[1] <a href="https://docs.docker.com/ai/sandboxes/customize/kit-reference/#apikey" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/customize/kit-reference...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49251284">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49251284" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">cpburns2009</span>
+        
+        <span>2026/08/11 00:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您有秘密策略吗？例如存储它们，或者使用 MitM 注入它们（例如 HTTP API 请求）？我过去使用过鱿鱼缓存，目前使用iron-proxy来实现此类功能。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49246116">Do you have a strategy for secrets? Such as storing them, or using MitM to inject them (e.g., HTTP API requests)? I've used squid cache in the past, and currently use iron-proxy for this sort of feature.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49246116">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49246116" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mikesir87</span>
+        
+        <span>2026/08/11 01:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">秘密存储在操作系统特定的钥匙串中。当沙箱启动时，仅当主机名匹配时，网络代理才会将机密注入到请求中（作为身份验证标头）。<p>在此处了解有关机密处理的更多信息 - <a href="https://docs.docker.com/ai/sandboxes/security/credentials/" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/security/credentials/</a></p><p>套件还提供了定义新凭据以及如何将其注入新服务（连接到内部系统等）的能力。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49246638">The secrets are stored in the OS-specific keychain. When a sandbox starts, the network proxy injects the secret into the request (as auth headers) only when the hostname matches.<p>Read more about the secrets handling here - <a href="https://docs.docker.com/ai/sandboxes/security/credentials/" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/security/credentials/</a></p><p>Kits provide the ability to also define new credentials and how to inject them into new services (connect to internal systems, etc.).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49246638">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49246638" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">kwakubiney</span>
+        
+        <span>2026/08/10 23:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为什么不在 Linux 上？该平台有哪些困难？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49245192">Why’s it not on Linux? What are the difficulties with that platform?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49245192">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49245192" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">srini-docker</span>
+        
+        <span>2026/08/11 00:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Linux 现已推出 (Ubuntu)：github.com/docker/sbx-releases。我们的网页仅显示brew和winget。<p>对于询问自定义的上游人员：模板（例如对正在运行的沙箱进行快照）和套件（在创建时应用的YAML，例如安装步骤、文件、网络和凭据规则，或直接定义新代理）现在是受支持的路径。现在还为时尚早，但请看一下这里：<a href="https://docs.docker.com/ai/sandboxes/customize/" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/customize/</a></p><p>在 MCP 上，因为此处提到了凭据处理：沙箱看到一个网关端点，并且 OAuth 令牌保留在主机凭据存储中而不是虚拟机中。 <a href="https://docs.docker.com/ai/sandboxes/mcp-gateway/" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/mcp-gateway/</a></p><p>这一切还为时过早。我们正在根据用户的反馈进行更多研究，例如在后台运行沙箱以进行长期工作等等（包括你们在此处的线程中提出的内容）。让他们继续来。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49245568">Linux is available today (Ubuntu): github.com/docker/sbx-releases. Our webpage showing only brew and winget is on us.<p>For the people upthread who asked about on customization: templates (like snapshotting a running sandbox) and kits (YAML applied at creation like install steps, files, network and credential rules, or define a new agent outright) are the supported path now. It's early but take a look here: <a href="https://docs.docker.com/ai/sandboxes/customize/" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/customize/</a></p><p>On MCP, since credential handling was mentioned here: the sandbox sees one gateway endpoint, and OAuth tokens stay in the host credential store rather than in the VM. <a href="https://docs.docker.com/ai/sandboxes/mcp-gateway/" target="_blank" rel="noopener noreferrer">https://docs.docker.com/ai/sandboxes/mcp-gateway/</a></p><p>All this is early. We're looking at more based on feedback from users like running sandboxes in the background for long-horizon work and a lot more (including what you all raised in the thread here). Keep them coming.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49245568">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49245568" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">srini-docker</span>
+        
+        <span>2026/08/11 04:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">快速更新：网页也反映了 Linux 支持，感谢您的标记。<p><a href="https://www.docker.com/products/docker-sandboxes/" target="_blank" rel="noopener noreferrer">https://www.docker.com/products/docker-sandboxes/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49249203">Quick update: webpage reflects Linux support as well, thanks for the flag.<p><a href="https://www.docker.com/products/docker-sandboxes/" target="_blank" rel="noopener noreferrer">https://www.docker.com/products/docker-sandboxes/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49249203">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49249203" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tacker2000</span>
+        
+        <span>2026/08/11 00:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">请考虑添加 MacPorts 支持。<p>众所周知，Brew 对开发人员不友好。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49245743">Please consider adding MacPorts support.<p>Brew is notoriously developer-unfriendly.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49245743">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49245743" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dallen33</span>
+        
+        <span>2026/08/11 00:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">怎么会这样？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49246243">How so?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49246243">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49246243" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bmurphy1976</span>
+        
+        <span>2026/08/11 01:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">家长没有透露任何细节。  我可以。  Homebrew 有着摧毁你根基的历史。  有一天你使用 Python 3.8，第二天你使用 Python 3.10，你的所有包都被破坏了。  MacPorts 不这样做。<p>现在，您是否应该使用 Homebrew Python 是一个完全不同的问题。  YMMV 适用于通过 Homebrew 管理的其他平台。</p><p>我传统上使用 MacPorts 进行开发工具，使用 Homebrew 进行其他所有操作，但随着 uv 和 nvm 等工具的更广泛采用，我不确定这些不同对我来说是否真的重要。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49246591">The parent didn't go into any detail.  I can.  Homebrew has a history of ripping out your foundation underneath you.  One day you are on Python 3.8, then next day you are on Python 3.10 and all your packages are broken.  MacPorts doesn't do that.<p>Now, whether you should you be using the Homebrew Python is a completely different question.  YMMV for other platforms managed via Homebrew.</p><p>I've traditionally used MacPorts for dev tooling and Homebrew for everything else, but with more aggressive adoption of tooling like uv an nvm I'm not sure the different really matters for me anymore.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49246591">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49246591" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tacker2000</span>
+        
+        <span>2026/08/11 02:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">正是如此。与 PHP、MySQL 等相同...
+而且他们只是阻止旧版本，不让你安装它们，例如，你必须跳过很多麻烦才能使用旧的 PHP 版本，所以对开发人员来说绝对不友好。<p>最后我意识到 Brew 是面向消费者的包管理器，作为专业人士，我不应该继续与之抗争。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49247546">Exactly. Same with PHP, MySQL etc…
+Also they just block old versions and dont let you install them, you have to jump through a lot of hoops to use an old PHP version for example, so in no way developer friendly.<p>In the end I realized that Brew is a package manager for consumers, and as a professional i should’nt keep fighting it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49247546">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49247546" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">theshrike79</span>
+        
+        <span>2026/08/11 17:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我使用mise作为开发工具，这样我就可以为每个项目提供完全正确的版本。<p>Python到brew是我期望成为我用于一次性脚本的最新版本。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49255406">I use mise for dev tooling, that way I can have the exact correct version for every project.<p>Python through brew is the one I expect to be the latest one I use for one-off scripts.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49255406">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49255406" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">lucumo</span>
+        
+        <span>2026/08/12 00:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我的所有开发工具也改用 mise。它对于各种生态系统都非常有效。我可以对 Python、Node、Java 等使用相同的工具，而且它确实有效。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49260508">I switched to mise too for all my dev tooling. It just works so nicely for all kinds of ecosystems. I can use the same tool for Python, Node, Java, whatever and it just works.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49260508">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49260508" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/08/11 01:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">其中很多只是公式作者/应用程序开发人员不知道自己在做什么（python@3.10 和其他版本很流行，而且已经存在很长一段时间了，但它们并不总是被使用，开发人员并不总是跟踪他们需要的版本）以及多年来不更新他们的软件的人们（Python 到处都是 5 年周期，包括自制软件：<a href="https://devguide.python.org/versions/" target="_blank" rel="noopener noreferrer">https://devguide.python.org/versions/</a> 和 <a href="https://formulae.brew.sh/formula/python@3.10" target="_blank" rel="noopener noreferrer">https://formulae.brew.sh/formula/python@3.10</a> )。<p>众所周知，Python 并不是一个稳定的目标。对于任何人来说。通过设计。如果您希望长期使用特定版本的代码，请使用不同的语言。  有多少人发现了这一点，这根本不是自制软件的错。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49247117">A lot of that is simply formula authors / application devs who don't know what they're doing (python@3.10 and other versions are a thing, and have been for quite a while now, but they're not always used and devs don't always keep track of the version they need) and people not updating their software for years (pythons are on a 5 year cycle <i>everywhere</i>, homebrew included: <a href="https://devguide.python.org/versions/" target="_blank" rel="noopener noreferrer">https://devguide.python.org/versions/</a> and <a href="https://formulae.brew.sh/formula/python@3.10" target="_blank" rel="noopener noreferrer">https://formulae.brew.sh/formula/python@3.10</a> ).<p>Python in particular is well known to not be a stable target. For anyone. By design. If you expect long term use of a specific version of code, use a different language.  It is not at all homebrew's fault that they're how many people discover that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49247117">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49247117" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">xrisk</span>
+        
+        <span>2026/08/11 01:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">pyenv 成为标准工具的时间比 uv 还要长得多。仅当您运行 rhel 或 Debian 或其他东西并且您的应用程序已打包/部署/维护路径使用 dnf/apt 时，取决于软件包管理器提供的 Python 软件包才有意义。否则，您应该始终使用 venv 并使用包管理器外更新机制。就像，从更广泛的意义上来说，供应商依赖关系只有在您交付应用程序而不是在开发盒上才有意义。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49246750">pyenv has been standard tooling for far longer than uv. depending on package manager supplied Python packages only makes sense if you’re running rhel or Debian or something and your application is packaged/deployed/the maintenance path uses dnf/apt. Otherwise you should always use a venv and use an out of package manager update mechanism. Like, in a broader sense, vendoring dependencies only makes sense if you’re shipping an application, not on a dev box.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49246750">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49246750" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tacker2000</span>
+        
+        <span>2026/08/11 02:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这不是关于 python 包，而是关于 python 本身。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49247581">This is not about python packages, this is about python  itself.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49247581">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49247581" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
