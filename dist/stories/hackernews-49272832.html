@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>追踪 16 年之久的 WAL 重置 SQLite 错误 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-13/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>追踪 16 年之久的 WAL 重置 SQLite 错误</h1>
+      <p class="original-title">Tracking down the 16-year-old WAL-reset SQLite bug</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 ropbear</span>
+        <span>热度 1094</span>
+        <span>回复 202</span>
+        <span>2026/08/12 22:22</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49272832" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://tailscale.com/blog/sqlite-wal-reset-bug" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49272832.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>At the end of last year, our uptime was pretty shaky. You can see this trend on our status page, and that instability continued into the new year. Many of these outages were caused by a single bug, deep in SQLite. It took months of intense forensics to track it down.Now we’re in summer, we’re confident that we’ve found the bug, that we understand it—and more importantly, that we’ve fixed it.We know our customers expect Tailscale to be a reliable service, and for several months we didn’t live up to that promise. That’s disruptive, and we’re sorry. We’re publishing this blog post to explain what went wrong, how we responded, and how we ultimately helped to uncover a long-standing bug in the heart of the SQLite database.Tailscale’s database architectureWhile our clients interact with our control plane as a single public endpoint (controlplane.tailscale.com), internally, our control plane is split into a series of coordination servers (or “shards”). Each tailnet lives on one internal shard at a time, but can migrate seamlessly from one to another. These shards are an internal implementation detail: you don’t know what shard your tailnet is on, and you never need to.Each shard has an SQLite database that holds all the information about the tailnets on that shard. A single Go process exclusively accesses that database, and serves the control plane for those tailnets. This single-writer design is exactly how SQLite is meant to be used.We’ve used SQLite as our primary database since 2022, and we chose it because it&#39;s well-known, reliable, and widely used. SQLite is “boring technology”—in a good way. Many companies use SQLite in much larger deployments without issue, and we expected the same stress-free usage.In our current backup pipeline, we take a complete snapshot of the database every few minutes, then upload the entire SQLite file to an S3 bucket. We’d been running this setup without incident since early 2023.Fast forward to August last year, when a data pipeline that reads those S3 backups reported an error in one of our databases. We ran SQLite’s PRAGMA integrity_check command against the backup, and found it was indeed corrupted. SQLite corruption is possible, but it’s highly unusual and not something you should encounter in normal operation. We repaired the affected database, and investigated the cause, but to no avail.When operating at scale, even rare events can occur with some frequency, so we should have been unsurprised when it happened again—and again, and again, and again. In total, we faced 19 separate instances of database corruption over six months before we finally resolved the underlying bug.When you hear the phrase “database corruption”, it’s natural to worry about data loss. Because our control plane only handles configuration data, these databases contain metadata about your tailnet and devices, but never your private encryption keys or network traffic. In the earliest incidents, the recovery process meant a handful of newly added devices or configuration changes didn’t persist, and a small amount of metadata had to be re-entered.Whenever corruption occurred, we had to stop the control plane process on the shard while we repaired or restored the database. This was painful for tailnets on that shard, because their entire control plane disappeared during that recovery window. In the early incidents, that downtime was over an hour, but we gradually sped up the recovery process over subsequent incidents.Each tailnet is a mesh network, where devices make peer-to-peer WireGuard® connections to each other. When a device joins the tailnet, it has to get a list of other devices from the control plane before it can establish new connections—so if a device came online during the SQLite downtime, it couldn’t connect. While the database was being repaired, devices already online remained connected to each other, but they couldn’t learn about changes to the network. Those tailnets also temporarily lost access to the web-based admin console and the Tailscale API.There’s also a broader impact on trust. We post a global incident on our status page even when only a small number of tailnets are affected. Many people saw a status page event for an incident that didn’t affect them. Indeed, the majority of shards and tailnets were never involved in a database corruption incident! Nonetheless, repeated downtime erodes trust, whether or not you’re directly affected.From the very first instance of corruption, we knew this was a serious threat to our reliability, and we threw a lot of engineering time at the problem—but the fix wasn’t easy.Trying to find the faultThis bug resisted all our initial attempts to find it.We looked at recent changes, but there weren’t any that seemed relevant. Nobody had been working on our low-level code that interacts with SQLite, because it had all been written years ago and presented no issues up until that point. We re-reviewed all of that code with a fine-toothed comb to look for previously missed bugs, but we didn’t find anything that would cause the corruption we were seeing.We looked for common factors between corruption incidents, but we couldn’t find any. It wasn’t tied to a single shard, or customer, or tailnet feature, or time of day, or load level. We were at a loss for what might be triggering the behaviour.This lack of reliable trigger conditions meant we couldn’t reproduce the bug synthetically. Instead, we had to rely on deploying passive, forensic telemetry in our live environment to catch the corruption red-handed. Gathering live diagnostics for a database issue is the last thing we wanted to do, but we had no choice.As an additional complication, the corruption didn’t occur on a regular schedule. Sometimes incidents would be hours apart, other times weeks. This made it difficult to predict progress or plan further work, because we were never sure when we’d get our next diagnostic dump. We had a six-week period between October and December when there were no corruption incidents, before they returned as an unwelcome Christmas present.Because this wouldn’t be a quick or easy fix, we reached out to the SQLite developers for a professional support contract. This was a great decision. It gave us direct access to their deep expertise and experience, and we had many detailed technical conversations about our architecture and our incidents.Between Tailscale engineering and the SQLite core developers, we mapped out several theories for what might be causing the corruption—including broken POSIX locks on close(), mismanaging memory owned by SQLite, or accidentally using SQLite from multiple threads while disabling thread safety. After every incident, we gathered more data, added more diagnostics, and systematically ruled out these theories. We were gradually converging on the true bug.The transactions that didn’t barkWhile we were investigating the root cause, we still had a live platform to run. We took aggressive steps to automate recovery and minimize downtime:Configuring our control plane shards to hard-stop immediately upon encountering corruptionDeploying an automated backup monitor that continuously ran PRAGMA integrity_check over our backupsImproving our runbooks and on-call trainingThese efforts cut our response time to under an hour—and then we discovered an unexpected clue.We wanted a way to restore service that didn’t involve rolling back to the last known-good backup (which would lose a lot of data) or repairing the known-corrupted database (which was potentially risky).To do this, we built a transaction logging pipeline. We streamed every SQL statement that modified the database to a separate log file. Because SQLite is a single-writer database with serialisable transactions, our transaction history was completely linear and deterministic. (This wouldn’t be true in a multi-writer database like Postgres or MySQL.) Replaying those transactions against the latest known-good backup should restore the database to its most recent state, safely bypassing the corruption.This pipeline worked, but then it did something even better: it gave us a clue.In two incidents, our transaction logs failed to replay cleanly. Upon closer inspection, we discovered that data written and committed by one transaction was inexplicably invisible to later transactions. A write had vanished into thin air without raising an error. That should be impossible!The writing on the WALAs these incidents were ongoing, the SQLite developers had been developing a new debugging tool. For a while, we’d suspected that the bug was somewhere in the checkpoint process. They were building a new tool to give better visibility into what was happening during checkpoints.To understand what this tool found, we need to briefly explain how SQLite checkpoints work.A SQLite database is made of a series of “pages”, tiny blocks of information. When you update the database, some of those pages need to be replaced with new pages with the updated information.For better performance and greater concurrency, we run SQLite with Write-Ahead Logging, which means new pages aren&#39;t written directly to the database file. Instead, they’re written to the &quot;write-ahead log&quot; or &quot;WAL file&quot;.New pages can&#39;t be written to the WAL file indefinitely; at some point they have to be copied back to the main database file. This process is called “checkpointing”.In most deployments, SQLite itself decides when to do a checkpoint, and the process is invisible to the end user and developer. In our control plane, we take manual control of the checkpoint process so we can run fast and consistent backups. This non-standard approach seemed suspicious as we steadily eliminated potential causes.One clue was that during corruption incidents, our metrics showed that SQLite would report copying more pages from the WAL file than were actually available. If there are 10 pages in the WAL file and 20 pages get copied to the database, something is clearly wrong.To understand what was happening during these faulty checkpoints, the SQLite developers created a new debugging tool for the virtual filesystem layer.SQLite is split into several layers. The top layer is the parser and code generator, which converts SQL statements into SQLite’s internal data structures. These data structures get passed to the pager, which splits them into the individual pages to be written to disk. Actually writing them to disk is handled by the OS interface, or “virtual filesystem”. Currently SQLite has two mainstream virtual filesystem implementations—Unix and Windows.If you&#39;re interested in a deeper dive on these internals, I recommend this lecture by Richard Hipp, the primary author of SQLite.This approach allows you to replace different layers with different implementations, or wrap an existing layer to get more information. To help diagnose our problem, the SQLite developers created a wrapper around the virtual filesystem that writes additional tracing information and logs about changes to the database. This wrapper is called the tmstmpvfs shim, and the source code is available in the SQLite public repository.We deployed the shim into our live environment, and waited for the next corruption to occur. Fortunately, we didn&#39;t have to wait long.The WAL-Reset bugAfter our next corruption incident, the additional logs from the new tmstmpvfs shim allowed the SQLite developers to find and fix the bug: a rare data race in the SQLite source code between a checkpoint and a write transaction.In particular, if a write occurs at a specific time during a checkpoint, the checkpointing process gets confused—it thinks some of the pages have been copied from the WAL into the main database file, but they haven’t. Those pages never get written to the database file, and that data is permanently lost. The database file becomes corrupt, because other pages which reference those pages—such as an index—are written to the database.The SQLite developers named this the “WAL-Reset bug”, and they estimate it was present in SQLite for at least 16 years. It could exist that long because it was rare—so rare, the SQLite developers had to add code to deliberately trigger it in their testing environments. Their fix adds an additional check to the checkpointing function which detects when the WAL has been reset by another thread.They confirmed that this bug caused all of the baffling behaviour we’d seen. It explained the corruption, the transaction logs that wouldn’t apply cleanly, and the inconsistent checkpoint statistics. They also explained why we were more likely to hit the bug than other SQLite users: we take manual control of the checkpointing process, and we checkpoint very aggressively. Even a bug triggered by a rare condition was bound to hit us eventually.This was an exciting moment. After months of confusion and uncertainty, we finally had a plausible theory for why the corruption was occurring, and a fix we could deploy to prevent it.The SQLite developers released the fix as SQLite 3.52.0, and we prepared to deploy it as soon as it was available.Fixed, with a false alarmWe rolled out SQLite 3.52.0 carefully—first to a few canary shards, then, when we saw it running smoothly, we deployed it to the rest of the control plane.Our backup monitor promptly turned red, and reported corruption in 13 different databases. This was extremely alarming, but we followed our recovery procedures to fix all the supposed corruption, and everything was happy. It turned out these databases had not suffered real corruption, but were subject to a second problem in the version of SQLite.We shared our errors with the SQLite developers, which uncovered a bug in SQLite related to stale expression indexes. If you create an index on a computed value, and then the computation changes, the index will contain mismatched values, which gets reported as corruption by PRAGMA integrity_check.In our case, we were storing some high-precision timestamps as text, converting them to a floating-point number in a VIRTUAL generated column, and the SQLite 3.52.0 release that fixed our data race also made an optimisation that subtly changed the rounding behaviour for text-to-floating-point conversions. Our canary shards didn’t have any timestamps that triggered the changed rounding behaviour, so we missed this in our phased rollout.Because this change caused false corruption warnings, the SQLite developers withdrew the 3.52.0 release and instead published 3.51.3, which only contained a fix for the WAL-Reset bug.We fixed the issue on our side by reducing the precision of our timestamps to integer seconds; text-to-integer conversions are unambiguous. Meanwhile, the SQLite developers created an automated, self-healing index feature in 3.53.0, which prevents the stale expression index problem.Party time!With the fix rolled out to our entire control plane, we were ready to declare victory, but we were still cautious. An absence of corruption incidents doesn’t mean things are fixed—we’d already had one six-week period of deceptive calm.We wanted positive proof that this data race was actively occurring in our production environment. Now that we understood the cause of the bug—a collision between a write transaction and a WAL-reset—we patched our SQLite driver to log a warning when these two operations overlap. If the warning fired but the database remained uncorrupted, we’d know the fix had saved us from a potential corruption incident.We deployed the warning, and we waited. And we waited. And waited. And waited. As weeks slipped by, we began to wonder why we didn’t see it. Was the warning broken? Was our theory wrong? Was the true bug still lurking in the darkness?Then, two months later, the alert we were waiting for finally fired:This alert proved that the precise conditions for the WAL-Reset bug do occur in our production environment, which means it was the likely culprit for our six months of shaky uptime.Since that weirdly joyous alert fired, we’ve run for another four months without any database incidents, as of this writing. Finally, we could breathe a sigh of relief.Off the well-trodden pathNobody wanted us to spend six months looking for bugs in SQLite. This was an immensely frustrating experience for both our customers and staff, and we’re all glad to put this instability behind us.This investigation is a useful reminder: running boring technology in a non-standard way is a risk. The common paths and standard configurations are incredibly well-tested and reliable. Most people use SQLite in a standard configuration and never face this sort of issue. Everything we were doing was a public, documented, supported configuration—but by taking manual control of the checkpointing process and running at our own aggressive pace, we stepped off the well-trodden operational path.Resolving these incidents was a massive, cross-functional effort involving dozens of people—including Tailscale&#39;s engineering and support teams, and the core maintainers of SQLite. It is to all of their credit that the impact of these incidents was not much worse.We know that repeated downtime erodes trust, no matter how many people are affected, and we’re grateful to our customers for their patience and support while we chased this down.Frustrating as this period was, we’re left in a stronger position than we were before. The long-standing bug in SQLite has been patched, and we fixed dozens of other incidental issues that we spotted while looking for it. We funded the open-source SQLite VFS shim that helped isolate the race condition almost immediately, and will help track down similar bugs in the future. Finally, we’ve refined our database backup and recovery processes, and live-tested them over a dozen times.Hopefully there won’t be another database incident like this—but if there is, we’ll be ready.</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">simonw</span>
+        
+        <span>2026/08/12 23:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我们资助了开源 SQLite VFS shim，它几乎立即帮助隔离了竞争条件，并将帮助追踪未来的类似错误。<p>公司资助开源的有趣示例 - 在本例中支付了新的且非常具体的调试工具的开发费用。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49273533">&gt; We funded the open-source SQLite VFS shim that helped isolate the race condition almost immediately, and will help track down similar bugs in the future.<p>Interesting example of a company funding open source - in this case paying for the development of a new and very specific debugging tool.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49273533">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49273533" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">buggymcbugfix</span>
+        
+        <span>2026/08/13 05:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们不仅资助开源，还积极允许用户通过 headscale 托管自己的控制平面，这是 tailscale 控制协议的自由实现，由每天在 Tailscale 工作的工程师开发。这立即让我信任并喜欢他们，即使一开始我很谨慎，因为我自然不信任任何大肆宣传的东西。我一直在 NixOS 上运行 headscale，从去年开始托管我自己的 tailnet，一切都开箱即用。 Tailscale 不负众望！ &lt;3
+是的，tailscale似乎有领导权，他们的头在右边，我同意他们处理很多事情的方式。
+App Connectors 等重要功能无法与 HeadScale 配合使用。<p>不幸的是，HeadScale 并不是 TailScale 的替代品。大多数人直到开始自行托管才意识到这一点。</p><p>因此，我不得不从 Tailscale 迁移到完全开源的 NetBird。</p><p><a href="https://avilpage.com/2026/06/moving-from-tailscale-to-netbird.html" target="_blank" rel="noopener noreferrer">https://avilpage.com/2026/06/moving-from-tailscale-to-netbir...</a></p>
+我认为唯一的问题是您必须在客户端和服务器上配置一些设置，以避免向 TS 发送诊断信息。<p>对于 macOS，您需要构建开源 tailscale 客户端。或者在深奥的文件位置创建文件以选择退出使用 App Store。</p><p>对于 iOS，我什至认为不可能选择退出。</p>
+是的，这部分也让我印象深刻：<p>&gt; 因为这不是一个快速或简单的解决方案，我们联系了 SQLite 开发人员以获得专业支持合同。这是一个伟大的决定。它使我们能够直接接触到他们深厚的专业知识和经验，并且我们就我们的架构和事件进行了许多详细的技术对话。</p><p>他们愿意付费以获得解决问题的帮助，然后再次付费以确保将来更容易避免该问题！如今，这种长期思考似乎很少见......</p>
+这是因为 HS 还没有实现它（在社区上），还是因为 Tailscale 做了一些事情来阻止它们专门工作？ 
+哦？我想我们最近在 iOS 上添加了这个选项。我去看看。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49278950">Not only are they funding open source, they are actively allowing users to host their own control plane via headscale which is a libre implementation of the tailscale control protocol and developed by an engineer who works for Tailscale by day. This instantly made me trust and like them, even if at first I was cautious because I naturally mistrust anything that gets a lot of hype. I've been running headscale on NixOS, hosting my own tailnet since last year and everything just works out of the box. Tailscale lives up to the hype! &lt;3</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49278950">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49278950" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">chillaranand</span>
+        
+        <span>2026/08/13 13:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">App Connectors 等重要功能无法与 HeadScale 配合使用。<p>不幸的是，HeadScale 并不是 TailScale 的替代品。大多数人直到开始自行托管才意识到这一点。</p><p>因此，我不得不从 Tailscale 迁移到完全开源的 NetBird。</p><p><a href="https://avilpage.com/2026/06/moving-from-tailscale-to-netbird.html" target="_blank" rel="noopener noreferrer">https://avilpage.com/2026/06/moving-from-tailscale-to-netbir...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49282066">Important features like App Connectors won't work with HeadScale.<p>Unfortunately, HeadScale is not a drop in replacement for TailScale. Most people don't realize this until they start self hosting.</p><p>Due to this, I had to migrate from Tailscale to NetBird, which is completely open source.</p><p><a href="https://avilpage.com/2026/06/moving-from-tailscale-to-netbird.html" target="_blank" rel="noopener noreferrer">https://avilpage.com/2026/06/moving-from-tailscale-to-netbir...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49282066">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49282066" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/08/13 20:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是因为 HS 还没有实现它（在社区上），还是因为 Tailscale 做了一些事情来阻止它们专门工作？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49284974">Is this because HS hasn't implemented it yet (which is on the community), or because Tailscale does something to prevent them from working specifically?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49284974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49284974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">serf</span>
+        
+        <span>2026/08/13 21:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">从外观上看，这是一项提议和计划的功能：<p><a href="https://github.com/juanfont/headscale/issues/1651" target="_blank" rel="noopener noreferrer">https://github.com/juanfont/headscale/issues/1651</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49286046">it's a proposed and planned feature by the looks of it :<p><a href="https://github.com/juanfont/headscale/issues/1651" target="_blank" rel="noopener noreferrer">https://github.com/juanfont/headscale/issues/1651</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49286046">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49286046" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">xyst</span>
+        
+        <span>2026/08/13 08:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我认为唯一的问题是您必须在客户端和服务器上配置一些设置，以避免向 TS 发送诊断信息。<p>对于 macOS，您需要构建开源 tailscale 客户端。或者在深奥的文件位置创建文件以选择退出使用 App Store。</p><p>对于 iOS，我什至认为不可能选择退出。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49280458">The only nit on my end is that you have to configure a few settings on client and server to avoid sending diagnostics to TS.<p>For macOS, you need to build the open source tailscale client. Or create file in esoteric file location to opt out using App Store.</p><p>For iOS I don’t even think it’s possible to opt out.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49280458">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49280458" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bradfitz</span>
+        
+        <span>2026/08/13 12:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哦？我想我们最近在 iOS 上添加了这个选项。我去看看。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49281830">Oh? I thought we added that option on iOS recently. I'll go check.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49281830">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49281830" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">binhex</span>
+        
+        <span>2026/08/12 23:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，tailscale似乎有领导权，他们的头在右边，我同意他们处理很多事情的方式。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49273618">Yeah, tailscale seems to have leadership with their head on right, I agree with the way they handle a lot of things.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49273618">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49273618" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">saghm</span>
+        
+        <span>2026/08/12 23:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，这部分也让我印象深刻：<p>&gt; 因为这不是一个快速或简单的解决方案，我们联系了 SQLite 开发人员以获得专业支持合同。这是一个伟大的决定。它使我们能够直接接触到他们深厚的专业知识和经验，并且我们就我们的架构和事件进行了许多详细的技术对话。</p><p>他们愿意付费以获得解决问题的帮助，然后再次付费以确保将来更容易避免该问题！如今，这种长期思考似乎很少见......</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49273685">Yeah, this part also stuck out to me:<p>&gt; Because this wouldn’t be a quick or easy fix, we reached out to the SQLite developers for a professional support contract. This was a great decision. It gave us direct access to their deep expertise and experience, and we had many detailed technical conversations about our architecture and our incidents.</p><p>They were willing to pay to get help solving the problem, and then pay again to make sure that the problem is easier to avoid in the future! That kind of long-term thinking seems pretty rare nowadays...</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49273685">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49273685" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jjordan</span>
+        
+        <span>2026/08/13 00:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可能是我一段时间以来读过的最令人耳目一新的东西。如果这确实是他们的作案手法，我很高兴支持他们前进。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49274781">Probably the most refreshing thing I've read in a while. Glad to support them moving forward if this is indeed their modus operandi.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49274781">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49274781" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">LoganDark</span>
+        
+        <span>2026/08/13 00:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Tailscale 是最好的。它比 Hamachi、ZeroTier 等要好得多。我唯一的抱怨是他们有一些非常奇怪的 SSO 要求，例如 GitHub 等，然后该提供商就成为您身份的永久部分。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49274873">Tailscale is the best. It's infinitely better than Hamachi, ZeroTier, etc. My only gripe is that they have some really weird SSO requirements like GitHub, etc. and then that provider becomes a permanent part of your identity.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49274873">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49274873" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">saghm</span>
+        
+        <span>2026/08/13 01:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">自从在一家小型初创公司工作时第一次遇到 Tailscale 以来，我一直是 Tailscale 的粉丝。有人问我们在测试某些东西时是否有人拥有 Linux 机器，我提到我有一个个人 Linux 桌面，但不确定如何将其连接到 VPN 进行访问，结果证明解决方案只是在从存储库安装 tailscale 后在终端中运行两个命令。与我的第一份工作相比，从 Linux 连接到 VPN 需要花几个小时摆弄 openswan（或者它是 Strongswan？那么多天鹅......）并反复试验各种配置文件，这非常简单。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49275942">I've been a fan of Tailscale since encountering it for the first time at a previous job at a small startup. Someone asked if anyone had a Linux machine when we were all testing out something, and I mentioned I had a personal Linux desktop but wasn't sure how to connect it to the VPN for access, and it turned out that the solution was just literally running two commands in the terminal after installing tailscale from the repos. Compared to my first job where connecting to the VPN from Linux required hours of mucking around with openswan (or was it strongswan? so many swans...) and trial and error with various config files, it was unfathomably straightforward.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49275942">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49275942" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">inigyou</span>
+        
+        <span>2026/08/13 10:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">strongswan 的设计是 HN 称赞 IRC 开放协议的设计（就在前几天……），但在实践中它是如此灵活，以至于无法保持自身直立并且在实践中无法使用。<p>同时 tailscale 或wireguard，通过实际上固执己见，避免了两端需要太多配置。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49281129">That strongswan thing is the kind of design HN praises about open protocols by IRC (just the other day...) but in practice is so flexible it can't keep itself upright and it's unusable in practice.<p>Meanwhile tailscale or wireguard, by being actually opinionated, avoids needing much configuration at both ends.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49281129">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49281129" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gmac</span>
+        
+        <span>2026/08/13 16:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的 - 将 StrongSwan 配置为沼泽标准 VPN 服务器非常难以理解，我为此创建了 GitHub 存储库 [1]。公平地说，一些复杂性来自操作系统支持，这些支持似乎是专门为使安全设置变得困难而设计的，大概是在各个三字母机构的要求下。<p>为此，我现在大多改用 Wireguard，这要理智得多 [2]。</p><p>[1] <a href="https://github.com/jawj/IKEv2-setup" target="_blank" rel="noopener noreferrer">https://github.com/jawj/IKEv2-setup</a>
+[2] <a href="https://github.com/jawj/wireguard-setup" target="_blank" rel="noopener noreferrer">https://github.com/jawj/wireguard-setup</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49283318">Yes — configuring strongSwan as a bog-standard VPN server was so hard to fathom I made GitHub repo for it [1]. To be fair, some of the complexity comes from OS support that seems specifically designed to make secure setups difficult, presumably at the behest of various Three Letter Agencies.<p>I have now mostly switched to Wireguard for this, which is much more sane [2].</p><p>[1] <a href="https://github.com/jawj/IKEv2-setup" target="_blank" rel="noopener noreferrer">https://github.com/jawj/IKEv2-setup</a>
+[2] <a href="https://github.com/jawj/wireguard-setup" target="_blank" rel="noopener noreferrer">https://github.com/jawj/wireguard-setup</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49283318">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49283318" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/08/13 18:47</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[已删除]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49284068"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49284068">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49284068" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">graemep</span>
+        
+        <span>2026/08/13 01:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对于桌面，通常可以通过网络设置 GUI 进行操作吗？上次我需要使用 VPN 访问公司网络时就是这样工作的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49276151">With a desktop its usually possible from the network setting GUI? Worked like that last time I needed to use a VPN for access to a corporate network.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49276151">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49276151" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throwway120385</span>
+        
+        <span>2026/08/13 03:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一些 NetworkManager VPN 插件有奇怪的副作用。就像 OpenVPN 强制禁用分割隧道配置一样，没有办法将其关闭，这意味着即使您只想通过 VPN 发送某些目标地址的内容，所有流量也会通过 VPN。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49277619">Some of the NetworkManager VPN plugins have weird side-effects. Like the one for OpenVPN force-disables split tunnel configurations and there's no way to turn that off, meaning that all traffic routes through the VPN even if you'd rather only send stuff for certain destination addresses through.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49277619">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49277619" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">saghm</span>
+        
+        <span>2026/08/13 07:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">根据我（和其他同事，包括其他发行版）的经验，我们的 VPN 所需的任何配置似乎都无法在网络管理器上开箱即用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49279853">Based on the experience that I (and other coworkers, including on other distros) had, whatever configurations our VPN needed did not seem to work out of the box on network manager.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49279853">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49279853" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/08/13 20:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很多都是桌面上奇怪的 Linux 的怪异。<p>在 Windows 和 Mac 上，VPN 配置通常只是安装客户端、登录，然后一切就基本上可以工作了。有时您甚至不需要客户端，可以在设置中进行设置。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49285013">A lot of this is just weird Linux on the desktop weirdness.<p>On Windows and Mac, VPN config is usually just installing a client, signing in, and then it all basically works. Sometimes you don't even need the client and can set it up in settings.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49285013">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49285013" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">artimaeis</span>
+        
+        <span>2026/08/13 01:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">仅供参考 - 使用 Tailscale，您可以通过提交支持票证来切换 SSO 提供商。我去年就做到了，很轻松。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49275817">Just FYI - with Tailscale you can switch SSO providers by putting in a support ticket. I did it last year and it was a breeze.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49275817">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49275817" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

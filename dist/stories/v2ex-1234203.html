@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek Harness 来了，一切皆插件的 Agent 框架 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-13/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>DeepSeek Harness 来了，一切皆插件的 Agent 框架</h1>
+      <p class="original-title">DeepSeek Harness 来了，一切皆插件的 Agent 框架</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 cloud369</span>
+        <span>热度 16</span>
+        <span>回复 16</span>
+        <span>2026/08/13 20:38</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1234203" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1234203.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>DeepSeek Harness 的开发者预览版上线了，代码已经开源，仓库在 github.com/deepseek-ai/deepseek-harness 。圈内习惯叫它 dsh 。</li><li>它是 DeepSeek 做的开源 Agent 框架，和 Claude Code 是一类东西，跑在本地，让模型替你真干活。上线前它内测了一阵，这篇按技术脉络把最要紧的设计讲清楚，想快速了解它，看这篇就够。</li></ul>
+      
+      <p class="reason">命中 12 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">DeepSeek Harness 技术拆解，一切皆插件的 Agent 框架
+<p>DeepSeek Harness 的开发者预览版上线了，代码已经开源，仓库在 <a href="http://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">github.com/deepseek-ai/deepseek-harness</a> 。圈内习惯叫它 dsh 。</p>
+<p>它是 DeepSeek 做的开源 Agent 框架，和 Claude Code 是一类东西，跑在本地，让模型替你真干活。上线前它内测了一阵，这篇按技术脉络把最要紧的设计讲清楚，想快速了解它，看这篇就够。</p>
+它是什么
+<p>dsh 是一个装在你机器上的编程智能体。装了 Node 开发环境，一行命令 <code>npx @deepseek-ai/dsh web</code> 就能把 Web UI 拉起来，浏览器打开（默认 127.0.0.1:3080 ）就能对话、审批、切换模式。</p>
+<p>模型在里面做的事比陪聊多得多，改文件、跑命令、查资料，最后把活干完。最值得看的是它的设计方式。</p>
+一切皆插件
+<p>这个框架的第一设计原则是 everything is a plugin ，一切皆插件。</p>
+<p>多数软件把核心逻辑写死，用户只能在预留的少数接口上做有限定制。dsh 反过来，模型接入、工具注册表、会话日志、审批策略，连驱动智能体运转的主循环本身，全部都是插件。</p>
+<p>想换搜索引擎、接自己公司的模型服务，改配置就行，不用动框架代码。给系统加功能就是挂一个新插件，卸载时注册的一切自动撤销，不留残余。</p>
+<p>技术上它站在 Cordis 之上，这是 Koishi 生态一直在用的插件与上下文内核，只负责插件的加载、卸载和依赖关系。dsh 的所有具体组件都是不同插件，靠服务与事件协作，在配置层自由组合。开发者不改 dsh 源码，就能独立选择、替换、扩展任意一项能力。</p>
+分层组装与能力接缝
+<p>运行中的 dsh 是一棵插件树，由多层配置按固定顺序叠加。组合包 bundle 是官方发布的成套插件配置，Profile 是你机器上的具名组装清单，Patch 是你的覆盖层，能精确定位到任意一个插件条目并替换。上层配置始终覆盖下层。</p>
+<p>每种能力还拆成三个独立角色。服务定义规定接口规范，提供方负责实现，消费方负责使用，三者相互独立，模型看到的接口恒定不变。</p>
+<p>拿 bash 工具举例，接口定义、本地实现、工具暴露是三个独立包，想换执行后端，只换提供方就行。</p>
+四种随附模式
+<p>界面顶部有个模式选择器，每个模式对应一份 Agent Preset ，决定当前会话的智能体由哪些插件组成。选一个模式就是选一套完整配置。</p>
+<p>标准模式是默认项，文件编辑、Shell 命令、检索、Skills 、计划、子代理、工作流全都有，适合最广大的用户。</p>
+<p>PTC 模式的全称是程序化工具调用。它拥有标准模式全部能力，但工具的呈现方式不同，由模型生成一段代码来组合多轮工具调用，工具调用不再逐次发起。</p>
+<p>标准模式下，一个五步任务要经历五次"模型调用工具、等结果、再决定下一步"的往返。PTC 模式把五步写进一段程序，一次执行完。任务步骤越多、中间数据量越大，它越快，上下文消耗也越少。</p>
+<p>极简模式只有两个工具，一个保持状态的命令行终端和一个文本编辑工具，系统提示词只有一句话。适合基准测试、教学演示。</p>
+<p>创造模式用来创建自定义预设。你可以直接提需求，比如"创建一个只能读、不能写的代码审查模式"，它会起草配置、验证、保存成新 preset 。它还能执行模型编写的代码并修改运行时，信任等级等同于 shell 访问权限，建议只在受信任环境中使用。</p>
+<p>四个随附模式是只读的系统预设，可以复制后修改成自定义预设。有一个限制要记住，会话一旦产生内容就不能再切换模式。模式决定工具集，中途切换会让新工具集解释不了会话历史里的旧工具调用，破坏会话的可复现性。</p>
+代码模式
+<p>Code Mode 是 PTC 模式的技术基础。它把全部工具生成一套 TypeScript SDK ，模型通过 run_code 工具交一段程序，在程序里直接调用各种工具，写循环、条件判断、并发执行，还能在中间过滤结果。</p>
+<p>只有程序最终打印或返回的内容会进入模型上下文，中间过程不占空间。统计所有包里的 TODO 并汇总排序，这种活常规方式需要几十次工具往返，Code Mode 下一段程序一次跑完。</p>
+<p>安全性没有打折。程序里每一次工具调用都重新走完整的执行流水线，审批、沙箱、超时、日志记录照常生效。</p>
+步骤、轮次与会话日志
+<p>一个任务怎么执行，框架用两个概念定义。步骤是一次模型请求加上它这次回复里要求执行的工具调用。轮次是从接到用户任务开始，到所有事情做完为止的零到多个步骤。</p>
+<p>每个关键位置，步骤开始前、工具执行前后、模型请求发出前，都是可拦截的扩展点。插件可以在这些位置插入审批、改写、记录逻辑。</p>
+<p>每个会话对应一份只增不改的事件日志。模型看到的一切都会落进日志，包括系统提示词、思维链、工具调用与结果、子代理调度、每一次上下文注入。</p>
+<p>Trajectory 视图按来源展示这些信息，内测参与者认为这是同类框架里做得最好的审查工具。同一份事件流还支撑了会话恢复、自动标题、上下文压缩和跨会话检索。</p>
+<p>长任务会拆成清单逐项推进。要用户拍板的事，智能体暂停，抛出带选项的问题，收到回答再继续。</p>
+多智能体协作
+<p>一个智能体可以把工作分派给多个子智能体。subagent 是可续跑的后台子代理，完成后结果自动送回父级会话，中途还能给它发消息。subagent_fork 是一次性子代理，继承当前上下文启动，做完就结束。</p>
+<p>工作流引擎通过脚本确定性编排多个子代理，顺序、并行、汇总都由脚本定义，适合迁移、审计、批量改造这类需要固定流程的任务。</p>
+<p>Ralph 循环每一轮启动一个全新的子代理执行同一个目标，每轮不带上一轮上下文，适合反复试到通过的任务，比如把测试修到全绿。长期目标的创建和修改需要人类用户的根权限，智能体不能自行变更目标。</p>
+安全与治理
+<p>智能体执行的命令可以跑在沙箱里。三大桌面平台都用操作系统原生的隔离机制，Linux 用 bwrap 或 Landlock ，macOS 用 Seatbelt ，Windows 用 ACL 受限令牌。</p>
+<p>沙箱分三档。read-only 只能读不能写，workspace-write 可以写工作区目录，danger-full-access 完全放开。沙箱后端如实上报隔离执行情况，系统条件只能覆盖部分承诺时，后端就报 partial ，不虚报安全边界。</p>
+<p>需要授权的操作，界面会先请求用户批准。两个自动纠偏插件常驻，一个检测重复无效动作，一个强制中断超时的工具调用。</p>
+<p>API Key 这类凭据走独立通道传递，会话日志里只有引用，没有明文。</p>
+生态兼容
+<p>任何 MCP 服务器都可以接入，数据库、办公系统、企业内部服务都能变成工具，和内置工具走同一条流水线，同样受审批和守卫约束。</p>
+<p>给 Claude Code 和 Codex 写好的钩子脚本，通过 Hooks 桥直接复用。内置 ACP 服务端实现，支持 ACP 的编辑器和客户端可以直接把它当后端智能体用。</p>
+<p>模型接入除了 DeepSeek 官方 API ，还支持任意 OpenAI 兼容端点，企业自建推理服务或别的云服务商都行，设置页填完立刻生效。</p>
+五种使用方式
+<p>Web UI 在浏览器里对话、审批、切换模式。Headless CLI 无界面执行单个任务，跑完打印结果就退出，适合 CI/CD 。</p>
+<p>Python SDK 自带打包运行时，提供高层 turns API 和底层 JSON-RPC 客户端。TypeScript SDK 提供 JSON-RPC 协议、服务器与客户端，适合深度集成的团队。ACP 自动化协议服务器面向编辑器和工具链厂商。</p>
+面向开发者
+<p>仓库提供完整的插件开发文档，覆盖工具编写、配置、事件与服务、发布全流程。工程约定写得明确，注册必须是可逆副作用，配置错误必须在加载时报错，不能静默跳过，跨边界标识符必须用品牌类型。这些约定由自动化门禁强制执行，质量门禁做到逐文件 100% 单元测试覆盖，文档与代码同步检查，文档过期直接阻断 CI 。</p>
+<p>还有一项自我修改能力，显式开启后智能体可以检查并热挂载自己运行时的插件，创造模式就是基于这个能力搭的。</p>
+<p>临时插件只存在进程内存里，不写文件、不装包、不改配置、不自动转正，重启即消失。它不是安全边界，只能在受信任环境用。</p>
+内测期间的社区
+<p>框架内测期间，生态先长成了。截至调研时点，内测组织 dsh-external 下有 251 个仓库，反馈板攒了 545 条 issue ，单日最多新增过 14 个。社区自建了包管理器、hub 索引和兼容性监控。</p>
+<p>内测群里流传一句话，官方做得越少，社区越繁荣。</p>
+快速体验
+<p>内测参与者给了一条实在的提醒，dsh 要配合相应的模型效果才好，框架和模型的协同训练才刚刚起步。</p>
+<p>它把 Thinking 思维链折叠成一行展示，配合 DeepSeek 自家模型，输出速度快得让人产生错觉，当然它本身也不慢。</p>
+<p>想自己试试，装了 Node 开发工具链，一行命令 <code>npx @deepseek-ai/dsh web</code> 就能启动 Web UI 。</p>
+<p>DeepSeek Harness 现在还是 v0.1 ，核心插件和基础接口预计还会快速迭代。</p>
+<p>内测者反复讲的一个判断值得记住，Agent 等于 Model 加 Harness 。模型是灵魂，Harness 是身体，让模型能理解环境、使用工具，在真实场景里持续干活。插件这套设计，就是给这具身体留了最自由的改装接口。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">DeepSeek Harness 技术拆解，一切皆插件的 Agent 框架
+<p>DeepSeek Harness 的开发者预览版上线了，代码已经开源，仓库在 <a href="http://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">github.com/deepseek-ai/deepseek-harness</a> 。圈内习惯叫它 dsh 。</p>
+<p>它是 DeepSeek 做的开源 Agent 框架，和 Claude Code 是一类东西，跑在本地，让模型替你真干活。上线前它内测了一阵，这篇按技术脉络把最要紧的设计讲清楚，想快速了解它，看这篇就够。</p>
+它是什么
+<p>dsh 是一个装在你机器上的编程智能体。装了 Node 开发环境，一行命令 <code>npx @deepseek-ai/dsh web</code> 就能把 Web UI 拉起来，浏览器打开（默认 127.0.0.1:3080 ）就能对话、审批、切换模式。</p>
+<p>模型在里面做的事比陪聊多得多，改文件、跑命令、查资料，最后把活干完。最值得看的是它的设计方式。</p>
+一切皆插件
+<p>这个框架的第一设计原则是 everything is a plugin ，一切皆插件。</p>
+<p>多数软件把核心逻辑写死，用户只能在预留的少数接口上做有限定制。dsh 反过来，模型接入、工具注册表、会话日志、审批策略，连驱动智能体运转的主循环本身，全部都是插件。</p>
+<p>想换搜索引擎、接自己公司的模型服务，改配置就行，不用动框架代码。给系统加功能就是挂一个新插件，卸载时注册的一切自动撤销，不留残余。</p>
+<p>技术上它站在 Cordis 之上，这是 Koishi 生态一直在用的插件与上下文内核，只负责插件的加载、卸载和依赖关系。dsh 的所有具体组件都是不同插件，靠服务与事件协作，在配置层自由组合。开发者不改 dsh 源码，就能独立选择、替换、扩展任意一项能力。</p>
+分层组装与能力接缝
+<p>运行中的 dsh 是一棵插件树，由多层配置按固定顺序叠加。组合包 bundle 是官方发布的成套插件配置，Profile 是你机器上的具名组装清单，Patch 是你的覆盖层，能精确定位到任意一个插件条目并替换。上层配置始终覆盖下层。</p>
+<p>每种能力还拆成三个独立角色。服务定义规定接口规范，提供方负责实现，消费方负责使用，三者相互独立，模型看到的接口恒定不变。</p>
+<p>拿 bash 工具举例，接口定义、本地实现、工具暴露是三个独立包，想换执行后端，只换提供方就行。</p>
+四种随附模式
+<p>界面顶部有个模式选择器，每个模式对应一份 Agent Preset ，决定当前会话的智能体由哪些插件组成。选一个模式就是选一套完整配置。</p>
+<p>标准模式是默认项，文件编辑、Shell 命令、检索、Skills 、计划、子代理、工作流全都有，适合最广大的用户。</p>
+<p>PTC 模式的全称是程序化工具调用。它拥有标准模式全部能力，但工具的呈现方式不同，由模型生成一段代码来组合多轮工具调用，工具调用不再逐次发起。</p>
+<p>标准模式下，一个五步任务要经历五次"模型调用工具、等结果、再决定下一步"的往返。PTC 模式把五步写进一段程序，一次执行完。任务步骤越多、中间数据量越大，它越快，上下文消耗也越少。</p>
+<p>极简模式只有两个工具，一个保持状态的命令行终端和一个文本编辑工具，系统提示词只有一句话。适合基准测试、教学演示。</p>
+<p>创造模式用来创建自定义预设。你可以直接提需求，比如"创建一个只能读、不能写的代码审查模式"，它会起草配置、验证、保存成新 preset 。它还能执行模型编写的代码并修改运行时，信任等级等同于 shell 访问权限，建议只在受信任环境中使用。</p>
+<p>四个随附模式是只读的系统预设，可以复制后修改成自定义预设。有一个限制要记住，会话一旦产生内容就不能再切换模式。模式决定工具集，中途切换会让新工具集解释不了会话历史里的旧工具调用，破坏会话的可复现性。</p>
+Code Mode
+<p>Code Mode 是 PTC 模式的技术基础。它把全部工具生成一套 TypeScript SDK ，模型通过 run_code 工具交一段程序，在程序里直接调用各种工具，写循环、条件判断、并发执行，还能在中间过滤结果。</p>
+<p>只有程序最终打印或返回的内容会进入模型上下文，中间过程不占空间。统计所有包里的 TODO 并汇总排序，这种活常规方式需要几十次工具往返，Code Mode 下一段程序一次跑完。</p>
+<p>安全性没有打折。程序里每一次工具调用都重新走完整的执行流水线，审批、沙箱、超时、日志记录照常生效。</p>
+步骤、轮次与会话日志
+<p>一个任务怎么执行，框架用两个概念定义。步骤是一次模型请求加上它这次回复里要求执行的工具调用。轮次是从接到用户任务开始，到所有事情做完为止的零到多个步骤。</p>
+<p>每个关键位置，步骤开始前、工具执行前后、模型请求发出前，都是可拦截的扩展点。插件可以在这些位置插入审批、改写、记录逻辑。</p>
+<p>每个会话对应一份只增不改的事件日志。模型看到的一切都会落进日志，包括系统提示词、思维链、工具调用与结果、子代理调度、每一次上下文注入。</p>
+<p>Trajectory 视图按来源展示这些信息，内测参与者认为这是同类框架里做得最好的审查工具。同一份事件流还支撑了会话恢复、自动标题、上下文压缩和跨会话检索。</p>
+<p>长任务会拆成清单逐项推进。要用户拍板的事，智能体暂停，抛出带选项的问题，收到回答再继续。</p>
+多智能体协作
+<p>一个智能体可以把工作分派给多个子智能体。subagent 是可续跑的后台子代理，完成后结果自动送回父级会话，中途还能给它发消息。subagent_fork 是一次性子代理，继承当前上下文启动，做完就结束。</p>
+<p>工作流引擎通过脚本确定性编排多个子代理，顺序、并行、汇总都由脚本定义，适合迁移、审计、批量改造这类需要固定流程的任务。</p>
+<p>Ralph 循环每一轮启动一个全新的子代理执行同一个目标，每轮不带上一轮上下文，适合反复试到通过的任务，比如把测试修到全绿。长期目标的创建和修改需要人类用户的根权限，智能体不能自行变更目标。</p>
+安全与治理
+<p>智能体执行的命令可以跑在沙箱里。三大桌面平台都用操作系统原生的隔离机制，Linux 用 bwrap 或 Landlock ，macOS 用 Seatbelt ，Windows 用 ACL 受限令牌。</p>
+<p>沙箱分三档。read-only 只能读不能写，workspace-write 可以写工作区目录，danger-full-access 完全放开。沙箱后端如实上报隔离执行情况，系统条件只能覆盖部分承诺时，后端就报 partial ，不虚报安全边界。</p>
+<p>需要授权的操作，界面会先请求用户批准。两个自动纠偏插件常驻，一个检测重复无效动作，一个强制中断超时的工具调用。</p>
+<p>API Key 这类凭据走独立通道传递，会话日志里只有引用，没有明文。</p>
+生态兼容
+<p>任何 MCP 服务器都可以接入，数据库、办公系统、企业内部服务都能变成工具，和内置工具走同一条流水线，同样受审批和守卫约束。</p>
+<p>给 Claude Code 和 Codex 写好的钩子脚本，通过 Hooks 桥直接复用。内置 ACP 服务端实现，支持 ACP 的编辑器和客户端可以直接把它当后端智能体用。</p>
+<p>模型接入除了 DeepSeek 官方 API ，还支持任意 OpenAI 兼容端点，企业自建推理服务或别的云服务商都行，设置页填完立刻生效。</p>
+五种使用方式
+<p>Web UI 在浏览器里对话、审批、切换模式。Headless CLI 无界面执行单个任务，跑完打印结果就退出，适合 CI/CD 。</p>
+<p>Python SDK 自带打包运行时，提供高层 turns API 和底层 JSON-RPC 客户端。TypeScript SDK 提供 JSON-RPC 协议、服务器与客户端，适合深度集成的团队。ACP 自动化协议服务器面向编辑器和工具链厂商。</p>
+面向开发者
+<p>仓库提供完整的插件开发文档，覆盖工具编写、配置、事件与服务、发布全流程。工程约定写得明确，注册必须是可逆副作用，配置错误必须在加载时报错，不能静默跳过，跨边界标识符必须用品牌类型。这些约定由自动化门禁强制执行，质量门禁做到逐文件 100% 单元测试覆盖，文档与代码同步检查，文档过期直接阻断 CI 。</p>
+<p>还有一项自我修改能力，显式开启后智能体可以检查并热挂载自己运行时的插件，创造模式就是基于这个能力搭的。</p>
+<p>临时插件只存在进程内存里，不写文件、不装包、不改配置、不自动转正，重启即消失。它不是安全边界，只能在受信任环境用。</p>
+内测期间的社区
+<p>框架内测期间，生态先长成了。截至调研时点，内测组织 dsh-external 下有 251 个仓库，反馈板攒了 545 条 issue ，单日最多新增过 14 个。社区自建了包管理器、hub 索引和兼容性监控。</p>
+<p>内测群里流传一句话，官方做得越少，社区越繁荣。</p>
+快速体验
+<p>内测参与者给了一条实在的提醒，dsh 要配合相应的模型效果才好，框架和模型的协同训练才刚刚起步。</p>
+<p>它把 Thinking 思维链折叠成一行展示，配合 DeepSeek 自家模型，输出速度快得让人产生错觉，当然它本身也不慢。</p>
+<p>想自己试试，装了 Node 开发工具链，一行命令 <code>npx @deepseek-ai/dsh web</code> 就能启动 Web UI 。</p>
+<p>DeepSeek Harness 现在还是 v0.1 ，核心插件和基础接口预计还会快速迭代。</p>
+<p>内测者反复讲的一个判断值得记住，Agent 等于 Model 加 Harness 。模型是灵魂，Harness 是身体，让模型能理解环境、使用工具，在真实场景里持续干活。插件这套设计，就是给这具身体留了最自由的改装接口。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">16</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">loggerhead</span>
+        <span>#1</span>
+        <span>2026/08/13 20:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">404 是因为还没开源吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972166">404 是因为还没开源吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972166">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972166" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">psllll</span>
+        <span>#2</span>
+        <span>2026/08/13 20:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">404</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972170">404</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972170">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972170" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cloud369</span>
+        <span>#3</span>
+        <span>2026/08/13 20:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://www.npmjs.com/package/@deepseek-ai/dsh" target="_blank" rel="noopener noreferrer">https://www.npmjs.com/package/@deepseek-ai/dsh</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972178"><a href="https://www.npmjs.com/package/@deepseek-ai/dsh" target="_blank" rel="noopener noreferrer">https://www.npmjs.com/package/@deepseek-ai/dsh</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972178">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972178" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sillydaddy</span>
+        <span>#4</span>
+        <span>2026/08/13 20:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是不是 AISlop ？？网上丁点消息也没搜到。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972186">是不是 AISlop ？？网上丁点消息也没搜到。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972186">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972186" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GeruzoniAnsasu</span>
+        <span>#5</span>
+        <span>2026/08/13 20:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="/go/aislop" target="_blank" rel="noopener noreferrer">/go/aislop</a> <br /><br />&gt; 模型在里面做的事比陪聊多得多，改文件、跑命令、查资料，最后把活干完。最值得看的是它的设计方式。<br /><br /><br />最值得看的只有一个链接，只发链接完全够了，谢谢<br />另外链接是写在介绍页的，但是看起来又手忙脚乱地把 public 关了不知道在修什么<br /><a href="https://www.npmjs.com/package/@deepseek-ai/dsh" target="_blank" rel="noopener noreferrer">https://www.npmjs.com/package/@deepseek-ai/dsh</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972195"> <a href="/go/aislop" target="_blank" rel="noopener noreferrer">/go/aislop</a> <br /><br />&gt; 模型在里面做的事比陪聊多得多，改文件、跑命令、查资料，最后把活干完。最值得看的是它的设计方式。<br /><br /><br />最值得看的只有一个链接，只发链接完全够了，谢谢<br />另外链接是写在介绍页的，但是看起来又手忙脚乱地把 public 关了不知道在修什么<br /><a href="https://www.npmjs.com/package/@deepseek-ai/dsh" target="_blank" rel="noopener noreferrer">https://www.npmjs.com/package/@deepseek-ai/dsh</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972195">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972195" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cloud369</span>
+        <span>#6</span>
+        <span>2026/08/13 20:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/GeruzoniAnsasu" target="_blank" rel="noopener noreferrer">GeruzoniAnsasu</a> 确实手忙脚乱 公测这几分钟发了个 rc</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972199">@<a href="/member/GeruzoniAnsasu" target="_blank" rel="noopener noreferrer">GeruzoniAnsasu</a> 确实手忙脚乱 公测这几分钟发了个 rc</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972199">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972199" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GeorgeV</span>
+        <span>#7</span>
+        <span>2026/08/13 21:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这文案是 DS 的模型深度润色过的吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972226">这文案是 DS 的模型深度润色过的吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972226">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972226" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tianyi</span>
+        <span>#8</span>
+        <span>2026/08/13 21:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现在的 0.1 版本还很不完善，恳请大家多提提意见。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972241">现在的 0.1 版本还很不完善，恳请大家多提提意见。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972241">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972241" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cobiao</span>
+        <span>#9</span>
+        <span>2026/08/13 21:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一切皆插件这个特性挺有意思，把 agent 的能力拆成可复用、可自由拼装的模块。明显就是为了以后 agent 自我进化在铺路。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972245">一切皆插件这个特性挺有意思，把 agent 的能力拆成可复用、可自由拼装的模块。明显就是为了以后 agent 自我进化在铺路。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972245">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972245" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">accacc</span>
+        <span>#10</span>
+        <span>2026/08/13 21:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tianyi" target="_blank" rel="noopener noreferrer">tianyi</a> 支持</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972250">@<a href="/member/tianyi" target="_blank" rel="noopener noreferrer">tianyi</a> 支持</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972250">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972250" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">beginor</span>
+        <span>#11</span>
+        <span>2026/08/13 21:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没命令行？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972254">没命令行？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972254">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972254" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GeorgeV</span>
+        <span>#12</span>
+        <span>2026/08/13 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tianyi" target="_blank" rel="noopener noreferrer">tianyi</a> <br /><br />出现了这个警告。。。<br /><br />npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972335">@<a href="/member/tianyi" target="_blank" rel="noopener noreferrer">tianyi</a> <br /><br />出现了这个警告。。。<br /><br />npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972335">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972335" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JackyYang</span>
+        <span>#13</span>
+        <span>2026/08/13 22:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有了 AI ，出分析文档的速度就像石器时代与工业时代的差别</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972357">有了 AI ，出分析文档的速度就像石器时代与工业时代的差别</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972357">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972357" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fkysly</span>
+        <span>#14</span>
+        <span>2026/08/13 22:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">整理了一个 DeepSeek Harness 插件精选列表:<br /><a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin" target="_blank" rel="noopener noreferrer">https://github.com/awesome-dsh-plugin/awesome-dsh-plugin</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972362">整理了一个 DeepSeek Harness 插件精选列表:<br /><a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin" target="_blank" rel="noopener noreferrer">https://github.com/awesome-dsh-plugin/awesome-dsh-plugin</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972362">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972362" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SiWXie</span>
+        <span>#15</span>
+        <span>2026/08/13 22:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">测试了下，目前有些简陋，和 OpenCode 、Coedx 、Claude Code 还有 ZCode 比，优势是很快，但你说的模型应该和 Harness 一起训练想法挺好的，共同进化</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972371">测试了下，目前有些简陋，和 OpenCode 、Coedx 、Claude Code 还有 ZCode 比，优势是很快，但你说的模型应该和 Harness 一起训练想法挺好的，共同进化</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972371">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972371" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">weixiangzhe</span>
+        <span>#16</span>
+        <span>2026/08/13 22:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那不是和 pi 一个理念了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17972421">那不是和 pi 一个理念了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17972421">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234203#reply17972421" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
