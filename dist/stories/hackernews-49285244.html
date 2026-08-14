@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek Harness 开发者预览版 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-14/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>DeepSeek Harness 开发者预览版</h1>
+      <p class="original-title">DeepSeek Harness developer preview</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 bjin</span>
+        <span>热度 702</span>
+        <span>回复 284</span>
+        <span>2026/08/13 20:58</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49285244" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://deepseek.com/harness/en/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49285244.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Agent = Model + HarnessHarnesskeeps agents working in real-world environmentsThe model is the soul of an agent.A harness lets an agent understand its environment, use tools, and keep working in real-world settings.Cordis kernelThe Cordis kernel manages plugin mounting, unmounting, and dependencies. Agent capabilities live in the plugins.Capabilities as pluginsPlugins provide every agent capability, including models, tools, skills, sessions, sandboxes, storage, loops, scheduling, and the UI. Cordis services and events let the plugins work together.Compose with configurationDevelopers can select, swap, or extend any capability in configuration without changing the DeepSeek Harness source code.Customize your DeepSeek HarnessGet startedTry it now or install from sourceQuick startInstall Node.js, then launch the Web UI with npx.$ npx @deepseek-ai/dsh webInstall from sourceClone the full source and follow the setup instructions in the repository.$ git clone https://github.com/deepseek-ai/deepseek-harness</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">https://github.com/deepseek-ai/deepseek-harness</a><p><a href="https://deepseek-harness.github.io/deepseek-harness/en/guide/quickstart" target="_blank" rel="noopener noreferrer">https://deepseek-harness.github.io/deepseek-harness/en/guide...</a></p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">https://github.com/deepseek-ai/deepseek-harness</a><p><a href="https://deepseek-harness.github.io/deepseek-harness/en/guide/quickstart" target="_blank" rel="noopener noreferrer">https://deepseek-harness.github.io/deepseek-harness/en/guide...</a></p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tianyicui</span>
+        
+        <span>2026/08/13 23:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">您好，我是 DeepSeek Harness 的作者之一。这只是我们目前在 MIT 许可证中提供的早期开发者预览版本。预计会有很多粗糙的边缘和破坏兼容性的变化。非常欢迎任何反馈和建议！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49287317">Hi I'm one of the authors of DeepSeek Harness. It's just an early developer preview version we're presenting in MIT license currently. Expect lots of rough edges and compatibility-breaking changes. Any feedback and suggestions are more than welcome!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49287317">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49287317" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">julius</span>
+        
+        <span>2026/08/14 16:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">人工智能训练中最好的秘密。天一，既然你是我们的内部人士。当您走过训练队办公室时 - 您多久会在屏幕上看到鹈鹕队？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49295938">The best kept secret in AI training. Tianyi, since you are our insider. When you walk by the training teams office - how often do you see Pelicans on their screens?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49295938">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49295938" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tianyicui</span>
+        
+        <span>2026/08/15 00:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">基本上从来没有？我猜除非纯粹是为了好玩和模因。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49300848">Basically never? Unless it's purely for fun and meme I guess.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49300848">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49300848" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">big_toast</span>
+        
+        <span>2026/08/14 01:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">抱歉问了离题的问题。你已经在 hn 工作了很长时间+在 deepseek 工作，这看起来很不常见。关于 Deepseek，你认为 hn 不知道它应该知道的事情吗？或者 hn/yc 是否以任何非明显的方式影响了 deepseek（或更广泛的生态系统）？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49288827">Sorry for the off topic question. You've been on hn a long time + work at deepseek which seems pretty uncommon. Anything you think hn doesn't know about deepseek that it should? Or any non-obvious ways hn/yc has influenced deepseek (or the broader ecosystem)?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49288827">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49288827" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tianyicui</span>
+        
+        <span>2026/08/14 16:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 您认为 hn 对 Deepseek 有什么不了解的地方吗？<p>我们确实会雇用目前位于中国境外（例如北美、欧洲或任何地方）的人员，只要他们愿意在我们的北京或杭州办事处工作。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49296040">&gt; Anything you think hn doesn't know about deepseek that it should?<p>We do hire people who are currently located outside of China (say North America, Europe, or anywhere) if they're open to work in our Beijing or Hangzhou offices.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49296040">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49296040" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">big_toast</span>
+        
+        <span>2026/08/14 23:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哈。公平的。我承认我一直在寻找知识（历史、文化、影响、典型的编码堆栈、vim、emacs 与？分布，但我想现在可能更多的是利用与利用……）但这绝对满足了问题。<p>希望你能说服更多的人加入 hn 并偶尔回答问题。</p><p>我认为 julius 的措辞比我更好。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49300282">Ha. Fair. I admit I was angling for lore (history, culture, influences, typical coding stack, vim vs emacs vs ? distribution but I guess it’s probably more harness vs harness now...) but this definitely satisfies the question.<p>Hope you can convince some more people join hn and answer questions on occasion.</p><p>I think julius has phrased things better than me.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49300282">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49300282" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mcculley</span>
+        
+        <span>2026/08/14 22:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我对此非常好奇，不是为了我自己，只是为了地缘政治后果。这是否意味着中国正在为其他国家的公民来华工作提供便利？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49299536">I am very curious about this, not for myself, just for the geopolitical consequences. Does this mean China is making it easy for citizens of other countries to come work there?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49299536">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49299536" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rnewme</span>
+        
+        <span>2026/08/14 23:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最好的申请方式？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49299720">Best way to apply?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49299720">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49299720" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tianyicui</span>
+        
+        <span>2026/08/15 00:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ning.wang@deepseek.com</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49300898">ning.wang@deepseek.com</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49300898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49300898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Sha1rholder</span>
+        
+        <span>2026/08/14 03:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很抱歉问了一个离题的问题。为什么“在hn工作很长时间+在deepseek工作”对你来说“似乎很不常见”？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49290513">Sorry for the off topic question. Why is "being on hn a long time + working at deepseek" "seems pretty uncommon" to you?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49290513">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49290513" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">big_toast</span>
+        
+        <span>2026/08/14 04:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不完全确定为什么这不是默认假设。这是一个很小的子集。从简短搜索来看，似乎是 2024 年之前的 1 号。<p>想必更多的人至少读过一些。但在过去 16 年里，我们看到了 hn/生态系统其他部分的潮起潮落，以及它与 Deepseek 文化的交叉。</p><p>很明显 openai 文化受到 yc 文化的影响，这对于 hn 用户来说是很清楚的。 Google/ant/spacexai 对 hn 用户产生了熟悉的影响。他们的 Hn 用户可能会知道与 yc/vc/openai、500 家初创公司/techstars 等的friendfeed 连接。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49291696">Not exactly sure why that wouldn't be the default assumption. It's a pretty small subset afaict. Seems like size 1 before 2024 from a brief search.<p>Presumably more people there have read hn at least some. But there's perspective having seen the ebb and flow of hn/the rest of the ecosystem for the last 16 years and how that intersects with deepseek culture.</p><p>It's clear openai culture is influenced by yc culture, which would be clear to an hn user. Google/ant/spacexai have  influences hn users users would be familiar with. Hn users from them would potentially know the friendfeed connections to yc/vc/openai, 500 startups/techstars etc..</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49291696">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49291696" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Sha1rholder</span>
+        
+        <span>2026/08/14 12:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它只是一个很小的子集，但我不明白有什么令人惊讶的。 HN 只是一个普通的科技社区；对于任何科技公司的人来说，出现在那里都不足为奇。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49294637">It *is* a small subset, but I don’t see what’s so surprising. HN is just an ordinary tech community; it’s not surprising for people from any tech company to show up there.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49294637">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49294637" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">darrenf</span>
+        
+        <span>2026/08/14 17:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">但是...除了你之外没有人提到惊喜，不是吗？不常见的事情并不意味着令人惊讶，至少并不总是如此。<p>对我来说，吃外卖披萨并不常见，但我认为我认识的任何人在我这样做时都不会感到惊讶。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49296292">But... no-one mentioned surprise except you, did they? Something being uncommon doesn't connote being surprising, at least not always.<p>It's uncommon for me to have takeaway pizza, but I don't think anyone I know would be surprised when I do.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49296292">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49296292" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Sha1rholder</span>
+        
+        <span>2026/08/14 17:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我很确定我评论的潜台词是他很惊讶。<p>你的朋友可能不会特意问你为什么点了一份不常见的外卖披萨。但如果他们确实问了，通常意味着他们感到惊讶。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49296471">I'm pretty sure the subtext of what I commented on was that he was surprised.<p>Your friends probably wouldn't go out of their way to ask you why you ordered a takeaway pizza which is uncommon. But if they did ask, it usually means they were surprised.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49296471">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49296471" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mcculley</span>
+        
+        <span>2026/08/14 22:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">中国的许多潜在用户不会受到防火墙的限制吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49299550">Wouldn't many potential users in China be limited by the Great Firewall?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49299550">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49299550" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Sha1rholder</span>
+        
+        <span>2026/08/15 00:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在中国科技公司中找不到一个不知道如何绕过 GFW 的人。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49300866">Can't find a single person in a Chinese tech company who doesn't know how to bypass GFW.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49300866">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49300866" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mcculley</span>
+        
+        <span>2026/08/15 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我不是在问能力。难道没有理由避免绕过防火墙可能带来的审查吗？这难道不会产生寒蝉效应吗？还是说它的影响为零，中国公民对使用网站和言论自由的担忧为零？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49301231">I am not asking about capability. Aren't there reasons to avoid the scrutiny that might accompany bypassing the Great Firewall? Doesn't this create a chilling effect? Or are you claiming that it has zero effect and citizens of China have zero concerns about using websites and speaking freely?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49301231">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49301231" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">grimgrin</span>
+        
+        <span>2026/08/14 04:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为什么将您的帐户宣传为机器人？伊吉<p></p><pre><code>    about: Responsible bot.</code></pre></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49291446">why advertise your account as a bot? idgi<p></p><pre><code>    about: Responsible bot.</code></pre></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49291446">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49291446" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Sha1rholder</span>
+        
+        <span>2026/08/14 12:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我（灵长类动物）一直在用这个 <i>关于</i> 六年了。怀念没有人对这句话产生任何怀疑的日子。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49294664">I (a primate) have been using this <i>About</i> for six years. Miss the days when no one had any doubts about this statement.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49294664">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49294664" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">biotech</span>
+        
+        <span>2026/08/14 08:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看看帖子历史，确实令人印象深刻。根据回复，我不会猜到这是一个机器人。<p>如果这些帖子实际上来自机器人 - 我很想知道正在使用哪种模型。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49293246">Looking at the post history, it's actually impressive. I would not have guessed it was a bot based on the replies.<p>If the posts are actually from a bot - I would love to know which model is being used.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49293246">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49293246" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

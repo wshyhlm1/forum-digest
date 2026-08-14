@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>车牌阅读器搜查应该需要搜查令 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-14/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>车牌阅读器搜查应该需要搜查令</h1>
+      <p class="original-title">License plate reader searches should require a warrant</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 apwheele</span>
+        <span>热度 627</span>
+        <span>回复 388</span>
+        <span>2026/08/12 22:43</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49273165" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://andrewpwheeler.com/2026/08/12/license-plate-reader-searches-should-require-a-warrant/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49273165.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>So while I work with police departments regularly, I think it is critically important that technology be used reasonably. While this may be off-putting to some of my clients, I worked with the Institute for Justice as an expert witness in their trial Schmidt v City of Norfolk. (Any opinions herein are my own and not those of IJ, to be clear.) The gist of that case was whether searches of historically cached ALPR data (automated-license-plate-reader) constituted an illegal search.1 The judge ruled against plaintiffs in that case. Here is a quote from the judgment:</li><li>Consistent with Plaintiffs’ claims in this case and controlling precedent involving mass surveillance in public spaces, ALPR surveillance could become too intrusive and run afoul of [constitutional privacy standards] at some point. But when? While a definitive answer to that question is elusive, what is readily apparent to this Court is that, at least in Norfolk, Virginia, the answer is: not today.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">malwrar</span>
+        
+        <span>2026/08/12 22:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">当人们称它们为车牌阅读器时，我感到很沮丧。我想你需要给它们起个名字，但它们是通用的互联网连接相机。他们将执行固件告诉他们要做的任何事情，并且任何有权访问的人都可以随时重新编程。没有人想到门铃摄像头会加入大规模监控网络，但后来制造商添加了该功能。为什么我们对待这些相机就好像它们只能做一件事？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49273367">It frustrates me when people call them license plate readers. I guess you need to call them something, but they are general-purpose internet connected cameras. They will do whatever their firmware tells them to do, and could be reprogrammed at any time by anyone with access. No one expected doorbell cameras to join a mass surveillance network, but later the manufacturers added that feature. Why do we treat these cameras like they can do only one thing?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49273367">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49273367" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">thewebguyd</span>
+        
+        <span>2026/08/12 23:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 为什么我们对待这些摄像机就好像它们只能做一件事？<p>因为它传递的有用信息可以解除民众的武装。 “车牌阅读器”听起来没有“联网摄像头”或“大规模监控设备”那么令人担忧。</p><p>公众对“车牌阅读器”的态度各不相同，但更一致地反对“广泛的、自动化的政府大规模监控，通过摄像头实时跟踪你的一举一动”</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49274179">&gt; Why do we treat these cameras like they can do only one thing?<p>Because its useful messaging to disarm the populace. "License plate reader" sounds less alarming than "Internet connected camera" or "Mass surveillance device."</p><p>Public attitudes vary around a "license plate reader" but will be more uniformly opposed to "Widespread, automated government mass surveillance tracking your every move via camera in real time"</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49274179">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49274179" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">SchemaLoad</span>
+        
+        <span>2026/08/13 06:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">安全摄像头连接互联网的时间比我们拥有这种系统的时间要长得多，在这种系统中，它们都运行计算机视觉并在大型数据库中标记所有内容。<p>它们始终连接互联网并进行大规模监控。正是搜索的增加改变了一切。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49279681">Security cameras have been internet connected for a lot longer than we had this kind of system where they all have computer vision running and tagging everything in a massive database.<p>They were always internet connected and mass surveillance. It's the addition of search that changed things.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49279681">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49279681" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">01100011</span>
+        
+        <span>2026/08/13 03:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我拿着比我们通常称为“智能手机”的互联网连接杆摄像头更强大的监控设备。它监视人们的能力是众所周知的，而且似乎几乎没有人足够关心去改变他们的行为。你会惊讶于人们会关心什么或不会关心什么。一旦特朗普下台，目前痴迷于隐私的人们将转向下一件事......</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49277639">I'm holding a more powerful surveillance device than an Internet connected pole cam which we normally term a "smartphone". Its ability to spy on folks is widely known and almost no one seems to care enough to change their behavior. You'd be surprised what people will or won't care about. Once Trump is out of office, the folks currently obsessed with privacy will move on to the next thing...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49277639">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49277639" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">macintux</span>
+        
+        <span>2026/08/13 05:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果该国所有智能手机都不断将视频录制到一个中央位置以用于监控目的，那么您就有道理了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49278498">Were all the smartphones in the country constantly recording video to a central location for surveillance purposes, you’d have a point.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49278498">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49278498" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">01100011</span>
+        
+        <span>2026/08/13 05:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">他们不需要。他们知道你去过哪里、要去哪里以及你的意图是什么。这是一种更加亲密和有效的监视工具。此外，它还是一种宣传工具和大众心理操纵的工具。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49278812">They don't need to. They know where you've been, where you're going, and what your intentions are. It's a far more intimate and effective surveillance tool. As a bonus, it's also a propaganda vehicle and an implement of mass psychological manipulation.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49278812">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49278812" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">themaninthedark</span>
+        
+        <span>2026/08/13 06:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">并且您需要搜查令才能访问该数据...<p>最高法院最近裁定，即使最近从第三方进行地理围栏数据查找，您也需要搜查令。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49279448">And you require a warrant to get access to that data...<p>Supreme Court recently ruled that you need a warrant for even the geofence data lookup from 3rd party recently.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49279448">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49279448" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">01100011</span>
+        
+        <span>2026/08/13 11:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哦，当然。并行构造不存在。只要政府不能利用这些信息提起刑事诉讼，政府监视就完全是良性的，对吗？我的意思是，我们现在有规则了，所以一切都很好。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49281629">Oh yeah sure. Parallel construction doesn't exist. Government surveillance is completely benign as long as they can't bring a criminal case with the information, right? I mean, we have rules now, so it's all good.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49281629">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49281629" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">newsomix9xl</span>
+        
+        <span>2026/08/13 12:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在我看来，并行构造并不是普通的做法。<p>无论如何，这就是我的印象。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49281838">Parallel construction doesn't seem to me to be ordinary practice.<p>That's my impression anyway.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49281838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49281838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wahern</span>
+        
+        <span>2026/08/13 13:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我同意并行构造似乎不是普通的做法。但 AFAIU 这个术语起源于 9/11 事件后国家安全局的无证监视——大规模的和有针对性的——信息经常被系统地“泄露”给司法部和联邦调查局。直到最近，各州还没有专门收集在刑事案件中使用明显非法的证据的大型机构，而且通常处于深度灰色地带，然后他们小指承诺不分享这些证据。<p>但是，自 20 世纪 60 年代最高法院开始实施预防性程序保护以来，“匿名来源”和类似的证据洗钱一直是国内执法中的一个问题。这只是临时的。但现在德克萨斯州和加利福尼亚州等州已经建立了自己的情报机构，开始突破大规模和有针对性的监视界限，类似于 NSA，并且通过无处不在的数字通信和 Flock 等第三方，警察部门也有机地发展了自己的耳语网络，使他们能够系统、有效地完成以前的临时任务。</p><p>也就是说，与 9/11 后 NSA 的平行建设不同，后者是知情和深思熟虑的，在 NSA 和国家安全局都是公开的秘密。作为联邦执法部门的一部分，我认为州执法人员相信他们完全遵守法律。有趣的是，我最近与一位联邦调查局金融犯罪调查员谈论了这个问题，他甚至从未听说过“并行构造”这个词。建立持久的并行构建流程需要保持合理的推诿，而做到这一点的最佳方法是让大多数执法人员，最好是让所有地区检察官置身事外，对正在发生的事情一无所知。这种情况是由高层官员悄悄指派少数中层人员清洗证据而发生的。从这个意义上说，并行构建永远不会像人们想象的那样成为普通实践，因为绝大多数执法人员永远不会看到它发生，或者至少不会认识到它是什么，除非他们自己以临时方式进行。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49282223">I agree parallel construction doesn't seem to be ordinary practice. But AFAIU the term originates from post-9/11 NSA warrantless surveillance--both mass and targeted--where information was often systematically "leaked" to the DoJ and FBI. Until recently states didn't have large agencies dedicated to collecting evidence that is patently illegal to use in criminal cases, and generally in a deeply grey area generally, which they then pinky promise not to share.<p>But "anonymous sources" and similar evidence laundering has been in a thing in domestic law enforcement since SCOTUS started imposing prophylactic procedural protections in the 1960s. It was just ad hoc. But now states like Texas and California have built their own intelligence agencies which are beginning to push the boundaries of both mass and targeted surveillance similar to the NSA, and through ubiquitous digital communications and third-parties like Flock, police departments have also organically grown their own whisper networks that allows them to systematically and efficiently do what was ad hoc before.</p><p>That said, unlike the post-9/11 NSA parallel construction which was knowing and deliberate and something of an open secret at both the NSA and parts of Federal law enforcement, I think state law enforcement personnel believe they're well within the law. And interestingly I was recently speaking with an FBI financial crimes investigator about this stuff and he had never even heard of the term parallel construction. Building durable parallel construction processes requires maintaining plausible deniability, and the best way to do that is to keep most law enforcement personnel and, preferably, <i>all</i> district attorneys out of the loop and ignorant to what's going on. That happens by high-level officials quietly tasking a handful of mid-level people to launder the evidence. And in that sense parallel construction will never be ordinary practice the way people assume as the vast majority of law enforcement personnel will never see it happening, or at least recognize it for what it is, except for when they do it themselves in an ad hoc manner.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49282223">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49282223" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tremon</span>
+        
+        <span>2026/08/13 20:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在我看来，只要并行构建不会导致肇事者被判长期监禁，你就应该认为这是常见做法。警察和其他监视机构没有任何法律理由将他们的手从饼干罐中拿出来，并且有充分的理由不让公众知道这一点。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49284891">Seems to me that as long as parallel construction doesn't lead to long prison sentences for the perpetrators, you <i>should</i> assume it's ordinary practice. Police and other surveillance authorities have zero legal reason to take their hand out of the cookie jar, and every reason to keep this out of public knowledge.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49284891">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49284891" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">inigyou</span>
+        
+        <span>2026/08/13 17:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是因为该查找范围特别广泛。我猜最高法院的法官们担心自己会被卷入其中。对于其他任何事情，例如下载某人的视频，您不需要搜查令。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49283671">That's because that lookup is especially broad. And I'd guess the supreme court justices are worried about getting caught in one. For anything else, like downloading one person's videos, you don't need a warrant.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49283671">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49283671" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">macintux</span>
+        
+        <span>2026/08/13 06:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">然而（大部分）是自愿的。你可以把智能手机留在家里，它通常不会监视你周围的人。<p>智能眼镜显然大大改变了这个方程式。</p><p>但它们无法随时随地接近全景摄像机，捕捉一切并保存多年的记录。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49279398">And yet it’s (mostly) voluntary. You can leave your smartphone at home, and it’s generally not spying on people around you.<p>Smart glasses obviously change that equation quite a bit.</p><p>But they can’t come close to the panopticon of video cameras everywhere, all the time, capturing everything for years of record-keeping.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49279398">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49279398" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">phil21</span>
+        
+        <span>2026/08/13 04:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 没有人想到门铃摄像头会加入大规模监控网络，但后来制造商添加了该功能。<p>很多人都这么做了？这显然是云连接设备将录音推送到远程进行处理和存储的最终目标之一。特别是当像面部识别这样的东西在服务器端实现时。</p><p>如果这没有在第一次内部产品会议上提出，我会感到非常惊讶。</p><p>虽然我在这个主题上对普通人给予了一些宽容 - 任何在 HN 上发帖的人都应该认为这个结果不仅是可能的，而且几乎是板上钉钉的结果。即使你所有的想象都是“美国国家安全局秘密授权”，这也将是你对此类产品想象的首要风险之一。</p><p>很明显，即使在 Facebook 第一次在照片中标记朋友时，这也是最终结果，当时图像识别技术变得便宜且足够好，可以回溯并关联每个人的社交图谱。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49278173">&gt; No one expected doorbell cameras to join a mass surveillance network, but later the manufacturers added that feature.<p>Plenty of people did? That was obviously one of the end goals for cloud connected devices pushing recordings to a remote side for processing and storage. Especially when stuff like facial recognition was implemented server side.</p><p>I would be highly surprised if this was not pitched in the first internal product meeting.</p><p>While I give some grace to the regular population on this topic - anyone posting on HN should have trivially seen this outcome as not only likely, but nearly written in stone. Even if all your imagination captured was “secret NSA warrant” it would be one of the first risks you’d imagine for such a product.</p><p>It was obvious that this was the final outcome even back when Facebook first implemented tagging friends in photos before image recognition got cheap and good enough to go back and time and correlate the social graphs of everyone.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49278173">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49278173" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">malwrar</span>
+        
+        <span>2026/08/13 05:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我不怀疑这是制造商的意图，但你认为普通客户知道这一点吗？我告诉过的每一个普通人，他们的环形摄像头也可以被警察查看，他们都像我疯子一样看着我。我确信有些人会为他们的门廊购买 Flock 摄像机，但我敢打赌，如果其他人真正知道自己要注册什么，他们也不会这么做。<p>Ring 推出的关于寻找丢失狗的超级碗广告让人们感到害怕是有原因的！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49278630">I don’t doubt it was intended by the manufacturer, but do you think the average customer knows this? Every normal person I’ve ever told this to, that their Ring cameras can also be looked through by the police, has looked at me like I’m crazy. I’m sure some people would buy a Flock camera for their porch, but I’d bet many others wouldn’t if they truly knew what they were signing up for.<p>The Super Bowl commercial that Ring put out about finding lost dogs spooked people for a reason!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49278630">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49278630" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pseudalopex</span>
+        
+        <span>2026/08/13 15:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 您认为普通客户知道这一点吗？<p>&gt; 我在这个主题上给普通民众一些宽容</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49282875">&gt; do you think the average customer knows this?<p>&gt; I give some grace to the regular population on this topic</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49282875">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49282875" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">LoganDark</span>
+        
+        <span>2026/08/13 13:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 很多人都这么做了？这显然是云连接设备将录音推送到远程进行处理和存储的最终目标之一。特别是当面部识别之类的东西在服务器端实现时。<p>存储和处理供客户自己使用的记录与从多个来源聚合它们以进行有组织的大规模监控之间存在巨大差异。尽管如此，大多数企业并没有抵制后者的原则。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49282153">&gt; Plenty of people did? That was obviously one of the end goals for cloud connected devices pushing recordings to a remote side for processing and storage. Especially when stuff like facial recognition was implemented server side.<p>There is a huge difference between storing and processing recordings for a customer's own use, and aggregating them from multiple sources for organized mass surveillance. With that said, most corporations do not have the principles to resist the latter.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49282153">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49282153" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">glaslong</span>
+        
+        <span>2026/08/13 01:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">特别是考虑到 Flock 的 API 不仅会给你车牌。<p>关于物体/人是否是执法部门的标志也很有趣。</p><p>喜欢这个，非常酷，可以快速过滤掉可能记录了警察行为的流/地理数据。</p><p><a href="https://docs.flocksafety.com/developer-hub/docs/tracking-objects-people-and-vehicles-on-the-flockos-map" target="_blank" rel="noopener noreferrer">https://docs.flocksafety.com/developer-hub/docs/tracking-obj...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49275891">Especially considering Flock's API will give you people not just license plates.<p>The flag for whether the object/person is law enforcement vs not is interesting as well.</p><p>Love that, very cool for quickly filtering out the streams / geodata that might have an officer's actions recorded.</p><p><a href="https://docs.flocksafety.com/developer-hub/docs/tracking-objects-people-and-vehicles-on-the-flockos-map" target="_blank" rel="noopener noreferrer">https://docs.flocksafety.com/developer-hub/docs/tracking-obj...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49275891">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49275891" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jameshart</span>
+        
+        <span>2026/08/12 23:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这相当于反对使用通用计算设备来完成任何事情。<p>对于任何私人操作的设备，您都可以说同样的话。 “我不知道他们为什么称这些东西为手机信号塔。它们可以做任何被编程的事情，并且任何有权访问的人都可以重新编程”</p><p>哎呀，这也适用于非电子产品“为什么他们称其为房子？这是一个通用结构，任何有权访问的人都可以随时将其变成商店、工厂或破解巢穴”</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49273611">This amounts to an argument against ever using general purpose computing devices to accomplish anything.<p>You could say the same about literally any privately operated device. ‘I don’t know why they call these things cell towers. They do whatever they are programmed to and can be reprogrammed by anyone with access’</p><p>Heck the same applies to non electronic things too ‘why do they call it a house? It’s a general purpose structure and could be turned into a shop or a factory or a crack den at any time by anyone with access’</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49273611">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49273611" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">malwrar</span>
+        
+        <span>2026/08/13 06:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有趣的观点。<p>正如其他人所指出的，我认为亮点不是“通用计算机……”，而是“……可以在世界任何地方有效地远程访问和修改”。我不仅担心原始设备制造商和警察，还担心犯罪分子、外国情报机构等。老实说，现在可能是任何人，因为人们已经知道可以使用法学硕士进行分析。</p><p>这本身就是一个值得关注的坚实基础，你不认为吗？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49279284">Interesting perspective.<p>As others have noted, I believe the brightline is less “general purpose computer…” and more “…that is remotely accessible &amp; modifiable effectively anywhere in the world”. I worry not just about OEMs and cops, but also criminals, foreign intelligence agencies, etc. Honestly potentially anyone at this point, now that folks have figured out you can use LLMs to do analysis.</p><p>This is a sound foundation for concern by itself, don’t you think?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49279284">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49279284" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
