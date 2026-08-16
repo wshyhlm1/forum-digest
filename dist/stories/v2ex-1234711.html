@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一个 Vibe Coding 网站是怎么在上线几十分钟内被打爆的 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-16/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>一个 Vibe Coding 网站是怎么在上线几十分钟内被打爆的</h1>
+      <p class="original-title">一个 Vibe Coding 网站是怎么在上线几十分钟内被打爆的</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 gxlwm</span>
+        <span>热度 66</span>
+        <span>回复 66</span>
+        <span>2026/08/16 09:24</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1234711" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1234711.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>昨天发帖分享了一个刚做的小网站，叫 锐评。</li><li>网站可以给不同社区打分，档位是：</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>昨天发帖分享了一个刚做的小网站，叫 <a href="https://rping.com" target="_blank" rel="noopener noreferrer">锐评</a>。</p>
+<p>网站可以给不同社区打分，档位是：</p>
+<blockquote>
+<p>夯 / 顶级 / 人上人 / NPC / 拉完了</p>
+</blockquote>
+<p>我怕兄弟们连快捷登录都懒得点，跟别提注册登录了，就把游客权限也打开了：不登录可以评分，也可以评论。让大家先进来玩玩，真有人乱搞的话，我再去后台关掉游客权限。</p>
+<p>当时觉得这个方案挺宽松灵活的，现在看，确实宽松，主要是方便攻击脚本发挥。</p>
+我的帖子没爆，服务器先爆了
+<p>当天晚上我先后在几个社区发了帖子：</p>
+<ul>
+<li>20:50：2天秤座</li>
+<li>21:01：V2EX</li>
+<li>后来又发到了 Linux Bi</li>
+</ul>
+<p>本来以为能来几十个人，帮忙测测功能、提点意见。没想到互联网上有坏人，没过多久，网站就打不开了。我打开 Vercel 后台一看，请求量已经飞起来了。</p>
+<p></p>
+<p>两个相邻 IP 正在疯狂请求网站里的条目：</p>
+<pre><code>103.197.30.225
+103.197.30.226
+</code></pre>
+<p>主要目标是 <code>/t/rping-cc</code>。一共制造了大约 20 万次 Firewall Actions ，还顺手给“锐评”刷了接近 3,000 次“拉完了”。</p>
+<p>我做这个网站，本来是想让大家锐评互联网社区。上线第一天，网站自己先登上了「拉榜」榜首。</p>
+<p></p>
+拔电源吧
+<p>我一开始没当回事儿，毕竟早就想过：有人乱搞的话，去管理后台关掉游客权限就行。</p>
+<p>没想到的是，攻击来的时候，我自己也进不去后台了。页面打不开，无奈只能直接改数据库，把游客评分和评论权限先关掉。权限改完，异常评分是不再增加了，但那两个 IP 还在继续请求，给服务器上强度。</p>
+<p>刚开始我其实没怎么生气，觉得网站刚上线就被打，也算是给自己上了一课，当个乐子看就好。我屏蔽了 IP 、加了防护规则，也在帖子里明确说了这件事。</p>
+<p>结果那个人并不打算到此为止。IP 被 ban 以后，它又换了 IP 继续捣乱，还注册了一个用户名叫 <code>xjp</code> 的账号，开始刷乱码评论。评分刷不动了，就改刷评论区。一共发了 128 条锐评，评论区被它刷得像乱码瀑布一样。</p>
+<p>这就不是乐子了，这人确实是坏种，这么干对你有什么好处呢？</p>
+<p>只能先拔电源，把服务关了。</p>
+<p></p>
+<p></p>
+日志里的时间线
+<p>后来我导出了攻击前后近两个小时的完整日志。这个客户端第一次出现是在：</p>
+<pre><code>21:12:53  GET  /t/v2ex       200
+</code></pre>
+<p>紧接着：</p>
+<pre><code>21:13:09  GET  /t/rping-cc   200
+21:13:16  POST /t/rping-cc   200
+</code></pre>
+<p>它进入网站 23 秒后，就开始尝试刷票。刚开始还挺克制，隔几秒请求一次，像是在试接口。十分钟后，大概确认接口确实没什么防护，于是正式开工：</p>
+<pre><code>21:24  开始高频请求
+21:25  单分钟接近 2,000 次
+21:35  第一轮高峰
+22:02  第二轮高峰
+22:05  基本结束
+</code></pre>
+<p>Vercel 的 DDoS Challenge 大约拦下了 16.4 万次请求，但仍有 5 万多次攻击被放行。</p>
+<p></p>
+所以是 V 站用户干的吗？
+<p>刚开始我怀疑是 linux bi 用户干的，毕竟我天天逛 v 站，默认把战里兄弟都当成高素质人群了，但是从日志上看，我开始怀疑是 v 站用户攻击的。</p>
+<p>V2EX 帖子发于 21:01 ，帖子里放的是专属链接 <code>/t/v2ex</code>；可疑客户端在 21:12:53 第一次出现，第一条请求刚好也是 <code>/t/v2ex</code>，23 秒后就开始测试刷票。时间和路径确实挺吻合。</p>
+<p>当然，我可定无法证明是某位 V2EX 用户，链接可能被转发，也可能通过别的方式传播，更没有证据指向某个具体账号，大家看个乐子得了。</p>
+<p></p>
+连夜补窟窿
+<p>关站以后，我紧急补了几条安全规则。</p>
+<p>屏蔽攻击 IP ，开启 Attack Mode ，增加全站请求限流，给统计接口和详情页写操作单独限流，关闭游客评分和评论，清理异常数据，再检查一遍服务端校验和数据库约束。</p>
+<p>以前担心登录会劝退用户。现在觉得，劝退几个嫌麻烦的用户，总比把我劝退强。</p>
+<p>我之前为了让注册登录方便一点，还把 <code>confirm email</code> 关掉了。现在看来，这个开关还是得打开。要求用户确认邮箱，至少能给批量注册增加一点成本，不能再让脚本注册完账号就直接开刷。</p>
+总结：Vibe Coding 路边一条
+<p>这个网站 MVP 版本全靠 Vibe Coding 快速做出来的。</p>
+<p>上线几十分钟就被打爆了，我也低估了互联网上有些人的恶意，难怪很多论坛、社区都设置各种注册条件、发言条件。这都是被你们这帮坏种逼的。</p>
+<p>这次算是被互联网坏人上了一课，也提醒自己，敬畏技术，生产级的产品不是 AI 几下就能做出来的。</p>
+<p>目前已经重新上线。下次争取活久一点。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>昨天发帖分享了一个刚做的小网站，叫 <a href="https://rping.com" target="_blank" rel="noopener noreferrer">锐评</a>。</p>
+<p>网站可以给不同社区打分，档位是：</p>
+<blockquote>
+<p>夯 / 顶级 / 人上人 / NPC / 拉完了</p>
+</blockquote>
+<p>我怕兄弟们连快捷登录都懒得点，跟别提注册登录了，就把游客权限也打开了：不登录可以评分，也可以评论。让大家先进来玩玩，真有人乱搞的话，我再去后台关掉游客权限。</p>
+<p>当时觉得这个方案挺宽松灵活的，现在看，确实宽松，主要是方便攻击脚本发挥。</p>
+我的帖子没爆，服务器先爆了
+<p>当天晚上我先后在几个社区发了帖子：</p>
+<ul>
+<li>20:50：2Libra</li>
+<li>21:01：V2EX</li>
+<li>后来又发到了 Linux Bi</li>
+</ul>
+<p>本来以为能来几十个人，帮忙测测功能、提点意见。没想到互联网上有坏人，没过多久，网站就打不开了。我打开 Vercel 后台一看，请求量已经飞起来了。</p>
+<p></p>
+<p>两个相邻 IP 正在疯狂请求网站里的条目：</p>
+<pre><code>103.197.30.225
+103.197.30.226
+</code></pre>
+<p>主要目标是 <code>/t/rping-cc</code>。一共制造了大约 20 万次 Firewall Actions ，还顺手给“锐评”刷了接近 3,000 次“拉完了”。</p>
+<p>我做这个网站，本来是想让大家锐评互联网社区。上线第一天，网站自己先登上了「拉榜」榜首。</p>
+<p></p>
+拔电源吧
+<p>我一开始没当回事儿，毕竟早就想过：有人乱搞的话，去管理后台关掉游客权限就行。</p>
+<p>没想到的是，攻击来的时候，我自己也进不去后台了。页面打不开，无奈只能直接改数据库，把游客评分和评论权限先关掉。权限改完，异常评分是不再增加了，但那两个 IP 还在继续请求，给服务器上强度。</p>
+<p>刚开始我其实没怎么生气，觉得网站刚上线就被打，也算是给自己上了一课，当个乐子看就好。我屏蔽了 IP 、加了防护规则，也在帖子里明确说了这件事。</p>
+<p>结果那个人并不打算到此为止。IP 被 ban 以后，它又换了 IP 继续捣乱，还注册了一个用户名叫 <code>xjp</code> 的账号，开始刷乱码评论。评分刷不动了，就改刷评论区。一共发了 128 条锐评，评论区被它刷得像乱码瀑布一样。</p>
+<p>这就不是乐子了，这人确实是坏种，这么干对你有什么好处呢？</p>
+<p>只能先拔电源，把服务关了。</p>
+<p></p>
+<p></p>
+日志里的时间线
+<p>后来我导出了攻击前后近两个小时的完整日志。这个客户端第一次出现是在：</p>
+<pre><code>21:12:53  GET  /t/v2ex       200
+</code></pre>
+<p>紧接着：</p>
+<pre><code>21:13:09  GET  /t/rping-cc   200
+21:13:16  POST /t/rping-cc   200
+</code></pre>
+<p>它进入网站 23 秒后，就开始尝试刷票。刚开始还挺克制，隔几秒请求一次，像是在试接口。十分钟后，大概确认接口确实没什么防护，于是正式开工：</p>
+<pre><code>21:24  开始高频请求
+21:25  单分钟接近 2,000 次
+21:35  第一轮高峰
+22:02  第二轮高峰
+22:05  基本结束
+</code></pre>
+<p>Vercel 的 DDoS Challenge 大约拦下了 16.4 万次请求，但仍有 5 万多次攻击被放行。</p>
+<p></p>
+所以是 V 站用户干的吗？
+<p>刚开始我怀疑是 linux bi 用户干的，毕竟我天天逛 v 站，默认把战里兄弟都当成高素质人群了，但是从日志上看，我开始怀疑是 v 站用户攻击的。</p>
+<p>V2EX 帖子发于 21:01 ，帖子里放的是专属链接 <code>/t/v2ex</code>；可疑客户端在 21:12:53 第一次出现，第一条请求刚好也是 <code>/t/v2ex</code>，23 秒后就开始测试刷票。时间和路径确实挺吻合。</p>
+<p>当然，我可定无法证明是某位 V2EX 用户，链接可能被转发，也可能通过别的方式传播，更没有证据指向某个具体账号，大家看个乐子得了。</p>
+<p></p>
+连夜补窟窿
+<p>关站以后，我紧急补了几条安全规则。</p>
+<p>屏蔽攻击 IP ，开启 Attack Mode ，增加全站请求限流，给统计接口和详情页写操作单独限流，关闭游客评分和评论，清理异常数据，再检查一遍服务端校验和数据库约束。</p>
+<p>以前担心登录会劝退用户。现在觉得，劝退几个嫌麻烦的用户，总比把我劝退强。</p>
+<p>我之前为了让注册登录方便一点，还把 <code>confirm email</code> 关掉了。现在看来，这个开关还是得打开。要求用户确认邮箱，至少能给批量注册增加一点成本，不能再让脚本注册完账号就直接开刷。</p>
+总结：Vibe Coding 路边一条
+<p>这个网站 MVP 版本全靠 Vibe Coding 快速做出来的。</p>
+<p>上线几十分钟就被打爆了，我也低估了互联网上有些人的恶意，难怪很多论坛、社区都设置各种注册条件、发言条件。这都是被你们这帮坏种逼的。</p>
+<p>这次算是被互联网坏人上了一课，也提醒自己，敬畏技术，生产级的产品不是 AI 几下就能做出来的。</p>
+<p>目前已经重新上线。下次争取活久一点。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">YAFEIML</span>
+        <span>#1</span>
+        <span>2026/08/16 09:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">域名停放了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978407">域名停放了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978407">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978407" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">winnerczwx</span>
+        <span>#2</span>
+        <span>2026/08/16 09:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个问题套一层 cf 就解决了啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978412">这个问题套一层 cf 就解决了啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978412">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978412" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gxlwm</span>
+        <span>#3</span>
+        <span>2026/08/16 09:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/YAFEIML" target="_blank" rel="noopener noreferrer">YAFEIML</a> 我写错了，是 <a href="http://rping.cc" target="_blank" rel="noopener noreferrer">rping.cc</a> 不是 com - -</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978413">@<a href="/member/YAFEIML" target="_blank" rel="noopener noreferrer">YAFEIML</a> 我写错了，是 <a href="http://rping.cc" target="_blank" rel="noopener noreferrer">rping.cc</a> 不是 com - -</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978413">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978413" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gxlwm</span>
+        <span>#4</span>
+        <span>2026/08/16 09:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/winnerczwx" target="_blank" rel="noopener noreferrer">winnerczwx</a> 可是我是 vibe coding ，部署 vercel 一把梭啊，vercel 上也有防护，还要专门搞 cf 吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978415">@<a href="/member/winnerczwx" target="_blank" rel="noopener noreferrer">winnerczwx</a> 可是我是 vibe coding ，部署 vercel 一把梭啊，vercel 上也有防护，还要专门搞 cf 吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978415">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978415" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">MrVito</span>
+        <span>#5</span>
+        <span>2026/08/16 09:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这就不得不提到一句老话：害人之心不可有，防人之心不可无</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978432">这就不得不提到一句老话：害人之心不可有，防人之心不可无</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978432">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978432" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gxlwm</span>
+        <span>#6</span>
+        <span>2026/08/16 10:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/MrVito" target="_blank" rel="noopener noreferrer">MrVito</a> 学到了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978440">@<a href="/member/MrVito" target="_blank" rel="noopener noreferrer">MrVito</a> 学到了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">foryou2023</span>
+        <span>#7</span>
+        <span>2026/08/16 10:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有些人天生“坏”，不过好在是少部分，不过也不得不防。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978467">有些人天生“坏”，不过好在是少部分，不过也不得不防。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978467">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978467" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sydneyJin</span>
+        <span>#8</span>
+        <span>2026/08/16 10:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现实中能面对面的都直接插你的队，无视社会规则，更何况这互联网上</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978468">现实中能面对面的都直接插你的队，无视社会规则，更何况这互联网上</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978468">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978468" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jkjoke</span>
+        <span>#9</span>
+        <span>2026/08/16 10:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a>以前做了个聊天室，网友天天给我 xss 压力测试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978475"><a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a>以前做了个聊天室，网友天天给我 xss 压力测试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978475">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978475" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#10</span>
+        <span>2026/08/16 10:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为什么要攻击这种刚上线的没有一点名气的小网站，换 ip 也要成本吧？应该是你得罪了人</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978476">为什么要攻击这种刚上线的没有一点名气的小网站，换 ip 也要成本吧？应该是你得罪了人</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978476">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978476" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gxlwm</span>
+        <span>#11</span>
+        <span>2026/08/16 10:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 我没得罪过人额</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978478">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 我没得罪过人额</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978478">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978478" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wwmmkk</span>
+        <span>#12</span>
+        <span>2026/08/16 10:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这也太没素质了啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978494">这也太没素质了啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978494">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978494" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">soulflysimple123</span>
+        <span>#13</span>
+        <span>2026/08/16 10:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">老哥你这网站起码要接入 cloudeflare Turnstile</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978502">老哥你这网站起码要接入 cloudeflare Turnstile</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978502">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978502" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BeijingBaby</span>
+        <span>#14</span>
+        <span>2026/08/16 10:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一样的😂  <a href="http://www.dev.com.cn" target="_blank" rel="noopener noreferrer">www.dev.com.cn</a> 上个月被攻击过，不过后来处理好了，也没持续攻击，我就没发出来。也是不明白一个非盈利小站怎么会被攻击的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978507">一样的😂  <a href="http://www.dev.com.cn" target="_blank" rel="noopener noreferrer">www.dev.com.cn</a> 上个月被攻击过，不过后来处理好了，也没持续攻击，我就没发出来。也是不明白一个非盈利小站怎么会被攻击的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978507">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978507" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gxlwm</span>
+        <span>#15</span>
+        <span>2026/08/16 10:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/soulflysimple123" target="_blank" rel="noopener noreferrer">soulflysimple123</a> 已经在 Vercel 设置了一些防火墙规则，并且设置了超出 5 美刀就停止服务，无所谓，破不了产。回头了解一下 CF</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978514">@<a href="/member/soulflysimple123" target="_blank" rel="noopener noreferrer">soulflysimple123</a> 已经在 Vercel 设置了一些防火墙规则，并且设置了超出 5 美刀就停止服务，无所谓，破不了产。回头了解一下 CF</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978514">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978514" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gxlwm</span>
+        <span>#16</span>
+        <span>2026/08/16 10:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/BeijingBaby" target="_blank" rel="noopener noreferrer">BeijingBaby</a> 不错不错，订阅一个</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978519">@<a href="/member/BeijingBaby" target="_blank" rel="noopener noreferrer">BeijingBaby</a> 不错不错，订阅一个</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978519">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978519" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zpxshl</span>
+        <span>#17</span>
+        <span>2026/08/16 10:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一堆现实里面过得太压抑的坏种</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978523">一堆现实里面过得太压抑的坏种</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978523">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978523" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yidev</span>
+        <span>#18</span>
+        <span>2026/08/16 11:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">打算做网站就要掌握一些基础的网络防护, 而不是靠谴责, 这种是 cc 攻击了. 可以让 AI 在入口都地方加个防火墙. 同一个 IP 或者同一个 Useragent 连续访问的频率超过阈值就 ban 掉. 或者弹出验证码才能继续. 最好从 nginx 里 ban</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978604">打算做网站就要掌握一些基础的网络防护, 而不是靠谴责, 这种是 cc 攻击了. 可以让 AI 在入口都地方加个防火墙. 同一个 IP 或者同一个 Useragent 连续访问的频率超过阈值就 ban 掉. 或者弹出验证码才能继续. 最好从 nginx 里 ban</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978604">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978604" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lefer</span>
+        <span>#19</span>
+        <span>2026/08/16 11:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">互联网释放了藏匿于心中的恶。<br /><br />也许那个攻击者有一份正经的工作，有一个幸福的家庭，但不妨碍他“找点乐子”。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978657">互联网释放了藏匿于心中的恶。<br /><br />也许那个攻击者有一份正经的工作，有一个幸福的家庭，但不妨碍他“找点乐子”。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978657">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978657" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">onling</span>
+        <span>#20</span>
+        <span>2026/08/16 11:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">之前也某名被恭喜过一次，感觉网站也不出门，就是不知道这些攻击的目的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17978658">之前也某名被恭喜过一次，感觉网站也不出门，就是不知道这些攻击的目的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17978658">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1234711#reply17978658" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
