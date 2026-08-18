@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>送永久码~~ 双屏工作多年，我最终还是自己写了一个「调暗屏幕」的工具 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-18/">返回日报</a>
+      <div class="source-chip">V2EX #7</div>
+      <h1>送永久码~~ 双屏工作多年，我最终还是自己写了一个「调暗屏幕」的工具</h1>
+      <p class="original-title">送永久码~~ 双屏工作多年，我最终还是自己写了一个「调暗屏幕」的工具</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 xudaolong</span>
+        <span>热度 90</span>
+        <span>回复 90</span>
+        <span>2026/08/18 08:54</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1235163" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1235163.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>先说一个你可能也有的瞬间：</li><li>晚上十点，你打开编辑器准备把白天没写完的东西收个尾。主屏上是代码，副屏上是文档、微信、一个没关的视频页面。你明明只想看中间那一个窗口，但余光里全是别的东西在闪。</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>先说一个你可能也有的瞬间：</p>
+<p>晚上十点，你打开编辑器准备把白天没写完的东西收个尾。主屏上是代码，副屏上是文档、微信、一个没关的视频页面。你明明只想看中间那一个窗口，但余光里全是别的东西在闪。</p>
+<p>系统的「专注模式」管的是通知，管不了你<strong>看到</strong>什么。我想要的很简单：==除了我正在用的窗口，其他全部变暗==。</p>
+<p>市面上不是没有类似的工具，但要么只支持单平台，要么多年不更新，要么多显示器支持形同虚设。作为一个写了多年代码的人，最后的答案只有一个：自己做一个。</p>
+<p>它叫<strong>幕窗（ VeilWin ）</strong>，今天正式首发。</p>
+<p></p>
+幕窗做什么
+<p>一句话：<strong>调暗一切，只留下你正在工作的窗口。</strong></p>
+<p>开启之后，除了你当前聚焦的窗口，屏幕上的其他所有内容——桌面、其他应用、副屏——都会被一层半透明遮罩盖住。你的注意力会被「物理上」收拢到一个窗口里。</p>
+<p>它不是壁纸，不是护眼模式，也不是通知拦截。它是视觉层面的聚光灯。</p>
+几个我认为做对了的决定
+窗口级，而不是屏幕级
+<p>很多工具只能「整屏变暗」。幕窗工作在窗口级别：聚焦窗口保持明亮，其余内容变暗。你可以设置「只留当前一个窗口」，也可以留「整个应用的所有窗口」（比如 IDE + 终端一起亮），甚至可以保留最近用过的 1–8 个窗口——对照着上一个文档写东西的时候，这个很救命。</p>
+<p></p>
+多显示器是一等公民
+<p>这是我做它的初心，也是做得最久的部分。幕窗默认<strong>每台显示器各自聚焦自己的当前窗口</strong>：主屏写代码，副屏的文档自动暗下去；焦点挪到副屏，主屏暗下去。也可以反过来——只调暗没有焦点的屏。每台显示器还能单独覆盖强度、单独绑定配置。</p>
+<p></p>
+<p>下一篇文章我会专门写多显示器的玩法，这里先不展开。</p>
+强度、色调、动画全可调
+<p>调暗强度 0–100% 随便拉；色调默认纯黑，但可以换成暖色——夜间写东西时，暖色遮罩比纯黑舒服得多；切换时有 180ms 的平滑过渡，不闪眼。</p>
+<p></p>
+有些应用永远不该被调暗
+<p>看视频的时候，播放器被调暗是很蠢的。幕窗有应用规则：<strong>「永不调暗」</strong>名单里的应用（比如播放器）始终明亮，<strong>「前台暂停」</strong>名单里的应用切到前台时整体暂停调暗。</p>
+<p></p>
+全局快捷键，手不离键盘
+<p>调暗开关、强度加减、切换配置文件，全都有全局快捷键，默认开关是 ⌃⌥⌘H 。还有一个我很依赖的小设计：<strong>按住 Fn 不放，调暗临时消失</strong>，松开立刻恢复——从桌面拖个文件进当前窗口，不用先关调暗。</p>
+<p></p>
+隐私：窗口信息不出你的电脑
+<p>幕窗需要 macOS 的辅助功能权限来知道「哪个窗口在焦点上」。这件事必须说清楚：==所有窗口处理都在本地完成，不上传任何窗口信息，没有账号体系==。应用内有匿名使用统计（可以在设置里一键关闭），除此之外没有任何数据离开你的设备。</p>
+现在可以做什么
+<p>幕窗支持 macOS 和 Windows ，双平台功能一致，界面有 9 种语言。今天是 1.0.x 的首发版本，后续的功能路线图我会在公众号里持续更新。</p>
+<ul>
+<li>官网下载：浏览器访问 <strong><a href="http://veilwin.com" target="_blank" rel="noopener noreferrer">veilwin.com</a></strong></li>
+<li>用出问题或者有想法，欢迎评论区留言，我都会看</li>
+</ul>
+10 张照片
+<p>永久单设备</p>
+<pre><code>VWZB46HQKKTD
+VWUFPHUOFMT5
+VWT6FRVPMK5B
+VWH49UGPADDR
+VWE58YBH8DU2
+VWCP4S9U3R80
+VW79KYS3NA54
+VW3XBH83JXPL
+VW36WKI288TZ
+VW05TCI9BZ83
+</code></pre>
+<p>其余的关注一下公众号进行文章分享也可获取永久码一枚,一直到 8.23</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>先说一个你可能也有的瞬间：</p>
+<p>晚上十点，你打开编辑器准备把白天没写完的东西收个尾。主屏上是代码，副屏上是文档、微信、一个没关的视频页面。你明明只想看中间那一个窗口，但余光里全是别的东西在闪。</p>
+<p>系统的「专注模式」管的是通知，管不了你<strong>看到</strong>什么。我想要的很简单：==除了我正在用的窗口，其他全部变暗==。</p>
+<p>市面上不是没有类似的工具，但要么只支持单平台，要么多年不更新，要么多显示器支持形同虚设。作为一个写了多年代码的人，最后的答案只有一个：自己做一个。</p>
+<p>它叫<strong>幕窗（ VeilWin ）</strong>，今天正式首发。</p>
+<p></p>
+幕窗做什么
+<p>一句话：<strong>调暗一切，只留下你正在工作的窗口。</strong></p>
+<p>开启之后，除了你当前聚焦的窗口，屏幕上的其他所有内容——桌面、其他应用、副屏——都会被一层半透明遮罩盖住。你的注意力会被「物理上」收拢到一个窗口里。</p>
+<p>它不是壁纸，不是护眼模式，也不是通知拦截。它是视觉层面的聚光灯。</p>
+几个我认为做对了的决定
+窗口级，而不是屏幕级
+<p>很多工具只能「整屏变暗」。幕窗工作在窗口级别：聚焦窗口保持明亮，其余内容变暗。你可以设置「只留当前一个窗口」，也可以留「整个应用的所有窗口」（比如 IDE + 终端一起亮），甚至可以保留最近用过的 1–8 个窗口——对照着上一个文档写东西的时候，这个很救命。</p>
+<p></p>
+多显示器是一等公民
+<p>这是我做它的初心，也是做得最久的部分。幕窗默认<strong>每台显示器各自聚焦自己的当前窗口</strong>：主屏写代码，副屏的文档自动暗下去；焦点挪到副屏，主屏暗下去。也可以反过来——只调暗没有焦点的屏。每台显示器还能单独覆盖强度、单独绑定配置。</p>
+<p></p>
+<p>下一篇文章我会专门写多显示器的玩法，这里先不展开。</p>
+强度、色调、动画全可调
+<p>调暗强度 0–100% 随便拉；色调默认纯黑，但可以换成暖色——夜间写东西时，暖色遮罩比纯黑舒服得多；切换时有 180ms 的平滑过渡，不闪眼。</p>
+<p></p>
+有些应用永远不该被调暗
+<p>看视频的时候，播放器被调暗是很蠢的。幕窗有应用规则：<strong>「永不调暗」</strong>名单里的应用（比如播放器）始终明亮，<strong>「前台暂停」</strong>名单里的应用切到前台时整体暂停调暗。</p>
+<p></p>
+全局快捷键，手不离键盘
+<p>调暗开关、强度加减、切换配置文件，全都有全局快捷键，默认开关是 ⌃⌥⌘H 。还有一个我很依赖的小设计：<strong>按住 Fn 不放，调暗临时消失</strong>，松开立刻恢复——从桌面拖个文件进当前窗口，不用先关调暗。</p>
+<p></p>
+隐私：窗口信息不出你的电脑
+<p>幕窗需要 macOS 的辅助功能权限来知道「哪个窗口在焦点上」。这件事必须说清楚：==所有窗口处理都在本地完成，不上传任何窗口信息，没有账号体系==。应用内有匿名使用统计（可以在设置里一键关闭），除此之外没有任何数据离开你的设备。</p>
+现在可以做什么
+<p>幕窗支持 macOS 和 Windows ，双平台功能一致，界面有 9 种语言。今天是 1.0.x 的首发版本，后续的功能路线图我会在公众号里持续更新。</p>
+<ul>
+<li>官网下载：浏览器访问 <strong><a href="http://veilwin.com" target="_blank" rel="noopener noreferrer">veilwin.com</a></strong></li>
+<li>用出问题或者有想法，欢迎评论区留言，我都会看</li>
+</ul>
+赠码 10 枚
+<p>永久单设备</p>
+<pre><code>VWZB46HQKKTD
+VWUFPHUOFMT5
+VWT6FRVPMK5B
+VWH49UGPADDR
+VWE58YBH8DU2
+VWCP4S9U3R80
+VW79KYS3NA54
+VW3XBH83JXPL
+VW36WKI288TZ
+VW05TCI9BZ83
+</code></pre>
+<p>其余的关注一下公众号进行文章分享也可获取永久码一枚,一直到 8.23</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">radeon019</span>
+        <span>#1</span>
+        <span>2026/08/18 09:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWE58YBH8DU2 已用，谢谢作者！！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984619">VWE58YBH8DU2 已用，谢谢作者！！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984619">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984619" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Joker9999</span>
+        <span>#2</span>
+        <span>2026/08/18 09:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VW3XBH83JXPL 已使用，谢谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984630">VW3XBH83JXPL 已使用，谢谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984630">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984630" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">daminge</span>
+        <span>#3</span>
+        <span>2026/08/18 09:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VW79KYS3NA54  已用，谢谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984651">VW79KYS3NA54  已用，谢谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984651">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984651" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fyex</span>
+        <span>#4</span>
+        <span>2026/08/18 09:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWH49UGPADDR 已用 谢谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984654">VWH49UGPADDR 已用 谢谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984654">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984654" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Satoshl</span>
+        <span>#5</span>
+        <span>2026/08/18 09:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWCP4S9U3R80 已用，感谢作者</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984669">VWCP4S9U3R80 已用，感谢作者</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984669">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984669" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhangyou1010</span>
+        <span>#6</span>
+        <span>2026/08/18 09:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">windows11 ，华为笔记本电脑，输入激活码，点激活没反应</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984674">windows11 ，华为笔记本电脑，输入激活码，点激活没反应</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xudaolong</span>
+        <span>#7</span>
+        <span>2026/08/18 09:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zhangyou1010" target="_blank" rel="noopener noreferrer">zhangyou1010</a> 估计都被激活了, 我修复一下提示.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984688">@<a href="/member/zhangyou1010" target="_blank" rel="noopener noreferrer">zhangyou1010</a> 估计都被激活了, 我修复一下提示.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984688">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984688" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xudaolong</span>
+        <span>#8</span>
+        <span>2026/08/18 09:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zhangyou1010" target="_blank" rel="noopener noreferrer">zhangyou1010</a> 再赠送 20 枚哈. 现在还不能 append<br /><br />---<br /><br />VWZU98DHFUFF<br />VWV3SS373353<br />VWPK2SBX6UDS<br />VWOWWPGDR9WX<br />VWNI4SQHAYNP<br />VWNH79YUM4VW<br />VWJ3N6CDI6EN<br />VWHNZ5ZAKGBA<br />VWFZL1OPZ5QL<br />VWEHKFFGPRBR<br />VWAXYNVPYFQE<br />VWAB2H87AHTH<br />VW9XY8S2TNOD<br />VW96V6K1VYHS<br />VW7U56XG1XRE<br />VW60HDNZ80RA<br />VW5LXAH2WHTX<br />VW5C8NBMBZ9N<br />VW2R0TQ6420H<br />VW2LR4VAN3ZA</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984701">@<a href="/member/zhangyou1010" target="_blank" rel="noopener noreferrer">zhangyou1010</a> 再赠送 20 枚哈. 现在还不能 append<br /><br />---<br /><br />VWZU98DHFUFF<br />VWV3SS373353<br />VWPK2SBX6UDS<br />VWOWWPGDR9WX<br />VWNI4SQHAYNP<br />VWNH79YUM4VW<br />VWJ3N6CDI6EN<br />VWHNZ5ZAKGBA<br />VWFZL1OPZ5QL<br />VWEHKFFGPRBR<br />VWAXYNVPYFQE<br />VWAB2H87AHTH<br />VW9XY8S2TNOD<br />VW96V6K1VYHS<br />VW7U56XG1XRE<br />VW60HDNZ80RA<br />VW5LXAH2WHTX<br />VW5C8NBMBZ9N<br />VW2R0TQ6420H<br />VW2LR4VAN3ZA</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984701">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984701" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">myTrip</span>
+        <span>#9</span>
+        <span>2026/08/18 09:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是不是软件的网络崩了，输入激活码不好使，登陆点了也没反应</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984718">是不是软件的网络崩了，输入激活码不好使，登陆点了也没反应</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984718">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984718" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">myTrip</span>
+        <span>#10</span>
+        <span>2026/08/18 09:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/myTrip" target="_blank" rel="noopener noreferrer">myTrip</a> VWV3SS373353 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984723">@<a href="/member/myTrip" target="_blank" rel="noopener noreferrer">myTrip</a> VWV3SS373353 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984723">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984723" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">loserKK</span>
+        <span>#11</span>
+        <span>2026/08/18 09:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VW7U56XG1XRE 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984727">VW7U56XG1XRE 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xudaolong</span>
+        <span>#12</span>
+        <span>2026/08/18 09:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/myTrip" target="_blank" rel="noopener noreferrer">myTrip</a> 有个提示没处理好,应该是激活码被其他人激活了, 我处理一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984728">@<a href="/member/myTrip" target="_blank" rel="noopener noreferrer">myTrip</a> 有个提示没处理好,应该是激活码被其他人激活了, 我处理一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984728">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984728" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DengDDDD</span>
+        <span>#13</span>
+        <span>2026/08/18 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">微信 点登录也没反应。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984736">微信 点登录也没反应。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984736">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984736" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DengDDDD</span>
+        <span>#14</span>
+        <span>2026/08/18 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VW96V6K1VYHS 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984739">VW96V6K1VYHS 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984739">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984739" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">myTrip</span>
+        <span>#15</span>
+        <span>2026/08/18 09:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWEHKFFGPRBR 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984751">VWEHKFFGPRBR 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984751">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984751" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">evanchang</span>
+        <span>#16</span>
+        <span>2026/08/18 09:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWAB2H87AHTH 已用，谢谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984769">VWAB2H87AHTH 已用，谢谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984769">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984769" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cheeseleng</span>
+        <span>#17</span>
+        <span>2026/08/18 09:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWAXYNVPYFQE 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984770">VWAXYNVPYFQE 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984770">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984770" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xy19009188</span>
+        <span>#18</span>
+        <span>2026/08/18 09:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWFZL1OPZ5QL 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984774">VWFZL1OPZ5QL 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984774">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984774" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">undefiner</span>
+        <span>#19</span>
+        <span>2026/08/18 09:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VWNH79YUM4VW 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984820">VWNH79YUM4VW 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984820">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984820" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kcerty</span>
+        <span>#20</span>
+        <span>2026/08/18 09:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">VW60HDNZ80RA 已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-17984849">VW60HDNZ80RA 已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-17984849">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1235163#reply17984849" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
