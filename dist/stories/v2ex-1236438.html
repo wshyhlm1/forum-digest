@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Landscape 一个从零实现的软路由系统 - Rust + eBPF | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-22/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>Landscape 一个从零实现的软路由系统 - Rust + eBPF</h1>
+      <p class="original-title">Landscape 一个从零实现的软路由系统 - Rust + eBPF</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 Allegorie</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/08/22 19:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1236438" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1236438.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>项目 GITHUB: https://github.com/ThisSeanZhang/landscape</li><li>想法出现是在一次 OpenWrt 崩溃。我明白崩溃并不是 OP 自身的问题.</li></ul>
+      
+      <p class="reason">命中 6 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>
+项目 GITHUB: <a href="https://github.com/ThisSeanZhang/landscape" target="_blank" rel="noopener noreferrer">https://github.com/ThisSeanZhang/landscape</a></p>
+为什么做 Landscape
+<p>想法出现是在一次 OpenWrt 崩溃。我明白崩溃并不是 OP 自身的问题.</p>
+<p>应该是我选择的插件之间出现了兼容性的问题, 而每次修改 OP 的配置总是让我觉得战战兢兢, 要么是觉得配置好像没有生效, 要么太多的输入框和按钮展示在我面前.
+学习 OpenWrt 的成本让我觉得很大, 所以我就在想是否能在通用发行版 Linux 的基础上, 实现一个自己的路由?<br />
+而那时正在学习 Rust (入门第 N 次) 和 eBPF, 手上正握着把锤子, 想找个东西敲打一番, 于是我的计划就开始了.</p>
+<p>开始对于我自己也就这几个需求:</p>
+<ol>
+<li>怎么彻底的抑制 PCDN 偷上行</li>
+<li>怎么方便将内网设备更新 DDNS.</li>
+<li>不同的网站针对不同的设备使用不同的出口进行访问(当时还不知道有那么多丰富的插件).</li>
+<li>不要每次都刷整个系统, 程序可以直接升级. 并且最好是只导出一份文件就够了.</li>
+</ol>
+<p>简单规划之后, 便开始进行实施了</p>
+NAT 的设计
+<p>NAT 能力演示: <a href="https://www.bilibili.com/video/BV1b8Tn6ZEaz" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1b8Tn6ZEaz</a><br />
+在使用组网软件的时候, 就看到了 tailscale 的一篇文章. 是关于 tailscale 是怎么进行 P2P 打洞的, 这给予了我灵感.<br />
+简要的流程是, 当两个设备要进行穿透时, 需要先向一台 STUN 服务器进行请求, 告知自己的地址.
+服务器向双方告知对方的地址, 双方开始尝试互联, 所以可以利用这个机制, 如果要进行强力阻断的, 默认端口不可复用即可.  </p>
+<p>比如在连接存活期间：<br />
+<code>客户端 A</code> → <code>STUN 服务器 B</code> ✅ 允许<br />
+<code>STUN 服务器 B</code> → <code>路由 A'</code> ✅ 允许, 然后路由转为 B → A<br />
+<code>客户端 A</code> → <code>另一个客户端 C</code> ❌ 直接丢弃（不会按照 NAT4 那样创建新映射）<br />
+<code>另一个客户端 C</code> → <code>路由 A'</code> ❌ 丢弃</p>
+<p>所以将会被迫回退中继模式.</p>
+<p>而允许进行 P2P 的只要放行即可, 行为与全锥一致, 这已经在一年多的使用中已被证实是可行的, 且对日常毫无影响.</p>
+而另外一个大头是 IPv6 的支持
+<p>在 op 上的 IPv6 我总觉得用起来很奇怪, 当我自己实现的时候我才明白具体的原因是什么.<br />
+首先是 IPv6 首选时长和上游给的时间一致的问题, 而 DHCPv6 虽然设计了 reconfigure 机制, 但是现在的大部分客户端都没支持.<br />
+所以当你重启路由后的一段时间, 虽然你重新获取了一个新的 IP 但是旧的 IPv6 一直有效, 导致你访问不了 v6 网站.</p>
+<p>不过 landscape 中额外考虑了另一个场景, 也就是 IPv6 NPT, 不是将 IPv6 使用 nat66 的方式进行 IP 映射, 而是当有多网口时, 即使内网设备获得的是 A 网口的 IP, 流量实际也能从 B 网卡发出, 并自动能替换成 B 网卡获得的前缀信息.  </p>
+<p>还有 op 上不总是能固定后缀, 而 landscape 中不仅能固定后缀还能配合 DDNS 直接将 LAN 获得的 IP 直接写入运营商的 DNS 记录.</p>
+不同设备应用不同的规则
+<p>分流能力演示: <a href="https://www.bilibili.com/video/BV1Wy26BiEJW/" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1Wy26BiEJW/</a><br />
+现有的科学上网分流, 都是对本地局域网内的所有设备应用, 但是我不想所有的设备都是走同一套规则.<br />
+比如, 开发主机是全局的. IoT 设备是全部走直连. 某些设备只有部分网站使用科学.<br />
+并且虽然只配置了一个 DNS 上游. 但是依据不同的 DNS 请求要与出口一致, 且这样天然就能拿到最终落地所在的 CDN 地址.<br />
+有看到部分人称为 DNS 跟踪, 我觉得称为 DNS 出口亲和可能更合适?  </p>
+<p>假设你想要使用某个新协议, 你需要等待某些作者进行合入现有的分流程序. 或者等待这个协议作者实现一套完整的分流.<br />
+landscape 将容器出口也作为与 WAN 网卡同级别的一等公民. 其中使用 tproxy 进行解耦. 只要容器内运行支持 tproxy 的程序即可进行流量处理.<br />
+多个容器间直接切换也是无缝的, 因为在 landscape 已经做好了分流, 容器内只需设置全局的配置就行.  </p>
+<p>且不同规则组的 DNS 缓存是隔离的. 不会因为融合了不同的策略, 导致 DNS 缓存相互覆盖.<br />
+比如:<br />
+A 网站在 X 策略组中是直连的 -&gt; 得到 Ax IP. -&gt; X 策略组缓存<br />
+A 网站在 Y 策略组中是由容器处理 -&gt; DNS 请求通过容器 得到 Ay IP. -&gt; Y 策略组缓存  </p>
+<p>但是对于 Anycast IP 是怎么处理呢? 目前你可以通过在容器中部署支持 Fake IP 的组件. 然后将部分网站的 DNS 上游指向这个容器即可<br />
+比如:<br />
+A 网站在 X 策略组中是直连的 -&gt; 得到 Ax real IP.<br />
+B 网站在 X 策略组中是指向 容器 I 的 -&gt; 得到 Bx fake IP.<br />
+C 网站在 X 策略组中是指向 容器 J 的 -&gt; 得到 Cx real IP.  </p>
+<p>可以做到只有部分容易混淆的访问使用 FakeIP</p>
+<p>只将必须的流量转到容器还能额外获得一个优点, 你的科学工具不必再处理直连流量. 更不容易炸, 且炸了也只影响你的海淘. 不影响你的直连.
+而直连就和正常的上网一样, 所以延迟相比过科学会再低一点.</p>
+其余一些特点
+<p>安装: <a href="https://www.bilibili.com/video/BV1aZ8w6TEY9/" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1aZ8w6TEY9/</a></p>
+<ol>
+<li>前后端完全分离, 所以你可以通过 API 控制所有 UI 上可以控制的所有行为, 也意味着你可以实现一套自己的 UI</li>
+<li>可将所有的配置导出为一份文件, 并通过这一份文件恢复整个路由的配置</li>
+<li>有 tui 工具能直接热备份+恢复, 不需要重启. 且有救援工具, 不小心配置错误还能连上</li>
+</ol>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>
+项目 GITHUB: <a href="https://github.com/ThisSeanZhang/landscape" target="_blank" rel="noopener noreferrer">https://github.com/ThisSeanZhang/landscape</a></p>
+为什么做 Landscape
+<p>想法出现是在一次 OpenWrt 崩溃。我明白崩溃并不是 OP 自身的问题.</p>
+<p>应该是我选择的插件之间出现了兼容性的问题, 而每次修改 OP 的配置总是让我觉得战战兢兢, 要么是觉得配置好像没有生效, 要么太多的输入框和按钮展示在我面前.
+学习 OpenWrt 的成本让我觉得很大, 所以我就在想是否能在通用发行版 Linux 的基础上, 实现一个自己的路由?<br />
+而那时正在学习 Rust (入门第 N 次) 和 eBPF, 手上正握着把锤子, 想找个东西敲打一番, 于是我的计划就开始了.</p>
+<p>开始对于我自己也就这几个需求:</p>
+<ol>
+<li>怎么彻底的抑制 PCDN 偷上行</li>
+<li>怎么方便将内网设备更新 DDNS.</li>
+<li>不同的网站针对不同的设备使用不同的出口进行访问(当时还不知道有那么多丰富的插件).</li>
+<li>不要每次都刷整个系统, 程序可以直接升级. 并且最好是只导出一份文件就够了.</li>
+</ol>
+<p>简单规划之后, 便开始进行实施了</p>
+NAT 的设计
+<p>NAT 能力演示: <a href="https://www.bilibili.com/video/BV1b8Tn6ZEaz" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1b8Tn6ZEaz</a><br />
+在使用组网软件的时候, 就看到了 tailscale 的一篇文章. 是关于 tailscale 是怎么进行 P2P 打洞的, 这给予了我灵感.<br />
+简要的流程是, 当两个设备要进行穿透时, 需要先向一台 STUN 服务器进行请求, 告知自己的地址.
+服务器向双方告知对方的地址, 双方开始尝试互联, 所以可以利用这个机制, 如果要进行强力阻断的, 默认端口不可复用即可.  </p>
+<p>比如在连接存活期间：<br />
+<code>客户端 A</code> → <code>STUN 服务器 B</code> ✅ 允许<br />
+<code>STUN 服务器 B</code> → <code>路由 A'</code> ✅ 允许, 然后路由转为 B → A<br />
+<code>客户端 A</code> → <code>另一个客户端 C</code> ❌ 直接丢弃（不会按照 NAT4 那样创建新映射）<br />
+<code>另一个客户端 C</code> → <code>路由 A'</code> ❌ 丢弃</p>
+<p>所以将会被迫回退中继模式.</p>
+<p>而允许进行 P2P 的只要放行即可, 行为与全锥一致, 这已经在一年多的使用中已被证实是可行的, 且对日常毫无影响.</p>
+而另外一个大头是 IPv6 的支持
+<p>在 op 上的 IPv6 我总觉得用起来很奇怪, 当我自己实现的时候我才明白具体的原因是什么.<br />
+首先是 IPv6 首选时长和上游给的时间一致的问题, 而 DHCPv6 虽然设计了 reconfigure 机制, 但是现在的大部分客户端都没支持.<br />
+所以当你重启路由后的一段时间, 虽然你重新获取了一个新的 IP 但是旧的 IPv6 一直有效, 导致你访问不了 v6 网站.</p>
+<p>不过 landscape 中额外考虑了另一个场景, 也就是 IPv6 NPT, 不是将 IPv6 使用 nat66 的方式进行 IP 映射, 而是当有多网口时, 即使内网设备获得的是 A 网口的 IP, 流量实际也能从 B 网卡发出, 并自动能替换成 B 网卡获得的前缀信息.  </p>
+<p>还有 op 上不总是能固定后缀, 而 landscape 中不仅能固定后缀还能配合 DDNS 直接将 LAN 获得的 IP 直接写入运营商的 DNS 记录.</p>
+不同设备应用不同的规则
+<p>分流能力演示: <a href="https://www.bilibili.com/video/BV1Wy26BiEJW/" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1Wy26BiEJW/</a><br />
+现有的科学上网分流, 都是对本地局域网内的所有设备应用, 但是我不想所有的设备都是走同一套规则.<br />
+比如, 开发主机是全局的. IoT 设备是全部走直连. 某些设备只有部分网站使用科学.<br />
+并且虽然只配置了一个 DNS 上游. 但是依据不同的 DNS 请求要与出口一致, 且这样天然就能拿到最终落地所在的 CDN 地址.<br />
+有看到部分人称为 DNS 跟踪, 我觉得称为 DNS 出口亲和可能更合适?  </p>
+<p>假设你想要使用某个新协议, 你需要等待某些作者进行合入现有的分流程序. 或者等待这个协议作者实现一套完整的分流.<br />
+landscape 将容器出口也作为与 WAN 网卡同级别的一等公民. 其中使用 tproxy 进行解耦. 只要容器内运行支持 tproxy 的程序即可进行流量处理.<br />
+多个容器间直接切换也是无缝的, 因为在 landscape 已经做好了分流, 容器内只需设置全局的配置就行.  </p>
+<p>且不同规则组的 DNS 缓存是隔离的. 不会因为融合了不同的策略, 导致 DNS 缓存相互覆盖.<br />
+比如:<br />
+A 网站在 X 策略组中是直连的 -&gt; 得到 Ax IP. -&gt; X 策略组缓存<br />
+A 网站在 Y 策略组中是由容器处理 -&gt; DNS 请求通过容器 得到 Ay IP. -&gt; Y 策略组缓存  </p>
+<p>但是对于 Anycast IP 是怎么处理呢? 目前你可以通过在容器中部署支持 Fake IP 的组件. 然后将部分网站的 DNS 上游指向这个容器即可<br />
+比如:<br />
+A 网站在 X 策略组中是直连的 -&gt; 得到 Ax real IP.<br />
+B 网站在 X 策略组中是指向 容器 I 的 -&gt; 得到 Bx fake IP.<br />
+C 网站在 X 策略组中是指向 容器 J 的 -&gt; 得到 Cx real IP.  </p>
+<p>可以做到只有部分容易混淆的访问使用 FakeIP</p>
+<p>只将必须的流量转到容器还能额外获得一个优点, 你的科学工具不必再处理直连流量. 更不容易炸, 且炸了也只影响你的海淘. 不影响你的直连.
+而直连就和正常的上网一样, 所以延迟相比过科学会再低一点.</p>
+其余一些特点
+<p>安装: <a href="https://www.bilibili.com/video/BV1aZ8w6TEY9/" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1aZ8w6TEY9/</a></p>
+<ol>
+<li>前后端完全分离, 所以你可以通过 API 控制所有 UI 上可以控制的所有行为, 也意味着你可以实现一套自己的 UI</li>
+<li>可将所有的配置导出为一份文件, 并通过这一份文件恢复整个路由的配置</li>
+<li>有 tui 工具能直接热备份+恢复, 不需要重启. 且有救援工具, 不小心配置错误还能连上</li>
+</ol>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xiaoun001</span>
+        <span>#1</span>
+        <span>2026/08/22 19:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我只要看到 EBPF ，这几个词语，就知道可以跟。能不能加上 DPDK ？那就无敌了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18006368">我只要看到 EBPF ，这几个词语，就知道可以跟。能不能加上 DPDK ？那就无敌了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18006368">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236438#reply18006368" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Allegorie</span>
+        <span>#2</span>
+        <span>2026/08/22 19:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xiaoun001" target="_blank" rel="noopener noreferrer">xiaoun001</a> 也许之后可能会将部分导入 AF_XDP, DPDK 对于家用功耗还是太大了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18006377">@<a href="/member/xiaoun001" target="_blank" rel="noopener noreferrer">xiaoun001</a> 也许之后可能会将部分导入 AF_XDP, DPDK 对于家用功耗还是太大了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18006377">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236438#reply18006377" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bobryjosin</span>
+        <span>#3</span>
+        <span>2026/08/22 20:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 所以当你重启路由后的一段时间, 虽然你重新获取了一个新的 IP 但是旧的 IPv6 一直有效, 导致你访问不了 v6 网站<br /><br />现在应该很少设备会专门用 dhcpv6 来分配地址，如果使用 slaac ，其实是 preferred lifetime 参数设置的有问题，导致客户端不抛弃旧前缀，RA 报文里面把旧前缀的 preferred lifetime 设置为 0 就行了，其实也不需要 nat66 ，现代客户端收到 pref. time 0s 就会自动丢弃旧前缀。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18006422">&gt; 所以当你重启路由后的一段时间, 虽然你重新获取了一个新的 IP 但是旧的 IPv6 一直有效, 导致你访问不了 v6 网站<br /><br />现在应该很少设备会专门用 dhcpv6 来分配地址，如果使用 slaac ，其实是 preferred lifetime 参数设置的有问题，导致客户端不抛弃旧前缀，RA 报文里面把旧前缀的 preferred lifetime 设置为 0 就行了，其实也不需要 nat66 ，现代客户端收到 pref. time 0s 就会自动丢弃旧前缀。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18006422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236438#reply18006422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Allegorie</span>
+        <span>#4</span>
+        <span>2026/08/22 22:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bobryjosin" target="_blank" rel="noopener noreferrer">bobryjosin</a> 是的, 现有的实现中会在前缀过期时发送 preferred lifetime = 0 的报文. 只是说有时候意外路由重启会导致这样的情况.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18006614">@<a href="/member/bobryjosin" target="_blank" rel="noopener noreferrer">bobryjosin</a> 是的, 现有的实现中会在前缀过期时发送 preferred lifetime = 0 的报文. 只是说有时候意外路由重启会导致这样的情况.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18006614">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236438#reply18006614" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

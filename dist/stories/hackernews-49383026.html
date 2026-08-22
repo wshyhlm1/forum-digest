@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>人工智能公司销毁实体书籍——让我们在为时已晚之前扫描善本书籍 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-22/">返回日报</a>
+      <div class="source-chip">Hacker News #4</div>
+      <h1>人工智能公司销毁实体书籍——让我们在为时已晚之前扫描善本书籍</h1>
+      <p class="original-title">AI companies destroy physical books – let&#39;s scan rare books before it&#39;s too late</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 Cider9986</span>
+        <span>热度 584</span>
+        <span>回复 864</span>
+        <span>2026/08/21 10:37</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49383026" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://annas-archive.gl/blog/physical-destruction.html" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49383026.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>annas-archive.gl/blog, 2026-08-05</li><li>A guest post by Anna’s Archive volunteer “u” (translated from Chinese).</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">thread_id</span>
+        
+        <span>2026/08/21 21:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我没有看到任何提及 Project Ocean - 又称 Google 图书的信息。在人工智能出现之前，他们致力于将大型在线图书馆中的书籍数字化。  其中包括珍本和绝版书籍，其中许多书籍都保存在图书馆。  因为他们必须保存这些书籍并按收到时的状态归还它们，所以他们创造了复杂的技术来实现这一目标。  该项目遇到了来自作者和出版商的重大法律挑战，但最终被克服。  海洋计划确立的法律先例为今天的进程奠定了基础。  图书馆的图书仍被保留。<p><a href="https://en.wikipedia.org/wiki/Google_Books" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Google_Books</a></p><p><a href="https://arstechnica.com/tech-policy/2015/10/appeals-court-rules-that-google-book-scanning-is-fair-use/" target="_blank" rel="noopener noreferrer">https://arstechnica.com/tech-policy/2015/10/appeals-court-ru...</a></p><p><a href="https://arstechnica.com/ai/2025/06/anthropic-destroyed-millions-of-print-books-to-build-its-ai-models/" target="_blank" rel="noopener noreferrer">https://arstechnica.com/ai/2025/06/anthropic-destroyed-milli...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49388070">I don't see any mention of Project Ocean - AKA Google books. Before AI they endevoured to digitize books in a massive online library.  This inccluded rare and out of print books many which are archived at libraries.  Because they had to preserve the books and return them in the condition they received then they created elaborate technology to accomplish this.  The project was met with significant legal challenges from authors and publishers which was eventually overcome.  The legal precedents that were established from Project Ocean laid the ground work for the process as it exists today.  Books from libraries are still being preserved.<p><a href="https://en.wikipedia.org/wiki/Google_Books" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Google_Books</a></p><p><a href="https://arstechnica.com/tech-policy/2015/10/appeals-court-rules-that-google-book-scanning-is-fair-use/" target="_blank" rel="noopener noreferrer">https://arstechnica.com/tech-policy/2015/10/appeals-court-ru...</a></p><p><a href="https://arstechnica.com/ai/2025/06/anthropic-destroyed-millions-of-print-books-to-build-its-ai-models/" target="_blank" rel="noopener noreferrer">https://arstechnica.com/ai/2025/06/anthropic-destroyed-milli...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49388070">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49388070" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">probably_wrong</span>
+        
+        <span>2026/08/21 22:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">每当我需要 Google 图书上的某些内容时，我都不可避免地会收到这样的消息：这是一个有限的预览版，并且不包含我需要的部分。<p>因此，我对 Google 图书的感受与我得知 What.cd 宕机时的感受是一样的：<i>我</i>不会获得或失去任何东西，因为我一开始就没有访问权限，如果不使其 100% 公开访问，您就会要求数据有一天会消失永远。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49388776">Whenever I need something from Google Books I inevitably reach the message that this is a limited preview and the part I need is not included.<p>I therefore feel the same way about Google Books that how I felt when I learned that What.cd went down: that <i>I</i> don't gain or lose anything anyway because I never had access to begin with, and that by not making it 100% publicly accessible you're asking for the data to one day disappear forever.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49388776">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49388776" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ndiddy</span>
+        
+        <span>2026/08/21 23:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">曾几何时，Google 图书应该充当绝版图书扫描的交换所。您可以以合理的价格在网站上购买任何书籍的扫描件，并且图书馆可以订阅提供所有书籍全文的服务。该和解协议随后被否决，因为一些研究图书馆和作者认为这是反竞争的，并希望国会通过一项法律，释放孤儿图书的权利，以便任何人都可以启动竞争性服务。随后这方面没有取得任何进展，因为国会中没有人足够关心绝版书籍的权利以促使立法通过。当电子书和按需印刷存在时，它们绝版的全部原因是它们无法获得足够的销量，以至于不值得花时间和金钱来确定版税应该交给谁。这不是一个能让很多人投票支持你连任的华而不实的问题，也不会创造大量新的就业机会。结果是，现在 Google 之外的任何人都无法看到完整的 Google 图书扫描。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49389397">At one point Google Books was supposed to act as a clearinghouse for scans of out-of-print books. You could have purchased a scan of any book on the site for a reasonable price, and libraries could subscribe to a service where the full text of all books was available. This settlement then got shot down because some research libraries and authors argued that this was anti-competitive, and instead wanted Congress to pass a law to free up the rights to orphaned books so anyone could start a competing service. No progress on this was subsequently made because nobody in Congress cares enough about the rights to out-of-print books to get legislation passed. The whole reason why they're out of print when ebooks and print-on-demand exist is that they won't get enough sales to make it worth the time and money to figure out who the royalties should go to. It's not a flashy issue that would make a ton of people vote for you to get re-elected, and it won't create a ton of new jobs. The result is that now nobody outside of Google gets to see the full Google Books scans.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49389397">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49389397" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">allturtles</span>
+        
+        <span>2026/08/21 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，这是一场巨大的悲剧。我非常难过地看到当时的学者们反对谷歌提供世界上最伟大的现成知识宝库之一，而支持一种不存在也永远不会存在的想象中的替代方案。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49389914">Yes, this was a great tragedy. I was very sad to see academics at the time arguing against Google providing what would have been one of the greatest storehouses of readily available knowledge in the world, in favor of an imaginary alternative that didn't exist and never would.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49389914">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49389914" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">cube00</span>
+        
+        <span>2026/08/22 00:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Google 提供了世界上最伟大的现成知识宝库之一<p>我担心一旦他们垄断了如此多的善本书籍，他们会收取多少访问费用。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49390889">&gt; Google providing what would have been one of the greatest storehouses of readily available knowledge in the world<p>I'd be worried about how much they'd be charging for access once they had the monopoly on so many rare books.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49390889">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49390889" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">allturtles</span>
+        
+        <span>2026/08/22 03:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这正是我所说的那种毫无意义的担忧。现在有多少家这些善本的合法数字提供商？我认为是零。<p>这是割鼻子伤脸的逻辑，宁愿没有人受益，也不愿谷歌看到任何好处。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49392607">This is exactly the kind of pointless concern I'm talking about. How many legal digitial providers of those rare books are there now? Zero, I believe.<p>It's the logic of cutting off one's nose to spite one's face, which prefers that no one benefit rather than Google see any benefit.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49392607">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49392607" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">anon84873628</span>
+        
+        <span>2026/08/22 01:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那么至少会引起愤怒来推动所需立法的通过，否则无论如何都不会通过。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49391114">Then at least there would be outrage to drive the passing of the needed legislation which otherwise hasn't come to pass anyway.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49391114">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49391114" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">avidiax</span>
+        
+        <span>2026/08/22 01:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">版权法迫切需要制作要求或津贴。<p>版权所有者必须提供作品的新副本；价格不得高于原价（未经过通货膨胀调整）。如果他们不这样做，任何人都可以制作副本并托管原价（减去生产成本）供版权所有者收集。</p><p>这意味着孤儿作品实际上属于公共领域。微积分教授可以要求学生购买更便宜的第 2 版，而不是最新的第 22 版。像谷歌这样的公司可以提供完整的扫描作品，每件作品只需支付少量费用。版权所有者仍然可以得到他们的结果，而无需安排印刷或持有库存。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49391333">Copyright law desperately needs a production requirement or allowance.<p>The copyright owner must make new copies of the work available; the price must be no greater than the original price (not inflation adjusted). And if they fail to do so, anyone may produce copies and escrow the original price (less the cost of production) for collection by the copyright holder.</p><p>That means that orphan works are effectively in the public domain. Calculus professors can ask students to get the cheaper 2nd edition, not the latest 22nd edition. And a company like Google could make scanned works available in their entirety for a small amount of money for each work. And the copyright holder still gets their end, without having to arrange a printing or hold stock.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49391333">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49391333" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">shagie</span>
+        
+        <span>2026/08/22 02:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">作为一名摄影师，我是否必须将我出售的每张照片都提供给任何人以永远购买更多照片？  我可以拒绝将印刷品出售给某人吗？  上世纪 90 年代，当我以 20 美元的价格出售一本时，我并不出名……如果我出名了，我<i>仍然</i>需要以 20 美元的价格出售它（经过通货膨胀调整）吗？<p>限量版印刷会怎样？  我可以不再制作 200 份印刷品吗，因为第 201 份印刷品可能是有人要求的？</p><p>音乐家是否必须将他们制作的任何歌曲授权给任何提出要求的人？  他们可以拒绝将歌曲授权给他们不同意的某个组织，而不将其归入孤儿作品类别吗？</p><p>---</p><p>按照您所描述的方式修改版权需要与 WTO 的所有国家（或退出 WTO）重新谈判 TRIPS 协议 (<a href="https://en.wikipedia.org/wiki/TRIPS_Agreement" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/TRIPS_Agreement</a>)。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49391991">As a photographer, do I have to make every photograph that I've ever sold available to anyone to buy forever more?  Can I refuse to sell a print to someone?  I wasn't famous when I sold one for $20 back in the 90s... if I became famous, would I <i>still</i> need to sell that at $20 (inflation adjusted)?<p>What happens to limited editions of print runs?  Can I not make a run of 200 prints anymore because the 201st will be something that someone could request?</p><p>Does a musician have to license any song they made to anyone who asks?  Can they refuse to license a song to some organization they disagree with and not have it fall into the orphan works category?</p><p>---</p><p>Amending copyright to the way you describe requires a renegotiation of the TRIPS agreement ( <a href="https://en.wikipedia.org/wiki/TRIPS_Agreement" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/TRIPS_Agreement</a> ) with all the nations of the WTO (or withdrawing from the WTO).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49391991">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49391991" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">avidiax</span>
+        
+        <span>2026/08/22 03:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">根据我的提议，如果有人想冲印您的一张旧照片，您将获得约 20 美元，比您现在获得的多约 20 美元。所以这对你来说似乎并没有受到伤害。如果你出名了，现在你可以以 2,000 美元的价格出售一本印刷品……这对社会有什么帮助，因为作品已经制作出来，所以不需要新的激励措施？<p>我认为该规则可以参考一种竞争产品，即微积分教科书的第 22 版和第 23 版。对于出版商来说，第 22 版的售价仅为 1,000 美元，第 23 版的售价为 250 美元，这应该是不合理的。但这一定义会引发许多诉讼，而且总体上令人不寒而栗。基于历史价格的明确定义要简单得多。</p><p>您仍然可以对限量发行进行编号，并且您的限量发行仍然比其他一些复制品具有更高的钱币价值。</p><p>我不打算在该系统中授予表演权许可，而只是录制或复制品。</p><p>这是否减少了版权授予的权利？是的，故意如此。它剥夺了版权持有者<i>不</i>复制的权利，这违背了授予版权的社会利益。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49392526">Under my proposal, if someone wants to make prints of one of your old photographs, you are getting ~$20, which is ~$20 more than you are getting now. So it doesn't seem like a damage to you. If you get famous and now you could sell a print for $2,000... how is this helping society since the work has already been produced, so no new incentive is necessary?<p>I suppose the rule could make reference to a rival good, i.e. the 22nd and 23rd editions of the calculus textbook. It should not be reasonable for the publisher to make the 22nd edition only available for $1,000, and the 23rd edition for $250. But that definition would invite many lawsuits and chilling litigation in general. A clear definition based on the historic price is much simpler.</p><p>You can still number your limited runs, and your limited runs still have increased numismatic value over some other reproduction.</p><p>I don't envision licensing of performance rights in this system, just recordings or reproductions.</p><p>Is this a reduction of the rights granted by copyright? Yes, intentionally so. It is stripping copyright holders of the right <i>not</i> to copy, against the interests of society in granting that copyright in the first place.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49392526">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49392526" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">s1artibartfast</span>
+        
+        <span>2026/08/22 12:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">自 1870 年以来，每本书都必须向美国国会图书馆提供两份副本才能注册其版权。<p>它保留了大约 50% 的提交图书。另一半捐赠</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49396456">Every book since 1870 has been required to provide two copies to the US Library of Congress in order to register their copyright.<p>It keeps about 50% of the books submitted. The other half are donated</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49396456">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49396456" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">paulddraper</span>
+        
+        <span>2026/08/22 07:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">比第二接近的竞争对手便宜</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49395072">Cheaper than the next closest competitor</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49395072">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49395072" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bigbadfeline</span>
+        
+        <span>2026/08/22 03:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 这不是一个华而不实的问题<p>这是一个非常严重的问题，对于那些有影响力和影响力的人来说是众所周知的。</p><p>&gt; [它不会]让很多人投票支持你连任</p><p>很多人被媒体所感动，人们对交易的伎俩视而不见，出于同样的原因，显然。换句话说，这个问题并不是偶然被忽视的问题，而是通过组织良好的工程和相当大的费用来保持秘密。</p><p>&gt;并且它不会创造大量新的就业机会</p><p>没有什么能创造大量的新就业机会，“大量”的就业机会被保留给承诺和其他无用的噪音。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49392838">&gt; It's not a flashy issue<p>It's a very serious issue, very well known to the people with the connections and power to affect it.</p><p>&gt; [ it wouldn't ] make a ton of people vote for you to get re-elected</p><p>The tons of people are moved by the media, people are oblivious to the tricks of that trade, for the same reasons, obviously. In other words, this issue isn't something that happens to slip below the radar, it's kept stealthy by well organized engineering and considerable expense.</p><p>&gt; and it won't create a ton of new jobs</p><p>Nothing ever creates tons of new jobs, the "tons" are reserved for promises and other useless noise.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49392838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49392838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">p0w3n3d</span>
+        
+        <span>2026/08/21 23:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Quod licet Iovi，non licet bovi<p>大公司会阅读这些书，并让他们的人工智能凭记忆背诵它们，但 Archive.org 因独家租借一本书而被起诉（除非一本会归还，另一本书将无法出租）</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49389385">Quod licet Iovi, non licet bovi<p>Big companies will read up the books and make their AI recite them from memory, but Archive.org was sued for renting one book on an exclusive basis (unless one would return, another wouldn't be able to rent)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49389385">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49389385" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">misnome</span>
+        
+        <span>2026/08/21 23:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Archive.org 因独家租借一本书而被起诉（除非其中一本书归还，否则另一本书将无法出租）<p>不，这就是他们之前所做的，但他们明确开始借出“无限”副本，这就是他们被起诉的原因。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49389529">&gt; Archive.org was sued for renting one book on an exclusive basis (unless one would return, another wouldn't be able to rent)<p>No, this is what they were doing before, but they explicitly started lending out "unlimited" copies, which is why they got sued.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49389529">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49389529" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ndiddy</span>
+        
+        <span>2026/08/21 23:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这就是他们被起诉的原因，但诉讼主要是关于受控数字借贷是否合法，而不是他们的“紧急图书馆”。 Archive.org 在简易判决中败诉，这意味着他们无法为 CDL 提出一个单一的合理使用论点，法官认为该论点足以让案件进入审判阶段。完整的判断在这里<a href="https://storage.courtlistener.com/recap/gov.uscourts.nysd.537900/gov.uscourts.nysd.537900.188.0.pdf" target="_blank" rel="noopener noreferrer">https://storage.courtlistener.com/recap/gov.uscourts.nysd.53...</a>，但这里有一些摘录：<p>&gt; IA 第一个因素论点的关键是，在合理使用的情况下，组织有权制作任何必要的印刷书籍副本，以促进该书的数字借阅，只要一次只有一个读者可以借阅已购买和付款的每本书籍。参见口服精氨酸。 Tr。 31:10-15。但不存在这样的权利，这可能会剥夺作者和出版商从其受保护作品的衍生品的创作和传播中获利的权利。参见 17 U.S.C.第 106 条（1）、（2）条。 IA 大规模复制和未经授权出借出版商印刷书籍的数字副本并没有改变书籍的用途，并且 IA 在不支付通常价格的情况下通过利用受版权保护的材料获利。第一个合理使用因素对出版商非常有利。</p><p>&gt; 在这种情况下，存在一个“蓬勃发展的图书馆电子书许可市场”，只要图书馆从 OverDrive 等聚合商那里获得一本许可的电子书，出版商就可以赚取费用。请。” 56.1 ¶ 577-578。这个市场每年至少为出版商创造数千万美元的收入。 ID。 ¶¶ 170, 172. IA 取代了出版商在这个市场上的地位。 IA 为用户提供了 Works in Suit 的完整电子书版本，而 IA 无需向出版商支付这些电子书许可的费用，并且它为图书馆提供了从出版商处购买电子书许可的另一种选择。事实上，IA 向图书馆推销开放图书馆项目的部分原因是为了帮助图书馆避免支付许可证费用。请参阅。 56.1 ¶ 383（IA 向图书馆提供的演示文稿，声称与 IA 配对意味着“您不必再次购买它！”）； ID。 ¶ 382（不同的演示文稿承诺开放图书馆项目“确保图书馆不必仅仅因为格式的变化而一遍又一遍地购买相同的内容”）。因此，IA“为市场带来了诉讼作品的图书馆电子书版本的竞争替代品”，“侵占了本来属于版权所有者的市场。”</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49389814">That's why they got sued, but the suit is mainly over whether controlled digital lending is legal at all rather than their "emergency library". Archive.org lost the case on summary judgment, meaning that they could not come up with a single fair use argument for CDL that the judge found compelling enough to let the case go to trial. The full judgment is here <a href="https://storage.courtlistener.com/recap/gov.uscourts.nysd.537900/gov.uscourts.nysd.537900.188.0.pdf" target="_blank" rel="noopener noreferrer">https://storage.courtlistener.com/recap/gov.uscourts.nysd.53...</a> but here's a couple excerpts:<p>&gt; The crux of IA's first factor argument is that an organization has the right under fair use to make whatever copies of its print books are necessary to facilitate digital lending of that book, so long as only one patron at a time can borrow the book for each copy that has been bought and paid for. See Oral Arg. Tr. 31:10-15. But there is no such right, which risks eviscerating the rights of authors and publishers to profit from the creation and dissemination of derivatives of their protected works. See 17 U.S.C. §§ 106(1), (2). IA's wholesale copying and unauthorized lending of digital copies of the Publishers' print books does not transform the use of the books, and IA profits from exploiting the copyrighted material without paying the customary price. The first fair use factor strongly favors the Publishers.</p><p>&gt; In this case, there is a "thriving ebook licensing market for libraries" in which the Publishers earn a fee whenever a library obtains one of their licensed ebooks from an aggregator like OverDrive. Pls.' 56.1 ¶¶ 577-578. This market generates at least tens of millions of dollars a year for the Publishers. Id. ¶¶ 170, 172. And IA supplants the Publishers' place in this market. IA offers users complete ebook editions of the Works in Suit without IA's having paid the Publishers a fee to license those ebooks, and it gives libraries an alternative to buying ebook licenses from the Publishers. Indeed, IA pitches the Open Libraries project to libraries in part as a way to help libraries avoid paying for licenses. See Pls.' 56.1 ¶ 383 (presentation IA gave to libraries asserting that pairing with IA means that "You Don't Have to Buy It Again!"); id. ¶ 382 (different presentation promising that the Open Libraries project "ensures that a library will not have to buy the same content over and over, simply because of a change in format"). IA thus "brings to the marketplace a competing substitute" for library ebook editions of the Works in Suit, "usurp[ing] a market that properly belongs to the copyright-holder."</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49389814">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49389814" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">SideQuark</span>
+        
+        <span>2026/08/22 01:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 诉讼主要是关于受控数字借贷是否合法<p>不，不合法，甚至有你引用的报价支持。目前，在出版商的支持下，图书馆提供各种受控数字借阅服务。该诉讼是因为 IA 的购买行为削弱了出版商在该合法市场的版权。如果 IA 只是像其他图书馆那样提供受控的数字借阅，就不会提起诉讼。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49391404">&gt; suit is mainly over whether controlled digital lending is legal at all<p>No, it was not, even supported by the quotes you pulled. Libraries right now, with publisher blessing, offer all manner of controlled digital lending. The suit was because IA did it buy undercutting the publishers copy rights to that legal market. Had IA simply done what every other library has done to provide controlled digital lending, there would be no suit.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49391404">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49391404" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ndiddy</span>
+        
+        <span>2026/08/22 03:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">“受控数字借贷”不是“借贷数字物品”的通用术语。它特指图书馆将其馆藏中的实物资料数字化，然后按照1:1的自借比以数字方式出借的做法。这个想法是，图书馆应该能够像对待实体书一样对待书籍的数字化版本，并且一次借出的实体书和数字书的总数永远不应超过图书馆拥有的实体书的数量。<p>与此相反，大多数在出版商支持下的图书馆实行的电子书借阅涉及图书馆从出版商那里购买特定于图书馆的电子书许可证。这些许可证包含各种合同限制，例如图书馆必须在一定时间或借阅一定次数后重新购买电子书。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49392649">"Controlled digital lending" is not a generic term for "lending digital items". It specifically refers to the practice of a library digitizing physical materials in its collection, then lending them digitally based on a 1:1 owned-to-loaned ratio. The idea is that the library should be able to treat digitized versions of a book the same way it treats the physical book, and the total number of physical and digital copies of the book that are lent out at once should never be more than the number of physical copies that the library has.<p>In contrast to this, the e-book lending practiced by most libraries with publisher blessing involves the library purchasing special library-specific e-book licenses from the publisher. These licenses contain various contractual restrictions, such as the library having to re-purchase the e-book after a certain amount of time or after a certain number of borrows.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49392649">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49392649" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">allturtles</span>
+        
+        <span>2026/08/21 23:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对此存在太多错误信息/混乱......他们<i>在</i>出借“无限”副本后被起诉，但他们<i>因</i>出借独家副本（受控数字出借）而被起诉（并败诉）：<p>&gt;“归根结底，[互联网档案馆]的合理使用辩护基于以下观念：合法获取受版权保护的印刷书籍使接收者有权制作未经授权的副本并分发它来代替印刷品曼哈顿美国地方法院法官约翰·G·科尔特尔 (John G. Koeltl) 写道： “但没有任何案例或法律原则支持这一观点。每个权威都指向另一个方向。” [0]</p><p>[0]：<a href="https://www.insidehighered.com/news/tech-innovation/teaching-learning/2023/03/26/legal-blow-internet-archive-controlled-digital" target="_blank" rel="noopener noreferrer">https://www.insidehighered.com/news/tech-innovation/teaching...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49389821">There is so much misinformation/confusion about this... they go sued <i>after</i> lending "unlimited" copies, but they were sued (and lost) <i>for</i> lending exclusive copies (controlled digital lending):<p>&gt; “At bottom, [the Internet Archive’s] fair use defense rests on the notion that lawfully acquiring a copyrighted print book entitles the recipient to make an unauthorized copy and distribute it in place of the print book, so long as it does not simultaneously lend the print book,” Judge John G. Koeltl of the U.S. District Court in Manhattan wrote. “But no case or legal principle supports that notion. Every authority points the other direction.” [0]</p><p>[0]: <a href="https://www.insidehighered.com/news/tech-innovation/teaching-learning/2023/03/26/legal-blow-internet-archive-controlled-digital" target="_blank" rel="noopener noreferrer">https://www.insidehighered.com/news/tech-innovation/teaching...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49389821">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49389821" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">palmotea</span>
+        
+        <span>2026/08/22 01:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 每当我需要 Google 图书上的某些内容时，我不可避免地会收到这样的消息：这是一个有限的预览版，并且不包含我需要的部分。<p>&gt; 因此，我对 Google 图书的感受与我得知 What.cd 宕机时的感受是一样的：我无论如何都不会获得或失去任何东西，因为我一开始就没有访问权限，如果不使其 100% 公开访问，您就会要求数据有一天消失永远。</p><p>受限部分还能搜索吗？如果是这样，它仍然有价值：它可以帮助您识别这本书，以便您进行馆际互借以获得完整内容。当然，这并非毫无摩擦，但我不会全部或全无。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49391222">&gt; Whenever I need something from Google Books I inevitably reach the message that this is a limited preview and the part I need is not included.<p>&gt; I therefore feel the same way about Google Books that how I felt when I learned that What.cd went down: that I don't gain or lose anything anyway because I never had access to begin with, and that by not making it 100% publicly accessible you're asking for the data to one day disappear forever.</p><p>Can you still search the restricted parts? If so there's still value to it: it helps you identify the book so you do an inter-library loan to get at the full content. Sure, it's not frictionless, but I wouldn't be all or nothing about it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49391222">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49391222" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
