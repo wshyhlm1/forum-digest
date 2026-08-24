@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grokbot 源码泄露了，前有 claude code 后有 grokbot，硅谷大厂果然是草台班子 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-24/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>Grokbot 源码泄露了，前有 claude code 后有 grokbot，硅谷大厂果然是草台班子</h1>
+      <p class="original-title">Grokbot 源码泄露了，前有 claude code 后有 grokbot，硅谷大厂果然是草台班子</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 boisy</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/08/24 19:02</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1236880" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1236880.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>笑死我了，Cursor 居然也是草台班子啊🤣</li><li>之前 Claude Code 那次泄露，我就已经觉得够抽象了。</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>笑死我了，Cursor 居然也是草台班子啊🤣</p>
+<p>之前 Claude Code 那次泄露，我就已经觉得够抽象了。</p>
+<p>网友 Bennett 今天突然发现，Grok Bot 0.18.0 发正式版的时候，居然直接带着 runtime source maps 一起发出来了。</p>
+<p>然后他顺藤摸瓜，直接把 Grok Bot 的客户端代码重构了出来，还把仓库扔到了 GitHub 。</p>
+<p>这是什么概念？</p>
+<p>正常闭源产品发版，JS 都会经过压缩、打包，外面的人看到基本是一坨。</p>
+<p>Source Maps 就是开发者调试的时候，用来把这坨东西重新映射回原始文件和代码结构的。</p>
+<p>结果 Cursor 打包的时候，把地图也一起送给你了。</p>
+<p>现在 Agent Coordinator 、模型路由、本地执行、协议这些 Grok Bot 的核心实现，都可以被一路往下扒。</p>
+<p>甚至已经有人在重构版本上继续魔改，接 Claude Code 、Codex 、OpenRouter 。</p>
+<p>当然这不是 Cursor 完整源码泄露。</p>
+<p>但一个做 AI Coding 、天天帮别人写代码的公司：</p>
+<p>前脚 Coco 泄露，
+后脚 Grok Bot 连 Source Maps 都忘了关。</p>
+<p>只能说硅谷顶级 AI 公司，草台起来也挺一视同仁的。</p>
+<p>PS：建议快去 fork 一份，估计很快就被 Grok bot 给投诉下架了🤣
+<a href="https://github.com/xianyu110/grok-bot-0.18-reconstructed" target="_blank" rel="noopener noreferrer">https://github.com/xianyu110/grok-bot-0.18-reconstructed</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>笑死我了，Cursor 居然也是草台班子啊🤣</p>
+<p>之前 Claude Code 那次泄露，我就已经觉得够抽象了。</p>
+<p>网友 Bennett 今天突然发现，Grok Bot 0.18.0 发正式版的时候，居然直接带着 runtime source maps 一起发出来了。</p>
+<p>然后他顺藤摸瓜，直接把 Grok Bot 的客户端代码重构了出来，还把仓库扔到了 GitHub 。</p>
+<p>这是什么概念？</p>
+<p>正常闭源产品发版，JS 都会经过压缩、打包，外面的人看到基本是一坨。</p>
+<p>Source Maps 就是开发者调试的时候，用来把这坨东西重新映射回原始文件和代码结构的。</p>
+<p>结果 Cursor 打包的时候，把地图也一起送给你了。</p>
+<p>现在 Agent Coordinator 、模型路由、本地执行、协议这些 Grok Bot 的核心实现，都可以被一路往下扒。</p>
+<p>甚至已经有人在重构版本上继续魔改，接 Claude Code 、Codex 、OpenRouter 。</p>
+<p>当然这不是 Cursor 完整源码泄露。</p>
+<p>但一个做 AI Coding 、天天帮别人写代码的公司：</p>
+<p>前脚 Coco 泄露，
+后脚 Grok Bot 连 Source Maps 都忘了关。</p>
+<p>只能说硅谷顶级 AI 公司，草台起来也挺一视同仁的。</p>
+<p>PS：建议快去 fork 一份，估计很快就被 Grok bot 给投诉下架了🤣
+<a href="https://github.com/xianyu110/grok-bot-0.18-reconstructed" target="_blank" rel="noopener noreferrer">https://github.com/xianyu110/grok-bot-0.18-reconstructed</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">5</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhcnxyz</span>
+        <span>#1</span>
+        <span>2026/08/24 19:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">立即备份一份😂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18012395">立即备份一份😂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18012395">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236880#reply18012395" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tyhunter</span>
+        <span>#2</span>
+        <span>2026/08/24 19:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有个开源的 openmausbot</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18012401">有个开源的 openmausbot</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18012401">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236880#reply18012401" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sme11ycat</span>
+        <span>#3</span>
+        <span>2026/08/24 19:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">利好 AV 短剧吗?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18012490">利好 AV 短剧吗?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18012490">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236880#reply18012490" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v2zhao</span>
+        <span>#4</span>
+        <span>2026/08/24 19:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果被投诉 fork 的账号可能会被 ban</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18012499">如果被投诉 fork 的账号可能会被 ban</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18012499">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236880#reply18012499" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">leonvxe</span>
+        <span>#5</span>
+        <span>2026/08/24 20:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有没有可能是刷一波存在感</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18012609">有没有可能是刷一波存在感</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18012609">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1236880#reply18012609" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

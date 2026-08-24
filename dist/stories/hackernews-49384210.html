@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stop Making TUIs | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-24/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>Stop Making TUIs</h1>
+      <p class="original-title">Stop Making TUIs</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 underdeserver</span>
+        <span>热度 421</span>
+        <span>回复 551</span>
+        <span>2026/08/21 13:37</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49384210" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://sockpuppet.org/blog/2026/08/20/stop-making-tuis/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49384210.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Our field has a weird relationship with terminal and command line interfaces. The time has come to re-evaluate it. I’m on a kick lately getting my friends to try building native user interfaces. I built my first serious Mac application a few months ago, and since then I’ve built more native UI thingies than in my entire career prior to that. Let’s take a quick tour.</li><li>This is MDV.app, the greatest Markdown viewer in the world until someone else writes a serious markdown viewer. I’ve already written a bunch about MDV and won’t wear you down with more advocacy for it. It is great, though. I had almost no hand in writing this UI code. Why would I? Like most user interfaces, MDV doesn’t break any new ground. It’s not a challenging problem. But building good UI is very hard: this kind of code is tedious, repetitive, exacting, and gated by platform conceptual knowledge. It takes years to get good at this kind of work. Which is why I would never hand-write this program. Instead, I summoned it. Moving along:</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">joshka</span>
+        
+        <span>2026/08/22 00:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As a ratatui library maintainer, NO - please don't stop making TUIs ;)<p>As a developer outside of that, I love the scratch the itch apps stuff mentioned in here. I have a vibe coded SwiftUI chess repertoire builder app that fits in that same sort of space that I'm currently working on, where I'd probably not have chosen to explore the idea if not for coding agents.</p><p>I agree with the article that the terminal is an odd shape which you're fighting against historical specs, etc. The key observation I have though is that the mismatch of terminal apps and libraries to deal with this are all fundamentally built around character cells and cursor movement plus various CSI/OSC/ASC/DEC/xterm/... protocols which are complex and have varying support and interact in weird ways.</p><p>To get a good terminal UX, I think the answer to this is probably to throw all that compatibility mess away and redesign a modern terminal protocol that bakes in accessibility, regions, scrolling, selection, proper keyboard, etc.</p><p>I know Mitchell Hashimoto has a bit of a different perspective on this, which seems like it's to define some more protocol stuff and continue to build up on things. I think that probably gets to 95% pretty well. But a 100% good is a full replacement.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49390842">As a ratatui library maintainer, NO - please don't stop making TUIs ;)<p>As a developer outside of that, I love the scratch the itch apps stuff mentioned in here. I have a vibe coded SwiftUI chess repertoire builder app that fits in that same sort of space that I'm currently working on, where I'd probably not have chosen to explore the idea if not for coding agents.</p><p>I agree with the article that the terminal is an odd shape which you're fighting against historical specs, etc. The key observation I have though is that the mismatch of terminal apps and libraries to deal with this are all fundamentally built around character cells and cursor movement plus various CSI/OSC/ASC/DEC/xterm/... protocols which are complex and have varying support and interact in weird ways.</p><p>To get a good terminal UX, I think the answer to this is probably to throw all that compatibility mess away and redesign a modern terminal protocol that bakes in accessibility, regions, scrolling, selection, proper keyboard, etc.</p><p>I know Mitchell Hashimoto has a bit of a different perspective on this, which seems like it's to define some more protocol stuff and continue to build up on things. I think that probably gets to 95% pretty well. But a 100% good is a full replacement.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49390842">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49390842" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">anon7000</span>
+        
+        <span>2026/08/22 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; To get a good terminal UX, I think the answer to this is probably to throw all that compatibility mess away and redesign a modern terminal protocol that bakes in accessibility, regions, scrolling, selection, proper keyboard, etc.<p>Why not just… a GUI framework or layout that’s meant to be keyboard driven and information dense?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49397187">&gt; To get a good terminal UX, I think the answer to this is probably to throw all that compatibility mess away and redesign a modern terminal protocol that bakes in accessibility, regions, scrolling, selection, proper keyboard, etc.<p>Why not just… a GUI framework or layout that’s meant to be keyboard driven and information dense?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49397187">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49397187" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jeroenhd</span>
+        
+        <span>2026/08/22 15:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">TUIs run on any OS with minor patches to support quirks, GUI frameworks need a lot of work. TUIs don't need to follow any OS guidelines, cross-platform GUIs always look bad outside of the "main" platform.<p>If you're only targeting macOS/Windows/Gnome/KDE then the solution is easy: just grab a GUI control set and go ham.</p><p>Then there's remote access: you can spawn an X11 app through X forwarding and have a terrible laggy experience on Linux, you can use RemoteApps on Windows to have a good remote experience (but almost no other platform), you can use VNC to have an awful cross-platform experience, or you can use a TUI and have all the graphs and interactivity you need over a responsive, low-bandwidth connection on any combination of client+server.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49397601">TUIs run on any OS with minor patches to support quirks, GUI frameworks need a lot of work. TUIs don't need to follow any OS guidelines, cross-platform GUIs always look bad outside of the "main" platform.<p>If you're only targeting macOS/Windows/Gnome/KDE then the solution is easy: just grab a GUI control set and go ham.</p><p>Then there's remote access: you can spawn an X11 app through X forwarding and have a terrible laggy experience on Linux, you can use RemoteApps on Windows to have a good remote experience (but almost no other platform), you can use VNC to have an awful cross-platform experience, or you can use a TUI and have all the graphs and interactivity you need over a responsive, low-bandwidth connection on any combination of client+server.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49397601">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49397601" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">the__alchemist</span>
+        
+        <span>2026/08/22 22:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; TUIs run on any OS with minor patches to support quirks, GUI frameworks need a lot of work. TUIs don't need to follow any OS guidelines, cross-platform GUIs always look bad outside of the "main" platform.<p>Have you tried to write a GUI program lately? I suspect things may have changed. I can write one using Qt, EGUI, etc (Or many other options), and it will <i>just work</i> on Windows, Mac, Linux/Wayland, and Linux/X.</p><p>Basically, you write your application on top of a GUI framework that smooths over OS differences for you.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49400167">&gt; TUIs run on any OS with minor patches to support quirks, GUI frameworks need a lot of work. TUIs don't need to follow any OS guidelines, cross-platform GUIs always look bad outside of the "main" platform.<p>Have you tried to write a GUI program lately? I suspect things may have changed. I can write one using Qt, EGUI, etc (Or many other options), and it will <i>just work</i> on Windows, Mac, Linux/Wayland, and Linux/X.</p><p>Basically, you write your application on top of a GUI framework that smooths over OS differences for you.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49400167">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49400167" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zahlman</span>
+        
+        <span>2026/08/23 00:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I can write one using Qt, EGUI, etc (Or many other options), and it will just work on Windows, Mac, Linux/Wayland, and Linux/X.<p>This is hard to square with the continuing obsession with Electron.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49401500">&gt; I can write one using Qt, EGUI, etc (Or many other options), and it will just work on Windows, Mac, Linux/Wayland, and Linux/X.<p>This is hard to square with the continuing obsession with Electron.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49401500">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49401500" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">d-us-vb</span>
+        
+        <span>2026/08/23 06:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I suspect the u ubiquity of electron persists more because maintaining both web and desktop interfaces is somewhat simplified, and as a corollary, you don’t need a separate JS and C/C++/QML team. Qt has gotten pretty good, but JavaScript and typescript are easier to hire.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49404675">I suspect the u ubiquity of electron persists more because maintaining both web and desktop interfaces is somewhat simplified, and as a corollary, you don’t need a separate JS and C/C++/QML team. Qt has gotten pretty good, but JavaScript and typescript are easier to hire.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49404675">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49404675" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pjmlp</span>
+        
+        <span>2026/08/23 12:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Pay for cheap labour, get a cheap product.<p>I thought Claude could do anything nowadays.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49406108">Pay for cheap labour, get a cheap product.<p>I thought Claude could do anything nowadays.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49406108">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49406108" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bionade24</span>
+        
+        <span>2026/08/24 04:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">QML is a Javascript Superset</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49412553">QML is a Javascript Superset</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49412553">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49412553" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">d-us-vb</span>
+        
+        <span>2026/08/24 22:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">But it runs on Qt, which is most certainly not.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49420207">But it runs on Qt, which is most certainly not.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49420207">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49420207" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rtpg</span>
+        
+        <span>2026/08/23 13:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think Qt is a bit different here because of Qt Quick etc but I've tried using "native" GUI frameworks a lot and ultimately the web DOM model is pretty nice for iterating easily.<p>Querying into the DOM and working off of that means you're not futzing about holding onto a bunch of component references for the one thing you might need later on.</p><p>Web layout is also pretty easy to just get right, native GUI frameworks have a different kind of layout model that is not as amenable to "arbitrary" data (at least at first blush).</p><p>the reactive programming model also works quite well. While there are native GUI frameworks that lean into reactive programming, they tend to be doing a bunch of weird stuff that cause other issues.</p><p>And at the end of the day, when you package something like a Qt app it still often ends up being quite chunky.</p><p>In the end tho... the simplest thing is if you do web stack you get a web UI _and_ your "native" GUI in one go. Build things once, not twice. Hard to argue against that when that's presented.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49406363">I think Qt is a bit different here because of Qt Quick etc but I've tried using "native" GUI frameworks a lot and ultimately the web DOM model is pretty nice for iterating easily.<p>Querying into the DOM and working off of that means you're not futzing about holding onto a bunch of component references for the one thing you might need later on.</p><p>Web layout is also pretty easy to just get right, native GUI frameworks have a different kind of layout model that is not as amenable to "arbitrary" data (at least at first blush).</p><p>the reactive programming model also works quite well. While there are native GUI frameworks that lean into reactive programming, they tend to be doing a bunch of weird stuff that cause other issues.</p><p>And at the end of the day, when you package something like a Qt app it still often ends up being quite chunky.</p><p>In the end tho... the simplest thing is if you do web stack you get a web UI _and_ your "native" GUI in one go. Build things once, not twice. Hard to argue against that when that's presented.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49406363">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49406363" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">4k93n2</span>
+        
+        <span>2026/08/23 01:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">they wont work on android though. thats the main reason i started using more TUIs myself. i needed to be able to run a bunch of python scripts on linux, windows and android/termux. or if any of the linux phones ever matures, or sailfish, then the same scripts will run thereas well, probably without any modifications needed</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49401625">they wont work on android though. thats the main reason i started using more TUIs myself. i needed to be able to run a bunch of python scripts on linux, windows and android/termux. or if any of the linux phones ever matures, or sailfish, then the same scripts will run thereas well, probably without any modifications needed</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49401625">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49401625" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">okanat</span>
+        
+        <span>2026/08/23 05:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">KDE has a framework based on Qt's QML that works on Android. It is called Kirigami. They have written apps and even a complete Plasma Mobile using it. The apps work both on Android and Linux.<p>Mobile has significant paradigm changes that makes using both terminals and traditional GUIs harder anyway though. I do expect the need for completely different cross-platform libraries for mobile UIs.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49404059">KDE has a framework based on Qt's QML that works on Android. It is called Kirigami. They have written apps and even a complete Plasma Mobile using it. The apps work both on Android and Linux.<p>Mobile has significant paradigm changes that makes using both terminals and traditional GUIs harder anyway though. I do expect the need for completely different cross-platform libraries for mobile UIs.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49404059">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49404059" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pjmlp</span>
+        
+        <span>2026/08/23 12:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Termux is not the right way to execute Apps on Android, Pydroid does the job.<p>Also, Qt does support Android development.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49406148">Termux is not the right way to execute Apps on Android, Pydroid does the job.<p>Also, Qt does support Android development.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49406148">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49406148" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">4k93n2</span>
+        
+        <span>2026/08/23 13:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">why is it not right? ive been using it for years and everything works just fine</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49406334">why is it not right? ive been using it for years and everything works just fine</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49406334">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49406334" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pjmlp</span>
+        
+        <span>2026/08/23 14:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It is trying to fit GNU/Linux into Android/Linux, on a model that has only worked so far because internal politics have prevented the replacement of Linux kernel with Zirkon.<p>The official NDK documentation on what is supported  for NDK written code on non rooted devices, and the hurdles that Termux faces to keep running on standard Android images via PlayStore distribution, show why it isn't right.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49406449">It is trying to fit GNU/Linux into Android/Linux, on a model that has only worked so far because internal politics have prevented the replacement of Linux kernel with Zirkon.<p>The official NDK documentation on what is supported  for NDK written code on non rooted devices, and the hurdles that Termux faces to keep running on standard Android images via PlayStore distribution, show why it isn't right.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49406449">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49406449" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pwdisswordfishq</span>
+        
+        <span>2026/08/22 16:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I think the answer to this is probably to throw all that compatibility mess away<p>&gt; TUIs run on any OS with minor patches to support quirks</p><p>So, which one is it?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49397917">&gt; I think the answer to this is probably to throw all that compatibility mess away<p>&gt; TUIs run on any OS with minor patches to support quirks</p><p>So, which one is it?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49397917">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49397917" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Almondsetat</span>
+        
+        <span>2026/08/22 18:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Those two are not contradictory statements</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49398345">Those two are not contradictory statements</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49398345">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49398345" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zbentley</span>
+        
+        <span>2026/08/22 23:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Those two are not contradictory statements<p>I really think they are. The reason for terminals’ ubiquity is precisely their age, and their age results in them standardizing and accumulating bizarre behaviors.</p><p>Even in the microcomputer era, standardizing behavior to where it’s literally <i>everywhere</i> someone might want it takes time (e.g. the browser compatibility wars). Re-standardizing terminal behavior is both chasing a way wider (in terms of the number of places folks expect terminals to work the exact same way) but shallower in feature complexity target compared to browsers, and would necessarily be <i>replacing</i> a widely adopted existing standard behavior, not providing something largely novel like the graphical web was. That’s a tall order. I am hopeful for and impressed by the efforts of folks like Hashimoto, but expectations here should be tempered.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49400697">&gt; Those two are not contradictory statements<p>I really think they are. The reason for terminals’ ubiquity is precisely their age, and their age results in them standardizing and accumulating bizarre behaviors.</p><p>Even in the microcomputer era, standardizing behavior to where it’s literally <i>everywhere</i> someone might want it takes time (e.g. the browser compatibility wars). Re-standardizing terminal behavior is both chasing a way wider (in terms of the number of places folks expect terminals to work the exact same way) but shallower in feature complexity target compared to browsers, and would necessarily be <i>replacing</i> a widely adopted existing standard behavior, not providing something largely novel like the graphical web was. That’s a tall order. I am hopeful for and impressed by the efforts of folks like Hashimoto, but expectations here should be tempered.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49400697">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49400697" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">embedding-shape</span>
+        
+        <span>2026/08/22 18:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Maybe not, but they do sit on opposite end of an axis looking something like:<p></p><pre><code>    TUI that runs on any OS |----------------| TUI without any compatibility mess
+</code></pre>
+You really can't have both at the same time, either you have great compatibility (which will be a mess), or you don't, to varying degree of course.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49398360">Maybe not, but they do sit on opposite end of an axis looking something like:<p></p><pre><code>    TUI that runs on any OS |----------------| TUI without any compatibility mess
+</code></pre>
+You really can't have both at the same time, either you have great compatibility (which will be a mess), or you don't, to varying degree of course.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49398360">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49398360" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Almondsetat</span>
+        
+        <span>2026/08/22 18:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Basically any OS can install any compliant terminal emulator, meaning the cases in which you really have to patch your TUI for another OS are few and infinitely more manageable than GUIs</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49398440">Basically any OS can install any compliant terminal emulator, meaning the cases in which you really have to patch your TUI for another OS are few and infinitely more manageable than GUIs</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49398440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49398440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
