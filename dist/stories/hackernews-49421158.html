@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MS Paint and Photos inivisibly watermark even locally generated output with GUID | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-25/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>MS Paint and Photos inivisibly watermark even locally generated output with GUID</h1>
+      <p class="original-title">MS Paint and Photos inivisibly watermark even locally generated output with GUID</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 ComputerGuru</span>
+        <span>热度 788</span>
+        <span>回复 387</span>
+        <span>2026/08/24 23:28</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49421158" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://xusheng.dev/posts/reversing/mspaint_invisible_watermark/main/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49421158.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Reverse engineering reveals how Paint and Photos embed a server-issued GUID into the pixels of locally generated AI images. TL;DR</li><li>Microsoft Paint supports both local and cloud image generation Paint and Photos also ship local AI models The two apps send the prompt to a remote server for moderation The server returns a GUID along with the moderated prompt The GUID is embedded into the locally generated image as an invisible watermark A separate visible-watermark setting does not control this invisible watermark On Copilot+ PCs, image generation is local but prompt moderation remains remote Microsoft discloses that Paint adds C2PA metadata to AI-generated images AI-generated image saves limited to C2PA-preserving formats: PNG, JPEG, GIF, and .paint</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ozereray1</span>
+        
+        <span>2026/08/25 17:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Injecting hidden GUIDs into local files without explicit user consent is a massive privacy overreach. It makes you wonder what other local tools are silently tagging user generated content.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49431255">Injecting hidden GUIDs into local files without explicit user consent is a massive privacy overreach. It makes you wonder what other local tools are silently tagging user generated content.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49431255">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49431255" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">rietta</span>
+        
+        <span>2026/08/25 21:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I am doing metadata auditing for government documents these days and there are UUIDs in lots of files going back a very long time. I have certainly seen them in PDFs and Word and Excel documents that long predated the current AI integrations.<p>Edit to add: I just tested LibreOffice/26.2.5.2 and it is not injecting a UUID into the metadata either for a ODT or a DOCx (2007) file. I do not have native MS Office available on hand to test at the moment. I do see these UUIDs in published government documents but cannot swear to exactly what step of the pipeline is stamping them. Definitely on files that predate the AI integration push by Microsoft.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49433415">I am doing metadata auditing for government documents these days and there are UUIDs in lots of files going back a very long time. I have certainly seen them in PDFs and Word and Excel documents that long predated the current AI integrations.<p>Edit to add: I just tested LibreOffice/26.2.5.2 and it is not injecting a UUID into the metadata either for a ODT or a DOCx (2007) file. I do not have native MS Office available on hand to test at the moment. I do see these UUIDs in published government documents but cannot swear to exactly what step of the pipeline is stamping them. Definitely on files that predate the AI integration push by Microsoft.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49433415">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49433415" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">kmacdough</span>
+        
+        <span>2026/08/25 22:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Your printer has been doing this for decades. There's an invisible-to-human dot matrix pattern that encodes things like model, serial number and i don't remember what else.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49435300">Your printer has been doing this for decades. There's an invisible-to-human dot matrix pattern that encodes things like model, serial number and i don't remember what else.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49435300">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49435300" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">stingraycharles</span>
+        
+        <span>2026/08/25 19:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Haven’t printers done the same thing for decades?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49432364">Haven’t printers done the same thing for decades?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49432364">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49432364" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">chorizo</span>
+        
+        <span>2026/08/25 23:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Also why color laser printers refuse to print b/w documents when they run out of color toner since they can no longer print the yellow DocuColor tracking dots.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49436165">Also why color laser printers refuse to print b/w documents when they run out of color toner since they can no longer print the yellow DocuColor tracking dots.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49436165">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49436165" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jamesnorden</span>
+        
+        <span>2026/08/25 20:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Oh that makes it totally ok then...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49432880">Oh that makes it totally ok then...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49432880">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49432880" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kmacdough</span>
+        
+        <span>2026/08/25 22:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">No it's not ok, and most people are horrified when they learn. It's just a reality check that we've lived in a surveillance state for quite a while and it's time we take a stand. And a reminder that the government has done a good job of suppressing these realities from public awareness.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49435346">No it's not ok, and most people are horrified when they learn. It's just a reality check that we've lived in a surveillance state for quite a while and it's time we take a stand. And a reminder that the government has done a good job of suppressing these realities from public awareness.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49435346">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49435346" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">stingraycharles</span>
+        
+        <span>2026/08/25 22:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not saying that, but at least that there must have been ample legal precedent that this is probably allowed.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49434284">Not saying that, but at least that there must have been ample legal precedent that this is probably allowed.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49434284">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49434284" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">MisterTea</span>
+        
+        <span>2026/08/25 20:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And? Where are we going with this whataboutism?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49433263">And? Where are we going with this whataboutism?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49433263">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49433263" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kmacdough</span>
+        
+        <span>2026/08/25 23:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And it's a reality check  that we live in a surveillance state. To a degree that most people find appalling, but the government is good enough at suppressing public awareness enough to cause an outcry.<p>It's also not whataboutism, the comment specifically wondered how else were being surrupticously tracked without our knowledge. This is a concrete example and I think many would be surprised such tracking also exists outside the digital realm.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49435405">And it's a reality check  that we live in a surveillance state. To a degree that most people find appalling, but the government is good enough at suppressing public awareness enough to cause an outcry.<p>It's also not whataboutism, the comment specifically wondered how else were being surrupticously tracked without our knowledge. This is a concrete example and I think many would be surprised such tracking also exists outside the digital realm.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49435405">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49435405" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nojs</span>
+        
+        <span>2026/08/25 18:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The question is whether LLM providers are going to do this. Anthropic currently says they don’t, but it’s impossible to verify:<p>&gt; Watermarking carries no identifying information and can’t be traced to a specific person, organization, or chat;</p><p><a href="https://www.anthropic.com/news/claude-text-watermark" target="_blank" rel="noopener noreferrer">https://www.anthropic.com/news/claude-text-watermark</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49431684">The question is whether LLM providers are going to do this. Anthropic currently says they don’t, but it’s impossible to verify:<p>&gt; Watermarking carries no identifying information and can’t be traced to a specific person, organization, or chat;</p><p><a href="https://www.anthropic.com/news/claude-text-watermark" target="_blank" rel="noopener noreferrer">https://www.anthropic.com/news/claude-text-watermark</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49431684">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49431684" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">trollbridge</span>
+        
+        <span>2026/08/25 19:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Probably just means they haven't (yet) figured out how to do the watermarking carrying enough bits of data to encode a GUID.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49432103">Probably just means they haven't (yet) figured out how to do the watermarking carrying enough bits of data to encode a GUID.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49432103">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49432103" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Eddy_Viscosity2</span>
+        
+        <span>2026/08/25 20:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It could also mean they are lying. It could be they are being forced to downplay how good the watermarking is because gov agencies want that tool available to them without people knowing about it. We'll have to wait for the next Snowden to find out.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49432582">It could also mean they are lying. It could be they are being forced to downplay how good the watermarking is because gov agencies want that tool available to them without people knowing about it. We'll have to wait for the next Snowden to find out.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49432582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49432582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">martin_a</span>
+        
+        <span>2026/08/25 21:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I still don't see how this is supposed to work for text content that I copy and paste somewhere else. And with models getting better and better to "human language", wouldn't the false positives also rise as "real text" is flagged to be AI generated?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49433795">I still don't see how this is supposed to work for text content that I copy and paste somewhere else. And with models getting better and better to "human language", wouldn't the false positives also rise as "real text" is flagged to be AI generated?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49433795">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49433795" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Eddy_Viscosity2</span>
+        
+        <span>2026/08/25 22:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't know either, and maybe it doesn't or can't work. But also maybe it does and can. I do not have any where near the expertise to know which is the case.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49434326">I don't know either, and maybe it doesn't or can't work. But also maybe it does and can. I do not have any where near the expertise to know which is the case.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49434326">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49434326" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">trollbridge</span>
+        
+        <span>2026/08/25 21:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In other words, plausible deniability. “We aren’t watermarking your text.” (Today, and we’ll start tomorrow.)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49433506">In other words, plausible deniability. “We aren’t watermarking your text.” (Today, and we’ll start tomorrow.)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49433506">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49433506" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mg794613</span>
+        
+        <span>2026/08/25 19:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">At least, according to the very trustworthy Claude.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49432157">At least, according to the very trustworthy Claude.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49432157">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49432157" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/08/25 19:38</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49432218"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49432218">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49432218" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">bdavbdav</span>
+        
+        <span>2026/08/25 20:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Windows GUIDs....</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49433150">Windows GUIDs....</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49433150">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49433150" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">soupspaces</span>
+        
+        <span>2026/08/25 18:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://en.wikipedia.org/wiki/Information_Awareness_Office" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Information_Awareness_Office</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49431661"><a href="https://en.wikipedia.org/wiki/Information_Awareness_Office" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Information_Awareness_Office</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49431661">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49431661" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
