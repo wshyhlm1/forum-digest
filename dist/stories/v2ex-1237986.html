@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公司不让装 Navicat 了，就自己写了一个数据库客户端 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-28/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>公司不让装 Navicat 了，就自己写了一个数据库客户端</h1>
+      <p class="original-title">公司不让装 Navicat 了，就自己写了一个数据库客户端</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 flyxl</span>
+        <span>热度 14</span>
+        <span>回复 14</span>
+        <span>2026/08/28 23:55</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1237986" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1237986.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>写代码十几年了。之前也给孩子们做过几个 Android 小应用，背单词、练口算那种，他们用得还行。</li><li>但那些说到底还是「给别人用」。DataZen 是我第一次想只为自己做一个软件。</li></ul>
+      
+      <p class="reason">命中 9 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p></p>
+<p>写代码十几年了。之前也给孩子们做过几个 Android 小应用，背单词、练口算那种，他们用得还行。</p>
+<p>但那些说到底还是「给别人用」。<strong>DataZen 是我第一次想只为自己做一个软件。</strong></p>
+<p>起因很现实：公司合规不让装 Navicat 了。DBeaver 能用，但日常用起来总觉得差点意思。正好赶上 vibe coding 这股风，心想不如自己试一把，看能不能做出一个<strong>真正工业级、能天天拿来干活</strong>的数据库客户端。</p>
+<p>不是玩票，也不是 demo 。就是给自己用。</p>
+
+两个具体痛点
+1. 查线上问题，经常要串好几张表，还跨库
+<p>处理投诉、排查线上问题，流程大概是这样：</p>
+<ul>
+<li>先查表 A ，拿到某个 ID 或状态</li>
+<li>用这个值去查表 B</li>
+<li>再查 C 、D……</li>
+<li>更麻烦的是，这些表往往不在同一个库，没法直接 JOIN</li>
+<li>只能等上一条 SQL 跑完，把结果里的字段复制出来，填到下一条 SQL 的 WHERE 里</li>
+</ul>
+<p>一条链路下来，复制粘贴十几次是常态。烦，还容易填错。</p>
+<p>所以做了 <strong>Workflow</strong>：用 YAML 把多步查询串起来，上一步的结果可以直接传给下一步，不同步骤还可以连不同的库。查一次，整条链路跑完。</p>
+<p></p>
+<p></p>
+2. 老板要数据，要报表
+<p>做开发的都懂。临时要个数字、要张图，经常就是「帮查一下上周 xxx 」「对比一下这个月和上个月」。每次打开客户端、写 SQL 、导出、贴到 PPT 或飞书里，重复劳动很多。</p>
+<p>所以做了 <strong>运营看板（ Dashboard ）</strong>：把常用 SQL 和图表保存下来，定时刷新，多个指标放在一页。老板要看的时候，打开就行，不用每次重新查。</p>
+<p></p>
+<p>这两个功能，都是我自己日常真的会用到的东西。不是看竞品有什么就抄什么。</p>
+
+做下来的一些体会
+<p>一路做下来，也踩了不少坑。</p>
+<p>很多功能远看很简单，真正做深才发现不容易。SQL 编辑器、Schema 浏览、大结果集性能、不同数据库方言差异……每个点都能耗掉不少时间。AI 相关的能力也做了（自然语言生成 SQL 、错误诊断、EXPLAIN 分析），但对我来说，<strong>Workflow 和 Dashboard 才是最先想解决的</strong>。</p>
+<p>以前总觉得自己还算懂产品，至少比纯写后端的同事更关心体验。做着做着才发现，离「优秀的产品经理」还差得远。中间有好几次，差点去做一些「技术上很酷、但日常用不上」的东西。后来慢慢学会问一句：<strong>这个功能，是不是在解决我自己的真实问题？</strong></p>
+<p>产品还是要回到用户的痛点上。对我自己来说，就是上面那两件事。</p>
+
+DataZen 是什么
+<p><strong>DataZen</strong> 是一个开源的数据库客户端，Tauri + Rust + React ，macOS / Windows / Linux 都能用。</p>
+<p>除了 Workflow 和 Dashboard ，还有这些：</p>
+日常查库
+<ul>
+<li>SQL 编辑器、Schema 树、结果集查看</li>
+<li>支持 PostgreSQL 、MySQL 、SQLite 、Redis 等，更多数据库通过 Driver 扩展</li>
+<li>SSH 隧道，连接信息本地加密存储</li>
+</ul>
+<p></p>
+AI 辅助（有，但不是全部）
+<ul>
+<li>自然语言生成 SQL ，会带当前库的 Schema</li>
+<li>SQL 报错诊断、EXPLAIN 分析</li>
+<li>支持 OpenAI 、Anthropic 、DeepSeek 和自定义接口</li>
+</ul>
+<p></p>
+<p></p>
+<p></p>
+查询结果转图表
+<ul>
+<li>查完直接看图，折线、柱状、饼图等，可导出 PNG/SVG</li>
+</ul>
+<p></p>
+MCP
+<ul>
+<li>可以作为 MCP Server ，把数据库能力暴露给 Cursor 等外部工具</li>
+<li>也可以接外部 MCP Server 到 AI Chat</li>
+<li>支持无头 stdio 模式</li>
+</ul>
+Driver 插件
+<ul>
+<li>数据库能力通过 Driver API 扩展，社区可以贡献新数据库支持</li>
+</ul>
+<p>还有 ER 图、Schema Diff 、数据同步、导出等，文档里都有。</p>
+<p></p>
+<p></p>
+本地优先，开源免费
+<ul>
+<li>不用注册账号</li>
+<li>连接和凭据留在本机</li>
+<li>GPLv3 开源</li>
+</ul>
+
+还不完美
+<p>说实话，DataZen 离「极致好用」还有距离。</p>
+<p>很多功能能用，但还不够顺手。交互细节、边界情况、各数据库的打磨，都需要时间，也需要更多人的使用反馈。</p>
+<p>我一个人做，速度有限。所以开源了——不是因为它已经很好，而是希望有人一起把它做好。</p>
+<p>如果你也天天和数据库打交道，欢迎：</p>
+<ul>
+<li>GitHub 点个 Star： <a href="https://github.com/flyxl/datazen" target="_blank" rel="noopener noreferrer">https://github.com/flyxl/datazen</a></li>
+<li>提 Issue 说 bug 或体验问题</li>
+<li>讨论功能方向</li>
+<li>贡献代码、Driver 、文档</li>
+</ul>
+
+最后
+<p>做一个「只为自己」的软件，听起来挺理想，过程其实挺磨人的。会怀疑值不值得做，会在细节上卡住，也会在产品方向上走弯路。</p>
+<p>但如果有一个你自己每天都会遇到的问题，值得花时间做一个能用的版本出来。先能用，再慢慢改。</p>
+<p><strong>链接</strong></p>
+<ul>
+<li>项目地址： <a href="https://github.com/flyxl/datazen" target="_blank" rel="noopener noreferrer">https://github.com/flyxl/datazen</a></li>
+<li>下载： <a href="https://github.com/flyxl/datazen/releases" target="_blank" rel="noopener noreferrer">https://github.com/flyxl/datazen/releases</a></li>
+<li>中文文档： <a href="https://flyxl.github.io/datazen/zh/manual.html" target="_blank" rel="noopener noreferrer">https://flyxl.github.io/datazen/zh/manual.html</a></li>
+</ul>
+<p>也想听听大家：<strong>你平时用数据库客户端，最烦的一件事是什么？</strong> 这个对我比任何功能清单都有用。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p></p>
+<p>写代码十几年了。之前也给孩子们做过几个 Android 小应用，背单词、练口算那种，他们用得还行。</p>
+<p>但那些说到底还是「给别人用」。<strong>DataZen 是我第一次想只为自己做一个软件。</strong></p>
+<p>起因很现实：公司合规不让装 Navicat 了。DBeaver 能用，但日常用起来总觉得差点意思。正好赶上 vibe coding 这股风，心想不如自己试一把，看能不能做出一个<strong>真正工业级、能天天拿来干活</strong>的数据库客户端。</p>
+<p>不是玩票，也不是 demo 。就是给自己用。</p>
+
+两个具体痛点
+1. 查线上问题，经常要串好几张表，还跨库
+<p>处理投诉、排查线上问题，流程大概是这样：</p>
+<ul>
+<li>先查表 A ，拿到某个 ID 或状态</li>
+<li>用这个值去查表 B</li>
+<li>再查 C 、D……</li>
+<li>更麻烦的是，这些表往往不在同一个库，没法直接 JOIN</li>
+<li>只能等上一条 SQL 跑完，把结果里的字段复制出来，填到下一条 SQL 的 WHERE 里</li>
+</ul>
+<p>一条链路下来，复制粘贴十几次是常态。烦，还容易填错。</p>
+<p>所以做了 <strong>Workflow</strong>：用 YAML 把多步查询串起来，上一步的结果可以直接传给下一步，不同步骤还可以连不同的库。查一次，整条链路跑完。</p>
+<p></p>
+<p></p>
+2. 老板要数据，要报表
+<p>做开发的都懂。临时要个数字、要张图，经常就是「帮查一下上周 xxx 」「对比一下这个月和上个月」。每次打开客户端、写 SQL 、导出、贴到 PPT 或飞书里，重复劳动很多。</p>
+<p>所以做了 <strong>运营看板（ Dashboard ）</strong>：把常用 SQL 和图表保存下来，定时刷新，多个指标放在一页。老板要看的时候，打开就行，不用每次重新查。</p>
+<p></p>
+<p>这两个功能，都是我自己日常真的会用到的东西。不是看竞品有什么就抄什么。</p>
+
+做下来的一些体会
+<p>一路做下来，也踩了不少坑。</p>
+<p>很多功能远看很简单，真正做深才发现不容易。SQL 编辑器、Schema 浏览、大结果集性能、不同数据库方言差异……每个点都能耗掉不少时间。AI 相关的能力也做了（自然语言生成 SQL 、错误诊断、EXPLAIN 分析），但对我来说，<strong>Workflow 和 Dashboard 才是最先想解决的</strong>。</p>
+<p>以前总觉得自己还算懂产品，至少比纯写后端的同事更关心体验。做着做着才发现，离「优秀的产品经理」还差得远。中间有好几次，差点去做一些「技术上很酷、但日常用不上」的东西。后来慢慢学会问一句：<strong>这个功能，是不是在解决我自己的真实问题？</strong></p>
+<p>产品还是要回到用户的痛点上。对我自己来说，就是上面那两件事。</p>
+
+DataZen 是什么
+<p><strong>DataZen</strong> 是一个开源的数据库客户端，Tauri + Rust + React ，macOS / Windows / Linux 都能用。</p>
+<p>除了 Workflow 和 Dashboard ，还有这些：</p>
+日常查库
+<ul>
+<li>SQL 编辑器、Schema 树、结果集查看</li>
+<li>支持 PostgreSQL 、MySQL 、SQLite 、Redis 等，更多数据库通过 Driver 扩展</li>
+<li>SSH 隧道，连接信息本地加密存储</li>
+</ul>
+<p></p>
+AI 辅助（有，但不是全部）
+<ul>
+<li>自然语言生成 SQL ，会带当前库的 Schema</li>
+<li>SQL 报错诊断、EXPLAIN 分析</li>
+<li>支持 OpenAI 、Anthropic 、DeepSeek 和自定义接口</li>
+</ul>
+<p></p>
+<p></p>
+<p></p>
+查询结果转图表
+<ul>
+<li>查完直接看图，折线、柱状、饼图等，可导出 PNG/SVG</li>
+</ul>
+<p></p>
+MCP
+<ul>
+<li>可以作为 MCP Server ，把数据库能力暴露给 Cursor 等外部工具</li>
+<li>也可以接外部 MCP Server 到 AI Chat</li>
+<li>支持无头 stdio 模式</li>
+</ul>
+Driver 插件
+<ul>
+<li>数据库能力通过 Driver API 扩展，社区可以贡献新数据库支持</li>
+</ul>
+<p>还有 ER 图、Schema Diff 、数据同步、导出等，文档里都有。</p>
+<p></p>
+<p></p>
+本地优先，开源免费
+<ul>
+<li>不用注册账号</li>
+<li>连接和凭据留在本机</li>
+<li>GPLv3 开源</li>
+</ul>
+
+还不完美
+<p>说实话，DataZen 离「极致好用」还有距离。</p>
+<p>很多功能能用，但还不够顺手。交互细节、边界情况、各数据库的打磨，都需要时间，也需要更多人的使用反馈。</p>
+<p>我一个人做，速度有限。所以开源了——不是因为它已经很好，而是希望有人一起把它做好。</p>
+<p>如果你也天天和数据库打交道，欢迎：</p>
+<ul>
+<li>GitHub 点个 Star： <a href="https://github.com/flyxl/datazen" target="_blank" rel="noopener noreferrer">https://github.com/flyxl/datazen</a></li>
+<li>提 Issue 说 bug 或体验问题</li>
+<li>讨论功能方向</li>
+<li>贡献代码、Driver 、文档</li>
+</ul>
+
+最后
+<p>做一个「只为自己」的软件，听起来挺理想，过程其实挺磨人的。会怀疑值不值得做，会在细节上卡住，也会在产品方向上走弯路。</p>
+<p>但如果有一个你自己每天都会遇到的问题，值得花时间做一个能用的版本出来。先能用，再慢慢改。</p>
+<p><strong>链接</strong></p>
+<ul>
+<li>项目地址： <a href="https://github.com/flyxl/datazen" target="_blank" rel="noopener noreferrer">https://github.com/flyxl/datazen</a></li>
+<li>下载： <a href="https://github.com/flyxl/datazen/releases" target="_blank" rel="noopener noreferrer">https://github.com/flyxl/datazen/releases</a></li>
+<li>中文文档： <a href="https://flyxl.github.io/datazen/zh/manual.html" target="_blank" rel="noopener noreferrer">https://flyxl.github.io/datazen/zh/manual.html</a></li>
+</ul>
+<p>也想听听大家：<strong>你平时用数据库客户端，最烦的一件事是什么？</strong> 这个对我比任何功能清单都有用。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">14</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xooass</span>
+        <span>#1</span>
+        <span>2026/08/29 01:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最烦公司的数据库限制 IP   又不想整机切公司内网</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029215">最烦公司的数据库限制 IP   又不想整机切公司内网</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029215">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029215" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xooass</span>
+        <span>#2</span>
+        <span>2026/08/29 01:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说的是回家后</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029216">说的是回家后</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029216">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029216" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flyxl</span>
+        <span>#3</span>
+        <span>2026/08/29 01:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xooass" target="_blank" rel="noopener noreferrer">xooass</a> 能 ssh 回公司电脑不？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029217">@<a href="/member/xooass" target="_blank" rel="noopener noreferrer">xooass</a> 能 ssh 回公司电脑不？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029217">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029217" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zencitta</span>
+        <span>#4</span>
+        <span>2026/08/29 01:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">自己手写还是 AI ？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029232">自己手写还是 AI ？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029232">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029232" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sanhys</span>
+        <span>#5</span>
+        <span>2026/08/29 01:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zencitta" target="_blank" rel="noopener noreferrer">zencitta</a> 原汁原味的 AI</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029237">@<a href="/member/zencitta" target="_blank" rel="noopener noreferrer">zencitta</a> 原汁原味的 AI</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029237">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029237" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ijrou</span>
+        <span>#6</span>
+        <span>2026/08/29 02:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">![2026-08-29_02-20-03.png]( <a href="https://ime-store-cdn.gtimg.com/pc/uploadImage/2026/08/29/1787941229883ac12f_former.png" target="_blank" rel="noopener noreferrer">https://ime-store-cdn.gtimg.com/pc/uploadImage/2026/08/29/1787941229883ac12f_former.png</a>)<br /><br />还在一直用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029241">![2026-08-29_02-20-03.png]( <a href="https://ime-store-cdn.gtimg.com/pc/uploadImage/2026/08/29/1787941229883ac12f_former.png" target="_blank" rel="noopener noreferrer">https://ime-store-cdn.gtimg.com/pc/uploadImage/2026/08/29/1787941229883ac12f_former.png</a>)<br /><br />还在一直用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029241">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029241" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wuzhi1234</span>
+        <span>#7</span>
+        <span>2026/08/29 03:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">dbx 很好用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029253">dbx 很好用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029253">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029253" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Addison2W</span>
+        <span>#8</span>
+        <span>2026/08/29 06:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我现在开发基本不碰数据库，中间件，代码，K8S ，服务器，各个角落 AI 都能触碰到，一个对话框能解决开发所有的事情。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029267">我现在开发基本不碰数据库，中间件，代码，K8S ，服务器，各个角落 AI 都能触碰到，一个对话框能解决开发所有的事情。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029267">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029267" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Dispatcher</span>
+        <span>#9</span>
+        <span>2026/08/29 07:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">日本这边好多会社在用 a4 ，竟然是 delphi 写的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029279">日本这边好多会社在用 a4 ，竟然是 delphi 写的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029279">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029279" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flyxl</span>
+        <span>#10</span>
+        <span>2026/08/29 07:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wuzhi1234" target="_blank" rel="noopener noreferrer">wuzhi1234</a> 确实很强</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029288">@<a href="/member/wuzhi1234" target="_blank" rel="noopener noreferrer">wuzhi1234</a> 确实很强</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029288">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029288" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flyxl</span>
+        <span>#11</span>
+        <span>2026/08/29 07:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zencitta" target="_blank" rel="noopener noreferrer">zencitta</a> 用的是 cursor ，但基本上只能用 opus 4.6 和 composer2.5 ，我比较自豪的是代码质量绝对不差，系统架构可扩展性比较好。整个开发过程走下来，感觉我这个老码农还能在 ai 浪潮下再抗几年，同时也趁着这个项目多积累一些开发 agent 的经验</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029293">@<a href="/member/zencitta" target="_blank" rel="noopener noreferrer">zencitta</a> 用的是 cursor ，但基本上只能用 opus 4.6 和 composer2.5 ，我比较自豪的是代码质量绝对不差，系统架构可扩展性比较好。整个开发过程走下来，感觉我这个老码农还能在 ai 浪潮下再抗几年，同时也趁着这个项目多积累一些开发 agent 的经验</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029293">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029293" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flyxl</span>
+        <span>#12</span>
+        <span>2026/08/29 07:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Addison2W" target="_blank" rel="noopener noreferrer">Addison2W</a> ai 现在确实很强大，但我们有明确要求 ai 不能碰生产数据，避免敏感信息泄露</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029294">@<a href="/member/Addison2W" target="_blank" rel="noopener noreferrer">Addison2W</a> ai 现在确实很强大，但我们有明确要求 ai 不能碰生产数据，避免敏感信息泄露</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029294">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029294" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kneo</span>
+        <span>#13</span>
+        <span>2026/08/29 08:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">AI 用多了还真以为是自己写的啊……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029312">AI 用多了还真以为是自己写的啊……</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029312">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029312" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jkjoy</span>
+        <span>#14</span>
+        <span>2026/08/29 08:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你这帖子都一股子 AI 味儿</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029321">你这帖子都一股子 AI 味儿</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029321">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1237986#reply18029321" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
