@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GUIs should be fully keyboard-driven | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-29/">返回日报</a>
+      <div class="source-chip">Hacker News #5</div>
+      <h1>GUIs should be fully keyboard-driven</h1>
+      <p class="original-title">GUIs should be fully keyboard-driven</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ckardaris</span>
+        <span>热度 914</span>
+        <span>回复 450</span>
+        <span>2026/08/28 23:17</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49479837" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://ckardaris.com/blog/2026/08/28/keyboard-driven-guis.html" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49479837.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>This post has made it to the Hacker News front page. See the discussion.</li><li>Last week I came across a post on Hacker News that encouraged application developers to stop making terminal user interfaces1 (a.k.a. TUIs) and instead focus on graphical user interfaces (a.k.a. GUIs). The post reached the HN front page and sparked a lively debate in the comments section.</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rootedbox</span>
+        
+        <span>2026/08/29 03:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I work on ADA a lot for my company. Please put on some headphones, turn on the voice assistant of your OS, put on some blinders, and run your app or website… no mouse, just keyboard.<p>1. Democracy is about access; make sure everyone has access to your software.
+2. The keyboard allows folks with disabilities and power users to fly through your website/app… that being said… the second a tab is off, the person with a disability flies into a wall.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49483183">I work on ADA a lot for my company. Please put on some headphones, turn on the voice assistant of your OS, put on some blinders, and run your app or website… no mouse, just keyboard.<p>1. Democracy is about access; make sure everyone has access to your software.
+2. The keyboard allows folks with disabilities and power users to fly through your website/app… that being said… the second a tab is off, the person with a disability flies into a wall.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49483183">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49483183" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">gramie</span>
+        
+        <span>2026/08/29 03:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I had to keep accessibility in mind a lot in my previous job (web development for a university). The thing that I consistently found was that, the more accessible a website was, the better the experience for <i>everyone</i>, not just people with disabilities.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49483461">I had to keep accessibility in mind a lot in my previous job (web development for a university). The thing that I consistently found was that, the more accessible a website was, the better the experience for <i>everyone</i>, not just people with disabilities.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49483461">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49483461" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">WhyNotHugo</span>
+        
+        <span>2026/08/29 19:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is true in other fields too. Wheel-chair ramps are used by people with baby strollers. Subtitles work for deaf people, those who can't understand the spoken language, or simple folks in situations where someone is sleeping next to them. Pretty much every accessibility-oriented feature ends up helping out people beyond the original audience.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49488900">This is true in other fields too. Wheel-chair ramps are used by people with baby strollers. Subtitles work for deaf people, those who can't understand the spoken language, or simple folks in situations where someone is sleeping next to them. Pretty much every accessibility-oriented feature ends up helping out people beyond the original audience.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49488900">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49488900" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tobyjsullivan</span>
+        
+        <span>2026/08/29 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I saw a good mental model for this a while ago. Unfortunately I have no idea where.<p>Three kinds of disability:</p><p>1. Permanent (eg, blind)</p><p>2. Temporary (eg, pregnant/new parent, recoverable injury)</p><p>3. Contextual (eg, holding something with one hand, loud environment)</p><p>When people think about accessibility, they often think about 1. But the long-tails for 2 and 3 are huge, and ultimately affect everyone at some point.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49490874">I saw a good mental model for this a while ago. Unfortunately I have no idea where.<p>Three kinds of disability:</p><p>1. Permanent (eg, blind)</p><p>2. Temporary (eg, pregnant/new parent, recoverable injury)</p><p>3. Contextual (eg, holding something with one hand, loud environment)</p><p>When people think about accessibility, they often think about 1. But the long-tails for 2 and 3 are huge, and ultimately affect everyone at some point.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49490874">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49490874" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sdeframond</span>
+        
+        <span>2026/08/29 21:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Baby strollers are not accounted for enough !<p>One might wonder (wrongly) why everyone should care about the special and expensive needs of a few (or old) people when designing public spaces.</p><p>But a majority will actually need to use these spaces with a baby stroller. Not a few. Baby strollers are a driving power of our society! Enable them!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49489608">Baby strollers are not accounted for enough !<p>One might wonder (wrongly) why everyone should care about the special and expensive needs of a few (or old) people when designing public spaces.</p><p>But a majority will actually need to use these spaces with a baby stroller. Not a few. Baby strollers are a driving power of our society! Enable them!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49489608">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49489608" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tonyarkles</span>
+        
+        <span>2026/08/29 22:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And to keep the loop going, stroller-accessible spaces are also walker-accessible spaces and cart-accessible spaces. Worked at a computer store in the early 00s. Our rented retail space had a wheelchair ramp and there were a few elderly regulars who would show up with a desktop PC in the basket of their rolling walkers for repairs. More than once they thanked us for having the ramp because the computer itself was way too heavy for them to carry from the parking lot.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49490110">And to keep the loop going, stroller-accessible spaces are also walker-accessible spaces and cart-accessible spaces. Worked at a computer store in the early 00s. Our rented retail space had a wheelchair ramp and there were a few elderly regulars who would show up with a desktop PC in the basket of their rolling walkers for repairs. More than once they thanked us for having the ramp because the computer itself was way too heavy for them to carry from the parking lot.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49490110">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49490110" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">my-huge-pony</span>
+        
+        <span>2026/08/30 02:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In fact, in a way, basically everyone will use a baby stroller at some point in their life (at least as a passenger).<p>I personally never noticed this before becoming a parent, but there's a lot of spaces that are "almost" stroller friendly, but for some reason there is a small obstacle that would not be expensive to remove (if accounted for during planning). For example, a few steps that could easily be a ramp, blocks of flats with a lift that is accessible after ascending a few steps, even high shop entrances.</p><p>For me it's not a problem, because I can easily carry stroller with a baby inside up, but for most mothers I know this is usually a huge or unsurmountable obstacle.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49492042">In fact, in a way, basically everyone will use a baby stroller at some point in their life (at least as a passenger).<p>I personally never noticed this before becoming a parent, but there's a lot of spaces that are "almost" stroller friendly, but for some reason there is a small obstacle that would not be expensive to remove (if accounted for during planning). For example, a few steps that could easily be a ramp, blocks of flats with a lift that is accessible after ascending a few steps, even high shop entrances.</p><p>For me it's not a problem, because I can easily carry stroller with a baby inside up, but for most mothers I know this is usually a huge or unsurmountable obstacle.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49492042">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49492042" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">apothegm</span>
+        
+        <span>2026/08/30 00:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not to mention luggage. I find it hard to believe that it’s a coincidence that rolling luggage became common shortly after curb cuts and wheelchair ramps did.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49491435">Not to mention luggage. I find it hard to believe that it’s a coincidence that rolling luggage became common shortly after curb cuts and wheelchair ramps did.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49491435">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49491435" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mhb</span>
+        
+        <span>2026/08/30 01:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Really? Both strollers and wheels on luggage are pretty nice to have even if you have to somehow negotiate curbs. So, I think it is a coincidence.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49491854">Really? Both strollers and wheels on luggage are pretty nice to have even if you have to somehow negotiate curbs. So, I think it is a coincidence.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49491854">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49491854" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">zelphirkalt</span>
+        
+        <span>2026/08/29 13:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Additionally, I found, that simply sticking to web standards, instead of reimplementing everything in JavaScript, goes a long way towards accessibility.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49487204">Additionally, I found, that simply sticking to web standards, instead of reimplementing everything in JavaScript, goes a long way towards accessibility.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49487204">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49487204" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">userfrie</span>
+        
+        <span>2026/08/29 16:58</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49488187">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49488187">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49488187" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">keerthiko</span>
+        
+        <span>2026/08/29 06:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">yep, the curb cut effect is a well-researched and documented phenomenon [0] across ADA development in all aspects of the world.<p>accessibility work isn't just about making things <i>possible</i> for folks with disabilities, it's about making things <i>better for everyone</i>.</p><p>[0] <a href="https://en.wikipedia.org/wiki/Curb_cut_effect" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Curb_cut_effect</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49484923">yep, the curb cut effect is a well-researched and documented phenomenon [0] across ADA development in all aspects of the world.<p>accessibility work isn't just about making things <i>possible</i> for folks with disabilities, it's about making things <i>better for everyone</i>.</p><p>[0] <a href="https://en.wikipedia.org/wiki/Curb_cut_effect" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Curb_cut_effect</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49484923">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49484923" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">TomatoCo</span>
+        
+        <span>2026/08/29 08:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Another way to think of this is that everybody occasionally needs to do something unusual. But some people, due to their life circumstances, always need to do something unusual. And making things better for the always-odd folk is also a positive to the occasionally-odd folk.<p>Which like, we're all eventually gonna be odd folk! That's what age does to us. But we should understand these accommodations as being a net positive, not a cost, to society.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49485616">Another way to think of this is that everybody occasionally needs to do something unusual. But some people, due to their life circumstances, always need to do something unusual. And making things better for the always-odd folk is also a positive to the occasionally-odd folk.<p>Which like, we're all eventually gonna be odd folk! That's what age does to us. But we should understand these accommodations as being a net positive, not a cost, to society.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49485616">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49485616" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gregdeon</span>
+        
+        <span>2026/08/29 10:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yep. In accessibility research, they call these "situational disabilities". When you need to open a door with your arms full of groceries, you aren't so different from someone who is never able to open a door. Accommodations that help people with permanent disabilities also help other people in the right situations, too.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49486477">Yep. In accessibility research, they call these "situational disabilities". When you need to open a door with your arms full of groceries, you aren't so different from someone who is never able to open a door. Accommodations that help people with permanent disabilities also help other people in the right situations, too.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49486477">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49486477" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">djaro</span>
+        
+        <span>2026/08/29 14:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My touchpad broke and I couldnt download the touchpad driver to fix it on the spot because there was no way to get to the download button with tab and enter, you had to click it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49487317">My touchpad broke and I couldnt download the touchpad driver to fix it on the spot because there was no way to get to the download button with tab and enter, you had to click it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49487317">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49487317" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">opan</span>
+        
+        <span>2026/08/29 16:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's a funny example, reminds me of how often fresh Windows 7 or older installs were missing the ethernet driver so you had to move stuff over on a flash drive to get started really setting stuff up.<p>In your situation, a couple possible solutions come to mind. 1) turn on "mouse keys" which lets you use the numpad to move the mouse and click, 2) a vim addon for the browser (e.g. vimperator or tridactyl) likely could've clicked the button via the hints mode.
+It's in the past now so maybe these wouldn't have worked or you didn't know, of course, just fun to think of what I would've done.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49487899">That's a funny example, reminds me of how often fresh Windows 7 or older installs were missing the ethernet driver so you had to move stuff over on a flash drive to get started really setting stuff up.<p>In your situation, a couple possible solutions come to mind. 1) turn on "mouse keys" which lets you use the numpad to move the mouse and click, 2) a vim addon for the browser (e.g. vimperator or tridactyl) likely could've clicked the button via the hints mode.
+It's in the past now so maybe these wouldn't have worked or you didn't know, of course, just fun to think of what I would've done.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49487899">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49487899" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">apothegm</span>
+        
+        <span>2026/08/30 01:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yup. Or people with temporary disabilities — who have simply broken limb or had a surgery. Most places are hellish to navigate on crutches. Heavy doors alone make so many places nearly inaccessible, and that’s before you even get to stairs.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49491455">Yup. Or people with temporary disabilities — who have simply broken limb or had a surgery. Most places are hellish to navigate on crutches. Heavy doors alone make so many places nearly inaccessible, and that’s before you even get to stairs.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49491455">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49491455" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Cthulhu_</span>
+        
+        <span>2026/08/29 16:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Exactly; consider that only a percentage of users will actually be sitting at a desktop system using your application. Most people will visit your website on a mobile device, and a percentage of that will be in weird lighting conditions trying to operate the thing with just one hand. As just an example, and that's the people considered abled - anything that isn't the hip startup of the week aimed at 15-25 year olds will need to consider e.g. eyesight issues on top of everything else.<p>Anyway, it's not even an option anymore, under the European Accessibility Act, government and (since last year) public services (websites, apps, appliances, etc) all need to be accessible; for websites this means implementing WCAG 2.something to level AA, which includes things like minimum contrast requirements, captioned videos, and increasing font size without losing information.</p><p>And it's often considered an afterthought because by and large, designers and developers are relatively young, 20-40 some year olds working on Macbooks with 4K displays. Some may be wearing glasses but broadly speaking that's the extent of their disabilities.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49487931">Exactly; consider that only a percentage of users will actually be sitting at a desktop system using your application. Most people will visit your website on a mobile device, and a percentage of that will be in weird lighting conditions trying to operate the thing with just one hand. As just an example, and that's the people considered abled - anything that isn't the hip startup of the week aimed at 15-25 year olds will need to consider e.g. eyesight issues on top of everything else.<p>Anyway, it's not even an option anymore, under the European Accessibility Act, government and (since last year) public services (websites, apps, appliances, etc) all need to be accessible; for websites this means implementing WCAG 2.something to level AA, which includes things like minimum contrast requirements, captioned videos, and increasing font size without losing information.</p><p>And it's often considered an afterthought because by and large, designers and developers are relatively young, 20-40 some year olds working on Macbooks with 4K displays. Some may be wearing glasses but broadly speaking that's the extent of their disabilities.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49487931">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49487931" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">madeofpalk</span>
+        
+        <span>2026/08/29 07:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's because at the end of the day:<p>- accessibility is just usability. all it is is making sure your product is as usable by as many people as possible.</p><p>- it's a myth that "people with disabilities" are some <i>other</i> that excludes you, and 'accessibility' or assistive technologies only benefits <i>other people</i>. Everyone is only temporarily 'abled'. You need to use prescription glasses to comfortable read a computer screen? You're a parent trying to watch some TV while getting your child to sleep? All benefit from assistive technologies.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49485477">That's because at the end of the day:<p>- accessibility is just usability. all it is is making sure your product is as usable by as many people as possible.</p><p>- it's a myth that "people with disabilities" are some <i>other</i> that excludes you, and 'accessibility' or assistive technologies only benefits <i>other people</i>. Everyone is only temporarily 'abled'. You need to use prescription glasses to comfortable read a computer screen? You're a parent trying to watch some TV while getting your child to sleep? All benefit from assistive technologies.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49485477">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49485477" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Xirdus</span>
+        
+        <span>2026/08/29 12:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; accessibility is just usability. all it is is making sure your product is as usable by as many people as possible.<p>Not always. There are things that increase usability for fully abled people but decrease it for disabled people. Color-coding is a common one. Another is using smaller font size to make more info visible at once, or advanced touch gestures that can be accidentally triggered by shaky hands.</p><p>Then there are accessibility features that actively harm fully abled users, like sticky keys or screen readers that automatically follow focused UI elements.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49486860">&gt; accessibility is just usability. all it is is making sure your product is as usable by as many people as possible.<p>Not always. There are things that increase usability for fully abled people but decrease it for disabled people. Color-coding is a common one. Another is using smaller font size to make more info visible at once, or advanced touch gestures that can be accidentally triggered by shaky hands.</p><p>Then there are accessibility features that actively harm fully abled users, like sticky keys or screen readers that automatically follow focused UI elements.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49486860">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49486860" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

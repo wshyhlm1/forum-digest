@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做一个 iOS 27 风格的 V2EX 客户端 - 关于这个应用的上架说明以及三轮审核情况 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-29/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>做一个 iOS 27 风格的 V2EX 客户端 - 关于这个应用的上架说明以及三轮审核情况</h1>
+      <p class="original-title">做一个 iOS 27 风格的 V2EX 客户端 - 关于这个应用的上架说明以及三轮审核情况</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 xinghelee</span>
+        <span>热度 22</span>
+        <span>回复 22</span>
+        <span>2026/08/29 10:11</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1238002" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1238002.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>更新一下进度,给等上架的朋友一个交代。</li><li>这个 app 从 8 月 12 号第一次提审到现在,经历了三轮:</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>更新一下进度,给等上架的朋友一个交代。</p>
+<p>这个 app 从 8 月 12 号第一次提审到现在,经历了三轮:</p>
+<p>第一轮:Guideline 1.2(用户生成内容)拒审。 理由是论坛类 app 必须有内容治理。于是我加了一整套:首次启动条款确认、每条话题和回复都可举报、可屏蔽用户和关键词,举报会在 24 小时内核实处理。8 月 26 号重新提交。</p>
+<p>第二轮:2.1 信息问询。 问 Personal Access Token 在哪创建、要不要付费、解锁什么内容——本质是怀疑绕内购。我如实回复:token 在 <a href="http://v2ex.com" target="_blank" rel="noopener noreferrer">v2ex.com</a> 设置里免费创建,纯认证用途,app 免费、无广告、无内购。当天重新排队。</p>
+<p>第三轮:昨天深夜等来结果,4.3(a) Spam 。 大意是这个 app 和商店里已有的 app 概念雷同、只有细微差别。翻译一下:已经有别的 V2EX 客户端了,你这个算垃圾应用。</p>
+<p>说实话有点哭笑不得。代码是我从零一行行写的,SwiftUI + iOS 26 原生 Liquid Glass,整个仓库公开在 GitHub,不收一分钱。TestFlight 里 78 位朋友在用,是大家催上架我才去提审的,结果折腾三轮,得到一个 "spam"。</p>
+<p>今天已经提交申诉,开源仓库和 TestFlight 的数据都摆给他们了,也表了态:如果 App Store 真容不下,那就算了。</p>
+<p>所以这是最后一次尝试:申诉过了就上架;再不过,项目就留在开源社区,GitHub  继续更新,不再折腾审核了。</p>
+<p>感谢每一位测试和催更的朋友。</p>
+<p>仓库:<a href="https://github.com/xinghelee/v2ex" target="_blank" rel="noopener noreferrer">https://github.com/xinghelee/v2ex</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>更新一下进度,给等上架的朋友一个交代。</p>
+<p>这个 app 从 8 月 12 号第一次提审到现在,经历了三轮:</p>
+<p>第一轮:Guideline 1.2(用户生成内容)拒审。 理由是论坛类 app 必须有内容治理。于是我加了一整套:首次启动条款确认、每条话题和回复都可举报、可屏蔽用户和关键词,举报会在 24 小时内核实处理。8 月 26 号重新提交。</p>
+<p>第二轮:2.1 信息问询。 问 Personal Access Token 在哪创建、要不要付费、解锁什么内容——本质是怀疑绕内购。我如实回复:token 在 <a href="http://v2ex.com" target="_blank" rel="noopener noreferrer">v2ex.com</a> 设置里免费创建,纯认证用途,app 免费、无广告、无内购。当天重新排队。</p>
+<p>第三轮:昨天深夜等来结果,4.3(a) Spam 。 大意是这个 app 和商店里已有的 app 概念雷同、只有细微差别。翻译一下:已经有别的 V2EX 客户端了,你这个算垃圾应用。</p>
+<p>说实话有点哭笑不得。代码是我从零一行行写的,SwiftUI + iOS 26 原生 Liquid Glass,整个仓库公开在 GitHub,不收一分钱。TestFlight 里 78 位朋友在用,是大家催上架我才去提审的,结果折腾三轮,得到一个 "spam"。</p>
+<p>今天已经提交申诉,开源仓库和 TestFlight 的数据都摆给他们了,也表了态:如果 App Store 真容不下,那就算了。</p>
+<p>所以这是最后一次尝试:申诉过了就上架;再不过,项目就留在开源社区,GitHub  继续更新,不再折腾审核了。</p>
+<p>感谢每一位测试和催更的朋友。</p>
+<p>仓库:<a href="https://github.com/xinghelee/v2ex" target="_blank" rel="noopener noreferrer">https://github.com/xinghelee/v2ex</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#1</span>
+        <span>2026/08/29 11:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">咱们不受果子那气了！出个安卓吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029665">咱们不受果子那气了！出个安卓吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029665">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029665" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cs10086</span>
+        <span>#2</span>
+        <span>2026/08/29 11:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">最近审核又慢还老拒</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029687">最近审核又慢还老拒</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029687">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029687" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">run2</span>
+        <span>#3</span>
+        <span>2026/08/29 12:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说明都不是官方的，并且不要以 V2EX 为名字应该没问题吧，appname for v2ex</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029707">说明都不是官方的，并且不要以 V2EX 为名字应该没问题吧，appname for v2ex</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029707">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029707" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Removable</span>
+        <span>#4</span>
+        <span>2026/08/29 13:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">估计是最近 vibe coding 的产物有点多，审核对重复造轮子有点过敏了吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029778">估计是最近 vibe coding 的产物有点多，审核对重复造轮子有点过敏了吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029778">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029778" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">EricYuan1</span>
+        <span>#5</span>
+        <span>2026/08/29 13:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">怎么说呢，我现在一直在用 Vex ，而且我认为它的交互和设计更好，只是它不是开源的，不知道后面会咋样，有竞争是好事，你可以看看它的设计，毕竟好的设计总是心有灵犀嘛哈哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029847">怎么说呢，我现在一直在用 Vex ，而且我认为它的交互和设计更好，只是它不是开源的，不知道后面会咋样，有竞争是好事，你可以看看它的设计，毕竟好的设计总是心有灵犀嘛哈哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029847">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029847" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jaff</span>
+        <span>#6</span>
+        <span>2026/08/29 14:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也是昨天夜里 4.3(a) Spam, 但这个 app 确是花时间最好 测试最多的一个，而其它 1 天半天的都能正常上。 怪哉。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029900">我也是昨天夜里 4.3(a) Spam, 但这个 app 确是花时间最好 测试最多的一个，而其它 1 天半天的都能正常上。 怪哉。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029900">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029900" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lengziyu</span>
+        <span>#7</span>
+        <span>2026/08/29 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我两款 APP ，一个 CardFi 被拒 7 次，不过都是我自己没注意，时间花了 25 天；一个 NexaID 花了 10 天，被拒一次，都通过了，也算松一口气。安卓 Google Play 反而更松，第一次 一天就过，迭代版本 2 小时就过。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029945">我两款 APP ，一个 CardFi 被拒 7 次，不过都是我自己没注意，时间花了 25 天；一个 NexaID 花了 10 天，被拒一次，都通过了，也算松一口气。安卓 Google Play 反而更松，第一次 一天就过，迭代版本 2 小时就过。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029945">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029945" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#8</span>
+        <span>2026/08/29 15:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> #1 考虑中</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029961">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> #1 考虑中</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029961">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029961" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#9</span>
+        <span>2026/08/29 15:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/cs10086" target="_blank" rel="noopener noreferrer">cs10086</a> #2 是的感觉有点过度了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029963">@<a href="/member/cs10086" target="_blank" rel="noopener noreferrer">cs10086</a> #2 是的感觉有点过度了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029963">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029963" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#10</span>
+        <span>2026/08/29 15:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/EricYuan1" target="_blank" rel="noopener noreferrer">EricYuan1</a> #5 好的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029969">@<a href="/member/EricYuan1" target="_blank" rel="noopener noreferrer">EricYuan1</a> #5 好的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029969">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029969" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#11</span>
+        <span>2026/08/29 15:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jaff" target="_blank" rel="noopener noreferrer">jaff</a> #6 是的，严格没问题 我觉得应该是淘汰不维护的而不是不给新的机会</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029972">@<a href="/member/jaff" target="_blank" rel="noopener noreferrer">jaff</a> #6 是的，严格没问题 我觉得应该是淘汰不维护的而不是不给新的机会</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029972">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029972" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#12</span>
+        <span>2026/08/29 15:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lengziyu" target="_blank" rel="noopener noreferrer">lengziyu</a> #7 这么说 我也想试试安卓开发了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029975">@<a href="/member/lengziyu" target="_blank" rel="noopener noreferrer">lengziyu</a> #7 这么说 我也想试试安卓开发了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029975">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029975" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#13</span>
+        <span>2026/08/29 15:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/run2" target="_blank" rel="noopener noreferrer">run2</a> #3 我等等苹果看看怎么回复，看是不是这个问题。描述里倒是有写不是官方客户端，但是不知道名字会不会有影响。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18029984">@<a href="/member/run2" target="_blank" rel="noopener noreferrer">run2</a> #3 我等等苹果看看怎么回复，看是不是这个问题。描述里倒是有写不是官方客户端，但是不知道名字会不会有影响。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18029984">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18029984" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">run2</span>
+        <span>#14</span>
+        <span>2026/08/29 15:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xinghelee" target="_blank" rel="noopener noreferrer">xinghelee</a> 我看有个已上架的也改名了，vetiver</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030005">@<a href="/member/xinghelee" target="_blank" rel="noopener noreferrer">xinghelee</a> 我看有个已上架的也改名了，vetiver</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030005">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030005" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dododook</span>
+        <span>#15</span>
+        <span>2026/08/29 16:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持一下 我也做了一个 目前就自己玩玩😂现在就是用这个客户端回的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030047">支持一下 我也做了一个 目前就自己玩玩😂现在就是用这个客户端回的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030047">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030047" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">TomXx</span>
+        <span>#16</span>
+        <span>2026/08/29 16:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以打个 ipa 放到 release 里面吗，我想自签安装</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030123">可以打个 ipa 放到 release 里面吗，我想自签安装</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030123">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030123" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xiangyuecn</span>
+        <span>#17</span>
+        <span>2026/08/29 17:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这玩意也是需要运气的，有些审核的人就是有病🤡 第二天换个人审核可能就毛事没有😂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030181">这玩意也是需要运气的，有些审核的人就是有病🤡 第二天换个人审核可能就毛事没有😂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030181">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030181" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xinghelee</span>
+        <span>#18</span>
+        <span>2026/08/29 17:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/TomXx" target="_blank" rel="noopener noreferrer">TomXx</a> 放了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030191">@<a href="/member/TomXx" target="_blank" rel="noopener noreferrer">TomXx</a> 放了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030191">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030191" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">callmejoejoe</span>
+        <span>#19</span>
+        <span>2026/08/29 17:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1. 建议改名<br />2. 4.3 后想再过审非常难，而且审核速度也会变慢很多，不过不知道现在是不是还这样</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030195">1. 建议改名<br />2. 4.3 后想再过审非常难，而且审核速度也会变慢很多，不过不知道现在是不是还这样</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030195">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030195" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">edinina</span>
+        <span>#20</span>
+        <span>2026/08/29 18:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现在记账 App 那么多，那我正在做的提交了也是只有细微差别，过不了吧🥹</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18030213">现在记账 App 那么多，那我正在做的提交了也是只有细微差别，过不了吧🥹</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18030213">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238002#reply18030213" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
