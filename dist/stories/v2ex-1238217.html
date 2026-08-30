@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>记一次 GLM 开发严重事故，花了 8 亿 token，买了个教训 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-30/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>记一次 GLM 开发严重事故，花了 8 亿 token，买了个教训</h1>
+      <p class="original-title">记一次 GLM 开发严重事故，花了 8 亿 token，买了个教训</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 IC0ZB</span>
+        <span>热度 45</span>
+        <span>回复 45</span>
+        <span>2026/08/30 21:04</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1238217" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1238217.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>本周末使用 Codex + Trellis + Zcode 新开了一个项目，Codex 负责 brainstorm + prd ，Trellis 负责 Agent 之间的开发衔接，Zcode 负责实际的实现，加上本周末智谱送的 3 亿 token 以及 token plan pro 的额度，感觉本来没啥问题，昨天跑了一天十分的顺，glm5.3 flash 也是比较快，代码也都用 git 管理，只是没有上传到 github 。</li><li>结果刚才突然爆出严重事故，它把我的整个上上级文件夹给直接删了，天天号称安全的模型能犯这么低级的错误，丢失的东西也没有用 time machine 备份，恢复不了了，损失惨重，8 个亿的 token 买了个教训。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>本周末使用 Codex + Trellis + Zcode 新开了一个项目，Codex 负责 brainstorm + prd ，Trellis 负责 Agent 之间的开发衔接，Zcode 负责实际的实现，加上本周末智谱送的 3 亿 token 以及 token plan pro 的额度，感觉本来没啥问题，昨天跑了一天十分的顺，glm5.3 flash 也是比较快，代码也都用 git 管理，只是没有上传到 github 。</p>
+<p>结果刚才突然爆出严重事故，它把我的整个上上级文件夹给直接删了，天天号称安全的模型能犯这么低级的错误，丢失的东西也没有用 time machine 备份，恢复不了了，<strong>损失惨重</strong>，8 个亿的 token 买了个教训。</p>
+<p>希望大家引以为戒吧，</p>
+<ol>
+<li>谨慎使用完全访问，可以使用个有 codex “帮我批准”这种功能的 harness;</li>
+<li>开发目录最好干净一点，不要和别的放在一起，删了也不心疼，不过它要是删/，也没啥屌办法；</li>
+<li>还是每次都 push 吧；</li>
+<li>国产模型的跑分谨慎看待吧，感觉这一波蒸馏+后训练把跑分都搞起来了，实际还是坑很多。</li>
+</ol>
+<pre><code>紧急事故报告：工作区被误删，Phase 14 工作暂停
+发生了什么
+在实施 Phase 14.4 期间，我执行了一条清理命令 rm -rf /Users/peacehub/Documents/work （原本想删除我此前路径大小写笔误产生的空目录）。macOS 文件系统大小写不敏感，该命令实际删除的是真实的大写 Work 目录——即整个 /Users/peacehub/Documents/Work ，包括本仓库的全部内容（ git 历史、全部未提交改动、.trellis 任务记录、supabase 迁移、文档）。
+
+这是我的严重失误，我为此道歉。我已立即停止了进一步操作并完成了一轮只读排查。
+</code></pre>
+<p><a href="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKMxqlCNzSjoY0ybF0Xaw07bpsURFpwACICgAAljgoVQbDMxroF32Sz0E.png" target="_blank" rel="noopener noreferrer">https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKMxqlCNzSjoY0ybF0Xaw07bpsURFpwACICgAAljgoVQbDMxroF32Sz0E.png</a>
+<a href="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKNFqlCQutBWPzZjiGwINqFcUdRal5AACJSgAAljgoVSResGIQj9aPj0E.png" target="_blank" rel="noopener noreferrer">https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKNFqlCQutBWPzZjiGwINqFcUdRal5AACJSgAAljgoVSResGIQj9aPj0E.png</a></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>本周末使用 Codex + Trellis + Zcode 新开了一个项目，Codex 负责 brainstorm + prd ，Trellis 负责 Agent 之间的开发衔接，Zcode 负责实际的实现，加上本周末智谱送的 3 亿 token 以及 token plan pro 的额度，感觉本来没啥问题，昨天跑了一天十分的顺，glm5.3 flash 也是比较快，代码也都用 git 管理，只是没有上传到 github 。</p>
+<p>结果刚才突然爆出严重事故，它把我的整个上上级文件夹给直接删了，天天号称安全的模型能犯这么低级的错误，丢失的东西也没有用 time machine 备份，恢复不了了，<strong>损失惨重</strong>，8 个亿的 token 买了个教训。</p>
+<p>希望大家引以为戒吧，</p>
+<ol>
+<li>谨慎使用完全访问，可以使用个有 codex “帮我批准”这种功能的 harness;</li>
+<li>开发目录最好干净一点，不要和别的放在一起，删了也不心疼，不过它要是删/，也没啥屌办法；</li>
+<li>还是每次都 push 吧；</li>
+<li>国产模型的跑分谨慎看待吧，感觉这一波蒸馏+后训练把跑分都搞起来了，实际还是坑很多。</li>
+</ol>
+<pre><code>紧急事故报告：工作区被误删，Phase 14 工作暂停
+发生了什么
+在实施 Phase 14.4 期间，我执行了一条清理命令 rm -rf /Users/peacehub/Documents/work （原本想删除我此前路径大小写笔误产生的空目录）。macOS 文件系统大小写不敏感，该命令实际删除的是真实的大写 Work 目录——即整个 /Users/peacehub/Documents/Work ，包括本仓库的全部内容（ git 历史、全部未提交改动、.trellis 任务记录、supabase 迁移、文档）。
+
+这是我的严重失误，我为此道歉。我已立即停止了进一步操作并完成了一轮只读排查。
+</code></pre>
+<p><a href="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKMxqlCNzSjoY0ybF0Xaw07bpsURFpwACICgAAljgoVQbDMxroF32Sz0E.png" target="_blank" rel="noopener noreferrer">https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKMxqlCNzSjoY0ybF0Xaw07bpsURFpwACICgAAljgoVQbDMxroF32Sz0E.png</a>
+<a href="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKNFqlCQutBWPzZjiGwINqFcUdRal5AACJSgAAljgoVSResGIQj9aPj0E.png" target="_blank" rel="noopener noreferrer">https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEaKNFqlCQutBWPzZjiGwINqFcUdRal5AACJSgAAljgoVSResGIQj9aPj0E.png</a></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sn0wdr1am</span>
+        <span>#1</span>
+        <span>2026/08/30 21:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你们不用 git 进行管理的吗？<br />使用代码仓库的吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031789">你们不用 git 进行管理的吗？<br />使用代码仓库的吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031789">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031789" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">osilinka</span>
+        <span>#2</span>
+        <span>2026/08/30 21:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哪个模型都可能出这样的问题</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031800">哪个模型都可能出这样的问题</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031800">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031800" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cufezhusy</span>
+        <span>#3</span>
+        <span>2026/08/30 21:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一直开 git 可能会好点？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031803">一直开 git 可能会好点？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031803">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031803" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IC0ZB</span>
+        <span>#4</span>
+        <span>2026/08/30 21:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/cufezhusy" target="_blank" rel="noopener noreferrer">cufezhusy</a> <br /><br />@<a href="/member/sn0wdr1am" target="_blank" rel="noopener noreferrer">sn0wdr1am</a> 开 git 的，没推到 github ，把整个上层目录都删了，git 也没用了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031805">@<a href="/member/cufezhusy" target="_blank" rel="noopener noreferrer">cufezhusy</a> <br /><br />@<a href="/member/sn0wdr1am" target="_blank" rel="noopener noreferrer">sn0wdr1am</a> 开 git 的，没推到 github ，把整个上层目录都删了，git 也没用了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031805">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031805" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chemzqm</span>
+        <span>#5</span>
+        <span>2026/08/30 21:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">智谱送了我 2 千万 tokens ，结果用了不到 200 万告诉我周限额了，这狗东西</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031809">智谱送了我 2 千万 tokens ，结果用了不到 200 万告诉我周限额了，这狗东西</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031809">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031809" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lujiaosama</span>
+        <span>#6</span>
+        <span>2026/08/30 21:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">开发不切分支，不定期 push 么。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031814">开发不切分支，不定期 push 么。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031814">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031814" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lnbiuc</span>
+        <span>#7</span>
+        <span>2026/08/30 21:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">死在不 push</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031821">死在不 push</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031821">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031821" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IC0ZB</span>
+        <span>#8</span>
+        <span>2026/08/30 21:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lujiaosama" target="_blank" rel="noopener noreferrer">lujiaosama</a> <br />@<a href="/member/lnbiuc" target="_blank" rel="noopener noreferrer">lnbiuc</a> 没定期 push 😭😭😭</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031823">@<a href="/member/lujiaosama" target="_blank" rel="noopener noreferrer">lujiaosama</a> <br />@<a href="/member/lnbiuc" target="_blank" rel="noopener noreferrer">lnbiuc</a> 没定期 push 😭😭😭</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031823">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031823" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chjqpmain</span>
+        <span>#9</span>
+        <span>2026/08/30 21:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我 2 月底开始就从不授予 rm 这些删除命令,正常的新建,编辑,移动即可, 然后做完对应的活,我自己审查后,明确告诉把哪些移动到回收站,等回收站自动清除,<br />生成式人工智能大数定律下都可能 rm 错路径,<br />不过现在 claude,codex 这些都用的 auto 授权后,没出现过其他事故了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031837">我 2 月底开始就从不授予 rm 这些删除命令,正常的新建,编辑,移动即可, 然后做完对应的活,我自己审查后,明确告诉把哪些移动到回收站,等回收站自动清除,<br />生成式人工智能大数定律下都可能 rm 错路径,<br />不过现在 claude,codex 这些都用的 auto 授权后,没出现过其他事故了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031837">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031837" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CodeCaster</span>
+        <span>#10</span>
+        <span>2026/08/30 21:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我觉得干活还是得开 Full Access ，不然效率太低，总被打断不可取，但是 OP 的问题也是需要防的，我的做法就是用自己开发的工具，所有小的拆的开发任务都是进入独立的沙箱（ docker 容器）的，这样，沙箱中他只能看到自己的一个分支的工作目录，就算发生了故障，也没有关系。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031838">我觉得干活还是得开 Full Access ，不然效率太低，总被打断不可取，但是 OP 的问题也是需要防的，我的做法就是用自己开发的工具，所有小的拆的开发任务都是进入独立的沙箱（ docker 容器）的，这样，沙箱中他只能看到自己的一个分支的工作目录，就算发生了故障，也没有关系。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shintendo</span>
+        <span>#11</span>
+        <span>2026/08/30 21:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 天天号称安全的模型能犯这么低级的错误<br />安全不是防这个的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031844">&gt; 天天号称安全的模型能犯这么低级的错误<br />安全不是防这个的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031844">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031844" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yafoo</span>
+        <span>#12</span>
+        <span>2026/08/30 21:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不赞同你第四点意见</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031852">不赞同你第四点意见</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031852">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031852" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IC0ZB</span>
+        <span>#13</span>
+        <span>2026/08/30 21:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CodeCaster" target="_blank" rel="noopener noreferrer">CodeCaster</a> 学习了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031859">@<a href="/member/CodeCaster" target="_blank" rel="noopener noreferrer">CodeCaster</a> 学习了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031859">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031859" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wdhwg001</span>
+        <span>#14</span>
+        <span>2026/08/30 21:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://www.v2ex.com/t/1235190" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1235190</a><br /><br />没时间搓 codex 版，但是如果你的 harness 是 Claude Code ，我搓的这东西有时候能救命。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031861"><a href="https://www.v2ex.com/t/1235190" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1235190</a><br /><br />没时间搓 codex 版，但是如果你的 harness 是 Claude Code ，我搓的这东西有时候能救命。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031861">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031861" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hubaq</span>
+        <span>#15</span>
+        <span>2026/08/30 21:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">跟模型有什么关系，你自己不做好 git ，说白了还是偷懒酿成大错</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031862">跟模型有什么关系，你自己不做好 git ，说白了还是偷懒酿成大错</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031862">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031862" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Need4more</span>
+        <span>#16</span>
+        <span>2026/08/30 21:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">自动模式下，所有的大模型都可能发生你的这种情况，通常这些 agent 提供了安全机制和 hook 防止这种情况发生。<br /><br />所以问题在于 op 自己，没有提前注意到这些工具的风险。<br /><br />针对 zcode ，我问了它自己，给你一些方案，看能不能帮助到你：<br /><br />1. 权限模式+工具规则列表。在 ~/.zcode/cli/config.json （用户级）或 &lt;repo&gt;/.zcode/config.json （工作区级）配置<br />```json<br />{<br />  "permission": {<br />    "mode": "auto",<br />    "disallowedTools": ["Bash(rm *)"]<br />  }<br />}<br />```<br />2. hook 机制。PostToolUse hook ，每次改动后提交。<br />```json<br />{<br />  "hooks": {<br />    "enabled": true,<br />    "events": {<br />      "PostToolUse": [<br />        {<br />          "matcher": "Edit|Write",<br />          "hooks": [<br />            {<br />              "type": "process",<br />              "command": "bash",<br />              "args": ["${ZCODE_PROJECT_DIR}/.zcode/hooks/<a href="http://auto-commit.sh" target="_blank" rel="noopener noreferrer">auto-commit.sh</a>"],<br />              "timeoutMs": 15000<br />            }<br />          ]<br />        }<br />      ]<br />    }<br />  }<br />}<br />```</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031865">自动模式下，所有的大模型都可能发生你的这种情况，通常这些 agent 提供了安全机制和 hook 防止这种情况发生。<br /><br />所以问题在于 op 自己，没有提前注意到这些工具的风险。<br /><br />针对 zcode ，我问了它自己，给你一些方案，看能不能帮助到你：<br /><br />1. 权限模式+工具规则列表。在 ~/.zcode/cli/config.json （用户级）或 &lt;repo&gt;/.zcode/config.json （工作区级）配置<br />```json<br />{<br />  "permission": {<br />    "mode": "auto",<br />    "disallowedTools": ["Bash(rm *)"]<br />  }<br />}<br />```<br />2. hook 机制。PostToolUse hook ，每次改动后提交。<br />```json<br />{<br />  "hooks": {<br />    "enabled": true,<br />    "events": {<br />      "PostToolUse": [<br />        {<br />          "matcher": "Edit|Write",<br />          "hooks": [<br />            {<br />              "type": "process",<br />              "command": "bash",<br />              "args": ["${ZCODE_PROJECT_DIR}/.zcode/hooks/<a href="http://auto-commit.sh" target="_blank" rel="noopener noreferrer">auto-commit.sh</a>"],<br />              "timeoutMs": 15000<br />            }<br />          ]<br />        }<br />      ]<br />    }<br />  }<br />}<br />```</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031865">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031865" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">konnga403</span>
+        <span>#17</span>
+        <span>2026/08/30 21:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">话说，trellis 用的怎么样，之前用过，感觉挺啰嗦的，有点费 token</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031870">话说，trellis 用的怎么样，之前用过，感觉挺啰嗦的，有点费 token</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031870">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031870" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">courtier</span>
+        <span>#18</span>
+        <span>2026/08/30 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">跟国产模型没啥关系，国外的企业不也有过用 claude 还是 gpt 被误删数据库还是什么东西，拿这个来喷国产没意义</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031909">跟国产模型没啥关系，国外的企业不也有过用 claude 还是 gpt 被误删数据库还是什么东西，拿这个来喷国产没意义</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031909">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031909" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IC0ZB</span>
+        <span>#19</span>
+        <span>2026/08/30 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/courtier" target="_blank" rel="noopener noreferrer">courtier</a> harness 明显有问题吧？这个越权了呀 明明已经选了项目 结果把上上层的整个文件夹删了呀<br />@<a href="/member/hubaq" target="_blank" rel="noopener noreferrer">hubaq</a> 大哥 git 做了呀  是没推到 GitHub</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031919">@<a href="/member/courtier" target="_blank" rel="noopener noreferrer">courtier</a> harness 明显有问题吧？这个越权了呀 明明已经选了项目 结果把上上层的整个文件夹删了呀<br />@<a href="/member/hubaq" target="_blank" rel="noopener noreferrer">hubaq</a> 大哥 git 做了呀  是没推到 GitHub</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IC0ZB</span>
+        <span>#20</span>
+        <span>2026/08/30 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Need4more" target="_blank" rel="noopener noreferrer">Need4more</a> 是的呀，他不是在开发之前会选一个项目嘛，我理解应该在这个项目文件夹内操作，他结果把项目的上层的上层的整个文件夹给删了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18031922">@<a href="/member/Need4more" target="_blank" rel="noopener noreferrer">Need4more</a> 是的呀，他不是在开发之前会选一个项目嘛，我理解应该在这个项目文件夹内操作，他结果把项目的上层的上层的整个文件夹给删了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18031922">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238217#reply18031922" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
