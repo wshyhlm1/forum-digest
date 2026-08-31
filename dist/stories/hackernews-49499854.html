@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omarchy: Any User Process Can Escalate to Root | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-31/">返回日报</a>
+      <div class="source-chip">Hacker News #7</div>
+      <h1>Omarchy: Any User Process Can Escalate to Root</h1>
+      <p class="original-title">Omarchy: Any User Process Can Escalate to Root</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 trap0xcc</span>
+        <span>热度 485</span>
+        <span>回复 471</span>
+        <span>2026/08/30 23:59</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49499854" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://0xcc.io/posts/omarchy-root-creds/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49499854.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>A security issue in Omarchy’s default Docker configuration meant that essentially every program running in the user’s desktop session could escalate to root without a password, sudo, or a privilege prompt.If you use Omarchy, the most important takeaway is simple: update to 4.0.1.I reported this issue privately through the project’s responsible-disclosure process. The underlying configuration has since been patched, so I’m publishing the details now to explain what the issue is and let users know to update their systems.The IssueOmarchy configured its default user as a member of the Linux docker group.That allows users to run commands such as:docker run ... without typing sudo.On arch the Docker daemon runs as root and listens on:/var/run/docker.sock Members of the docker group can communicate with that socket. Docker itself explicitly warns that the docker group grants root-level privileges to the user.A process with access to the Docker socket can ask the root-owned Docker daemon to launch a container as root, mount arbitrary portions of the host filesystem into it, operate on those files as root, and run code as root.On affected Omarchy systems, this means that the default user and all processes launched in that user session have access to root.Proof of ConceptOn a fresh affected Omarchy installation try reading /etc/shadow:$ cat /etc/shadow cat: /etc/shadow: Permission denied Now observe the group memberships for your user:$ id uid=1000(tester) gid=1000(tester) groups=1000(tester),967(docker),992(input),998(wheel) Now read the protected file with docker acting as root:$ docker run --rm -v /:/hostroot alpine cat /hostroot/etc/shadow root:$6$... bin:!*:... daemon:!*:... ... The command is launched by an ordinary user process, but the actual filesystem access is performed through a daemon running as root.ScopeLinux supplementary groups are inherited by child processes so this affects the entire user session.Walking the process tree below the user’s systemd --user instance showed the Docker group present on essentially every normal process in the session.This means nearly every process where untrusted code could run, could obtain root, including:AI coding agents and agent harnessesweb browserseditors and IDEsnpm scriptsrandom development toolsbackground processesIn other words, a compromise of a normal user application could immediately become a full machine compromise.Security DefaultsThere is another important aspect of this configuration. It was opt-out, not opt-in. A user did not have to actually use Docker. The security tradeoff was made for them, applied to the default account, and the tradeoff was not explained to the user.Security-sensitive defaults matter precisely because many users reasonably assume that the operating system defaults to secure and will inform or prompt them to opt-in to less secure settings.Misleading DocumentationOmarchy did mention the Docker group in its development-tools documentation:Omarchy installs everything needed to run [docker] well. This includes […] the user group changes needed for you to run Docker as the normal user and not as root.The security implication is almost the opposite of what a typical reader might infer from “not as root”. A user reading that description could reasonably conclude that Omarchy had configured Docker in some kind of rootless mode. It had not.Impacted VersionsThis affects versions prior to 4.0.1. I tested it on the latest 3.x iso (3.8.4) and it was also impacted.TimelineThe timeline of commits from the introduction to resolution of this issue:June 1, 2025 — Docker group membership introduced 25799eeJune 2, 2025 — Docker group addition temporarily disabled c5ee230June 17, 2025 — Docker group membership re-enabled fdd2aafAugust 24, 2026 — Docker group membership removed from the default configuration b5ded31The Broader ContextAs AI is increasingly producing high severity CVEs against core infrastructure, security needs to be top of mind for all developers, but especially authors of distributions targeted at developers. Lately there have been innumerable reports of developer machines being compromised and their access used to contaminate the software supply chain or exploit production systems. Developers are high-value targets because of the level of access they are often granted. Developer machines typically disable security guardrails for convenience, store credentials in plain-text dotfiles, and accumulate access to systems. This must change.I’m sure this was just an oversight by DHH not knowing the implications of adding the docker group. No distribution is going to make perfect decisions when it comes to security. I was amazed by the speed of response to this issue being reported which is a healthy sign.That said, this isn’t the first time I have ran into security issues with Omarchy and frankly I do not trust the decision making process as it stands to ensure the level of security I expect out of my distro. I hope that changes at some point because there is a lot to like about Omarchy.PodmanIf you are a user of Docker on Linux and don’t want to be forced into granting root (even with sudo) to run containers, then I highly recommend you try out Podman. Podman is daemonless. Your containers run as normal child processes in their own user namespaces and don’t require any sort of root access. I have been running Podman for many months now and it has entirely replaced all of my Docker workflows. I highly recommend giving it a try.ReferencesDocker: Manage Docker as a non-root userOmarchy Docker documentation</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">concinds</span>
+        
+        <span>2026/08/31 01:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A few days ago someone found they were flowing USB descriptors straight into the shell.<p><a href="https://github.com/omacom/omarchy/commit/9285b19d6a72eba3df8537d62a4cd5506a803d89" target="_blank" rel="noopener noreferrer">https://github.com/omacom/omarchy/commit/9285b19d6a72eba3df8...</a></p><p>Don't use vibecoded distros. It doesn't matter whether they fix this or that, or whether you care about a particular vuln. This is not sensible. It's why you switched away from Windows in the first place, remember?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49500466">A few days ago someone found they were flowing USB descriptors straight into the shell.<p><a href="https://github.com/omacom/omarchy/commit/9285b19d6a72eba3df8537d62a4cd5506a803d89" target="_blank" rel="noopener noreferrer">https://github.com/omacom/omarchy/commit/9285b19d6a72eba3df8...</a></p><p>Don't use vibecoded distros. It doesn't matter whether they fix this or that, or whether you care about a particular vuln. This is not sensible. It's why you switched away from Windows in the first place, remember?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49500466">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49500466" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">teekert</span>
+        
+        <span>2026/08/31 01:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">But, this “vulnerability” is the thing everybody knows about docker since forever. I always make my user part of the docker group, so my NixOS also has this, and any Ubuntu I’ve used over the past year. What is different here?<p>Start a docker container with the docker socket mounted in the container and now you can have yourself mount / as rw. Everybody knows this. How is everybody so shocked here. Many instructions online tell you to make yourself part of the docker group for convenience (like the digital ocean one).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49501025">But, this “vulnerability” is the thing everybody knows about docker since forever. I always make my user part of the docker group, so my NixOS also has this, and any Ubuntu I’ve used over the past year. What is different here?<p>Start a docker container with the docker socket mounted in the container and now you can have yourself mount / as rw. Everybody knows this. How is everybody so shocked here. Many instructions online tell you to make yourself part of the docker group for convenience (like the digital ocean one).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49501025">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49501025" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/08/31 02:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; What is different here?<p>I don’t understand how this is a question.</p><p>What’s different is that it comes configured this way out of the box, silently, without warning. It’s functionally equivalent to opting in to giving all user accounts root privileges, which is not what anyone expects the default configuration to be.</p><p>You can choose to configure your installs this way if you choose to do so. It should not come this way quietly by default.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49501151">&gt; What is different here?<p>I don’t understand how this is a question.</p><p>What’s different is that it comes configured this way out of the box, silently, without warning. It’s functionally equivalent to opting in to giving all user accounts root privileges, which is not what anyone expects the default configuration to be.</p><p>You can choose to configure your installs this way if you choose to do so. It should not come this way quietly by default.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49501151">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49501151" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">BobbyTables2</span>
+        
+        <span>2026/08/31 12:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">More like a company that had hundreds of millions of dollars and a couple decades should have fixed it by now.<p>If only Podman could beat Docker in advertising…</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49505447">More like a company that had hundreds of millions of dollars and a couple decades should have fixed it by now.<p>If only Podman could beat Docker in advertising…</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49505447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49505447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">0xbadcafebee</span>
+        
+        <span>2026/08/31 12:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">First they should try making a solution that works as well as Docker. Every time I use Podman or Podman Desktop I run into the most basic problems. Docker works out of the box everywhere.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49505598">First they should try making a solution that works as well as Docker. Every time I use Podman or Podman Desktop I run into the most basic problems. Docker works out of the box everywhere.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49505598">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49505598" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">osigurdson</span>
+        
+        <span>2026/08/31 13:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't use Podman desktop but I haven't had any issues at all with basic Podman. It just seems like a better overall design. It would be great if Docker copied the rootless / daemonless approach if possible.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49505873">I don't use Podman desktop but I haven't had any issues at all with basic Podman. It just seems like a better overall design. It would be great if Docker copied the rootless / daemonless approach if possible.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49505873">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49505873" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">teekert</span>
+        
+        <span>2026/08/31 14:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For me the problems are always when I pull some image (like GitLab) and try to get it to work with podman. Or the hoops you have to jump through with podman-compose (user lingering, systemd services, privileged ports (80,443) [yeah I know it's a feature]). Docker just works, Podman (I feel) still requires stuff that makes it less declarative (to get to a running infra).<p>Still, having a gitlab runner with a docker in docker setup that can access the host docker socket is not something you do lighty, so I am eyeballing buildah etc.</p><p>I guess what really grinds my gears is that I'd use podman a looooot more if it could nicely coexist with Docker. I'd use Docker for the big services and podman for all my own stuff. But that is just not possible (at least not afaik), so it is also difficult to switch step by step (yes VMs, bla bla, but it's all complicating).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49506308">For me the problems are always when I pull some image (like GitLab) and try to get it to work with podman. Or the hoops you have to jump through with podman-compose (user lingering, systemd services, privileged ports (80,443) [yeah I know it's a feature]). Docker just works, Podman (I feel) still requires stuff that makes it less declarative (to get to a running infra).<p>Still, having a gitlab runner with a docker in docker setup that can access the host docker socket is not something you do lighty, so I am eyeballing buildah etc.</p><p>I guess what really grinds my gears is that I'd use podman a looooot more if it could nicely coexist with Docker. I'd use Docker for the big services and podman for all my own stuff. But that is just not possible (at least not afaik), so it is also difficult to switch step by step (yes VMs, bla bla, but it's all complicating).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49506308">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49506308" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">JeremyNT</span>
+        
+        <span>2026/08/31 04:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The whole point of Omarchy is for people who want to use Arch Linux but have it configured the way DHH does.<p>So I think it's a little different. Anybody using an opinionated respin should understand what they're getting.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49502420">The whole point of Omarchy is for people who want to use Arch Linux but have it configured the way DHH does.<p>So I think it's a little different. Anybody using an opinionated respin should understand what they're getting.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49502420">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49502420" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/08/31 07:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The Omarchy team admitted it was a mistake and corrected it quickly.<p>It’s strange that so many people are trying to call this security error intentional.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49503706">The Omarchy team admitted it was a mistake and corrected it quickly.<p>It’s strange that so many people are trying to call this security error intentional.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49503706">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49503706" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">maxlin</span>
+        
+        <span>2026/08/31 12:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It might be a mistake but not a serious one, like it's a common setting they had on for convenience of development without being too insecure, but forgot to leave it out of public release.<p>So there's nothing weird. It being on originally was intentional and not crazy. Only it going all they way wasn't.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49505435">It might be a mistake but not a serious one, like it's a common setting they had on for convenience of development without being too insecure, but forgot to leave it out of public release.<p>So there's nothing weird. It being on originally was intentional and not crazy. Only it going all they way wasn't.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49505435">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49505435" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">troupo</span>
+        
+        <span>2026/08/31 15:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; but forgot to leave it out of public release.<p>They didn't forget. They never knew it was there. <a href="https://news.ycombinator.com/item?id=49502099" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49502099</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49506674">&gt; but forgot to leave it out of public release.<p>They didn't forget. They never knew it was there. <a href="https://news.ycombinator.com/item?id=49502099" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49502099</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49506674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49506674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">matheusmoreira</span>
+        
+        <span>2026/08/31 04:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; people who want to use Arch Linux but have it configured the way DHH does<p>Then they don't actually want to use Arch Linux.</p><p>The Arch Linux way is to read the excellent wiki documentation, learn about all the choices available, and then make all of those choices so the system is configured the user's way instead of some celebrity's way.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49502552">&gt; people who want to use Arch Linux but have it configured the way DHH does<p>Then they don't actually want to use Arch Linux.</p><p>The Arch Linux way is to read the excellent wiki documentation, learn about all the choices available, and then make all of those choices so the system is configured the user's way instead of some celebrity's way.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49502552">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49502552" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jadar</span>
+        
+        <span>2026/08/31 05:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Couldn’t you say that about any Arch spinoff? Seems to be the no true scotsman fallacy.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49502857">Couldn’t you say that about any Arch spinoff? Seems to be the no true scotsman fallacy.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49502857">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49502857" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">matheusmoreira</span>
+        
+        <span>2026/08/31 05:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Couldn’t you say that about any Arch spinoff?<p>I can, and I do.</p><p><a href="https://wiki.archlinux.org/title/Arch_Linux#User_centrality" target="_blank" rel="noopener noreferrer">https://wiki.archlinux.org/title/Arch_Linux#User_centrality</a></p><p>&gt; It is targeted at the proficient GNU/Linux user, or anyone with a do-it-yourself attitude who is willing to read the documentation, and solve their own problems.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49503002">&gt; Couldn’t you say that about any Arch spinoff?<p>I can, and I do.</p><p><a href="https://wiki.archlinux.org/title/Arch_Linux#User_centrality" target="_blank" rel="noopener noreferrer">https://wiki.archlinux.org/title/Arch_Linux#User_centrality</a></p><p>&gt; It is targeted at the proficient GNU/Linux user, or anyone with a do-it-yourself attitude who is willing to read the documentation, and solve their own problems.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49503002">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49503002" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Dylan16807</span>
+        
+        <span>2026/08/31 10:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Assuming you mean "they don't actually want to use Arch" as a criticism (rather than a truism), I think that's fair for a distro described as "Arch linux but configured X way".  I don't think it's a good criticism for something like SteamOS which is configurable but is aiming hard for "it just works".</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49504801">Assuming you mean "they don't actually want to use Arch" as a criticism (rather than a truism), I think that's fair for a distro described as "Arch linux but configured X way".  I don't think it's a good criticism for something like SteamOS which is configurable but is aiming hard for "it just works".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49504801">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49504801" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">AuthAuth</span>
+        
+        <span>2026/08/31 06:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thats the old arch way. New arch is archinstall + AI</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49503485">Thats the old arch way. New arch is archinstall + AI</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49503485">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49503485" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">osigurdson</span>
+        
+        <span>2026/08/31 13:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I like and use Arch daily. My "way" was just to get past the fdisk squirrel catcher. After that it was as easy as Ubuntu. I'm not bragging, I wish I'd read the manual but was too impatient for that. I suspect I'm not the only arch user that arrived at it using similar approaches. I might even be a target user for DHH's distro but the bloat (and to some extent the vibe coding) holds me back.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49505964">I like and use Arch daily. My "way" was just to get past the fdisk squirrel catcher. After that it was as easy as Ubuntu. I'm not bragging, I wish I'd read the manual but was too impatient for that. I suspect I'm not the only arch user that arrived at it using similar approaches. I might even be a target user for DHH's distro but the bloat (and to some extent the vibe coding) holds me back.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49505964">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49505964" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jaapz</span>
+        
+        <span>2026/08/31 05:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Then they don't actually want to use Arch Linux.<p>No, they want to use Arch Linux as configured by DHH</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49502936">&gt; Then they don't actually want to use Arch Linux.<p>No, they want to use Arch Linux as configured by DHH</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49502936">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49502936" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">maxlin</span>
+        
+        <span>2026/08/31 12:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Actually we do. I like pacman for example. And don't mind going thru archinstall for a test install once to learn. But my workstation, I'd not like to have to develop, even if I do like configuring minimal installs for other uses like kiosks.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49505451">Actually we do. I like pacman for example. And don't mind going thru archinstall for a test install once to learn. But my workstation, I'd not like to have to develop, even if I do like configuring minimal installs for other uses like kiosks.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49505451">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49505451" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">xyzsparetimexyz</span>
+        
+        <span>2026/08/31 06:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">installing arch is enough of a pain that I've been putting  off installing it on my desktop for months.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49503430">installing arch is enough of a pain that I've been putting  off installing it on my desktop for months.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49503430">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49503430" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

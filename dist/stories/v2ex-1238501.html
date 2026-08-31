@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>给 AI 读公众号的小工具跑了几个月： 330 个注册，十来个付费，我还是不知道该不该加功能 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-08-31/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>给 AI 读公众号的小工具跑了几个月： 330 个注册，十来个付费，我还是不知道该不该加功能</h1>
+      <p class="original-title">给 AI 读公众号的小工具跑了几个月： 330 个注册，十来个付费，我还是不知道该不该加功能</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 sweeyeah</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/08/31 21:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1238501" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1238501.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>3 月份我在 V2EX 发过一帖，问给 AI 做一个读取公众号文章的 Skill 到底有没有意义。</li><li>旧帖： https://www.v2ex.com/t/1200142</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>3 月份我在 V2EX 发过一帖，问给 AI 做一个读取公众号文章的 Skill 到底有没有意义。</p>
+<p>旧帖： <a href="https://www.v2ex.com/t/1200142" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1200142</a></p>
+<p>当时我自己也怕是伪需求，还在帖子里说“可能是我想多了，根本不会有什么用户”。</p>
+<p>现在跑了几个月，回来交个不太完整的作业。</p>
+<p>后台大概 330 多个注册，过去 30 天还有 60 多个人调用过，付费用户十来个。处理过几千篇文章，API 请求也有几千次。</p>
+<p>看到有人付钱时，我当然挺高兴。至少说明不是只有我一个人会碰到这个问题。</p>
+<p>但再看一眼活跃数，我又有点拿不准。它可能就是一个很低频的小工具：需要的时候很好用，平时想不起来。这样的东西到底应该继续加功能，还是维持稳定、别把自己搞得太累，我现在还真不知道。</p>
+<p>原帖里有人建议加公众号搜索、订阅作者、每天让 AI 总结。这条线听起来明显更像一个产品，使用频率也会高很多。</p>
+<p>我一直没敢往那边走。一方面是版权和平台边界，另一方面也是怕从“读取一篇文章”一路加成另一个订阅系统，最后做了很多东西，原来的用户其实并不需要。</p>
+<p>这几个月还有个挺朴素的感受：我提交过不少 AI 导航站、MCP 目录和 Skill 商店，但大部分没有持续带来什么真人。比较明显的来源反而是 V2EX 、知乎、GitHub ，以及别人真的遇到“AI 读不了公众号”以后搜到的解决方法。</p>
+<p>这只是我这个小项目的数据，不知道有没有普遍性。</p>
+<p>我目前更倾向于先把读取、缓存、API/MCP 稳定性和中文付款做好，接受它小众、低频。但我也会担心，这是不是在给自己找理由，不敢往更大的搜索和订阅方向做。</p>
+<p>如果是你们，看到 330 个注册、60 多个近期使用、十来个付费，会继续保持小而稳，还是会开始加搜索和订阅？</p>
+<p>项目在这里，方便想看具体是什么的人判断：</p>
+<p><a href="https://readgzh.site/?utm_source=v2ex&amp;utm_medium=post&amp;utm_campaign=readgzh_cn_growth_202608&amp;utm_content=personal_retrospective" target="_blank" rel="noopener noreferrer">https://readgzh.site/?utm_source=v2ex&amp;utm_medium=post&amp;utm_campaign=readgzh_cn_growth_202608&amp;utm_content=personal_retrospective</a></p>
+<p>我没有特别成熟的结论，就是跑了几个月以后，比最开始多了一点数据，又多了几个问题。</p>
+发布备注
+<ul>
+<li>节点：分享创造。</li>
+<li>标签：独立开发、需求验证、SaaS 、AI 。</li>
+</ul>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>3 月份我在 V2EX 发过一帖，问给 AI 做一个读取公众号文章的 Skill 到底有没有意义。</p>
+<p>旧帖： <a href="https://www.v2ex.com/t/1200142" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1200142</a></p>
+<p>当时我自己也怕是伪需求，还在帖子里说“可能是我想多了，根本不会有什么用户”。</p>
+<p>现在跑了几个月，回来交个不太完整的作业。</p>
+<p>后台大概 330 多个注册，过去 30 天还有 60 多个人调用过，付费用户十来个。处理过几千篇文章，API 请求也有几千次。</p>
+<p>看到有人付钱时，我当然挺高兴。至少说明不是只有我一个人会碰到这个问题。</p>
+<p>但再看一眼活跃数，我又有点拿不准。它可能就是一个很低频的小工具：需要的时候很好用，平时想不起来。这样的东西到底应该继续加功能，还是维持稳定、别把自己搞得太累，我现在还真不知道。</p>
+<p>原帖里有人建议加公众号搜索、订阅作者、每天让 AI 总结。这条线听起来明显更像一个产品，使用频率也会高很多。</p>
+<p>我一直没敢往那边走。一方面是版权和平台边界，另一方面也是怕从“读取一篇文章”一路加成另一个订阅系统，最后做了很多东西，原来的用户其实并不需要。</p>
+<p>这几个月还有个挺朴素的感受：我提交过不少 AI 导航站、MCP 目录和 Skill 商店，但大部分没有持续带来什么真人。比较明显的来源反而是 V2EX 、知乎、GitHub ，以及别人真的遇到“AI 读不了公众号”以后搜到的解决方法。</p>
+<p>这只是我这个小项目的数据，不知道有没有普遍性。</p>
+<p>我目前更倾向于先把读取、缓存、API/MCP 稳定性和中文付款做好，接受它小众、低频。但我也会担心，这是不是在给自己找理由，不敢往更大的搜索和订阅方向做。</p>
+<p>如果是你们，看到 330 个注册、60 多个近期使用、十来个付费，会继续保持小而稳，还是会开始加搜索和订阅？</p>
+<p>项目在这里，方便想看具体是什么的人判断：</p>
+<p><a href="https://readgzh.site/?utm_source=v2ex&amp;utm_medium=post&amp;utm_campaign=readgzh_cn_growth_202608&amp;utm_content=personal_retrospective" target="_blank" rel="noopener noreferrer">https://readgzh.site/?utm_source=v2ex&amp;utm_medium=post&amp;utm_campaign=readgzh_cn_growth_202608&amp;utm_content=personal_retrospective</a></p>
+<p>我没有特别成熟的结论，就是跑了几个月以后，比最开始多了一点数据，又多了几个问题。</p>
+发布备注
+<ul>
+<li>节点：分享创造。</li>
+<li>标签：独立开发、需求验证、SaaS 、AI 。</li>
+</ul>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">RangerWolf</span>
+        <span>#1</span>
+        <span>2026/08/31 21:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">op 怎么开通的、stripe 付款，是有海外公司吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18035992">op 怎么开通的、stripe 付款，是有海外公司吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18035992">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238501#reply18035992" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">programApe</span>
+        <span>#2</span>
+        <span>2026/08/31 22:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/aeRSPi6.png" target="_blank" rel="noopener noreferrer"></a>这是 ai 忘记删了嘛</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18035997"><a href="https://i.imgur.com/aeRSPi6.png" target="_blank" rel="noopener noreferrer"></a>这是 ai 忘记删了嘛</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18035997">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238501#reply18035997" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sweeyeah</span>
+        <span>#3</span>
+        <span>2026/09/01 00:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/RangerWolf" target="_blank" rel="noopener noreferrer">RangerWolf</a> 嗯，接的 stripe 个人，没有用海外公司。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18036212">@<a href="/member/RangerWolf" target="_blank" rel="noopener noreferrer">RangerWolf</a> 嗯，接的 stripe 个人，没有用海外公司。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18036212">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238501#reply18036212" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sweeyeah</span>
+        <span>#4</span>
+        <span>2026/09/01 00:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/programApe" target="_blank" rel="noopener noreferrer">programApe</a> 是的大佬</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18036214">@<a href="/member/programApe" target="_blank" rel="noopener noreferrer">programApe</a> 是的大佬</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18036214">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1238501#reply18036214" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
