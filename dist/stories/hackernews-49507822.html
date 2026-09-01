@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenShot 4.0 – Open-source video editor | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-01/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>OpenShot 4.0 – Open-source video editor</h1>
+      <p class="original-title">OpenShot 4.0 – Open-source video editor</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 metrofun</span>
+        <span>热度 575</span>
+        <span>回复 134</span>
+        <span>2026/08/31 17:59</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49507822" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://www.openshot.org/blog/2026/08/30/openshot-40-record-edit-color-like-never-before/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49507822.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>OpenShot 4.0 has arrived, bringing some of the biggest creative workflow upgrades in our history. You can now record your screen, webcam, microphone, and system audio directly into a project. You can correct and grade footage with color wheels, curves, LUTs, and professional video scopes. You can also isolate subjects with locally run machine learning models and create everything from animated audio visualizations to cinematic film looks. It is a major step toward a faster, more complete, and more creative OpenShot. OpenShot 4.0 Highlights</li><li>New Color View: Correct and grade footage with approachable presets plus the precision of color wheels, curves, LUTs, and live video scopes. New Recording View: Record your microphone, screen, webcam, and system audio directly into a project, with each source kept separate and editable. 10 new effects: Create audio-reactive graphics, beat-synced flashes, cinematic film looks, cleaner footage, animated timers, and more. Local AI-powered masks: Select and follow subjects using free downloadable models that run on your computer, with no cloud service or subscription required. A cleaner native timeline: Work with smoother zooming, easier keyframes, editable timecode, clearer clips, and more consistent interaction. Faster effects and editing: Performance work makes Blur dramatically faster while also improving Sharpen, timeline rendering, video scopes, color grading, and audio visualizations. Smarter creative workflows: Reorganized menus and presets make camera moves, animation, color looks, film styles, and audio edits easier to find and apply. A more modern foundation: Expanded Qt 6 support improves compatibility with newer Linux distributions and lays groundwork for Android and other future platforms.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hn_submit</span>
+        
+        <span>2026/08/31 20:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I've supported OpenShot financially in the past, but I'm currently leaning towards LosslessCut and Shortcut.<p>Most people want a video editor to splice and concatenate video files without any loss or transcoding. I believe this behavior (lossless) should be default on all of these editors.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509052">I've supported OpenShot financially in the past, but I'm currently leaning towards LosslessCut and Shortcut.<p>Most people want a video editor to splice and concatenate video files without any loss or transcoding. I believe this behavior (lossless) should be default on all of these editors.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509052">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509052" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nickjj</span>
+        
+        <span>2026/08/31 20:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Most people want a video editor to splice and concatenate video files without any loss or transcoding<p>You can do this with mpv. It's an open source cross platform media player.</p><p>For example, here's how I set up a tiny Lua script extension[0] to be able to visually cut videos in an intuitive way. It does it in seconds without re-rendering the video by shelling out to ffmpeg.</p><p>Years ago I did the same thing with a shell script CLI tool[1], but mpv's visual aspect makes it so much faster and easier to make clips out of a longer video.</p><p>[0]: <a href="https://nickjanetakis.com/blog/visually-create-video-clips-with-mpv-ffmpeg-and-a-lua-extension" target="_blank" rel="noopener noreferrer">https://nickjanetakis.com/blog/visually-create-video-clips-w...</a></p><p>[1]: <a href="https://nickjanetakis.com/blog/create-video-clips-with-ffmpeg-in-seconds" target="_blank" rel="noopener noreferrer">https://nickjanetakis.com/blog/create-video-clips-with-ffmpe...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509117">&gt; Most people want a video editor to splice and concatenate video files without any loss or transcoding<p>You can do this with mpv. It's an open source cross platform media player.</p><p>For example, here's how I set up a tiny Lua script extension[0] to be able to visually cut videos in an intuitive way. It does it in seconds without re-rendering the video by shelling out to ffmpeg.</p><p>Years ago I did the same thing with a shell script CLI tool[1], but mpv's visual aspect makes it so much faster and easier to make clips out of a longer video.</p><p>[0]: <a href="https://nickjanetakis.com/blog/visually-create-video-clips-with-mpv-ffmpeg-and-a-lua-extension" target="_blank" rel="noopener noreferrer">https://nickjanetakis.com/blog/visually-create-video-clips-w...</a></p><p>[1]: <a href="https://nickjanetakis.com/blog/create-video-clips-with-ffmpeg-in-seconds" target="_blank" rel="noopener noreferrer">https://nickjanetakis.com/blog/create-video-clips-with-ffmpe...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509117">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509117" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bolangi</span>
+        
+        <span>2026/09/01 04:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Nice hacks!<p>I made a similar script to extract clips from a source, possibly multiple files, and compress the result.</p><p><a href="https://metacpan.org/dist/App-fftrim/view/script/fftrim" target="_blank" rel="noopener noreferrer">https://metacpan.org/dist/App-fftrim/view/script/fftrim</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49514742">Nice hacks!<p>I made a similar script to extract clips from a source, possibly multiple files, and compress the result.</p><p><a href="https://metacpan.org/dist/App-fftrim/view/script/fftrim" target="_blank" rel="noopener noreferrer">https://metacpan.org/dist/App-fftrim/view/script/fftrim</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49514742">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49514742" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">gandreani</span>
+        
+        <span>2026/09/01 04:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is very cool! Do you have a similar workflow for stitching those cut clips together?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49514461">This is very cool! Do you have a similar workflow for stitching those cut clips together?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49514461">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49514461" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nickjj</span>
+        
+        <span>2026/09/01 05:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks.<p>Not through mpv, but if all of the videos are the same resolution and codec you can use ffmpeg to concat them without needing to re-encode anything.</p><p>It could be worth making a little wrapper script for this, but the ffmpeg command itself isn't too crazy. You can Google for "ffmpeg concat multiple videos into a single video without re-encoding".</p><p>ffmpeg is super powerful, you can technically resize and alter videos into a consistent format and then encode a new video too.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49514903">Thanks.<p>Not through mpv, but if all of the videos are the same resolution and codec you can use ffmpeg to concat them without needing to re-encode anything.</p><p>It could be worth making a little wrapper script for this, but the ffmpeg command itself isn't too crazy. You can Google for "ffmpeg concat multiple videos into a single video without re-encoding".</p><p>ffmpeg is super powerful, you can technically resize and alter videos into a consistent format and then encode a new video too.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49514903">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49514903" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">smartbit</span>
+        
+        <span>2026/09/01 11:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Video editor app that generates FFmpeg commands <a href="https://news.ycombinator.com/item?id=42207002" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=42207002</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49517582">Video editor app that generates FFmpeg commands <a href="https://news.ycombinator.com/item?id=42207002" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=42207002</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49517582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49517582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">wvbdmp</span>
+        
+        <span>2026/08/31 21:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You have to make a lot of sacrifices for lossless editing, so it’ll probably always be a specialized app or at least a separate tool within an all-purpose NLE. For instance, you’re limited to compatible input streams and you can only cut on specific intervals, depending on encoder settings etc.<p>I guess an NLE could import clips in a locked mode by default that only supports lossless operations, and you’d have to specifically enable the rest. Could be interesting.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509255">You have to make a lot of sacrifices for lossless editing, so it’ll probably always be a specialized app or at least a separate tool within an all-purpose NLE. For instance, you’re limited to compatible input streams and you can only cut on specific intervals, depending on encoder settings etc.<p>I guess an NLE could import clips in a locked mode by default that only supports lossless operations, and you’d have to specifically enable the rest. Could be interesting.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509255">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509255" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">j1elo</span>
+        
+        <span>2026/08/31 21:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Note on the specific intervals: that's where the clever optimization comes in: leave as-is (passthrough) all not affected sections of the video (basically everything) and only recode the tiny fraction that needs recoding due to the cut being set on a non-keyframe.<p>That one, I do believe should get more research and implementations. Currently I only know of LosslessCut's "Smart" mode, but I'd like to see other big players of the video editing space improving the state of the art in that direction for simple cuts.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509329">Note on the specific intervals: that's where the clever optimization comes in: leave as-is (passthrough) all not affected sections of the video (basically everything) and only recode the tiny fraction that needs recoding due to the cut being set on a non-keyframe.<p>That one, I do believe should get more research and implementations. Currently I only know of LosslessCut's "Smart" mode, but I'd like to see other big players of the video editing space improving the state of the art in that direction for simple cuts.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509329">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509329" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Youden</span>
+        
+        <span>2026/08/31 21:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I wonder, rather than re-encoding when starting on a B- or P- frame, could you preserve the entire GOP losslessly but make the earlier content "disappear" on playback by shifting PTS, or bundling several frames into a single frame's payload? Maybe it causes too many problems with players.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509387">I wonder, rather than re-encoding when starting on a B- or P- frame, could you preserve the entire GOP losslessly but make the earlier content "disappear" on playback by shifting PTS, or bundling several frames into a single frame's payload? Maybe it causes too many problems with players.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509387">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509387" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">j1elo</span>
+        
+        <span>2026/09/01 00:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's an idea that got some discussion but generally is strongly discouraged. Cutting must mean that the underlying bytes are absolutely not there in the final result, otherwise it will cause data leaks that users would very reasonably expect not to be there.<p>Imagine "smart cutting" a critically compromising part of a video (e.g. showing some personal info) only to later find out that the actual footage was still there, it just needed some timestamp shifting to unveil.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49511972">That's an idea that got some discussion but generally is strongly discouraged. Cutting must mean that the underlying bytes are absolutely not there in the final result, otherwise it will cause data leaks that users would very reasonably expect not to be there.<p>Imagine "smart cutting" a critically compromising part of a video (e.g. showing some personal info) only to later find out that the actual footage was still there, it just needed some timestamp shifting to unveil.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49511972">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49511972" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Abishek_Muthian</span>
+        
+        <span>2026/08/31 21:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">LosslessCut is great, but I've had issues with the final export like timing being off, having cut sequence etc. I think it is very particular about encoding/container.<p>Shotcut is my default video editor, if anyone's trying it on Linux please use their AppImage as it solved most of my headaches when I was using Flatpak version.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509449">LosslessCut is great, but I've had issues with the final export like timing being off, having cut sequence etc. I think it is very particular about encoding/container.<p>Shotcut is my default video editor, if anyone's trying it on Linux please use their AppImage as it solved most of my headaches when I was using Flatpak version.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509449">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509449" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">birksherty</span>
+        
+        <span>2026/09/01 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If it's lossless, it may change the cut position to enable lossless. If you want cut at an exact place, then all apps need to re-encode which will never be lossless.<p>For your particular requirement, you can't get lossless quality all the time by any software.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49511826">If it's lossless, it may change the cut position to enable lossless. If you want cut at an exact place, then all apps need to re-encode which will never be lossless.<p>For your particular requirement, you can't get lossless quality all the time by any software.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49511826">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49511826" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tredre3</span>
+        
+        <span>2026/09/01 03:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">LosslessCut gives you the option to cut at the nearest keyframe, or to re-encode the small portion from the chosen timestamp to the next key frame (at most a few seconds). Sounds lossless enough to me.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49513718">LosslessCut gives you the option to cut at the nearest keyframe, or to re-encode the small portion from the chosen timestamp to the next key frame (at most a few seconds). Sounds lossless enough to me.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49513718">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49513718" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Sophira</span>
+        
+        <span>2026/08/31 21:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For that kind of functionality, I would always recommend Avidemux[0]. It's quite a light package (which I like), and it allows you to do that and some other useful things too.<p>[0] <a href="http://fixounet.free.fr/avidemux/" target="_blank" rel="noopener noreferrer">http://fixounet.free.fr/avidemux/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509546">For that kind of functionality, I would always recommend Avidemux[0]. It's quite a light package (which I like), and it allows you to do that and some other useful things too.<p>[0] <a href="http://fixounet.free.fr/avidemux/" target="_blank" rel="noopener noreferrer">http://fixounet.free.fr/avidemux/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509546">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509546" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mrbluecoat</span>
+        
+        <span>2026/08/31 21:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I absolutely love Avidemux but it doesn't preserve subtitles when removing a middle clip like lossless cut can.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509637">I absolutely love Avidemux but it doesn't preserve subtitles when removing a middle clip like lossless cut can.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509637">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509637" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">roblh</span>
+        
+        <span>2026/08/31 21:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Dunno if it’s just me, but I tried to download it the other day and couldn’t. The windows download link just punts you right back to their own site.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509724">Dunno if it’s just me, but I tried to download it the other day and couldn’t. The windows download link just punts you right back to their own site.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509724">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509724" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">haunter</span>
+        
+        <span>2026/09/01 03:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sourceforge works<p>or Github <a href="https://github.com/mean00/avidemux2/releases/tag/2.8.1" target="_blank" rel="noopener noreferrer">https://github.com/mean00/avidemux2/releases/tag/2.8.1</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49513551">Sourceforge works<p>or Github <a href="https://github.com/mean00/avidemux2/releases/tag/2.8.1" target="_blank" rel="noopener noreferrer">https://github.com/mean00/avidemux2/releases/tag/2.8.1</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49513551">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49513551" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dizhn</span>
+        
+        <span>2026/08/31 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Just checked. Same thing happened to me. For all links, including old versions AND other packages. Seems to be a problem with fosshub. (I am on linux+firefox).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49510519">Just checked. Same thing happened to me. For all links, including old versions AND other packages. Seems to be a problem with fosshub. (I am on linux+firefox).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49510519">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49510519" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">MavropaliasG</span>
+        
+        <span>2026/09/01 11:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Try Kdenlive</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49517780">Try Kdenlive</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49517780">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49517780" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">smusamashah</span>
+        
+        <span>2026/08/31 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There is also Blick which launched recently which claims to be very very fast <a href="https://blickeditor.com/?lang=en" target="_blank" rel="noopener noreferrer">https://blickeditor.com/?lang=en</a> and part of recent wave of fast software (Task Slinger, File Pilot)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49509918">There is also Blick which launched recently which claims to be very very fast <a href="https://blickeditor.com/?lang=en" target="_blank" rel="noopener noreferrer">https://blickeditor.com/?lang=en</a> and part of recent wave of fast software (Task Slinger, File Pilot)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49509918">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49509918" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

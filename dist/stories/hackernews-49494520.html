@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bug Blindness | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-01/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Bug Blindness</h1>
+      <p class="original-title">Bug Blindness</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 davidmckenna</span>
+        <span>热度 396</span>
+        <span>回复 274</span>
+        <span>2026/08/30 08:21</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49494520" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://danluu.com/bug-blind/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49494520.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>I used to wonder why I see so many more bugs than most people. I easily observe hundreds to thousands of bugs per week and nothing seems to work, but most people I talk to don&#39;t see anything like this. For a long time, I thought this had something to do with how I use computers but, over time, I&#39;ve realized that it&#39;s mostly that people are hitting the same bugs and don&#39;t notice. If you&#39;re not a programmer, that&#39;s probably a better way to see the world, but I think curing quality/bug blindness is helpful for programmers. I&#39;ve done this with a lot of friends and acquaintances (just by pointing out bugs). After a few weeks, people who are so inclined tend to start noticing bugs as well. Because I notice these kinds of things, I&#39;ve had multiple jobs where directors/VPs/execs/etc. sometimes ask me to evaluate something when they want an actual opinion from someone who is relatively likely to notice issues (and fix them or drive fixes for them if necessary). Sometimes I won&#39;t find any issues (there are likely issues that just aren&#39;t the kind I notice). More often, I find issues that fall somewhere from &quot;mild&quot; to &quot;moderate&quot;. And, sometimes, the issues are severe, to the point where one might even say the thing actually doesn&#39;t work. I find this last category a bit mysterious, as when I look up discussions on how the thing got into this state, there&#39;s usually a stream of internal comments indicating that the thing is great, it works well, etc., but when I open up the thing and try it, it&#39;s in a state where the thing only works if you do quite a few non-intuitive workarounds. More likely than not, not only would a normal user not be able to use the thing, they&#39;d have such a hilariously/infuriatingly bad experience that they&#39;d tell their friends. I&#39;ve had this post in mind for maybe a decade or so, but I was hesitant to write it up because, in the back of my mind, I always wondered if I&#39;m somehow triggering weird corner case behavior most users don&#39;t hit without realizing it. But after seeing more and more cases where the product launches and falls flat on its face because users run into the exact same issues I saw, I don&#39;t think that, in general, I&#39;m hitting bugs because I&#39;m doing unusual things a normal user wouldn&#39;t do. If a product seems severely flawed when I use it, it probably is. And with the magic of LLMs, nowadays, I can even have LLMs act like normal users in a lot of ways and show that the issues reproduce across many different scenarios. A few examples I don&#39;t want to give any specific examples where it was my job to see how well the thing worked because, even if the internal examples are meant in a constructive, blameless, way, they may not always read that way when re-posted externally, so I&#39;ll give a few less interesting and less well supported &quot;random&quot; examples. A while ago, I wrote up the results of some web search queries and found poor results from Google, Bing and Kagi. In general, the major search engines failed to return good results for the queries and returned pages full of low-quality SEO spam as well as some sites that were actually scams. BTW, on the scale mentioned above, I would consider this &quot;moderate&quot; and not &quot;severe&quot; (severe would be something like, the search engine returns 500 errors half the time, the majority of results are scams, etc; my bar for severe is that a normal user likely won&#39;t be able to use the thing at all, not that they have a bad experience). Almost nobody1 objected to my characterization of Google and Bing search results, but people told me that I was wrong about Kagi. In some cases, people sent me their actual search results. In every such case, the search results did not contain a good result that I could see (e.g., for the seasonal forecast query, the search failed to return an up-to-date seasonal forecast) and was full of SEO spam. In one case, a person passed me both their list of Kagi filters as well as the search results they got without making claims that the results were good or bad, but people generally insisted the results were good even though the results both failed to link to a useful result and were full of spam except in cases where the user did something like pin GitHub to the top of their results, which worked for the queries where the goal was to download software that&#39;s hosted on GitHub, but of course completely fails for the other queries from the post. In the abstract, I get that people who are fans of things tend to be blind to the thing&#39;s faults. For example, since I bought a Volvo after seeing how they do in out-of-sample crash tests, I sometimes search for answers to my questions on Volvo car forums. For well over a decade, the reliability data that exists (and I think this is backed up by the anecdotal experience that mechanics who work on Volvos have) is that Volvo reliability is mediocre to poor, but of course Volvo forums are full of people who insist that Volvos are among the most reliable cars and that the data are all wrong. An example that might be more central to the topic is Blackboard (the course management software). Back when it was the most widely used software by universities for coursework, the software was widely disliked by both students and professors. I think it would be fair to say that it was the most widely disliked software in my social circles (there was more strongly disliked software, like Visual Source Safe, but any more strongly disliked software wasn&#39;t widely used enough to be the most widely disliked overall). The Wikipedia page notes Blackboard had become &quot;one of the most disliked — even detested — companies in education.&quot; as well as In December 2011, Fast Company reported that 93% of respondents to the Amplicate customer opinion survey &quot;hate&quot; the company. Back when I was much younger and had less of a filter, I ran into someone who worked at Blackboard and, without thinking, I stupidly blurted out something like &quot;what&#39;s it like to work on this software that so many people dislike?&quot;. Luckily, the person I was talking to wasn&#39;t offended at all and, instead, they were actually confused because they thought it was widely loved software that users really liked. They didn&#39;t really believe what I said could be true and I made some comment indicating that it was just confusion on my part and then the conversation continued in a different direction. At the time, as someone much younger and more naive, I was really surprised to hear that the software that was probably the most widely disliked software in my social circles was thought to be really well-liked software by the one employee from the company I met (and, presumably other employees as well). I can understand how the Volvo forums get to be how they are, in that cars are reliable enough in general now that people generally don&#39;t experience car breakdowns, so it&#39;s easy for someone to think something like &quot;the data can&#39;t be right; after all, my car has never broken down&quot;. It&#39;s more of a mystery to me how somebody can look at a set of search results that are full of spam and then dash off a message explaining how great the results are, even if they&#39;re a fan of a particular search engine or how someone can think that users generally love software that&#39;s famous for being disliked, to the point that every single person I talk to about it tells me how bad it is (often in unprompted complaints), there are news articles that discuss how much people dislike the software, and the near-universal dislike for the software is mentioned on its Wikipedia page. Another Blackboard-like example might be Discourse (forum software) web performance, where one of the inspirations for this post was discussions with Discourse employees who thought that Discourse had great performance. I found that one interesting because Discourse actually had code in it that slowed down actual page loads in order to cheat on web performance metrics like LCP. That went well beyond just optimizing for a benchmark and rose to the level of actual cheating that not only had no benefit to the user, it actually harmed the user. At some level, the programmers implementing that sort of cheating and advising users on how to not accidentally subvert the cheating must know that the actual performance of their app is poor, but it&#39;s very easy for people to put up mental barriers around this kind of thing. By now, I wouldn&#39;t say that I&#39;m surprised because I&#39;ve seen this kind of thing enough that I would actually consider it surprising if it didn&#39;t happen, but I still wonder what&#39;s going on inside someone&#39;s head when something like this happens. For a non-programming example, we previously noted in this post on how people have different perspectives on &quot;obvious&quot; facts, there&#39;s a basketball player who, subjectively, is generally considered to be the dirtiest player of his era. The NBA doesn&#39;t track objective measures of player dirtiness, but he seems dominant on a wide variety of measures. For exampe, although, like rebounds before 1950, genital strikes aren&#39;t an officially tracked stat, he surely holds the record for punching, kicking, kneeing, or otherwise striking players in the genitals this century (he should also hold the record for era-adjusted numbers, but it&#39;s possible that he doesn&#39;t have the all-time record due to play being much dirtier overall in the 80s and 90s). In discussions, most fans of his team don&#39;t seem to notice this and the phrases &quot;natural rebounding motion&quot; and &quot;natural shooting motion&quot; have become running jokes from how oblivious the team&#39;s fans are when they justify this player&#39;s contortions when he strikes other players in the genitals. On average, humans have a high ability to ignore negatives in things they&#39;re a fan of, including (and often especially) their own work or work their company does. For better or for worse, I seem to have the opposite of this and my thoughts immediately go to the flaws in myself and my work. A number of times, as a result of a blog post, someone has messaged me with something like &quot;how would you like it if someone criticized your work?&quot; or &quot;how would you like it if someone said your work isn&#39;t good?&quot; To the former, my thought is that I go to great lengths to get criticism from people who can poke holes in my reasoning, so it&#39;s pretty awesome if someone has remotely reasonable criticism of my work. And to the latter, I generally think my work is full of major flaws, so, uhh, yeah, it seems pretty reasonable to say it isn&#39;t good. There are particular aspects of my work that I think are interesting or good but, overall, I don&#39;t know that I&#39;d rate anything I&#39;ve done as good. I&#39;m not saying I don&#39;t have blind spots, but I think I&#39;m a bit less prone to this particular one than most people2. Habitual mitigations If I think about analogous blind spots I&#39;ve had, one that jumps out at me is from when I was a little kid and a friend of mine used my computer. For this story to make sense, you have to know that this was in the mechanical mouse era. Over time, detritus would get stuck to your mouse ball and cause it to track erratically unless you cleaned it out. When my friend tried to use my computer he found it impossible to use the mouse because mouse pointer movement seemed almost random. When I sat down at the computer again and used the mouse I didn&#39;t have any problem using it at all, but on looking at what I was doing with my hand to smoothly move the pointer in a straight line, I was violently throwing my hand all over the place. I realized I must&#39;ve adjusted to the detritus on the mouse ball over time as it accumulated and I was somehow compensating for the mouse&#39;s extremely erratic tracking by making countervailing erratic movements3. I thought it was pretty amazing that I could not notice that I was doing this and I always wonder if I&#39;m doing some equivalent thing today. I sometimes think about all of the mitigations I&#39;ve developed to work around bugs. For example, when opening a new Google Doc, I used to immediately put the title I wanted into the doc. At some point, maybe ten years ago or so, Google Docs added some kind of delay such that the typing you do into the title box right after you open the doc gets overwritten, so I now have this habit where, after opening a Google Doc, I do something else and then I change the title. Over time, as Google Docs has had more and more features added, I&#39;ve developed a series of habits that avoid all sorts of pitfalls (such as trying to search at the &quot;wrong&quot; time and getting the useless native browser search instead of the Google Docs search). My feeling is that a large fraction of computer literacy and software literacy is developing a large library of these habits that you just do at a non-conscious level. These are often quite specific to the situation, such as a habit I developed when I worked at Microsoft of flipping my laptop&#39;s WiFi switch to off before logging in (which I noticed other people doing as well). This was because there was some service, which would often fail your login with &quot;There are currently no logon servers available to service the logon request”. But if that service couldn&#39;t connect at all, the check would be bypassed and you could just log in. Quality blindness We could fill a post up with examples like that, but back to the main topic of the post, one commonly suggested way to try to overcome quality blindness is to have people dogfood their own software. On average, this is a lot better than not dogfooding, but it only works to the extent that people don&#39;t figure out (and then forget about) habits that work around whatever issues the software has. On average, programmers are pretty good at working around software foibles (you had to be in order to be an effective programmer pre-LLM), so it&#39;s very easy for programmers to not notice these kinds of issues if they&#39;re not paying attention. On the flip side, a large part of making an app easy for people to use seems to mean making weird habits like these unnecessary. Although this sounds like it should be easy to do, from having seen people try to give feedback about this kind of thing, the reflexive reaction of most developers seems to be &quot;huh? It&#39;s easy to do X, just do [complex sequence of things that no normal person would think of if they hadn&#39;t used the app many times before unless it was specifically explained to them or they saw someone else do it]&quot; or &quot;huh? Didn&#39;t you see that the instructions for this are clearly laid out in page 43 of the manual after you execute the steps in Appendix B on page 261?&quot;. That being said, I think curing people of quality blindness is do-able because I&#39;ve done it quite a few times. I think this only really works when the person is receptive, as people have infinite capacity for willful blindness but, in cases where people are receptive, just pointing out issues they didn&#39;t notice seems to work. Years or even a decade later, people will sometimes tell me they see bugs everywhere now. The reason I think this is worth doing is that I&#39;ve seen people and teams with a high degree of quality blindness ship things that have reduced or even no chance of success because of product quality issues4. It&#39;s one thing to knowingly and deliberately trade off quality for speed5, but when I&#39;ve seen this happen there&#39;s always been a kind of quality blindness where everyone involved with the project thinks they&#39;re shipping something very high quality when that&#39;s not the case. This has never been unimportant, but it&#39;s gotten more important with coding agents because, while it&#39;s easier than ever to churn out low quality software, it&#39;s also easier than ever to improve quality, whether that&#39;s better performance, fewer bugs, etc. But, to do this, you have to actually notice that this is possible, that quality can be improved. Thanks to Yossi Kreinin, Dennis Snell, Michael Malis, Emu Chu, Gary Bernhardt, Jon Surrell, and Matt Mullenweg for comments/corrections/discussion. Naturally, Gary Bernhardt ran into a Google Docs bug while reading a draft of this post. P.S. Like I&#39;ve mentioned in the last four posts, I&#39;ve been trying to write posts more quickly because, with LLMs, it&#39;s so much easier to look at data and figure things out but, since I&#39;m not writing with LLMs, the time it takes to write something up hasn&#39;t fundamentally changed, unless I want to move to a different point in the quality-velocity trade-off space. The prior result was that I would run some experiments and tell a few friends and then never write anything up because, due to Amdahl&#39;s law, writing anything up would effectively consume all of my bandwidth for running experiments. In fact, despite trying to do this (my goal is to spend 30 minutes per post on the write-up), since writing my last post, I have three results that I think could make a totally fine blog post that I haven&#39;t had time to write up (not including things done for work, which would add a few more things). Without having LLMs write for me, I don&#39;t see a reasonable way to get the time per post significantly below 30 minutes (and I think I often miss my goal and take more than 30 minutes), so the non-LLM options here are some posts that are much sloppier than my normal posts (in a human slop kind of way), or almost no posts. Anyway, if you have opinions on these quick (and surely more wrong) writeups, let me know what you think (X Bsky Mastodon)! Appendix: advertising blindness Michael Malis (founder and former CEO of Freshpaint) noted (in messages, hence the message-like format) For a similar but different data point - I’ve seen similar blindness when it comes to advertising. When I would explain Freshpaint to people, I would tell them that we help hospitals with marketing A common question I get is why do hospitals do marketing. The weird thing is if you pay attention, hospitals do a ton of marketing In SF there’s tons of bus ads and billboards for ucsf/sutter health/stanford and various treatments This is a different topic from both Michael&#39;s comments and the post, but I&#39;ll say that I&#39;ve talked to quite a few people who don&#39;t believe ads work at all, but I talked to someone whose data methodology and judgement I trust about ads A/B testing at one big company I worked for and looked at the data myself at another company and I thought the causal evidence for ads providing real lift (well beyond the cost of the ad) was strong in those cases. In the case where I looked at it, they did a geo-segmented A/B test where they bought ads in some geos but not others (this was done worldwide, with the regions being things like U.S. states, Canadian provinces, etc.). This kind of geo-segmentation was done because, even with cross-device tracking, it&#39;s not 100% clear if someone has been exposed to an ad or not (of course this is still the case with this kind of segmentation and I would prefer segmentation that was more clustered to population areas and didn&#39;t have splits where people are relatively likely to, for example, commute from one side of a boundary to the other, but this kind of contamination generally makes the likely true lift higher than the estimated lift), so people sometimes do these geo-segmented A/B tests. Anyway, in these A/B tests, return on ad spend was quite good just on direct revenue gain, and there was also a gain in users which seems likely to result in more revenue down the road (the later revenue wasn&#39;t analyzed). I don&#39;t know about ad effectiveness in general or if your particular ads are effective, but the commonly repeated idea that ads don&#39;t work in general seems wrong to me. On the topic of Michael&#39;s comment, I think it&#39;s easy for programmers to not notice ads. Almost all programmers I know use an ad blocker and, in real life, their eyes seem to just skim over ads and not notice them. I can see how this would feed into the idea that ads don&#39;t work. Who the heck would look at these things? But from my interactions with &quot;normal&quot; people as well as the data I&#39;m familiar with from my time at Google, many or perhaps most people don&#39;t even realize that a lot of ads are ads. When they do a Google search and they click on the top resut, they often have no idea they&#39;re not looking at what Google &quot;thinks&quot; is the best link, they&#39;re looking at at a link from whoever paid Google the most to buy that ad slot. Em Chu, on a habitual bug mitigation: I&#39;m sure you can collect infinite examples for this section, but I just want to Complain: when waking up and unlocking my laptop (mac), it&#39;s very easy to get it in a state where it&#39;s &quot;awake&quot; but unusable (black screen with cursor or similar) which can only be fixed by physically closing the lid and re-opening it. To work around this, I think I usually wait a second after the screen turns on, interact with the trackpad, and then unlock it, though honestly that happens mostly subconsciously, and I clearly need practice given that I still hit the bug a few times a month. On reading this, I examined how I open my laptop and realized that I have some funny habits as a result of working around other laptop bugs. The specific bug mentioned here doesn&#39;t reproduce on my laptop and it seems that I can stop the habitual mitigation I put into place for some prior laptop. Gary Bernhardt, on his experience reading a draft of this post While reading it, Google Docs&#39; UI seems to have broken, making it impossible to scroll up to read some comments (see screenshot [not shown in post]). From looking at the screenshot, I&#39;ve seen the exact same bug and have some mitigations for it (different ones depending on the context). I would personally rate Google Docs as far above average in terms of software quality: I find it much less buggy and janky than the major alternatives (Microsoft Word, Open Office, various old editors that are long gone like StarOffice, Lotus, etc.). And yet, I could easily sit down and write a 10k word post on Google Docs bugs and the workarounds I have for them. At times, I&#39;ve tried to see if I can get a job somewhere where I just fix quality issues all day. This has never panned out, due to some combination of this not being a very high priority and it also not being a normal role that companies have a role for. I sometimes daydream about joining companies as an intern and just fixing quality issues for a few months and then leaving. In practice, I think if I got such a job, a lot of the fixes would get blocked and it would be very difficult to actually drive change as an intern for three months, so it would have to be some mostly abandoned project where nobody cares what I do (and corporate priorties aren&#39;t so focused on shipping features that fixes get immediately re-broken). @IncidentNoodle Unintentionally on topic: the &lt;abbr&gt; tags worked on mobile ~last week, but are no longer working across any iOS browser (safari/chrome/firefox), and I had a hard time figuring out that hover showed them on macOS browsers (all three) due to the long delay @gunchleoc@mastodon.scot: Germans have a word for that - Betriebsblindheit @oulipien.bsky.social: Crazy anecdote from @danluu.com here and I wish he&#39;d been even blunter at the time and asked this person where they&#39;d gotten this belief about Blackboard being liked by anyone at all. User surveys? Principal (as in, not agent) surveys? Inner conviction??? [screenshot of Blackboard anecodote] [Some variant of, people are forced to say that they don&#39;t see bugs by their bosses] I don&#39;t thnk this is consistent with any of the major examples in the post, let alone all of them. Consider the Blackboard example mentioned above. It&#39;s unlikely that I and other people this Blackboard employee are &quot;secret shoppers&quot; who are checking in on employees, and the employee&#39;s reaction is clearly absurd to anyone who isn&#39;t such a hypothetical (and in reality, non-existent) secret shopper, so reacting like this just makes them look a bit silly in the eyes of a large fraction of the people they meet for no benefit (for example, see the previous quote, which seems like a typical internal reaction). Perhaps a few very paranoid employees would maintain this front on the off chance they run into some friend or relative of the boss who knows that they work for the company who relays the story back and they have a boss who would care about this, but it&#39;s just not plausible that this is (for example) the case for every Discourse employee who reached out to me to explain to me that Discource performance is really good. If we look at the basketball example, this is even more absurd. You could possibly come up with some kind of reasoning like, other fans would shun you if you didn&#39;t believe or pretend to believe the most absurd rationalization, but as someone who has spent a lot of time around sports fans, I&#39;ve generally not found this to be the case. And, to the minimal extent to which this is kinda sorta the case, it&#39;s more an issue of self selection, where fans who are into the most extreme rationalizations will spend more time around fans who are into the most exterme rationalizations and fans who are less into these extreme rationalizaitons will tend to spend more time with fans who are less into them. Also, just looking at the career path of people who don&#39;t buy into these things and fix them, noticing these issues and fixing them has gone very well for those people. Pretending these issues don&#39;t exist (whether that&#39;s at a concious level or not) also seems to work well, so I don&#39;t know that fixing these issues is actually a better career path, but it&#39;s certainly not so bad that, in general, there&#39;s meaningful career pressure to pretend these things don&#39;t exist overall even if there are some individual positions where there&#39;s some direct pressure to pretend these issues aren&#39;t real. Daniel Gibson: Who else uses the Shift key to end the screensaver, because in case the event goes through to an actual program it&#39;s least likely to do have unintended effects? This reminds me of how, when I want to send a queued message to codex immediately and interrupt the current tool call, I put my finger on the key and the press as quickly as possible to reduce the window of time where the tool call will finish and the escape key will stop codex entirely instead of causing the message to send. I should probably just run a patched version of codex that has fixes for this and a few other issues I&#39;ve run into, but I&#39;m already doing things like trying out some weird workload-specific optimized version of ripgrep that also has an added native code compiler which compiles matching expressions in another thread while the search starts and then cuts over after compilation completes, so it&#39;s not like I&#39;m against creating weird patches to improve my workflow and it&#39;s more of an issue of overall bandwidth (no doubt, on writing this, someone will tell me that I could just hit another key instead and could&#39;ve found this out by asking codex about the key in the time it took me to write this comment). Just like with Google Docs, I consider codex above average in terms of software quality in the space, but even though I haven&#39;t been using it for a year, I could easily write 10k words on all the workarounds I&#39;ve implemented (either by habit or, in some cases, with actual scripts that monitor for broken behavior and then correct it). John Regehr: I didn&#39;t remember this until after I&#39;d written and published this post and someone linked to John&#39;s post, but apparently John Regehr wrote &quot;Operant Conditioning by Software Bugs&quot; before I started a blog! Maybe I should&#39;ve used an LLM to search for prior art, but if I did that, I&#39;d probably never write anything because there aren&#39;t that many really new ideas and almost everything is going to be similar to something someone else has said. For better or for worse, I&#39;m much more verbose than John, so this post uses a lot more words and has more random stories thrown in. If you find my blog posts too long, but have somehow managed to stumble down into the bottom of the post anyway, you&#39;ll probably like John&#39;s post more than mine :-). someone told me the results didn&#39;t reproduce on Google when they tried it some number of weeks later. Of course it didn&#39;t, which I discussed here in more detail, but for the short of it, here&#39;s this post about scams and other bad results on Google that was #1 on HN for a while. Of course somebody fixed that! And, also, ad results are non-deterministic and, while there are a lot of bad ads, it&#39;s not like the majority are scams, so you wouldn&#39;t expect to get scam ads at the top results even if someone else did for the same query. [return] For example, anyone familiar with my code at Twitter will recall the huge comments I had at the top of the main files for the things I owned, which described the various ways in which the thing is really flawed. They were all things that, for one reason or another, I thought weren&#39;t worth the time to fix, but they were still serious problems that anyone interacting with the code ought to know about. For this metrics project, I even had a long doc that described the issues in great detail (IIRC, in a lot of cases, the rough shape of the fix was described; maybe today an LLM could take that and fix it). I have the same feeling about my writing. While a huge number of bugs sneak through my writing (like spelling and grammatical errors), most of those are things I sort of don&#39;t care about and will skim past in other people&#39;s writing as well. When I say don&#39;t care, it&#39;s not that I don&#39;t want things to be better (when people send me corrections I generally fix things), it&#39;s just that my brain doesn&#39;t naturally pay attention to those things no matter whose writing it is, so I don&#39;t seem to have a particular blind spot in my writing with respect to these kinds of bugs. For the things I do care about, I could edit posts endlessly because, no matter how much I edit, the post still seems pretty bad to me. I used to often (and still sometimes) send a post to someone and ask them if it makes any sense to publish it at all because I generally don&#39;t like my output and, if I&#39;m just looking at my own writing, I don&#39;t think it&#39;s worth publishing. At this point, I&#39;ve done this enough that I&#39;ll often just publish even though I don&#39;t like what I wrote, but if someone says &quot;how would you like it if someone told you your work wasn&#39;t good?&quot; as a kind of &quot;gotcha&quot;, boy, they really have no idea how I think about my work. There are various tricks I&#39;ve used to get around this (not explicitly to get around this, but they do so as a side effect). As discussed in this old post on writing, for a while, I hired a professional editor and had a process goal of doing one pass on each post and then trying to improve the next post. And as noted in the postscript to recent posts, now I&#39;m trying to write with extremely minimal cleanup and editing and push posts out in half an hour regardless of the state of the data I&#39;m looking at or the post (which I&#39;m generally failing to do; I thought I might succeed on this one because it doesn&#39;t have any data analysis, but someone made a comment on the draft post that got me to re-write the whole thing, and just on number of words in the post, half an hour would really be pushing it on the original and then it increased in length). Of course a post that&#39;s written as quickly as possible with little to no regard for cleaning things up is going to be terrible in all kinds of ways, so all flaws I see in the post don&#39;t stop me from publishing it. Have my recent posts been good? Of course not; for any of the experimental/data posts, I could probably name ten things that should be fixed about each of them off the top of my head. For this post, I&#39;d have to re-read it to come up with ten things, but I&#39;m sure if I did re-read it I&#39;d want to re-write the whole thing because of the issues it has. [return] This was, inadvertently, a kind of revenge on my friend for when I tried to open his door for the first time to leave his place. Since the door clearly opened to the outside, I tried pushing on the door, which didn&#39;t work, so I checked if there was a latch that was stuck, if the door was still locked, if I needed to push harder, etc., none of which worked. When he saw that I couldn&#39;t open the door I asked him what the trick was he said, in a tone of voice that made it sound like this was obviously something everyone should know, you need to pull the door before pushing it. The door was wedged such that the easiest way to open the door was to pull the door as tightly shut as possible and then immediately shove the door open. This friend, since he grew up in that house, thought this was obvious, apparently not realizing that it&#39;s not normal to have to try to close a door extra hard to open it. [return] a response I&#39;ve heard to this kind of thing recently is that Anthropic had the best growth numbers in history while Claude was very buggy. If you have the best coding model and agent in the world, you can get away with a lot, but even they seem to have spent a fair amount of effort improving quality. Maybe you can also get away with it if you have a product that succeeds due to bundling, the strength of your enterprise sales team, network effects, monopoly power, etc.; all but one of the cases I&#39;m thinking of are places where the team didn&#39;t have these things on their side. I actually thought the one other case I was thinking of would be something like Blackboard, but (if the Google results are accurate) I see that the software has declined from being #1 in the market to being a minority player, so maybe they couldn&#39;t get away with it either (I didn&#39;t look into the reasons for the decline; perhaps it&#39;s a coincidence). As noted above, Blackboard is an example where you could argue that the software quality didn&#39;t matter and people might as well just believe whatever makes them happy; if thinking that users love the software, then why not think that? But most of the rest of the examples that come to mind for me aren&#39;t cases like that. I don&#39;t think this is the best example, but it comes to mind because the comment below is the last time I was reminded of the Blackboard example. There was a comment from a Tumblr employee who said that they&#39;d solved the moderation (abuse / spam / toxicity / etc.) problem mechanically at Tumblr via the way reblogs worked and that the mechanics Tumblr provided to users were good enough that the community could self-police bad behavior and that other social media sites would do well to learn from Tumblr. This was referring to Tumblr back in its heyday (maybe 2009-2014). I never really read much on Tumblr so I don&#39;t personally have an opinion, but back when it was a major social media platform, the reputation among folks I know was that it was heavy on bad behavior, particularly pile-ons caused by people taking out of context quotes and turning them into ragebait (not to say this doesn&#39;t happen on other platforms, but the belief was that the way Tumblr was structured and/or the communities involved made this worse on Tumblr). I&#39;m not sure I know anyone who used Tumblr at the time who would say that the community was good at self-policing. In fact, when Scott Alexander wrote one of his most famous pieces, Toxoplasma Of Rage, he dedicated an entire section to how Tumblr&#39;s reblog system is particularly bad and is guaranteed to result in bad behavior. He actually says that whoever designed the system either didn&#39;t understand what they were doing or they understood all too well and deliberately made the most ragebait-inducing system possible. This was written during the time when this employee said that Tumblr had solved the moderation problem and uses examples from that time. Moderation at scale is an impossibly hard problem, so as a non-Tumblr user, I&#39;m not even sure that Tumblr did worse than other platforms given its size and growth rate, but I think you&#39;d need some quality blindness to think that Tumblr had solved the moderation problem. I think the strongest positive case you could plausibly make would be something like &quot;Tumblr was better than average, but many people had a worse than average experience due to the communities they were in and some of these communities were unusually widely read and Tumblr therefore unfairly gained a reputation as being a particularly bad platform&quot;. I don&#39;t know if that&#39;s true or not, but it doesn&#39;t seem impossible that it could be true; it does seem impossible that Tumblr solved the moderation problem. [return] most of my projects are deliberately low quality; what I try to do is do the highest ROI testing, not test to the point the quality is what I would actually consider good, and this also goes for things like making interfaces very nice, etc. [return]</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sgentle</span>
+        
+        <span>2026/08/30 10:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think there are two opposite causes here: either an overly-aligned or completely unaligned mental model.<p>For developers, bug-blindness tends to be because their mental model is so close to the system's model that both have the same blind spots, and the developer can't effectively think outside the system (the classic "QA walks into a bar, orders 0 beers, orders -1 beers, orders 0.999 beers" vs "customer walks into a bar, asks where the bathroom is, bar immediately bursts into flames").</p><p>On the other hand, a common way for regular people to interact with a system is they just... don't have a model. None at all. Like, they click a thing and see what it does, and if it doesn't do what they expect they shrug and click something else. The horror of seeing a non-software person using a software system is realising that they usually cannot tell the difference between expected and unexpected behaviour, because they don't really form expectations in the first place. The computer is more genie than machine.</p><p>You can see this in the article: "Google Docs added some kind of delay such that the typing you do into the title box right after you open the doc gets overwritten". That's a developer forming a model of the system. The lay alternative is to simply learn that sometimes when you type in a box, the text appears. Other times, it doesn't. If it doesn't, you try again.</p><p>You don't need to understand the system if you abandon the assumption that the system was designed to be understood. And, in practice, the widespread plagues of shitty engineering, anti-features, and lack of respect for the user often combine to make that model the more information-theoretically optimal one.</p><p>In that sense, the very thing that makes us miserable is our perverse need to treat Google Docs as an engineered product rather than a cross between a djinn and a symbiotic fungus.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49495123">I think there are two opposite causes here: either an overly-aligned or completely unaligned mental model.<p>For developers, bug-blindness tends to be because their mental model is so close to the system's model that both have the same blind spots, and the developer can't effectively think outside the system (the classic "QA walks into a bar, orders 0 beers, orders -1 beers, orders 0.999 beers" vs "customer walks into a bar, asks where the bathroom is, bar immediately bursts into flames").</p><p>On the other hand, a common way for regular people to interact with a system is they just... don't have a model. None at all. Like, they click a thing and see what it does, and if it doesn't do what they expect they shrug and click something else. The horror of seeing a non-software person using a software system is realising that they usually cannot tell the difference between expected and unexpected behaviour, because they don't really form expectations in the first place. The computer is more genie than machine.</p><p>You can see this in the article: "Google Docs added some kind of delay such that the typing you do into the title box right after you open the doc gets overwritten". That's a developer forming a model of the system. The lay alternative is to simply learn that sometimes when you type in a box, the text appears. Other times, it doesn't. If it doesn't, you try again.</p><p>You don't need to understand the system if you abandon the assumption that the system was designed to be understood. And, in practice, the widespread plagues of shitty engineering, anti-features, and lack of respect for the user often combine to make that model the more information-theoretically optimal one.</p><p>In that sense, the very thing that makes us miserable is our perverse need to treat Google Docs as an engineered product rather than a cross between a djinn and a symbiotic fungus.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49495123">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49495123" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">DrewADesign</span>
+        
+        <span>2026/08/30 11:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>&gt; a common way for regular people to interact with a system is they just... don't have a model. None at all. Like, they click a thing and see what it does, and if it doesn't do what they expect they shrug and click something else. The horror of seeing a non-software person using a software system is realising that they usually cannot tell the difference between expected and unexpected behaviour, because they don't really form expectations in the first place. The computer is more genie than machine.</i><p>This is completely lost on most developers, which is why interface and UX designers exist. Developers, especially in FOSS projects, often love to condescendingly assert that users are just not reading the docs, or are not smart enough to understand the software. They’re smart enough— they just don’t want to have to learn about technical implementation details for the same reason most developers are perfectly content to use personal bookkeeping apps instead of learning the best ways to organize that data and making the spreadsheets manually. Most non-technologists get no dopamine hit from solving technical problems, have no need for the requisite knowledge needed to confidently do that, and are often just trying to make the computer do what it must so they can get back to doing what they’re actually passionate and knowledgeable about. When a competing product has an interface built for people without that mental model, it would have to be <i>pretty fucking expensive</i> to not be a no-brainier for most nontechnical users.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49495458"><i>&gt; a common way for regular people to interact with a system is they just... don't have a model. None at all. Like, they click a thing and see what it does, and if it doesn't do what they expect they shrug and click something else. The horror of seeing a non-software person using a software system is realising that they usually cannot tell the difference between expected and unexpected behaviour, because they don't really form expectations in the first place. The computer is more genie than machine.</i><p>This is completely lost on most developers, which is why interface and UX designers exist. Developers, especially in FOSS projects, often love to condescendingly assert that users are just not reading the docs, or are not smart enough to understand the software. They’re smart enough— they just don’t want to have to learn about technical implementation details for the same reason most developers are perfectly content to use personal bookkeeping apps instead of learning the best ways to organize that data and making the spreadsheets manually. Most non-technologists get no dopamine hit from solving technical problems, have no need for the requisite knowledge needed to confidently do that, and are often just trying to make the computer do what it must so they can get back to doing what they’re actually passionate and knowledgeable about. When a competing product has an interface built for people without that mental model, it would have to be <i>pretty fucking expensive</i> to not be a no-brainier for most nontechnical users.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49495458">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49495458" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">atmavatar</span>
+        
+        <span>2026/08/30 11:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; They’re smart enough<p>I worked at a small company that had a policy of putting devs on front-line support in a rotation, both because it was too small to have dedicated support staff and because the owners wanted devs to understand how users interacted with the system better.</p><p>I can assure you that while some users merely think differently than devs, there is cohort of users who are absolutely not smart enough.  It's impossible to do any amount of front-line support without collecting some horror stories.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49495548">&gt; They’re smart enough<p>I worked at a small company that had a policy of putting devs on front-line support in a rotation, both because it was too small to have dedicated support staff and because the owners wanted devs to understand how users interacted with the system better.</p><p>I can assure you that while some users merely think differently than devs, there is cohort of users who are absolutely not smart enough.  It's impossible to do any amount of front-line support without collecting some horror stories.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49495548">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49495548" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/08/30 12:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">One of my favorites is spending nearly 10 minutes trying to get someone to read a single word on their screen correctly,  in a dialog box that was blocking them, containing fewer than 10 words, so I could find the cause of their problem. After nearly 30 minutes to figure out that they had a popup blocking them, and not "the computer doesn't work".<p>What eventually worked was getting them to spell it to me backwards. That strategy has worked out quite well in other cases too - I suspect because it avoids some of people's built-in autocorrect and dyslexia (autoincorrect).</p><p>(I honestly mostly enjoy tech support, and I've done it for many years, sometimes professionally. But some people do seem like lost causes, and are not just having a bad day)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49495663">One of my favorites is spending nearly 10 minutes trying to get someone to read a single word on their screen correctly,  in a dialog box that was blocking them, containing fewer than 10 words, so I could find the cause of their problem. After nearly 30 minutes to figure out that they had a popup blocking them, and not "the computer doesn't work".<p>What eventually worked was getting them to spell it to me backwards. That strategy has worked out quite well in other cases too - I suspect because it avoids some of people's built-in autocorrect and dyslexia (autoincorrect).</p><p>(I honestly mostly enjoy tech support, and I've done it for many years, sometimes professionally. But some people do seem like lost causes, and are not just having a bad day)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49495663">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49495663" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">JimDabell</span>
+        
+        <span>2026/08/30 15:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I have experienced this in person with a developer who was failing to debug something. An error message was popping up on screen and he was reflexively clicking it away faster than anybody could read it. Even after being told “an error message is popping up, don’t dismiss it”, even after being told “[do the thing that triggers the bug] and then completely stop without doing anything else”, and a whole bunch of other ways of phrasing it, he was unable to understand that the error message contained useful information that we needed to see. I’m not even sure he was consciously aware it existed or that he was doing it. After many failed attempts at getting him to stop I literally had to take the mouse away from him and do it myself. I was shocked that apparently nothing anybody could say would stop him from dismissing the error message without even looking at it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49496503">I have experienced this in person with a developer who was failing to debug something. An error message was popping up on screen and he was reflexively clicking it away faster than anybody could read it. Even after being told “an error message is popping up, don’t dismiss it”, even after being told “[do the thing that triggers the bug] and then completely stop without doing anything else”, and a whole bunch of other ways of phrasing it, he was unable to understand that the error message contained useful information that we needed to see. I’m not even sure he was consciously aware it existed or that he was doing it. After many failed attempts at getting him to stop I literally had to take the mouse away from him and do it myself. I was shocked that apparently nothing anybody could say would stop him from dismissing the error message without even looking at it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49496503">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49496503" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">silvestrov</span>
+        
+        <span>2026/08/30 21:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think this comes from the same problem as notifications on iPhones: if you dismiss them accidentally then it is very difficult to find out what it was.<p>It is missing the equivalent of the "history" in e.g. browsers and YouTube.</p><p>If a user dismisses an alertbox on desktop, why isn't there an history menu item that  shows the previous 100 alert messages?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49498556">I think this comes from the same problem as notifications on iPhones: if you dismiss them accidentally then it is very difficult to find out what it was.<p>It is missing the equivalent of the "history" in e.g. browsers and YouTube.</p><p>If a user dismisses an alertbox on desktop, why isn't there an history menu item that  shows the previous 100 alert messages?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49498556">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49498556" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">foxglacier</span>
+        
+        <span>2026/08/30 22:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That may be an issue for messages from people but almost anything that pops up because the computer wants to tell you is useless and certainly doesn't need to be findable later. If you want to work on the problem, you can do that when you're ready, at your own initiative, not in the middle of what you're actually trying to do. Programmers wouldn't stand for a language that pops up a modal dialog when you type incorrect code but we think users are somehow less deserving of respect and ready to drop everything to deal with some stupid notification telling them they did it wrong or the software is broken like a crying child demanding his mother knows that he hurt his finger.<p>Reflexively dismissing error message popups is reasonable behavior because they're almost always unhelpful. It is often easier to mindlessly trial-and-error your way around obstacles than waste your attention on them.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49499120">That may be an issue for messages from people but almost anything that pops up because the computer wants to tell you is useless and certainly doesn't need to be findable later. If you want to work on the problem, you can do that when you're ready, at your own initiative, not in the middle of what you're actually trying to do. Programmers wouldn't stand for a language that pops up a modal dialog when you type incorrect code but we think users are somehow less deserving of respect and ready to drop everything to deal with some stupid notification telling them they did it wrong or the software is broken like a crying child demanding his mother knows that he hurt his finger.<p>Reflexively dismissing error message popups is reasonable behavior because they're almost always unhelpful. It is often easier to mindlessly trial-and-error your way around obstacles than waste your attention on them.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49499120">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49499120" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">JimDabell</span>
+        
+        <span>2026/08/31 02:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; If you want to work on the problem, you can do that when you're ready, at your own initiative, not in the middle of what you're actually trying to do.<p>As I explained earlier, what we were actually trying to do was debug the problem, and reading the error message was a necessary part of that.</p><p>It’s weird you’ve cooked up this little fantasy that the error message was getting in the way when it was the most important thing in the whole process <i>and that was the entire point of the anecdote</i>.</p><p>&gt; Reflexively dismissing error message popups is reasonable behavior because they're almost always unhelpful.</p><p>Not when you’re trying to debug the problem the error message is telling you about!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49501680">&gt; If you want to work on the problem, you can do that when you're ready, at your own initiative, not in the middle of what you're actually trying to do.<p>As I explained earlier, what we were actually trying to do was debug the problem, and reading the error message was a necessary part of that.</p><p>It’s weird you’ve cooked up this little fantasy that the error message was getting in the way when it was the most important thing in the whole process <i>and that was the entire point of the anecdote</i>.</p><p>&gt; Reflexively dismissing error message popups is reasonable behavior because they're almost always unhelpful.</p><p>Not when you’re trying to debug the problem the error message is telling you about!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49501680">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49501680" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pessimizer</span>
+        
+        <span>2026/08/31 02:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Programmers wouldn't stand for a language that pops up a modal dialog when you type incorrect code<p>I have no idea why you think this. The only reason I wouldn't like it is because I might be doing something that requires incorrect code as a placeholder, but if the modal didn't come back after being dismissed (and just sat in a history) I'd be pleased as punch. It's why I moved to rust - I wanted the compiler to stop me.</p><p>Not only do you think this, but you think it's somehow a sign of being egotistical and disrespectful that anyone would like to know when they're screwing up. Weird.</p><p>&gt; they're almost always unhelpful.</p><p>Sounds like you found the real problem.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49501112">&gt; Programmers wouldn't stand for a language that pops up a modal dialog when you type incorrect code<p>I have no idea why you think this. The only reason I wouldn't like it is because I might be doing something that requires incorrect code as a placeholder, but if the modal didn't come back after being dismissed (and just sat in a history) I'd be pleased as punch. It's why I moved to rust - I wanted the compiler to stop me.</p><p>Not only do you think this, but you think it's somehow a sign of being egotistical and disrespectful that anyone would like to know when they're screwing up. Weird.</p><p>&gt; they're almost always unhelpful.</p><p>Sounds like you found the real problem.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49501112">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49501112" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">blfr</span>
+        
+        <span>2026/08/30 21:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">iOS has no (user-viewable) notification history?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49498599">iOS has no (user-viewable) notification history?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49498599">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49498599" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">silvestrov</span>
+        
+        <span>2026/08/30 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Very limited: as soon as you have cleared a notification it is gone forever and old notifications are also gone rather quickly.<p><a href="https://www.lifewire.com/iphone-notification-history-11895165" target="_blank" rel="noopener noreferrer">https://www.lifewire.com/iphone-notification-history-1189516...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49498837">Very limited: as soon as you have cleared a notification it is gone forever and old notifications are also gone rather quickly.<p><a href="https://www.lifewire.com/iphone-notification-history-11895165" target="_blank" rel="noopener noreferrer">https://www.lifewire.com/iphone-notification-history-1189516...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49498837">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49498837" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/08/31 03:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's so weird to me that this kind of thing wasn't a day-1 kind of thing.  Android's has loads of issues too[1], not least of which is that you need to manually enable it.<p>1: you can't get access to actions or details in the history (e.g. no long-press to change settings), nor does it show you ones you didn't dismiss by hand afaict (I've been having Discord notifications disappearing almost immediately after making a noise, but there's nothing in history even though I saw it for its whole half-second existence because it popped over my screen).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49502080">It's so weird to me that this kind of thing wasn't a day-1 kind of thing.  Android's has loads of issues too[1], not least of which is that you need to manually enable it.<p>1: you can't get access to actions or details in the history (e.g. no long-press to change settings), nor does it show you ones you didn't dismiss by hand afaict (I've been having Discord notifications disappearing almost immediately after making a noise, but there's nothing in history even though I saw it for its whole half-second existence because it popped over my screen).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49502080">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49502080" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miller637</span>
+        
+        <span>2026/08/31 14:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Almost everyone has this popup dismissal reflex. People don't read them and click or tap them away instinctively. I think software creators should know this by now and stop using popups in their software.<p>Sometimes the reflex is so strong, it is extremely hard to stop it, even when you're aware of it. Something like that has happened to me once. There was some kind of password form, where it said DO NOT PRESS ENTER after typing the password. I pressed enter. It took me several attempts to get through it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49506264">Almost everyone has this popup dismissal reflex. People don't read them and click or tap them away instinctively. I think software creators should know this by now and stop using popups in their software.<p>Sometimes the reflex is so strong, it is extremely hard to stop it, even when you're aware of it. Something like that has happened to me once. There was some kind of password form, where it said DO NOT PRESS ENTER after typing the password. I pressed enter. It took me several attempts to get through it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49506264">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49506264" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">blep-arsh</span>
+        
+        <span>2026/08/31 09:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm guilty of dismissing useful messages sometimes, so I'm running a program, RetroClip for macOS, that records the last 30/60 seconds of screen capture into a ring buffer in RAM (with compression, but the CPU/GPU/power usage seems to be almost negligible). It writes out a file when you press a hotkey. Very helpful in these "wait, wtf did just happen" situations.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49504504">I'm guilty of dismissing useful messages sometimes, so I'm running a program, RetroClip for macOS, that records the last 30/60 seconds of screen capture into a ring buffer in RAM (with compression, but the CPU/GPU/power usage seems to be almost negligible). It writes out a file when you press a hotkey. Very helpful in these "wait, wtf did just happen" situations.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49504504">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49504504" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">OJFord</span>
+        
+        <span>2026/08/30 15:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's even worse than the "I'm getting an error when I ..." type! ("...ok... <i>What's the error?</i>")</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49496552">That's even worse than the "I'm getting an error when I ..." type! ("...ok... <i>What's the error?</i>")</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49496552">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49496552" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/08/30 16:54</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49496930"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49496930">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49496930" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">foxglacier</span>
+        
+        <span>2026/08/30 22:53</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49499185">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49499185">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49499185" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">OJFord</span>
+        
+        <span>2026/08/31 00:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The person I replied to described their frustration with a colleague dismissing an error message without reading, not a user. I'm not shaming users not providing clear actionable feedback with stack traces and reproduction steps. I've known fellow software engineers throw their hands up and ask for help because they're 'getting an error', that's what's annoying (because they should know better, ok what have you done before asking me, etc.) not users.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49500358">The person I replied to described their frustration with a colleague dismissing an error message without reading, not a user. I'm not shaming users not providing clear actionable feedback with stack traces and reproduction steps. I've known fellow software engineers throw their hands up and ask for help because they're 'getting an error', that's what's annoying (because they should know better, ok what have you done before asking me, etc.) not users.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49500358">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49500358" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jiggawatts</span>
+        
+        <span>2026/08/30 12:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The flip side of this is the pleasant surprise of working with a near-retirement age grandma who assures you that she "isn't technical" and "doesn't know how to use a computer", but will studiously write down every keyboard shortcut on little post-it notes and add it to their collection like they're porcelain cats she found at the Sunday markets. I've watched some of these people operate a computer in a manner reminiscent of watching an F1 driver at work, the screen just a <i>blur</i> as their fingers dance over the keyboard.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49495752">The flip side of this is the pleasant surprise of working with a near-retirement age grandma who assures you that she "isn't technical" and "doesn't know how to use a computer", but will studiously write down every keyboard shortcut on little post-it notes and add it to their collection like they're porcelain cats she found at the Sunday markets. I've watched some of these people operate a computer in a manner reminiscent of watching an F1 driver at work, the screen just a <i>blur</i> as their fingers dance over the keyboard.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49495752">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49495752" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/08/30 12:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Absolutely, the ones that are clearly trying more than make up for the rest imo, and some are stunning.  There are a lot of them.  And many of the rest are just having a bad brain day and need help rubber-ducking to see the thing right in front of them - we've all been there, many times.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49495762">Absolutely, the ones that are clearly trying more than make up for the rest imo, and some are stunning.  There are a lot of them.  And many of the rest are just having a bad brain day and need help rubber-ducking to see the thing right in front of them - we've all been there, many times.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49495762">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49495762" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
