@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>I turned my security cameras into an automatic bird identification system | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-02/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>I turned my security cameras into an automatic bird identification system</h1>
+      <p class="original-title">I turned my security cameras into an automatic bird identification system</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 speckx</span>
+        <span>热度 618</span>
+        <span>回复 170</span>
+        <span>2026/09/01 00:47</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49511856" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://jasontucker.blog/how-i-turned-my-security-cameras-into-an-automatic-bird-identification-system-with-birdnet-go/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49511856.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>My wife loves listening to the birds and identifying them using an app on her phone. I thought I&#39;d take this a step further and see if there was something that can identify the birds based on their song. Looking around I found BirdNet and BirdNet-Go, then discovered you can run this on Docker and use the security cameras you already have outside to identify the birds. Awesome! So I took 3 of the cameras around my house and used their microphones to identify the birds. It was magic.Real-Time Bird and Bat Audio DetectionBirdNet-Go runs 24/7. It listens constantly. The moment a bird starts singing, it analyzes the audio and gives you an identification. No waiting, no manual recording. It works for bats too, which is pretty cool if you&#39;ve got them flying around at dusk. The system just keeps running in the background, cataloging everything it hears. It also started detecting frogs which is interesting.Multi-Model Local AI Inference EngineThe whole thing runs locally on your hardware. No cloud services. No API calls. The AI models live right on your server or Raspberry Pi. This means it&#39;s fast, private, and doesn&#39;t cost you anything per month. You can even run multiple models if you want different detection strategies or regional bird databases. They recently added Google Perch v2 to the model gallery allowing for 14,795 species to be detected vs the 6,000 that BirdNET 2.4 provided.Alert Rules with Species List MatchingYou can set up rules for specific birds. Want to know the instant a cardinal shows up? Done. Looking for a rare species in your area? Set an alert. The system matches against species lists and sends you notifications based on whatever criteria you set. It&#39;s like having a birding buddy who never sleeps. I even have it connected to a channel in my homes Discord server. Wait, your house doesn&#39;t have a dedicated Discord?Setting up notifications and alerts for bird sightings into the house discord channel #birdnetSpecies Novelty Tracking for New DetectionsThis feature tracks which birds are new to your yard. First time a blue jay visits? BirdNet-Go flags it. It maintains a running list of every species it&#39;s detected, so you can see your yard&#39;s biodiversity grow over time. Honestly, this turned into a fun game for us.RTSP Stream Support for IP CamerasIf your cameras support RTSP, you&#39;re good to go. Most modern IP cameras do. You just point BirdNet-Go at the stream URL. I used three of my existing security cameras. Didn&#39;t need to buy any special hardware. The cameras I already had for security now pull double duty identifying birds.BirdWeather Integration for Data SharingBirdWeather is a community platform for sharing bird detection data. BirdNet-Go integrates with it directly. If you want to contribute your observations to a larger dataset, you can. It helps researchers and other birders see what&#39;s happening in your area. You don&#39;t have to use it, but it&#39;s nice that the option exists.Self-Hosted with No Cloud DependenciesEverything lives on your network. The audio never leaves your house unless you explicitly share it. No subscription fees. No terms of service changes. No company shutting down the service in two years. You own the whole stack. It runs in Docker, so it&#39;s easy to manage alongside everything else in your homelab.Can connect to Home AssistantEvernything needs to be able to connect to Home Assistant and BirdNET-Go can use MQTT to be discovered in Home Assistant. Visual Audio Channel Energy Level AnalysisThe interface shows you real-time audio levels for each channel. You can see exactly what the microphones are picking up. This helps you position cameras better or troubleshoot why one isn&#39;t detecting anything. Sometimes you&#39;ll realize the camera is pointed at a noisy AC unit or getting wind noise, and you can adjust accordingly.IT DETECTED A FART!A few nights ago I got a notification from Home Assistant that a fart was detected in the driveway. My neighbor was walking by my house on his nightly walk and ripped one as he passed by the driveway and the fart was detected.There&#39;s an app for that?Someone made a free app for iOS called &quot;BirdNET-Go Companion&quot; that lets you connect you phone to your BirdNet-Go server and see the detections in a native iOS app. Awesome job Robert Oesterlin!BIrdNET-Go Companion App - App StoreDownload BIrdNET-Go Companion by Robert Oesterlin on the App Store. See screenshots, ratings and reviews, user tips, and more apps like BIrdNET-Go Companion.App StoreRobert OesterlinSaezuri makes for a beautiful front end for BirdNet-GoLet&#39;s check out Saezuri, nielsrowinbik on reddit mentioned they built something called Saezuri inspired by Avian Visitors and I thought I&#39;d give it a try. A quick bit of Docker setup and it was generating images in just a few minutes. Click one of the birds and info about them pops up. Awesome job nielsrowinbik!On the tin: A self-hosted display for your BirdNET-Go instance. It watches recent detections and arranges the species you’re hearing into a woodblock-style collage — each bird sized by how often it calls. Point it at BirdNET-Go and leave it on a screen. Everything runs on your own network — no account, no cloud, no writes.Looking at the logs, it did try to find a photo of a fart and I&#39;ll let you know if it using Gemini to generate a photo of one as well. 404 fart not found.Final ThoughtsLook, this project surprised me. I expected it to be neat but figured I&#39;d get bored after a week. Instead, my wife and I check it daily. We&#39;ve learned which birds visit at what times. We&#39;ve spotted species we didn&#39;t know lived nearby. My friends got interested too, I made this avaiable on the public house domain name (behind Cloudflare of course.) and allowed a few of my friends to connect to it and see how it works. It turned our security camera setup into something genuinely useful beyond security. If you&#39;ve got cameras with microphones and even a passing interest in birds, give BirdNet-Go a shot. It&#39;s one of those homelab projects that actually improves daily life instead of just being technically interesting.GitHub - tphakala/birdnet-goSelf-hosted realtime soundscape analyser for birds, bats and other wildlife. Multi-model local AI inference, runs 24/7 on a Raspberry Pi. — ⭐ 1,232 · 🍴 114 · nightly-20260601GitHubtphakalaLet&#39;s answer some questions left on Reddit and Hacker News (Hi all!)Oh boy, I&#39;m on the front page of Hacker News! Wild.nielsrowinbik on reddit mentioned they built something called Saezuri inspired by Avian Visitors, that is a nice front end for BirdNet-Go. Omg, it&#39;s awesome looking, I&#39;ll need to give it a try.Yes, technically it is a &quot;flock&quot; camera. Oh boy.Lots of folks saying they build something like this using Frigate, I didn&#39;t build this I just installed the Docker Container and it was up in running in 15 mins detecting things. I use Home Assistant at have built some custom dashboards so I dont have to go into the web app to see everything.A few people in the comments on Reddit mentioned Bird-Pi, I&#39;m running this on an old laptop and has been working quite well for what I&#39;m needed it to do.A lot of folks mentioned using e-ink displays to view this data and what a smart idea. My wife and I access the web interface on our photos to see the list of recent detections. I also have Home Assistant integration tied in so it shows up on a screen I have configured there. I&#39;m going to look into the mobile companion app to see how that all works.Some folks talked about using special microphones to do the detection and I may do that for our back yard, we don&#39;t have cameras out there for personal privacy reasons but a mic would be great. One thing I didn&#39;t mention is the mics cut out if it hears speech, which is a nice feature.A few folks mentioned they their built or vibe coded their on versions of BirdNet-Go and I think thats great, I found what worked for me and it was a system my wife was already using on her phone with an app. Now it&#39;s like having her phone outside 24/7 capturing the bird calls.Someone asked if this can be turned into a doorbell, no it cant be but it can use your doorbell if it has an RTSP feed.Lots of folks mentioned Bats, yeah, if you have a specialized mic you can totally detect bats with better accuracy. We have a &quot;bat box&quot; down the street from us where someone set one up on a pole and some bats we believe live there.Yeah, the fart detector was funny!People asked about confidance in identifying birds and honesly we&#39;re not birders just people that have a crapton of birds around us so I used the RTSP streams to capture them and a local AI model to identify them.Lots of folks talking about hacking flock cameras to do this, go on with your bad selves! (share the project link in the comments below if you do!)Some folks mentioned that I had a small amount of detections, over the last 12 months we&#39;ve had 418,726 with 271 unique species and 60.9% confidence rating average. Our most common bird for our area of Southern California is the House Finch with 118,667 detections.</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ben1040</span>
+        
+        <span>2026/09/01 01:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I did exactly this with BirdNet-Go and my Unifi doorbell cam.  Unifi exposes an RTSP feed for each camera so it was easy for the tool to just "listen" to the doorbell and start classifying.<p>I have a spare e-ink display and my next weekend project to follow onto this is to wire it up so it shows some faux "woodcut" images of birds detected, or something like that.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49512197">I did exactly this with BirdNet-Go and my Unifi doorbell cam.  Unifi exposes an RTSP feed for each camera so it was easy for the tool to just "listen" to the doorbell and start classifying.<p>I have a spare e-ink display and my next weekend project to follow onto this is to wire it up so it shows some faux "woodcut" images of birds detected, or something like that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49512197">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49512197" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">koryk</span>
+        
+        <span>2026/09/01 04:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I did something similar with my BirdNET + e-ink screen, it's pulling images from wikipedia, dithering and rendering a summary with PIL.<p><a href="https://i.imgur.com/5XbM6bb.png" target="_blank" rel="noopener noreferrer">https://i.imgur.com/5XbM6bb.png</a></p><p>Also if anyone is interested, here is the server for the e-ink screen <a href="https://github.com/koryk/inky-impression-server" target="_blank" rel="noopener noreferrer">https://github.com/koryk/inky-impression-server</a></p><p>and here is a MCP for birdnet that I've been using for a bit  <a href="https://github.com/koryk/birdnetpi-mcp-local-server" target="_blank" rel="noopener noreferrer">https://github.com/koryk/birdnetpi-mcp-local-server</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49514635">I did something similar with my BirdNET + e-ink screen, it's pulling images from wikipedia, dithering and rendering a summary with PIL.<p><a href="https://i.imgur.com/5XbM6bb.png" target="_blank" rel="noopener noreferrer">https://i.imgur.com/5XbM6bb.png</a></p><p>Also if anyone is interested, here is the server for the e-ink screen <a href="https://github.com/koryk/inky-impression-server" target="_blank" rel="noopener noreferrer">https://github.com/koryk/inky-impression-server</a></p><p>and here is a MCP for birdnet that I've been using for a bit  <a href="https://github.com/koryk/birdnetpi-mcp-local-server" target="_blank" rel="noopener noreferrer">https://github.com/koryk/birdnetpi-mcp-local-server</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49514635">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49514635" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">simonjgreen</span>
+        
+        <span>2026/09/01 04:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Love your eink example!  You’ve just sent me on a parts shopping trip :)<p>I’ve been unhappy with my little lcd board I’ve been using for the same here <a href="https://github.com/simonjgreen/OpenObservatory" target="_blank" rel="noopener noreferrer">https://github.com/simonjgreen/OpenObservatory</a> as the contrast is bad. I was considering using one of my trmnl displays, but it isn’t quite the right operating model for the frequency of updates I want.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49514725">Love your eink example!  You’ve just sent me on a parts shopping trip :)<p>I’ve been unhappy with my little lcd board I’ve been using for the same here <a href="https://github.com/simonjgreen/OpenObservatory" target="_blank" rel="noopener noreferrer">https://github.com/simonjgreen/OpenObservatory</a> as the contrast is bad. I was considering using one of my trmnl displays, but it isn’t quite the right operating model for the frequency of updates I want.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49514725">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49514725" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">arnemunthekaas</span>
+        
+        <span>2026/09/01 14:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I've also done basically the same this year, I just use a Raspberry pi + a usb mic. <a href="https://github.com/arnegiacomo/fugleramme" target="_blank" rel="noopener noreferrer">https://github.com/arnegiacomo/fugleramme</a><p>Its very popular with friends and family, especially with older people that dont enjoy traditional tech.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49518779">I've also done basically the same this year, I just use a Raspberry pi + a usb mic. <a href="https://github.com/arnegiacomo/fugleramme" target="_blank" rel="noopener noreferrer">https://github.com/arnegiacomo/fugleramme</a><p>Its very popular with friends and family, especially with older people that dont enjoy traditional tech.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49518779">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49518779" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">walrus01</span>
+        
+        <span>2026/09/01 17:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;  Unifi exposes an RTSP feed for each camera<p>Do you mean an RTSP audio only stream separate from the video+audio feed you might ingest to an NVR, or combined audio/video RTSP stream? Most manufacturers of security cameras with ordinary RTSP stream functions support provide both video and audio together. 'Frigate' for instance will auto detect audio stream on a reolink camera and it "just works" in the latest versions of Frigate.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49519942">&gt;  Unifi exposes an RTSP feed for each camera<p>Do you mean an RTSP audio only stream separate from the video+audio feed you might ingest to an NVR, or combined audio/video RTSP stream? Most manufacturers of security cameras with ordinary RTSP stream functions support provide both video and audio together. 'Frigate' for instance will auto detect audio stream on a reolink camera and it "just works" in the latest versions of Frigate.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49519942">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49519942" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mlrtime</span>
+        
+        <span>2026/09/01 17:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Unifi provides local RTSP streams in different resolutions, birdnet will happily take a rtsp and strip it's audio out for processing (ffmpeg?)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49519946">Unifi provides local RTSP streams in different resolutions, birdnet will happily take a rtsp and strip it's audio out for processing (ffmpeg?)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49519946">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49519946" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">walrus01</span>
+        
+        <span>2026/09/01 20:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Have you had any difficulty with simultaneously retrieving &gt;1 RTSP stream from the camera at a time, 24x7?  Such as full resolution video/audio to a NVR for security purposes and then a second stream to birdnet?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49520916">Have you had any difficulty with simultaneously retrieving &gt;1 RTSP stream from the camera at a time, 24x7?  Such as full resolution video/audio to a NVR for security purposes and then a second stream to birdnet?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49520916">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49520916" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mlrtime</span>
+        
+        <span>2026/09/02 04:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Negative, you can always use go2rtc or scrypted to proxy them.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49528067">Negative, you can always use go2rtc or scrypted to proxy them.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49528067">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49528067" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Ouman</span>
+        
+        <span>2026/09/01 14:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The e-ink display with woodcut birds sounds like the perfect final form of this project</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49518583">The e-ink display with woodcut birds sounds like the perfect final form of this project</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49518583">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49518583" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">sciencesama</span>
+        
+        <span>2026/09/01 01:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">just use trmnl it will make it super easy</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49512595">just use trmnl it will make it super easy</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49512595">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49512595" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">twhitely</span>
+        
+        <span>2026/09/01 10:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I like my money to not go towards transphobes</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49517500">I like my money to not go towards transphobes</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49517500">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49517500" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">lemmelearn</span>
+        
+        <span>2026/09/02 18:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">i suspect ur talking about the founder ryan ckulp which is very active in his reddit /r/trmnl but cant seem to find any proof of transphobic stance</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49534324">i suspect ur talking about the founder ryan ckulp which is very active in his reddit /r/trmnl but cant seem to find any proof of transphobic stance</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49534324">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49534324" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">lemmelearn</span>
+        
+        <span>2026/09/02 18:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">is there proof? i see that the founder ryan ckulp is active in /r/trmnl but dont see any proof of being misogyn or transphobe</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49534341">is there proof? i see that the founder ryan ckulp is active in /r/trmnl but dont see any proof of being misogyn or transphobe</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49534341">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49534341" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mrmlz</span>
+        
+        <span>2026/09/01 14:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I like my TRMLN it has been very solid.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49518572">I like my TRMLN it has been very solid.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49518572">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49518572" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jasontucker</span>
+        
+        <span>2026/09/02 02:28</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49525959">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49525959">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49525959" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sahn44</span>
+        
+        <span>2026/09/01 19:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is a lot more wholesome than my project. I detect birds and automatically spray them with a sprinkler to keep away from pool area.<p>code: <a href="https://github.com/mattsahn/bird-away" target="_blank" rel="noopener noreferrer">https://github.com/mattsahn/bird-away</a></p><p>Writeup: <a href="https://mattsahn.github.io/bird-away-blog/" target="_blank" rel="noopener noreferrer">https://mattsahn.github.io/bird-away-blog/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49520757">This is a lot more wholesome than my project. I detect birds and automatically spray them with a sprinkler to keep away from pool area.<p>code: <a href="https://github.com/mattsahn/bird-away" target="_blank" rel="noopener noreferrer">https://github.com/mattsahn/bird-away</a></p><p>Writeup: <a href="https://mattsahn.github.io/bird-away-blog/" target="_blank" rel="noopener noreferrer">https://mattsahn.github.io/bird-away-blog/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49520757">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49520757" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">world2vec</span>
+        
+        <span>2026/09/01 20:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My first ever "e2e" ML project during early covid quarantine was a crude vision model to detect pigeons on my balcony (and pigeons only) and play a loud random sound. It almost worked sometimes.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49521303">My first ever "e2e" ML project during early covid quarantine was a crude vision model to detect pigeons on my balcony (and pigeons only) and play a loud random sound. It almost worked sometimes.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49521303">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49521303" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ompogUe</span>
+        
+        <span>2026/09/02 00:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Did a similar thing where I had a neighbor who raised dobermans and rottweilers - it's a bit difficult to code with 8 or 9 large dogs barking in the yard outside your window.<p>Set up an amp and speakers that would pump out ultrasonic noise when it heard the barking, sending them running to the other side of their house.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49524133">Did a similar thing where I had a neighbor who raised dobermans and rottweilers - it's a bit difficult to code with 8 or 9 large dogs barking in the yard outside your window.<p>Set up an amp and speakers that would pump out ultrasonic noise when it heard the barking, sending them running to the other side of their house.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49524133">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49524133" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">lukan</span>
+        
+        <span>2026/09/02 01:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">"It almost worked sometimes."<p>I will borrow that.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49524973">"It almost worked sometimes."<p>I will borrow that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49524973">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49524973" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">atestu</span>
+        
+        <span>2026/09/01 21:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I've been meaning the same thing to stop deer from eating from my garden... would you do anything differently if you were to do it again?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49521625">I've been meaning the same thing to stop deer from eating from my garden... would you do anything differently if you were to do it again?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49521625">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49521625" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
