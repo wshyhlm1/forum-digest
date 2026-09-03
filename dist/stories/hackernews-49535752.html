@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A note on subscription prices from LWN | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-03/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>A note on subscription prices from LWN</h1>
+      <p class="original-title">A note on subscription prices from LWN</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 rwky</span>
+        <span>热度 710</span>
+        <span>回复 145</span>
+        <span>2026/09/02 21:17</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49535752" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://lwn.net/Articles/1090585/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49535752.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>The online publication industry, as a whole, is struggling, with challenges coming from multiple directions. Thanks to the support of all of you, our readers, LWN would appear to be doing better than most. But the world has changed around us and, in particular, prices have changed considerably. By now, you probably know where this is going: subscription prices at LWN will be increasing as of September 15.</li><li>We adopted the subscription model in late 2002; it was one of the best decisions we have ever made. This model makes us independent of the volatile (and surveillance-driven) advertising market and aligns our interests with those of our readers. But it does depend on support from those readers; if you have not yet subscribed to LWN, please consider doing so now — our subscribers are the only reason we continue to exist.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">AlexB138</span>
+        
+        <span>2026/09/02 21:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">LWN is one of the, if not the single, highest signal tech publications around. I hope they're able to maintain a stable subscription service. Being user funded, and avoiding having to maintain allegiance to advertisers, is likely part of why their quality is so high.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49535913">LWN is one of the, if not the single, highest signal tech publications around. I hope they're able to maintain a stable subscription service. Being user funded, and avoiding having to maintain allegiance to advertisers, is likely part of why their quality is so high.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49535913">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49535913" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">giancarlostoro</span>
+        
+        <span>2026/09/02 21:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not only that but lwn is one of the main sites that gets submitted to HN all year round (not daily, but maybe nearish to daily). So the audience here on HN has been exposed to it over the years. I'm not sure what more they could do to get new subscribers, I certainly hope they figure that out or how to get new ways to earn revenue without having to go the ad route.<p><a href="https://news.ycombinator.com/from?site=lwn.net" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/from?site=lwn.net</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536028">Not only that but lwn is one of the main sites that gets submitted to HN all year round (not daily, but maybe nearish to daily). So the audience here on HN has been exposed to it over the years. I'm not sure what more they could do to get new subscribers, I certainly hope they figure that out or how to get new ways to earn revenue without having to go the ad route.<p><a href="https://news.ycombinator.com/from?site=lwn.net" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/from?site=lwn.net</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536028">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536028" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">blks</span>
+        
+        <span>2026/09/02 22:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’m occasional lwn reader and I had no idea there are subscriptions there!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49537009">I’m occasional lwn reader and I had no idea there are subscriptions there!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49537009">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49537009" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">giancarlostoro</span>
+        
+        <span>2026/09/03 01:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They lock down new articles for about a week I think, so subscribers get the first one, though if you're a subscriber I think they let you SHARE the article with others, so here on HN sometimes a brand new article will be shared by a subscriber with a code so anyone without a subscription can see it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49539336">They lock down new articles for about a week I think, so subscribers get the first one, though if you're a subscriber I think they let you SHARE the article with others, so here on HN sometimes a brand new article will be shared by a subscriber with a code so anyone without a subscription can see it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49539336">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49539336" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">rdpintqogeogsaa</span>
+        
+        <span>2026/09/02 21:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's the thing though. You can get all the value from LWN through here. Even if it wasn't for them tolerating subscriber links being posted on HN, the week-long delay isn't nearly enough an incentive to actually subscribe, rationally speaking.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536068">That's the thing though. You can get all the value from LWN through here. Even if it wasn't for them tolerating subscriber links being posted on HN, the week-long delay isn't nearly enough an incentive to actually subscribe, rationally speaking.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536068">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536068" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tonyarkles</span>
+        
+        <span>2026/09/02 21:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Rationally-speaking, maybe not. I’ve been a long-time subscriber. When I first subscribed, my day-to-day involved embedded Linux and getting the “breaking news” was pretty valuable. These days I still do that somewhat but I’m stuck on a crusty vendor kernel and anything I read about a kernel newer than 5.15 is going to land on my desk in approximately 2028… but I still subscribe, mostly with a patronage mindset: I don’t acutely get value from the subscription every week, but I think it’s a community service and I’m happy to pitch in a few bucks to keep it alive.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536248">Rationally-speaking, maybe not. I’ve been a long-time subscriber. When I first subscribed, my day-to-day involved embedded Linux and getting the “breaking news” was pretty valuable. These days I still do that somewhat but I’m stuck on a crusty vendor kernel and anything I read about a kernel newer than 5.15 is going to land on my desk in approximately 2028… but I still subscribe, mostly with a patronage mindset: I don’t acutely get value from the subscription every week, but I think it’s a community service and I’m happy to pitch in a few bucks to keep it alive.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536248">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536248" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kokada</span>
+        
+        <span>2026/09/02 23:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Same as me. I started subscribing LWN when I was a Linux enthusiast from my early college days, because the content was so good and interesting. Nowadays I barely read it but I still keep my subscription alive, just because I think the content is worth it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49537767">Same as me. I started subscribing LWN when I was a Linux enthusiast from my early college days, because the content was so good and interesting. Nowadays I barely read it but I still keep my subscription alive, just because I think the content is worth it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49537767">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49537767" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">WD-42</span>
+        
+        <span>2026/09/02 22:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Wouldn’t rationally speaking you’d want to support them to keep them around? Or did you mean selfishly speaking?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536598">Wouldn’t rationally speaking you’d want to support them to keep them around? Or did you mean selfishly speaking?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536598">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536598" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">GuinansEyebrows</span>
+        
+        <span>2026/09/02 23:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">not saying parent feels this way but the target class of this website often does not separate the two. we're still sloughing off the goofballery of objectivism, i guess.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49537596">not saying parent feels this way but the target class of this website often does not separate the two. we're still sloughing off the goofballery of objectivism, i guess.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49537596">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49537596" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kjs3</span>
+        
+        <span>2026/09/03 00:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>we're still sloughing off the goofballery of objectivism</i><p>Are we though?  I certainly don't sense the volume of FYIGM entitlement decreasing.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49538328"><i>we're still sloughing off the goofballery of objectivism</i><p>Are we though?  I certainly don't sense the volume of FYIGM entitlement decreasing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49538328">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49538328" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">chrisweekly</span>
+        
+        <span>2026/09/03 02:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">(FYIGM = F* You, I Got Mine)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49540200">(FYIGM = F* You, I Got Mine)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49540200">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49540200" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">GuinansEyebrows</span>
+        
+        <span>2026/09/03 02:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">based on other replies to the parent, at least some folks feel differently :) but generally i'm not very optimistic about it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49540404">based on other replies to the parent, at least some folks feel differently :) but generally i'm not very optimistic about it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49540404">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49540404" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wonnage</span>
+        
+        <span>2026/09/03 00:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They literally fearmonger for a permanent underclass, it’s definitely not decreasing</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49538582">They literally fearmonger for a permanent underclass, it’s definitely not decreasing</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49538582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49538582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">roryirvine</span>
+        
+        <span>2026/09/02 21:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think the generosity and straightforwardness are a big part of the attraction for many subscribers.<p>They've always respected their readers and I hope that continues to pay off.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536108">I think the generosity and straightforwardness are a big part of the attraction for many subscribers.<p>They've always respected their readers and I hope that continues to pay off.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536108">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536108" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">excitedrustle</span>
+        
+        <span>2026/09/02 22:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Agree.  I don't read it every week, but I greatly appreciate the quality (both of the technical content and the lack of advertising/sensationalism/clickbait) when I do read an article. Happy to pay to support this style of tech reporting and journalism.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536771">Agree.  I don't read it every week, but I greatly appreciate the quality (both of the technical content and the lack of advertising/sensationalism/clickbait) when I do read an article. Happy to pay to support this style of tech reporting and journalism.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536771">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536771" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">giancarlostoro</span>
+        
+        <span>2026/09/02 21:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Easy to say until they have to eventually make the hard decision to shut down.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536139">Easy to say until they have to eventually make the hard decision to shut down.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536139">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536139" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">teiferer</span>
+        
+        <span>2026/09/02 23:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Selfishly speaking is the word you were looking for.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49537528">Selfishly speaking is the word you were looking for.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49537528">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49537528" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kjs3</span>
+        
+        <span>2026/09/03 00:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is pretty close to "I shall stand under this tree during the storm to stay dry, and if this tree starts to drip on me I'll just run over to that other tree and stay dry there" thinking.  If LWN goes away, that value leaves HN too.  Rationally speaking.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49538727">This is pretty close to "I shall stand under this tree during the storm to stay dry, and if this tree starts to drip on me I'll just run over to that other tree and stay dry there" thinking.  If LWN goes away, that value leaves HN too.  Rationally speaking.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49538727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49538727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">classified</span>
+        
+        <span>2026/09/02 22:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Rationally speaking, if you're getting value from it, you should be interested in its continued existence and therefore subscribe.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536862">Rationally speaking, if you're getting value from it, you should be interested in its continued existence and therefore subscribe.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536862">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536862" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">freedomben</span>
+        
+        <span>2026/09/02 22:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Well for me, at least, it's those features that make me a subscriber. If not for those I wouldn't do it</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49536751">Well for me, at least, it's those features that make me a subscriber. If not for those I wouldn't do it</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49536751">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49536751" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
