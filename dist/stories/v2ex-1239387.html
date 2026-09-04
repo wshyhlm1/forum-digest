@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>手机远程控制电脑跑 Agent 方案 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-04/">返回日报</a>
+      <div class="source-chip">V2EX #4</div>
+      <h1>手机远程控制电脑跑 Agent 方案</h1>
+      <p class="original-title">手机远程控制电脑跑 Agent 方案</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ares001</span>
+        <span>热度 69</span>
+        <span>回复 69</span>
+        <span>2026/09/04 09:40</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1239387" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1239387.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>刚刚使用 chatgpt remote ，非常经验，获得了和电脑一样的体验。但是 remote 经常比较难连接成功，成功后加载会话也不是很顺畅。我的是 Android + Mac 体验较差。 试过 iPhone 好像容易连接成功，也稳定一点。后面切换到了 orca + tailscale ， 还部署了 peer-relay ， 手机端的 tailscale 显示连接成功了。但是 orca app 还是经常重连。 体验非常丝滑。经常杀掉 app ，再打开，就能连接成功。准备接入蒲公英 X1 或者他们的开发者异地组网服务怎么样？你们还有更好的经验吗？补充：https://www.onorca.dev/https://pgy.oray.com/activity/ai-developer</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">刚刚使用 chatgpt remote ，非常经验，获得了和电脑一样的体验。<br />但是 remote 经常比较难连接成功，成功后加载会话也不是很顺畅。<br />我的是 Android + Mac 体验较差。 试过 iPhone 好像容易连接成功，也稳定一点。<br /><br /><br />后面切换到了 orca + tailscale ， 还部署了 peer-relay ， 手机端的 tailscale 显示连接成功了。但是 orca app 还是经常重连。 体验非常丝滑。<br />经常杀掉 app ，再打开，就能连接成功。<br /><br />准备接入蒲公英 X1 或者他们的开发者异地组网服务怎么样？<br /><br />你们还有更好的经验吗？<br /><br />补充：<br /><a href="https://www.onorca.dev/" target="_blank" rel="noopener noreferrer">https://www.onorca.dev/</a><br /><a href="https://pgy.oray.com/activity/ai-developer" target="_blank" rel="noopener noreferrer">https://pgy.oray.com/activity/ai-developer</a></div>
+      <div class="post-body is-hidden" data-role="story-raw">刚刚使用 chatgpt remote ，非常经验，获得了和电脑一样的体验。<br />但是 remote 经常比较难连接成功，成功后加载会话也不是很顺畅。<br />我的是 Android + Mac 体验较差。 试过 iPhone 好像容易连接成功，也稳定一点。<br /><br /><br />后面切换到了 orca + tailscale ， 还部署了 peer-relay ， 手机端的 tailscale 显示连接成功了。但是 orca app 还是经常重连。 体验非常丝滑。<br />经常杀掉 app ，再打开，就能连接成功。<br /><br />准备接入蒲公英 X1 或者他们的开发者异地组网服务怎么样？<br /><br />你们还有更好的经验吗？<br /><br />补充：<br /><a href="https://www.onorca.dev/" target="_blank" rel="noopener noreferrer">https://www.onorca.dev/</a><br /><a href="https://pgy.oray.com/activity/ai-developer" target="_blank" rel="noopener noreferrer">https://pgy.oray.com/activity/ai-developer</a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lozzow</span>
+        <span>#1</span>
+        <span>2026/09/04 09:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="http://anytty.com" target="_blank" rel="noopener noreferrer">anytty.com</a> 也是一个终端复用器,自带官方中转,免费用户也能用中转</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049087"><a href="http://anytty.com" target="_blank" rel="noopener noreferrer">anytty.com</a> 也是一个终端复用器,自带官方中转,免费用户也能用中转</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049087">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049087" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">XTTX</span>
+        <span>#2</span>
+        <span>2026/09/04 09:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">chatgpt remote 做得特别垃圾，sandbox 和很多权限都没有做好。要自己魔改才能连接到 mac 上的 project. 整体体验不好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049092">chatgpt remote 做得特别垃圾，sandbox 和很多权限都没有做好。要自己魔改才能连接到 mac 上的 project. 整体体验不好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049092">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049092" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">darrengame</span>
+        <span>#3</span>
+        <span>2026/09/04 10:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://quicktui.ai/" target="_blank" rel="noopener noreferrer">https://quicktui.ai/</a> 我用这个很流畅</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049426"><a href="https://quicktui.ai/" target="_blank" rel="noopener noreferrer">https://quicktui.ai/</a> 我用这个很流畅</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049426">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049426" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mathiashu4</span>
+        <span>#4</span>
+        <span>2026/09/04 10:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果你是 esim ，可以在 kkday 买一张新加坡的 42CNY 一个月的流量卡，可以在内地用 400G 流量。比较流畅</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049443">如果你是 esim ，可以在 kkday 买一张新加坡的 42CNY 一个月的流量卡，可以在内地用 400G 流量。比较流畅</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049443">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049443" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cq812187426</span>
+        <span>#5</span>
+        <span>2026/09/04 10:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://github.com/getpaseo/paseo" target="_blank" rel="noopener noreferrer">https://github.com/getpaseo/paseo</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049450"><a href="https://github.com/getpaseo/paseo" target="_blank" rel="noopener noreferrer">https://github.com/getpaseo/paseo</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049450">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049450" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Hilalum</span>
+        <span>#6</span>
+        <span>2026/09/04 10:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">uu 远程，比坐电脑跟前还丝滑</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049505">uu 远程，比坐电脑跟前还丝滑</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049505">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049505" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ares001</span>
+        <span>#7</span>
+        <span>2026/09/04 10:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/cq812187426" target="_blank" rel="noopener noreferrer">cq812187426</a> #5 用过这个。没有比 orca 更好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049514">@<a href="/member/cq812187426" target="_blank" rel="noopener noreferrer">cq812187426</a> #5 用过这个。没有比 orca 更好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049514">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049514" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fkdtz</span>
+        <span>#8</span>
+        <span>2026/09/04 10:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">codex 远程体验不错啊，解决了好多次突发情况<br />稳定性也还好，至少比网络链路本身的稳定性好多了，例如公司断电断网...<br /><br />不过还是搞了 caffeinate + trae + codex 互为备份，总的体验不错</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049515">codex 远程体验不错啊，解决了好多次突发情况<br />稳定性也还好，至少比网络链路本身的稳定性好多了，例如公司断电断网...<br /><br />不过还是搞了 caffeinate + trae + codex 互为备份，总的体验不错</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049515">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049515" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ares001</span>
+        <span>#9</span>
+        <span>2026/09/04 10:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/mathiashu4" target="_blank" rel="noopener noreferrer">mathiashu4</a> #4 还可以这么作弊吗? 直接解锁全球网络？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049522">@<a href="/member/mathiashu4" target="_blank" rel="noopener noreferrer">mathiashu4</a> #4 还可以这么作弊吗? 直接解锁全球网络？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049522">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049522" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zzerd</span>
+        <span>#10</span>
+        <span>2026/09/04 10:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果你用 cli 可以试试 <a href="https://github.com/AltanS/collie" target="_blank" rel="noopener noreferrer">https://github.com/AltanS/collie</a> 我 pi 用的多，我是 pi 配合这个来使用的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049540">如果你用 cli 可以试试 <a href="https://github.com/AltanS/collie" target="_blank" rel="noopener noreferrer">https://github.com/AltanS/collie</a> 我 pi 用的多，我是 pi 配合这个来使用的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049540">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049540" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BretTaylor</span>
+        <span>#11</span>
+        <span>2026/09/04 10:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">orca 不是可以直接外网连接吗？现在不需要在一个局域了吧。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049556">orca 不是可以直接外网连接吗？现在不需要在一个局域了吧。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049556">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049556" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mathiashu4</span>
+        <span>#12</span>
+        <span>2026/09/04 10:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ares001" target="_blank" rel="noopener noreferrer">ares001</a> #9 我是外版手机 没有太多限制，esim 比较方便。 远程家里电脑也很快很流畅，就是只有 4G 比较慢。<a href="https://i.imgur.com/rgRb4d9.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049560">@<a href="/member/ares001" target="_blank" rel="noopener noreferrer">ares001</a> #9 我是外版手机 没有太多限制，esim 比较方便。 远程家里电脑也很快很流畅，就是只有 4G 比较慢。<a href="https://i.imgur.com/rgRb4d9.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049560">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049560" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">maoqiucute</span>
+        <span>#13</span>
+        <span>2026/09/04 10:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">新出的 UU 远程可以 想切换 UI 的话就直接点开连 终端的话直接终端开窗口就好了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049575">新出的 UU 远程可以 想切换 UI 的话就直接点开连 终端的话直接终端开窗口就好了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049575">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049575" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jefferyJQ</span>
+        <span>#14</span>
+        <span>2026/09/04 10:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/mathiashu4" target="_blank" rel="noopener noreferrer">mathiashu4</a> #4 95GB APAC 只有 95g 可以在大陆用吧？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049627">@<a href="/member/mathiashu4" target="_blank" rel="noopener noreferrer">mathiashu4</a> #4 95GB APAC 只有 95g 可以在大陆用吧？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049627">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049627" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ares001</span>
+        <span>#15</span>
+        <span>2026/09/04 10:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/BretTaylor" target="_blank" rel="noopener noreferrer">BretTaylor</a> #11 可以连，但是不够稳定。连接也慢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049646">@<a href="/member/BretTaylor" target="_blank" rel="noopener noreferrer">BretTaylor</a> #11 可以连，但是不够稳定。连接也慢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049646">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049646" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kuxuan</span>
+        <span>#16</span>
+        <span>2026/09/04 10:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你们如何让电脑不休眠？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049706">你们如何让电脑不休眠？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049706">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049706" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mathiashu4</span>
+        <span>#17</span>
+        <span>2026/09/04 10:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jefferyJQ" target="_blank" rel="noopener noreferrer">jefferyJQ</a> 没太注意 我在香港上班，晚上回家住深圳来着。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049721">@<a href="/member/jefferyJQ" target="_blank" rel="noopener noreferrer">jefferyJQ</a> 没太注意 我在香港上班，晚上回家住深圳来着。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049721">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049721" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kevan</span>
+        <span>#18</span>
+        <span>2026/09/04 11:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/kuxuan" target="_blank" rel="noopener noreferrer">kuxuan</a> 这么简单的问题,,,,电源管理啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049802">@<a href="/member/kuxuan" target="_blank" rel="noopener noreferrer">kuxuan</a> 这么简单的问题,,,,电源管理啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049802">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049802" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Sunyin</span>
+        <span>#19</span>
+        <span>2026/09/04 11:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">lark-channel-bridge ，把 codex/claude 接进飞书 bot 。<br />不过更适合手机让 agent 改个东西、查查问题。不适合会话互通、工作接力。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049838">lark-channel-bridge ，把 codex/claude 接进飞书 bot 。<br />不过更适合手机让 agent 改个东西、查查问题。不适合会话互通、工作接力。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">netox</span>
+        <span>#20</span>
+        <span>2026/09/04 11:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果用 tailscale + iPhone 的话, 试试俺的 NovaScale (apple store 商店搜索 NovaScale 即可), 支持直接和 codex app server 通过内置 tailscale 通信, 单个 codex host 免费可用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18049913">如果用 tailscale + iPhone 的话, 试试俺的 NovaScale (apple store 商店搜索 NovaScale 即可), 支持直接和 codex app server 通过内置 tailscale 通信, 单个 codex host 免费可用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18049913">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239387#reply18049913" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
