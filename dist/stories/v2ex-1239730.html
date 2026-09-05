@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一个 MonoRepo 复杂系统的部署问题 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-05/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>一个 MonoRepo 复杂系统的部署问题</h1>
+      <p class="original-title">一个 MonoRepo 复杂系统的部署问题</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 xhawk</span>
+        <span>热度 20</span>
+        <span>回复 20</span>
+        <span>2026/09/05 21:29</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1239730" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1239730.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>我搞了一套财税系统，采用的是 MonoRepo 的构建方式。也就是说，在 APPs 目录下有几十个应用。前端全部用的是 Next.js ，后端用的是 FastAPI 。现在的问题是，代码托管在 GitHub ，镜像则通过阿里云的 ACR 来构建。</li><li>核心问题是构建速度非常慢。目前有 11 个应用，其中 4-5 个是前端，6-7 个是后端服务, 后续还在增长。问题在于，有时候我可能只修改了其中一个应用，但很难控制每次只自动构建被修改的那一个。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>我搞了一套财税系统，采用的是 MonoRepo 的构建方式。也就是说，在 APPs 目录下有几十个应用。前端全部用的是 Next.js ，后端用的是 FastAPI 。现在的问题是，代码托管在 GitHub ，镜像则通过阿里云的 ACR 来构建。</p>
+<p>核心问题是构建速度非常慢。目前有 11 个应用，其中 4-5 个是前端，6-7 个是后端服务, 后续还在增长。问题在于，有时候我可能只修改了其中一个应用，但很难控制每次只自动构建被修改的那一个。</p>
+<p>目前我在 GitHub 上构建时，只有一个分支，也就是 main 分支。如果单独构建每个 APP ，通常只需要 1 到 2 分钟。但一旦有十几个 APP ，每次都要全部构建一遍，速度就会越来越慢，而且我的 APP 数量还在不断增加。我在想，有没有办法在保持 GitHub 上只有一个分支的情况下，也能获得比较快速的构建体验？不知道大家在这方面有没有相关的实践经验？</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>我搞了一套财税系统，采用的是 MonoRepo 的构建方式。也就是说，在 APPs 目录下有几十个应用。前端全部用的是 Next.js ，后端用的是 FastAPI 。现在的问题是，代码托管在 GitHub ，镜像则通过阿里云的 ACR 来构建。</p>
+<p>核心问题是构建速度非常慢。目前有 11 个应用，其中 4-5 个是前端，6-7 个是后端服务, 后续还在增长。问题在于，有时候我可能只修改了其中一个应用，但很难控制每次只自动构建被修改的那一个。</p>
+<p>目前我在 GitHub 上构建时，只有一个分支，也就是 main 分支。如果单独构建每个 APP ，通常只需要 1 到 2 分钟。但一旦有十几个 APP ，每次都要全部构建一遍，速度就会越来越慢，而且我的 APP 数量还在不断增加。我在想，有没有办法在保持 GitHub 上只有一个分支的情况下，也能获得比较快速的构建体验？不知道大家在这方面有没有相关的实践经验？</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">19</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lujiaosama</span>
+        <span>#1</span>
+        <span>2026/09/05 21:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我选择不用 MonoRepo 。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053519">我选择不用 MonoRepo 。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053519">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053519" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xhawk</span>
+        <span>#2</span>
+        <span>2026/09/05 21:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/lujiaosama" target="_blank" rel="noopener noreferrer">lujiaosama</a> 那有啥建议的不， 如果全部分开代码管理， 也很复杂。 因为涉及到系统间的各种调用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053523">@<a href="/member/lujiaosama" target="_blank" rel="noopener noreferrer">lujiaosama</a> 那有啥建议的不， 如果全部分开代码管理， 也很复杂。 因为涉及到系统间的各种调用。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053523">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053523" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">XTTX</span>
+        <span>#3</span>
+        <span>2026/09/05 22:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">vercel 可以选忽略构建步骤, 阿里的你应该问问 AI. 应该是很容易解决的问题</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053552">vercel 可以选忽略构建步骤, 阿里的你应该问问 AI. 应该是很容易解决的问题</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053552">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053552" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fgwmlhdkkkw</span>
+        <span>#4</span>
+        <span>2026/09/05 22:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">写一个简单的解析 commit msg 的脚本，然后按照约定写 commit msg 。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053557">写一个简单的解析 commit msg 的脚本，然后按照约定写 commit msg 。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053557">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053557" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">milkleeeeee</span>
+        <span>#5</span>
+        <span>2026/09/05 22:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">用 <a href="https://nx.dev/" target="_blank" rel="noopener noreferrer">https://nx.dev/</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053558">用 <a href="https://nx.dev/" target="_blank" rel="noopener noreferrer">https://nx.dev/</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053558">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053558" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">netnr</span>
+        <span>#6</span>
+        <span>2026/09/05 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">按 yml 变动构建（增加环境变量 改注释）；每个配置里面的矩阵是并行构建</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053561">按 yml 变动构建（增加环境变量 改注释）；每个配置里面的矩阵是并行构建</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053561">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053561" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">is</span>
+        <span>#7</span>
+        <span>2026/09/05 22:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">建个 ci 的项目把规则写进去，不懂的地方让 agent 帮忙就好了。项目依赖图什么的都好做，可能不太确认的就是 cache 机制。commit 消息也可以做个规范，方便规则匹配</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053566">建个 ci 的项目把规则写进去，不懂的地方让 agent 帮忙就好了。项目依赖图什么的都好做，可能不太确认的就是 cache 机制。commit 消息也可以做个规范，方便规则匹配</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053566">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053566" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Reficul</span>
+        <span>#8</span>
+        <span>2026/09/05 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">上增量编译，bazel 之类的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053617">上增量编译，bazel 之类的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053617">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053617" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xhawk</span>
+        <span>#9</span>
+        <span>2026/09/05 22:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个 cursor ai 给的建议， 虽然不是很满意， 但是似乎也只能这么干， 要么就是上面有人建议的采用付费的方式。<br />ai 的建议， 大概意思意思 acr 构建镜像采用过滤的方式， 代码改了啥， 就构建啥就好了。<br /><br />**结论先说：仓库不要拆。慢的不是 Monorepo ，是「 main 一推就串行重打全部镜像」。**<br /><br />源码继续单仓单分支是对的。行业里 Google / Meta / Shopify 、以及 Nx / Turborepo 的做法都是：**代码合在一起，构建按依赖图只打受影响的那几个。** App 越多，越要走这条路，而不是拆仓。<br /><br /><br />**推荐方向（这就是业内标准解）：Affected Build + 远程缓存 + 只发变更。**<br /><br />1. **关掉 ACR 当 CD 引擎。** 个人版不适合 10+ 服务。构建改到你们已有的 self-hosted Actions （可并行），结果推杭州 ACR ； Dokploy 只 Redeploy 本次变更的服务。<br />2. **按依赖图决定打谁，不要按「整个仓库变了」。** 例如改 `apps/fis-open-api` 只打 open-api ；改 `apps/fis-api` 打 fis-api **以及**依赖它的 open-api ；改 `packages/*` 只打引用它的前端。用 `paths-filter` 或一份很小的 affected 映射就够，不必上 Bazel 。<br />3. **缓存比拆 context 更值钱。** Dockerfile 已经分层了（先 requirements / package.json ）。接上 BuildKit registry cache 后，没改依赖的镜像应是秒级命中。根 context 可以留——你们前端是 pnpm workspace ，强行 per-app context 收益不大。<br />4. **中期把「构建期互相 COPY 」收掉。** open-api 不要整份拷贝 fis-api/agents ，改运行时 HTTP / 抽出 `packages` 共享库； fis-web 的共享 UI 进 `packages/fis-shared`。耦合一收，affected 扇出就小，速度才会随 App 增加而近似持平。<br />5. **发版钉 digest ，不要 8 个 `*-latest` 整波拉。** 未重建的服务保持旧 digest ，避免「构建快了、发布又全量」。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053634">这个 cursor ai 给的建议， 虽然不是很满意， 但是似乎也只能这么干， 要么就是上面有人建议的采用付费的方式。<br />ai 的建议， 大概意思意思 acr 构建镜像采用过滤的方式， 代码改了啥， 就构建啥就好了。<br /><br />**结论先说：仓库不要拆。慢的不是 Monorepo ，是「 main 一推就串行重打全部镜像」。**<br /><br />源码继续单仓单分支是对的。行业里 Google / Meta / Shopify 、以及 Nx / Turborepo 的做法都是：**代码合在一起，构建按依赖图只打受影响的那几个。** App 越多，越要走这条路，而不是拆仓。<br /><br /><br />**推荐方向（这就是业内标准解）：Affected Build + 远程缓存 + 只发变更。**<br /><br />1. **关掉 ACR 当 CD 引擎。** 个人版不适合 10+ 服务。构建改到你们已有的 self-hosted Actions （可并行），结果推杭州 ACR ； Dokploy 只 Redeploy 本次变更的服务。<br />2. **按依赖图决定打谁，不要按「整个仓库变了」。** 例如改 `apps/fis-open-api` 只打 open-api ；改 `apps/fis-api` 打 fis-api **以及**依赖它的 open-api ；改 `packages/*` 只打引用它的前端。用 `paths-filter` 或一份很小的 affected 映射就够，不必上 Bazel 。<br />3. **缓存比拆 context 更值钱。** Dockerfile 已经分层了（先 requirements / package.json ）。接上 BuildKit registry cache 后，没改依赖的镜像应是秒级命中。根 context 可以留——你们前端是 pnpm workspace ，强行 per-app context 收益不大。<br />4. **中期把「构建期互相 COPY 」收掉。** open-api 不要整份拷贝 fis-api/agents ，改运行时 HTTP / 抽出 `packages` 共享库； fis-web 的共享 UI 进 `packages/fis-shared`。耦合一收，affected 扇出就小，速度才会随 App 增加而近似持平。<br />5. **发版钉 digest ，不要 8 个 `*-latest` 整波拉。** 未重建的服务保持旧 digest ，避免「构建快了、发布又全量」。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053634">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053634" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rocmax</span>
+        <span>#10</span>
+        <span>2026/09/05 23:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">建议是每次都全部构建，使用 cache 来解决重复构建耗时的问题。monorepo 强制同步整个项目的版本，防止依赖版本错位，如果选择性构建一部分就回到老路上了。<br /><br />我们用 turborepo 管理项目，我的经验是：<br /><br />如果构建产物是 docker 镜像的话使用 layer cache 可以解决大部分问题。需要注意的是构建之前需要用 turbo prune xxx --docker 来提取构建 context 以免混入其它的修改。<br /><br />如果想直接缓存 nextjs 的构建产物，turborepo 官方有付费构建缓存服务。<br />也有开源版本比如<br /><a href="https://github.com/ducktors/turborepo-remote-cache" target="_blank" rel="noopener noreferrer">https://github.com/ducktors/turborepo-remote-cache</a> <br />需要自己借助 s3 等来搭建。<br /><br />另外的一点是在部署 k8s 时全部构建的话产物有共同的 tag ，helm chart 中可以将它统一填到所有子项目中。如果部分购进的话又得管理版本依赖。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053653">建议是每次都全部构建，使用 cache 来解决重复构建耗时的问题。monorepo 强制同步整个项目的版本，防止依赖版本错位，如果选择性构建一部分就回到老路上了。<br /><br />我们用 turborepo 管理项目，我的经验是：<br /><br />如果构建产物是 docker 镜像的话使用 layer cache 可以解决大部分问题。需要注意的是构建之前需要用 turbo prune xxx --docker 来提取构建 context 以免混入其它的修改。<br /><br />如果想直接缓存 nextjs 的构建产物，turborepo 官方有付费构建缓存服务。<br />也有开源版本比如<br /><a href="https://github.com/ducktors/turborepo-remote-cache" target="_blank" rel="noopener noreferrer">https://github.com/ducktors/turborepo-remote-cache</a> <br />需要自己借助 s3 等来搭建。<br /><br />另外的一点是在部署 k8s 时全部构建的话产物有共同的 tag ，helm chart 中可以将它统一填到所有子项目中。如果部分购进的话又得管理版本依赖。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053653">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053653" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">members</span>
+        <span>#11</span>
+        <span>2026/09/05 23:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">问题在于，有时候我可能只修改了其中一个应用，但很难控制每次只自动构建被修改的那一个。<br />---<br />难在哪里？<br />我们的方案是构建过程中运行一个脚本，git diff merge-base 有哪些文件改动，构建对应的服务。<br /><br />有一说一 monorepo 是真的恶心。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053658">问题在于，有时候我可能只修改了其中一个应用，但很难控制每次只自动构建被修改的那一个。<br />---<br />难在哪里？<br />我们的方案是构建过程中运行一个脚本，git diff merge-base 有哪些文件改动，构建对应的服务。<br /><br />有一说一 monorepo 是真的恶心。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053658">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053658" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">perfectlife</span>
+        <span>#12</span>
+        <span>2026/09/05 23:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个我有经验，我是根据代码变更判断触发构建 monorepo 仓库下的那个项目，有一说一前端的 monorepo 仓库做 cicd 有点恶心，cicd 要求是项目最好是要标准化，monorepo 仓库感觉是恰恰相反</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053662">这个我有经验，我是根据代码变更判断触发构建 monorepo 仓库下的那个项目，有一说一前端的 monorepo 仓库做 cicd 有点恶心，cicd 要求是项目最好是要标准化，monorepo 仓库感觉是恰恰相反</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053662">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053662" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xhawk</span>
+        <span>#13</span>
+        <span>2026/09/05 23:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/members" target="_blank" rel="noopener noreferrer">members</a> 这是一个很核心的问题。虽然我改了一个应用，但在自动构建时，不一定只构建这一个应用，因为应用之间是存在依赖关系的。AI 给我的建议与你的思路类似，就是通过 GitHub 的 Actions 去计算这次应该构建哪个服务。<br /><br />monorepo 在代码管理以及多项目协同与调度方面，我觉得它的表现相当优秀。但构建速度慢的问题确实让人头疼，尤其是 Next.js 的慢，尤其令人烦躁。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053663">@<a href="/member/members" target="_blank" rel="noopener noreferrer">members</a> 这是一个很核心的问题。虽然我改了一个应用，但在自动构建时，不一定只构建这一个应用，因为应用之间是存在依赖关系的。AI 给我的建议与你的思路类似，就是通过 GitHub 的 Actions 去计算这次应该构建哪个服务。<br /><br />monorepo 在代码管理以及多项目协同与调度方面，我觉得它的表现相当优秀。但构建速度慢的问题确实让人头疼，尤其是 Next.js 的慢，尤其令人烦躁。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053663">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053663" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rocmax</span>
+        <span>#14</span>
+        <span>2026/09/05 23:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/members" target="_blank" rel="noopener noreferrer">members</a> 如果子项目各自独立的话没有问题，但是这样就不用 monorepo 了。子项目之间有依赖关系的话不分析依赖图就不知道该构建谁。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053666">@<a href="/member/members" target="_blank" rel="noopener noreferrer">members</a> 如果子项目各自独立的话没有问题，但是这样就不用 monorepo 了。子项目之间有依赖关系的话不分析依赖图就不知道该构建谁。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053666">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053666" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xhawk</span>
+        <span>#15</span>
+        <span>2026/09/05 23:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/rocmax" target="_blank" rel="noopener noreferrer">rocmax</a> 对， 感谢， 也就是这个问题的核心关键。 当然， 我也只是抛出问题， 希望能获得其他的灵感和做法。 若有的话， 欢迎给建议，我来做实验， 同时，  我也会把我最后的做法分享出来。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053679">@<a href="/member/rocmax" target="_blank" rel="noopener noreferrer">rocmax</a> 对， 感谢， 也就是这个问题的核心关键。 当然， 我也只是抛出问题， 希望能获得其他的灵感和做法。 若有的话， 欢迎给建议，我来做实验， 同时，  我也会把我最后的做法分享出来。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053679">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053679" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">members</span>
+        <span>#16</span>
+        <span>2026/09/06 01:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/rocmax" target="_blank" rel="noopener noreferrer">rocmax</a> #14 <br />我认为子项目之间不应该有代码和部署上的依赖，如果是这样就不应该拆成独立项目。<br /><br />但 monorepo 内会存在共同依赖的基础包，这是合理的。我们是配置了一个依赖关系，依赖包有改动会重新构建所有依赖了这个包的项目。<br /><br />@<a href="/member/xhawk" target="_blank" rel="noopener noreferrer">xhawk</a> #13</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053739">@<a href="/member/rocmax" target="_blank" rel="noopener noreferrer">rocmax</a> #14 <br />我认为子项目之间不应该有代码和部署上的依赖，如果是这样就不应该拆成独立项目。<br /><br />但 monorepo 内会存在共同依赖的基础包，这是合理的。我们是配置了一个依赖关系，依赖包有改动会重新构建所有依赖了这个包的项目。<br /><br />@<a href="/member/xhawk" target="_blank" rel="noopener noreferrer">xhawk</a> #13</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053739">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053739" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chongzi</span>
+        <span>#17</span>
+        <span>2026/09/06 01:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">应用之间不应该存在依赖关系吧？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053744">应用之间不应该存在依赖关系吧？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053744">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053744" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">johnhom</span>
+        <span>#18</span>
+        <span>2026/09/06 01:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以尝试用一些 monorepo 的管理工具，比如说 nx ，turborepo ，这些都会自动计算某个版本内被 effect 到的包，还会自动计算依赖路径，能决定先构建哪个后构建哪个。这个应该才是最优解</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053747">可以尝试用一些 monorepo 的管理工具，比如说 nx ，turborepo ，这些都会自动计算某个版本内被 effect 到的包，还会自动计算依赖路径，能决定先构建哪个后构建哪个。这个应该才是最优解</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053747">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053747" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zengxs</span>
+        <span>#19</span>
+        <span>2026/09/06 01:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">monorepo 是相关的模块才放一起啊<br />如果 repo 内都是相关模块，每次都重新构建很合理啊<br /><br />而且你是 nodejs + python ，这 ci build 应该也不会特别慢吧<br /><br />&gt; 单独构建每个 APP ，通常只需要 1 到 2 分钟<br /><br />那十几个项目也就 20 分钟左右吧<br /><br />好多 c++ 项目跑一次 build 还要几个小时呢，我觉得挺正常的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18053748">monorepo 是相关的模块才放一起啊<br />如果 repo 内都是相关模块，每次都重新构建很合理啊<br /><br />而且你是 nodejs + python ，这 ci build 应该也不会特别慢吧<br /><br />&gt; 单独构建每个 APP ，通常只需要 1 到 2 分钟<br /><br />那十几个项目也就 20 分钟左右吧<br /><br />好多 c++ 项目跑一次 build 还要几个小时呢，我觉得挺正常的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18053748">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1239730#reply18053748" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
