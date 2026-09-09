@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Muse – Meta’s personal AI agent | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-09/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Muse – Meta’s personal AI agent</h1>
+      <p class="original-title">Muse – Meta’s personal AI agent</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 yks</span>
+        <span>热度 547</span>
+        <span>回复 599</span>
+        <span>2026/09/09 03:25</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49615537" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://ai.meta.com/muse/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49615537.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Meet Muse, Meta&#39;s personal AI agent. Learn what it can do across everyday tasks, how it works, and how it helps you get more done.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">abixb</span>
+        
+        <span>2026/09/09 08:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think Meta's strategy is to capture the 'normie-tier' of AI users. I know most of us here on HN track model releases quite frequently and discuss every parameter weight out of them, but most of the world is just... oblivious?<p>I was discussing latest in tech with an accounting friend out of curiosity, and I kept talking about tiers of GPT-5.6 (Sol vs Terra vs Luna) and asked which one she used on the desktop 'Work' app, and she responded with, "just ChatGPT, what is Sol?."</p><p>I then realized that most people just stick with whatever default they're provided with, and it's a <i>lot</i> of them. So, us serial HN users and commenters are the extreme minority, and I'm sure millions of people will gobble up this Muse agent from Meta as if it's some sort of an innovative cutting-edge way to use the internet by Meta alone.</p><p>Curse of knowledge and all. [0]</p><p>[0] <a href="https://en.wikipedia.org/wiki/Curse_of_knowledge" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Curse_of_knowledge</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49619077">I think Meta's strategy is to capture the 'normie-tier' of AI users. I know most of us here on HN track model releases quite frequently and discuss every parameter weight out of them, but most of the world is just... oblivious?<p>I was discussing latest in tech with an accounting friend out of curiosity, and I kept talking about tiers of GPT-5.6 (Sol vs Terra vs Luna) and asked which one she used on the desktop 'Work' app, and she responded with, "just ChatGPT, what is Sol?."</p><p>I then realized that most people just stick with whatever default they're provided with, and it's a <i>lot</i> of them. So, us serial HN users and commenters are the extreme minority, and I'm sure millions of people will gobble up this Muse agent from Meta as if it's some sort of an innovative cutting-edge way to use the internet by Meta alone.</p><p>Curse of knowledge and all. [0]</p><p>[0] <a href="https://en.wikipedia.org/wiki/Curse_of_knowledge" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Curse_of_knowledge</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49619077">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49619077" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">KaiserPro</span>
+        
+        <span>2026/09/09 18:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Former meta prick, sorry employee:<p>&gt; Meta's strategy</p><p>Meta has no strategy. The people that made llama work left two years ago. MSI are a bunch of charlatans who are trying to change the culutre and tooling of meta from the outside (I can see their point, trying to work outside of the defaults is incredibly hard.)</p><p>its basically a bun fight, with all of your productive workers being poached by frontier labs, and everyone else is either a new grad, burnt out, or a master bullshitter.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49624048">Former meta prick, sorry employee:<p>&gt; Meta's strategy</p><p>Meta has no strategy. The people that made llama work left two years ago. MSI are a bunch of charlatans who are trying to change the culutre and tooling of meta from the outside (I can see their point, trying to work outside of the defaults is incredibly hard.)</p><p>its basically a bun fight, with all of your productive workers being poached by frontier labs, and everyone else is either a new grad, burnt out, or a master bullshitter.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49624048">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49624048" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">aj0strow</span>
+        
+        <span>2026/09/09 22:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I disagree. The strategy was unclear until now. Spending billions on acquisitions and targeted hires, clearing ranks, playing catch-up on coding and multimodal, open sourcing weak models, the AI girlfriends. It was all very confusing.<p>It is clear now. Alex and co have refocused Meta on Personal AGI or pAGI. The AI that runs your life. It feels appropriate for a social media company that hosts your photos and group chats. Most users will not pay for pAGI so the tokens need to be cheap. Muse is targeted at intelligence per dollar. Many sites do not offer API access. The marketing is focused on computer usage. Installing software adds friction. It runs securely in the cloud. If this isn't the right AI play for Meta then I don't know what would be.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49626849">I disagree. The strategy was unclear until now. Spending billions on acquisitions and targeted hires, clearing ranks, playing catch-up on coding and multimodal, open sourcing weak models, the AI girlfriends. It was all very confusing.<p>It is clear now. Alex and co have refocused Meta on Personal AGI or pAGI. The AI that runs your life. It feels appropriate for a social media company that hosts your photos and group chats. Most users will not pay for pAGI so the tokens need to be cheap. Muse is targeted at intelligence per dollar. Many sites do not offer API access. The marketing is focused on computer usage. Installing software adds friction. It runs securely in the cloud. If this isn't the right AI play for Meta then I don't know what would be.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49626849">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49626849" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dktp</span>
+        
+        <span>2026/09/09 23:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">From the outside looking in, I don't think Meta has a clear vision. I think it's a stretch to say that this one announcement makes it clear. There are AI announcements from Meta every month, recent ones more focused on coding (Muse Spark/Muse Code)<p>Their ads team wants AI to improve their targeting and ad creation. Some want to have frontier AI including coding. Others might want personal AI agent. Then there's the flirting with renting their compute</p><p>And I'm not even taking shots at them. I think Google is exactly the same. I think OpenAI is largely the same (though lately more following Anthropic footsteps and focusing on productivity). And I think the whole field is so new and allows change in so many places - that it's sort of normal or fine to throw things at the wall and see what sticks.</p><p>But nothing as of now says to me that Meta has a clear strategy around llms</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49627861">From the outside looking in, I don't think Meta has a clear vision. I think it's a stretch to say that this one announcement makes it clear. There are AI announcements from Meta every month, recent ones more focused on coding (Muse Spark/Muse Code)<p>Their ads team wants AI to improve their targeting and ad creation. Some want to have frontier AI including coding. Others might want personal AI agent. Then there's the flirting with renting their compute</p><p>And I'm not even taking shots at them. I think Google is exactly the same. I think OpenAI is largely the same (though lately more following Anthropic footsteps and focusing on productivity). And I think the whole field is so new and allows change in so many places - that it's sort of normal or fine to throw things at the wall and see what sticks.</p><p>But nothing as of now says to me that Meta has a clear strategy around llms</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49627861">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49627861" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">KaiserPro</span>
+        
+        <span>2026/09/09 22:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;The AI that runs your life<p>it was always "personal AI", thats why Zuck wants AR so much.</p><p>The problem is, before about 2025, there were a bunch of clear systems and procedures that stopped your personal data from being used for dodgy things. For example the browser inside oculus didn't emit any site specific usage metrics. This means that they couldn't use your VR porn habit to target you.</p><p>The same with the raybans. There was a perm block on processing user data offsite/outside of meta systems. (which is why we couldn't use FAIRs AWS cluster to do research on research data, because even though it was paid for data, it was still technically 'user' data because it had non-public domain PII [peoples faces, voices and locations in it]) So getting access to any kind of data that came in from raybans was a massive "nope never"</p><p>Then we find out that someone convinced Zuck to let people train on private rayban data? and they send it to fucking third party annotators, and <i>new</i> fucking annotators at that. That to me smells like MSL. To get how much of a big fucking deal that is, the original raybans had two cameras, so that FAIR could do some research or other. but because they didn't want to make a separate infra just for research, they couldn't get permission to use any of the data.</p><p>Meta had a working always on assistant that could locate, transcribe and recall any thing inside the offices (assuming you wanted to carry a fannypack with a jetson in it) it was <i>always</i> personal.</p><p>its now a case of how much shit they can get away with, its not like the FCC are going to audit them anymore.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49627355">&gt;The AI that runs your life<p>it was always "personal AI", thats why Zuck wants AR so much.</p><p>The problem is, before about 2025, there were a bunch of clear systems and procedures that stopped your personal data from being used for dodgy things. For example the browser inside oculus didn't emit any site specific usage metrics. This means that they couldn't use your VR porn habit to target you.</p><p>The same with the raybans. There was a perm block on processing user data offsite/outside of meta systems. (which is why we couldn't use FAIRs AWS cluster to do research on research data, because even though it was paid for data, it was still technically 'user' data because it had non-public domain PII [peoples faces, voices and locations in it]) So getting access to any kind of data that came in from raybans was a massive "nope never"</p><p>Then we find out that someone convinced Zuck to let people train on private rayban data? and they send it to fucking third party annotators, and <i>new</i> fucking annotators at that. That to me smells like MSL. To get how much of a big fucking deal that is, the original raybans had two cameras, so that FAIR could do some research or other. but because they didn't want to make a separate infra just for research, they couldn't get permission to use any of the data.</p><p>Meta had a working always on assistant that could locate, transcribe and recall any thing inside the offices (assuming you wanted to carry a fannypack with a jetson in it) it was <i>always</i> personal.</p><p>its now a case of how much shit they can get away with, its not like the FCC are going to audit them anymore.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49627355">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49627355" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">alt227</span>
+        
+        <span>2026/09/09 18:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Meta certainly do give the impression that they are burning through ridiculous amounts of cash with not much to show for it, and thats just from the outside.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49624398">Meta certainly do give the impression that they are burning through ridiculous amounts of cash with not much to show for it, and thats just from the outside.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49624398">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49624398" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">KaiserPro</span>
+        
+        <span>2026/09/09 20:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">its the same (or was) from the inside.<p>Someone had a poster up of Pam "this is the same thing" on the one side had the apollo space missions, and the other a picture of Zuck avatar next to the Eiffel tower. At the top it had the current RL spend (something like 45billion) they like me working in RL.</p><p>there were three teams for everything, sometimes in the same org.</p><p>Take hand interactions for example.</p><p>There was production hand detection, they were in the OS/product team. They spent a lot of time trying to make sure it was reliable and useable.</p><p>Then there was a near research team, who took old state of the art and salmi sliced it until it worked well enough on either current or next gen hardware.</p><p>Then there was the production research people, who were derived from control labs, who for some reason were not in RL-research but buried deep in "production"</p><p>Then in RL-Research, the biggest org was agios, who also did hand interaction, but hardly any of their work actually made it near to prod. They liked wrist mounted cameras with no privacy systems, because why would you need it on your wrist? its not like those head mounted twats who spent two years trying to master privacy.</p><p>You also have to demonstrate "impact" every 6 months. which is really great when your delivery pipeline is 1-7 years.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49625544">its the same (or was) from the inside.<p>Someone had a poster up of Pam "this is the same thing" on the one side had the apollo space missions, and the other a picture of Zuck avatar next to the Eiffel tower. At the top it had the current RL spend (something like 45billion) they like me working in RL.</p><p>there were three teams for everything, sometimes in the same org.</p><p>Take hand interactions for example.</p><p>There was production hand detection, they were in the OS/product team. They spent a lot of time trying to make sure it was reliable and useable.</p><p>Then there was a near research team, who took old state of the art and salmi sliced it until it worked well enough on either current or next gen hardware.</p><p>Then there was the production research people, who were derived from control labs, who for some reason were not in RL-research but buried deep in "production"</p><p>Then in RL-Research, the biggest org was agios, who also did hand interaction, but hardly any of their work actually made it near to prod. They liked wrist mounted cameras with no privacy systems, because why would you need it on your wrist? its not like those head mounted twats who spent two years trying to master privacy.</p><p>You also have to demonstrate "impact" every 6 months. which is really great when your delivery pipeline is 1-7 years.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49625544">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49625544" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dewey</span>
+        
+        <span>2026/09/09 19:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If you scroll Instagram for a few minutes you'll see what they have been working on and that are also making a ridiculous amount of cash by selling and serving ads while burning some on side projects like that.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49624554">If you scroll Instagram for a few minutes you'll see what they have been working on and that are also making a ridiculous amount of cash by selling and serving ads while burning some on side projects like that.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49624554">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49624554" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sensanaty</span>
+        
+        <span>2026/09/09 20:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I had to laugh to the point of tears the other day when I saw my friend scrolling through Instagram and they encountered an "Ad Break". The app simply doesn't let you scroll through another post, story or reel until you sit there like a good boy and let the ad sit for 10 seconds or whatever.<p>How people put up with that kinda crap and continue to use these apps daily for hours on end is mind blowing to me.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49625134">I had to laugh to the point of tears the other day when I saw my friend scrolling through Instagram and they encountered an "Ad Break". The app simply doesn't let you scroll through another post, story or reel until you sit there like a good boy and let the ad sit for 10 seconds or whatever.<p>How people put up with that kinda crap and continue to use these apps daily for hours on end is mind blowing to me.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49625134">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49625134" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Zambyte</span>
+        
+        <span>2026/09/09 20:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I wonder if the prevalence of adblock has helped make a lot of things like this possible. Like, it's hard to imagine people putting up with this without literally protesting in the streets. But the people who can't tolerate it have mostly gone through the effort of opting out, and those who can just put up with it. And thus, the frog boils.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49625548">I wonder if the prevalence of adblock has helped make a lot of things like this possible. Like, it's hard to imagine people putting up with this without literally protesting in the streets. But the people who can't tolerate it have mostly gone through the effort of opting out, and those who can just put up with it. And thus, the frog boils.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49625548">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49625548" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Dlemlo</span>
+        
+        <span>2026/09/09 19:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah and if you look at there numbers, they can just afford it. When you realize how big zuckerberg still is.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49624538">Yeah and if you look at there numbers, they can just afford it. When you realize how big zuckerberg still is.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49624538">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49624538" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Rebelgecko</span>
+        
+        <span>2026/09/10 00:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, I was surprised to see they just gave DHH a $1.5m credit. Can't imagine they'll have good ROI on that (although what do I know)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49628838">Yeah, I was surprised to see they just gave DHH a $1.5m credit. Can't imagine they'll have good ROI on that (although what do I know)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49628838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49628838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">altmanaltman</span>
+        
+        <span>2026/09/09 19:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">How is it a bad thing if a company goes all in on burning cash but at the time have never reported a net loss quarter since its IPO? Its their money to burn at this point who cares</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49624773">How is it a bad thing if a company goes all in on burning cash but at the time have never reported a net loss quarter since its IPO? Its their money to burn at this point who cares</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49624773">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49624773" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">anthonyskipper</span>
+        
+        <span>2026/09/09 21:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">But what you say is not entirely true.   There is much to love about companies burning cash on R&amp;D.   That's how a lot of greatness happened.<p>But what is wrong in the meta situation is that while Meta officially projects its 2026 AI capital expenditures to be between $130 billion and $145 billion, investigative reports indicate its true future liabilities exceed $690 billion once unlisted back-end deals and lease commitments are factored in.  They have used shadow accounting in many places to hide these things.   As it's a publicly traded company so if that goes south it hits a lot of 401ks.  So that in a nutshell is why its kinda a bad thing.  But you are still kinda right in that its not an existential threat and it's not going to wipe Meta out even though those numbers could totally destroy the vast majority of public companies.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49626088">But what you say is not entirely true.   There is much to love about companies burning cash on R&amp;D.   That's how a lot of greatness happened.<p>But what is wrong in the meta situation is that while Meta officially projects its 2026 AI capital expenditures to be between $130 billion and $145 billion, investigative reports indicate its true future liabilities exceed $690 billion once unlisted back-end deals and lease commitments are factored in.  They have used shadow accounting in many places to hide these things.   As it's a publicly traded company so if that goes south it hits a lot of 401ks.  So that in a nutshell is why its kinda a bad thing.  But you are still kinda right in that its not an existential threat and it's not going to wipe Meta out even though those numbers could totally destroy the vast majority of public companies.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49626088">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49626088" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Eisenstein</span>
+        
+        <span>2026/09/09 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I would have to say that its tragic more than bad. Meta consumed whole industries that used to spend the money on a bunch of different things. Now all the revenue goes to Meta shareholders and whatever it is Zuck is wasting billions of dollars on pursuing.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49626702">I would have to say that its tragic more than bad. Meta consumed whole industries that used to spend the money on a bunch of different things. Now all the revenue goes to Meta shareholders and whatever it is Zuck is wasting billions of dollars on pursuing.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49626702">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49626702" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">weitendorf</span>
+        
+        <span>2026/09/10 00:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I genuinely think big tech co's top leadership have very sophisticated strategies/positioning that they simply cannot communicate or explicitly canonize due to their position as spokespeople for the company (and society writ large, news media, investors, customers, employees, vendors). Of course there are a lot of bozos and incompetent people flailing around and a lot of work ultimately gets wasted (which  understandably bothers line employees a lot), but is inevitable and even necessary to eg hedge product strategy/comp and take risks on ideas and people.<p>It would not really be useful to have that conversation with employees because it's incredibly distracting (now product strategy is up for debate with way too many cooks in the kitchen), and very few employees have the exposure or skills to meaningfully contribute even if they think they do. I saw it firsthand at Google TGIFs.</p><p>Meta's strategy seems to be "personal agents" quite consistently. Remember they tried to buy Manus? And note that Muse Spark and the meta AI platform products clearly seem to prioritize web search, computer/browser use, and vision/language tasks over coding, which is something that had to bake for a long time. Also, this product launch itself is pretty interesting:</p><p>1. It's clearly a fast follow to the current FOTM hype startup Instinct with a much more comprehensive implementation and integration with their other agent products.</p><p>2. It's kind of like openclaw, which got a lot of non-developers very excited but was basically consistently unusable. Except this agent's compute runs remotely and presumably has slightly more sane development practices. IMO it's the first main openclaw-like product that has made it to the "just works" level of usability.</p><p>3. The focus on ecommerce is actually really really important, because Meta is trying to capture the intent/demand-driven purchasing flow that Google currently owns through search. Controlling the top of funnel is what enables google to make hundreds of billions of dollars per year on search ads. Meta is an advertising company and Google's search ads business is the most lucrative and centralized/well-defended advertising market in human history.</p><p>So it is actually a really big deal that Meta is trying to go after it (at least, the CUJ, it's possible that they'd monetize the agent-driven UX differently than search ads) because it's probably their best shot at disrupting that market and one of the few growth opportunities that would actually make a dent on their balance sheet. Obviously Meta is not going to lay out all that strategy stuff explicitly because for all intents and purposes it's a distraction and shifts the conversation in an unproductive direction (the strat behind the product, rather than the product itself). But it's pretty clear if you look for it.</p><p>Edit: Actually I thought about the advertising business more and I think in the short term this is partially about attribution/conversion. In 2022 the Apple tracking changes cost Meta $10B in lost conversion metrics; an agent-driven and proxied purchasing flow has built-in attribution and funnel measurement which is very valuable in its own right!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49629067">I genuinely think big tech co's top leadership have very sophisticated strategies/positioning that they simply cannot communicate or explicitly canonize due to their position as spokespeople for the company (and society writ large, news media, investors, customers, employees, vendors). Of course there are a lot of bozos and incompetent people flailing around and a lot of work ultimately gets wasted (which  understandably bothers line employees a lot), but is inevitable and even necessary to eg hedge product strategy/comp and take risks on ideas and people.<p>It would not really be useful to have that conversation with employees because it's incredibly distracting (now product strategy is up for debate with way too many cooks in the kitchen), and very few employees have the exposure or skills to meaningfully contribute even if they think they do. I saw it firsthand at Google TGIFs.</p><p>Meta's strategy seems to be "personal agents" quite consistently. Remember they tried to buy Manus? And note that Muse Spark and the meta AI platform products clearly seem to prioritize web search, computer/browser use, and vision/language tasks over coding, which is something that had to bake for a long time. Also, this product launch itself is pretty interesting:</p><p>1. It's clearly a fast follow to the current FOTM hype startup Instinct with a much more comprehensive implementation and integration with their other agent products.</p><p>2. It's kind of like openclaw, which got a lot of non-developers very excited but was basically consistently unusable. Except this agent's compute runs remotely and presumably has slightly more sane development practices. IMO it's the first main openclaw-like product that has made it to the "just works" level of usability.</p><p>3. The focus on ecommerce is actually really really important, because Meta is trying to capture the intent/demand-driven purchasing flow that Google currently owns through search. Controlling the top of funnel is what enables google to make hundreds of billions of dollars per year on search ads. Meta is an advertising company and Google's search ads business is the most lucrative and centralized/well-defended advertising market in human history.</p><p>So it is actually a really big deal that Meta is trying to go after it (at least, the CUJ, it's possible that they'd monetize the agent-driven UX differently than search ads) because it's probably their best shot at disrupting that market and one of the few growth opportunities that would actually make a dent on their balance sheet. Obviously Meta is not going to lay out all that strategy stuff explicitly because for all intents and purposes it's a distraction and shifts the conversation in an unproductive direction (the strat behind the product, rather than the product itself). But it's pretty clear if you look for it.</p><p>Edit: Actually I thought about the advertising business more and I think in the short term this is partially about attribution/conversion. In 2022 the Apple tracking changes cost Meta $10B in lost conversion metrics; an agent-driven and proxied purchasing flow has built-in attribution and funnel measurement which is very valuable in its own right!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49629067">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49629067" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">panarky</span>
+        
+        <span>2026/09/10 02:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>&gt; very sophisticated strategies/positioning that they simply cannot communicate</i><p>It's Matryoshka nested parallel construction for corporate strategy.</p><p>There's a real, coherent, aggressive strategy that only a few in the inner concentric circle know, that's ring-zero.</p><p>Then there's the strategy that ring-zero tells ring-one, which isn't the real strategy, but it's sufficient to get EVPs and VPs to execute in rough alignment with the true, ring-zero strategy.</p><p>Then ring-one does the same dance with ring-two, etc.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49631496"><i>&gt; very sophisticated strategies/positioning that they simply cannot communicate</i><p>It's Matryoshka nested parallel construction for corporate strategy.</p><p>There's a real, coherent, aggressive strategy that only a few in the inner concentric circle know, that's ring-zero.</p><p>Then there's the strategy that ring-zero tells ring-one, which isn't the real strategy, but it's sufficient to get EVPs and VPs to execute in rough alignment with the true, ring-zero strategy.</p><p>Then ring-one does the same dance with ring-two, etc.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49631496">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49631496" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">ajkjk</span>
+        
+        <span>2026/09/09 08:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think you're right, but I'd add that... if this wasn't obvious to you without being told, you should really question your worldview a bit.<p>A lot of people think that chat.com is an AI called "chat". Most people don't know acronym "LLM". Most people don't know about the existence of companies called "OpenAI" or "Anthropic", or that they are worth a lot of money. Etc.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49619121">I think you're right, but I'd add that... if this wasn't obvious to you without being told, you should really question your worldview a bit.<p>A lot of people think that chat.com is an AI called "chat". Most people don't know acronym "LLM". Most people don't know about the existence of companies called "OpenAI" or "Anthropic", or that they are worth a lot of money. Etc.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49619121">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49619121" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tyre</span>
+        
+        <span>2026/09/09 11:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">TIL openai owns chat.com<p>I hung out with my parents this weekend and heard them talking about "chat", as a noun. I assumed they were talking about ChatGPT; there being a literal chat.com makes sense why they'd call it that.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49620659">TIL openai owns chat.com<p>I hung out with my parents this weekend and heard them talking about "chat", as a noun. I assumed they were talking about ChatGPT; there being a literal chat.com makes sense why they'd call it that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49620659">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49620659" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rpozarickij</span>
+        
+        <span>2026/09/09 12:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I've seen people using "chat" to refer to ChatGPT because it's easier/simpler. I'm pretty sure an average person has no idea that chat.com will redirect you to chatgpt.com (or what a redirect is for that matter). It's similar to how people were calling the COVID-19 pandemic or the virus itself "covid".</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49621093">I've seen people using "chat" to refer to ChatGPT because it's easier/simpler. I'm pretty sure an average person has no idea that chat.com will redirect you to chatgpt.com (or what a redirect is for that matter). It's similar to how people were calling the COVID-19 pandemic or the virus itself "covid".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49621093">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49621093" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
