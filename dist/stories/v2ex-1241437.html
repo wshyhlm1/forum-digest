@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>给几百 G 的本地截图做一个能搜内容的引擎，我踩过的坑 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-11/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>给几百 G 的本地截图做一个能搜内容的引擎，我踩过的坑</h1>
+      <p class="original-title">给几百 G 的本地截图做一个能搜内容的引擎，我踩过的坑</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 MaskerPRC</span>
+        <span>热度 11</span>
+        <span>回复 11</span>
+        <span>2026/09/11 21:02</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1241437" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1241437.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近做了个小工具：把我攒了几年、按字节算快 1T 的电脑截图（微信聊天截图、网页截图、报错截图、PPT 截图……）做成一个能直接搜内容的引擎。比如搜「上次那个 nginx 502 的报错」，直接把当时那张截图翻出来。</li><li>功能听起来不新鲜，但自己动手做一遍，坑比想象的多。这里把踩过的坑记录一下，给同样有这个需求的朋友参考。</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近做了个小工具：把我攒了几年、按字节算快 1T 的电脑截图（微信聊天截图、网页截图、报错截图、PPT 截图……）做成一个能直接搜内容的引擎。比如搜「上次那个 nginx 502 的报错」，直接把当时那张截图翻出来。</p>
+<p>功能听起来不新鲜，但自己动手做一遍，坑比想象的多。这里把踩过的坑记录一下，给同样有这个需求的朋友参考。</p>
+坑一：OCR 不是「接个库」那么简单
+<p>一开始想当然：截图 → OCR → 存文本 → 搜，完事。实际：</p>
+<ul>
+<li>中文截图里夹杂的英文报错、路径、代码，混排识别率惨不忍睹。纯中文 OCR 库对 <code>Error: EACCES: permission denied '/var/log/...'</code> 这种行基本全军覆没；</li>
+<li>后来换成多模型互补：通用 OCR 打底，对识别置信度低的行再走一次视觉模型重读，准确率才到了能用的水平；</li>
+<li>坐标信息别丢——OCR 返回的文字块位置留着，后面高亮定位全靠它。</li>
+</ul>
+坑二：索引体积失控
+<p>几个月的截图，全量向量化之后索引文件比截图本体还大。两件事必须做：</p>
+<ul>
+<li><strong>切分粒度</strong>：按文字块切，不要按整张图切。一张 1080p 截图 OCR 出来可能有 40 个块，大部分是时间戳、水印、无关 UI 文字——先过一遍规则过滤（正则 + 长度 + 位置），能砍掉六成索引量；</li>
+<li><strong>分层检索</strong>：先文本关键词粗筛（ SQLite FTS5 就够），命中候选再走向量精排。别一上来就全库 ANN 搜，慢且贵。</li>
+</ul>
+坑三：查询理解是最容易被忽略的一环
+<p>用户搜「那个 502 」，你拿什么去向量库里匹配？查询改写这层一定要做：</p>
+<ul>
+<li>把口语查询改写成「可能出现在截图里的文字形态」（比如把「报错」扩写成 <code>error / failed / 错误</code>）；</li>
+<li>时间限定词（「上个月」「上周」）单独解析出来，转成过滤条件，别混进向量里。</li>
+</ul>
+效果
+<p>现在 300+ 天的截图，一次搜索 1 秒内出结果，准确率主观评价八成以上。最大的收益是「再也不用翻聊天记录找那张图了」。</p>
+最后
+<p>这个项目的启发是：RAG 这套东西落到个人小工具上，工程量最大的不是向量检索本身，而是<strong>数据清洗和查询理解</strong>——七成时间花在了这两块。</p>
+<p>代码还在整理，如果大家有兴趣，后续开源出来。也欢迎交流你们做本地内容检索的思路。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近做了个小工具：把我攒了几年、按字节算快 1T 的电脑截图（微信聊天截图、网页截图、报错截图、PPT 截图……）做成一个能直接搜内容的引擎。比如搜「上次那个 nginx 502 的报错」，直接把当时那张截图翻出来。</p>
+<p>功能听起来不新鲜，但自己动手做一遍，坑比想象的多。这里把踩过的坑记录一下，给同样有这个需求的朋友参考。</p>
+坑一：OCR 不是「接个库」那么简单
+<p>一开始想当然：截图 → OCR → 存文本 → 搜，完事。实际：</p>
+<ul>
+<li>中文截图里夹杂的英文报错、路径、代码，混排识别率惨不忍睹。纯中文 OCR 库对 <code>Error: EACCES: permission denied '/var/log/...'</code> 这种行基本全军覆没；</li>
+<li>后来换成多模型互补：通用 OCR 打底，对识别置信度低的行再走一次视觉模型重读，准确率才到了能用的水平；</li>
+<li>坐标信息别丢——OCR 返回的文字块位置留着，后面高亮定位全靠它。</li>
+</ul>
+坑二：索引体积失控
+<p>几个月的截图，全量向量化之后索引文件比截图本体还大。两件事必须做：</p>
+<ul>
+<li><strong>切分粒度</strong>：按文字块切，不要按整张图切。一张 1080p 截图 OCR 出来可能有 40 个块，大部分是时间戳、水印、无关 UI 文字——先过一遍规则过滤（正则 + 长度 + 位置），能砍掉六成索引量；</li>
+<li><strong>分层检索</strong>：先文本关键词粗筛（ SQLite FTS5 就够），命中候选再走向量精排。别一上来就全库 ANN 搜，慢且贵。</li>
+</ul>
+坑三：查询理解是最容易被忽略的一环
+<p>用户搜「那个 502 」，你拿什么去向量库里匹配？查询改写这层一定要做：</p>
+<ul>
+<li>把口语查询改写成「可能出现在截图里的文字形态」（比如把「报错」扩写成 <code>error / failed / 错误</code>）；</li>
+<li>时间限定词（「上个月」「上周」）单独解析出来，转成过滤条件，别混进向量里。</li>
+</ul>
+效果
+<p>现在 300+ 天的截图，一次搜索 1 秒内出结果，准确率主观评价八成以上。最大的收益是「再也不用翻聊天记录找那张图了」。</p>
+最后
+<p>这个项目的启发是：RAG 这套东西落到个人小工具上，工程量最大的不是向量检索本身，而是<strong>数据清洗和查询理解</strong>——七成时间花在了这两块。</p>
+<p>代码还在整理，如果大家有兴趣，后续开源出来。也欢迎交流你们做本地内容检索的思路。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">11</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">stonesirsir</span>
+        <span>#1</span>
+        <span>2026/09/11 21:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">先期待一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076777">先期待一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076777">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076777" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zq11211277</span>
+        <span>#2</span>
+        <span>2026/09/11 21:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持 感觉这个很有用 <br /><br />以后我们可以 1 分钟电脑截屏保存一次，然后利用楼主这个引擎进行回忆</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076781">支持 感觉这个很有用 <br /><br />以后我们可以 1 分钟电脑截屏保存一次，然后利用楼主这个引擎进行回忆</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076781">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076781" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wises</span>
+        <span>#3</span>
+        <span>2026/09/11 22:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">期待开源...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076822">期待开源...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076822">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076822" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gswgudujian</span>
+        <span>#4</span>
+        <span>2026/09/11 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">期待开源...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076834">期待开源...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076834">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076834" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Orangeee</span>
+        <span>#5</span>
+        <span>2026/09/11 22:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">👍多谢分享</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076837">👍多谢分享</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076837">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076837" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">crackhopper</span>
+        <span>#6</span>
+        <span>2026/09/11 22:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">6 ，应该直接卖钱，订阅。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076846">6 ，应该直接卖钱，订阅。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076846">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076846" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">HeyWeGo</span>
+        <span>#7</span>
+        <span>2026/09/11 22:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">手机里的搜索图片里内容原理是不是类似</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076868">手机里的搜索图片里内容原理是不是类似</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076868">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076868" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">homcrazy1</span>
+        <span>#8</span>
+        <span>2026/09/11 22:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不错哦，别了一些灵感</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076893">不错哦，别了一些灵感</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076893">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076893" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">paradoxs</span>
+        <span>#9</span>
+        <span>2026/09/11 23:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">应该是有一些办法可以减少索引量的，百度网盘，onedrive 之类的，很早之前就可以实现对截图中的文字实现 OCR</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076904">应该是有一些办法可以减少索引量的，百度网盘，onedrive 之类的，很早之前就可以实现对截图中的文字实现 OCR</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076904">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076904" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">needpp</span>
+        <span>#10</span>
+        <span>2026/09/11 23:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">牛，期待开源</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18076915">牛，期待开源</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18076915">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18076915" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">babyedi31996</span>
+        <span>#11</span>
+        <span>2026/09/12 00:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这……immich 不就是有这功能吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18077045">这……immich 不就是有这功能吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18077045">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1241437#reply18077045" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
