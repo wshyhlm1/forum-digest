@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[分享创造] 苦于 Windows/Mac 缺少好用的 Screen Studio 替代？我用 Tauri + Rust 做了一款桌面录屏剪辑工具 Click to Reel（文末留 Gmail 送 VIP） | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-15/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>[分享创造] 苦于 Windows/Mac 缺少好用的 Screen Studio 替代？我用 Tauri + Rust 做了一款桌面录屏剪辑工具 Click to Reel（文末留 Gmail 送 VIP）</h1>
+      <p class="original-title">[分享创造] 苦于 Windows/Mac 缺少好用的 Screen Studio 替代？我用 Tauri + Rust 做了一款桌面录屏剪辑工具 Click to Reel（文末留 Gmail 送 VIP）</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 suckli</span>
+        <span>热度 6</span>
+        <span>回复 6</span>
+        <span>2026/09/15 23:23</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1242272" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1242272.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>如果你做过产品演示、教程视频或开源项目展示，大概率被 macOS 上的 Screen Studio 惊艳过——自动镜头平滑跟随、优雅的阴影和圆角、背景渐变，几乎不需要剪辑经验就能做出高级感满满的 Demo 。</li><li>但对于经常使用 Windows 的开发者，或者想要在双端都有统一体验的朋友，市面上一直缺少趁手的工具。要么是笨重复杂的专业剪辑软件，要么是只有基础录制功能的传统录屏。</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>大家好！</p>
+<p>如果你做过产品演示、教程视频或开源项目展示，大概率被 macOS 上的 Screen Studio 惊艳过——自动镜头平滑跟随、优雅的阴影和圆角、背景渐变，几乎不需要剪辑经验就能做出高级感满满的 Demo 。</p>
+<p>但对于经常使用 Windows 的开发者，或者想要在双端都有统一体验的朋友，市面上一直缺少趁手的工具。要么是笨重复杂的专业剪辑软件，要么是只有基础录制功能的传统录屏。</p>
+<p>为了解决这个痛点，我开发了 <strong>Click to Reel</strong>：一款专注让产品演示和技术分享“一键高级感”的跨平台桌面录屏后期应用。</p>
+
+🎥 演示效果(gif 转录看起来比较卡，实际很流畅)
+<p></p>
+
+✨ 核心功能亮点
+1. 🎙️ 本地离线一键转录与智能字幕（基于 Whisper.cpp ）
+<ul>
+<li><strong>100% 本地离线运行</strong>：内置优化过的 Whisper 引擎，在你的本地硬件上极速推理，<strong>音频无需上传任何第三方云端</strong>，商业敏感内容和隐私完全无忧；</li>
+<li><strong>毫秒级时间戳对齐</strong>：录制解说后一键自动转录为文字，高精度分段并精准对齐音轨时间轴；</li>
+<li><strong>告别手动打轴</strong>：一键生成优雅的解说字幕，还可以通过文字快速定位视频片段，做教程和技术 Demo 的效率直接翻倍。</li>
+</ul>
+2. 🔍 算法驱动的镜头自动聚焦（ Auto-Zoom ）
+<ul>
+<li>录制时仅无感记录原始高分辨率素材与光标轨迹；</li>
+<li>导出与后期时，算法自动识别操作焦点与点击热点，智能推拉平移镜头，重点一目了然：
+</li>
+</ul>
+3. 🎨 现代化视觉美学 &amp; 4K 超清导出
+<ul>
+<li>一键配置可调节圆角、背景渐变、景深阴影与平滑重绘光标，彻底告别系统光标生硬的跳动；</li>
+<li>支持最高 4K 60FPS 超清视频导出，画面锐利细腻：
+</li>
+</ul>
+4. 🎛️ 简洁强大的录制控制台 &amp; 直观时间线
+<ul>
+<li>支持全屏、独立应用窗口或自定义区域捕捉，一键开启系统声音、外置麦克风与前置摄像头画中画联动；</li>
+<li>专为录屏剪辑优化的极简时间线，拖拽修剪载入等待、加速繁琐操作：
+
+</li>
+</ul>
+
+🛠 底层技术架构
+<ul>
+<li><strong>跨平台桌面壳</strong>：Tauri 2 + React 19 + TypeScript + Vite ；</li>
+<li><strong>高性能音视频引擎</strong>：底层完全由 Rust 编写；</li>
+<li>
+<strong>原生 GPU 硬件加速</strong>：<ul>
+<li>macOS 端接入 ScreenCaptureKit + Metal / IOSurface 零拷贝（ Zero-Copy ）渲染流水线；</li>
+<li>Windows 端基于 WGC + D3D11 / DXGI 硬件加速；</li>
+</ul>
+</li>
+<li><strong>极佳的性能与体积</strong>：开销极低、轻快稳定。</li>
+</ul>
+
+🔗 官网与下载体验
+<ul>
+<li><strong>官方网站</strong>： <a href="https://clicktoreel.com" target="_blank" rel="noopener noreferrer">https://clicktoreel.com</a></li>
+<li>
+<strong>支持平台</strong>：<ul>
+<li>Windows 10 / 11 (x64)</li>
+<li>macOS 13+ (Apple Silicon)</li>
+</ul>
+</li>
+</ul>
+
+🎁 V2EX 专属福利：回帖留 Gmail 送 VIP 会员
+<p>作为刚刚起步的独立项目，非常渴望得到 V 友们的真实体验和反馈！只要你在本帖回复留下你的 <strong>Gmail 邮箱</strong>，我们将为你免费开通 <strong>Click to Reel VIP 会员</strong>（解锁 4K 高清导出与全部高级特性）。</p>
+<blockquote>
+<p>💡 <strong>防爬小贴士</strong>：为避免邮箱被网络爬虫抓取垃圾邮件，建议使用 Base64 编码留下邮箱</p>
+</blockquote>
+<p>非常期待大家的吐槽、Bug 反馈与建议，祝大家使用愉快！🤝</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>大家好！</p>
+<p>如果你做过产品演示、教程视频或开源项目展示，大概率被 macOS 上的 Screen Studio 惊艳过——自动镜头平滑跟随、优雅的阴影和圆角、背景渐变，几乎不需要剪辑经验就能做出高级感满满的 Demo 。</p>
+<p>但对于经常使用 Windows 的开发者，或者想要在双端都有统一体验的朋友，市面上一直缺少趁手的工具。要么是笨重复杂的专业剪辑软件，要么是只有基础录制功能的传统录屏。</p>
+<p>为了解决这个痛点，我开发了 <strong>Click to Reel</strong>：一款专注让产品演示和技术分享“一键高级感”的跨平台桌面录屏后期应用。</p>
+
+🎥 演示效果(gif 转录看起来比较卡，实际很流畅)
+<p></p>
+
+✨ 核心功能亮点
+1. 🎙️ 本地离线一键转录与智能字幕（基于 Whisper.cpp ）
+<ul>
+<li><strong>100% 本地离线运行</strong>：内置优化过的 Whisper 引擎，在你的本地硬件上极速推理，<strong>音频无需上传任何第三方云端</strong>，商业敏感内容和隐私完全无忧；</li>
+<li><strong>毫秒级时间戳对齐</strong>：录制解说后一键自动转录为文字，高精度分段并精准对齐音轨时间轴；</li>
+<li><strong>告别手动打轴</strong>：一键生成优雅的解说字幕，还可以通过文字快速定位视频片段，做教程和技术 Demo 的效率直接翻倍。</li>
+</ul>
+2. 🔍 算法驱动的镜头自动聚焦（ Auto-Zoom ）
+<ul>
+<li>录制时仅无感记录原始高分辨率素材与光标轨迹；</li>
+<li>导出与后期时，算法自动识别操作焦点与点击热点，智能推拉平移镜头，重点一目了然：
+</li>
+</ul>
+3. 🎨 现代化视觉美学 &amp; 4K 超清导出
+<ul>
+<li>一键配置可调节圆角、背景渐变、景深阴影与平滑重绘光标，彻底告别系统光标生硬的跳动；</li>
+<li>支持最高 4K 60FPS 超清视频导出，画面锐利细腻：
+</li>
+</ul>
+4. 🎛️ 简洁强大的录制控制台 &amp; 直观时间线
+<ul>
+<li>支持全屏、独立应用窗口或自定义区域捕捉，一键开启系统声音、外置麦克风与前置摄像头画中画联动；</li>
+<li>专为录屏剪辑优化的极简时间线，拖拽修剪载入等待、加速繁琐操作：
+
+</li>
+</ul>
+
+🛠 底层技术架构
+<ul>
+<li><strong>跨平台桌面壳</strong>：Tauri 2 + React 19 + TypeScript + Vite ；</li>
+<li><strong>高性能音视频引擎</strong>：底层完全由 Rust 编写；</li>
+<li>
+<strong>原生 GPU 硬件加速</strong>：<ul>
+<li>macOS 端接入 ScreenCaptureKit + Metal / IOSurface 零拷贝（ Zero-Copy ）渲染流水线；</li>
+<li>Windows 端基于 WGC + D3D11 / DXGI 硬件加速；</li>
+</ul>
+</li>
+<li><strong>极佳的性能与体积</strong>：开销极低、轻快稳定。</li>
+</ul>
+
+🔗 官网与下载体验
+<ul>
+<li><strong>官方网站</strong>： <a href="https://clicktoreel.com" target="_blank" rel="noopener noreferrer">https://clicktoreel.com</a></li>
+<li>
+<strong>支持平台</strong>：<ul>
+<li>Windows 10 / 11 (x64)</li>
+<li>macOS 13+ (Apple Silicon)</li>
+</ul>
+</li>
+</ul>
+
+🎁 V2EX 专属福利：回帖留 Gmail 送 VIP 会员
+<p>作为刚刚起步的独立项目，非常渴望得到 V 友们的真实体验和反馈！只要你在本帖回复留下你的 <strong>Gmail 邮箱</strong>，我们将为你免费开通 <strong>Click to Reel VIP 会员</strong>（解锁 4K 高清导出与全部高级特性）。</p>
+<blockquote>
+<p>💡 <strong>防爬小贴士</strong>：为避免邮箱被网络爬虫抓取垃圾邮件，建议使用 Base64 编码留下邮箱</p>
+</blockquote>
+<p>非常期待大家的吐槽、Bug 反馈与建议，祝大家使用愉快！🤝</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">6</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#1</span>
+        <span>2026/09/15 23:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">mail：bmllcmlza3lAZ21haWwuY29t ，感谢 op ，马上下载试试😋</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18089715">mail：bmllcmlza3lAZ21haWwuY29t ，感谢 op ，马上下载试试😋</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18089715">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242272#reply18089715" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v9912ex</span>
+        <span>#2</span>
+        <span>2026/09/15 23:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">aG9uZ3llMzIwNzIxQGdtYWlsLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18089719">aG9uZ3llMzIwNzIxQGdtYWlsLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18089719">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242272#reply18089719" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yoyoyoyolol</span>
+        <span>#3</span>
+        <span>2026/09/16 00:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">aDQ5d3p5M2xqQG1vem1haWwuY29t<br />想体验一下，感谢大佬</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18089777">aDQ5d3p5M2xqQG1vem1haWwuY29t<br />想体验一下，感谢大佬</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18089777">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242272#reply18089777" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">in211240520</span>
+        <span>#4</span>
+        <span>2026/09/16 00:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">NDQ0ODMzMEBnbWFpbC5jb20=</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18089785">NDQ0ODMzMEBnbWFpbC5jb20=</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18089785">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242272#reply18089785" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Emyorii</span>
+        <span>#5</span>
+        <span>2026/09/16 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谢谢大佬，SDBpMEBvdXRsb29rLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18089812">谢谢大佬，SDBpMEBvdXRsb29rLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18089812">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242272#reply18089812" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zpvip</span>
+        <span>#6</span>
+        <span>2026/09/16 00:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">enByZWdpc3RlckBnbWFpbC5jb20=<br />谢谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18089824">enByZWdpc3RlckBnbWFpbC5jb20=<br />谢谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18089824">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242272#reply18089824" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenAI bots knew about the RubyGems caching vulnerability | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-15/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>OpenAI bots knew about the RubyGems caching vulnerability</h1>
+      <p class="original-title">OpenAI bots knew about the RubyGems caching vulnerability</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 gregnavis</span>
+        <span>热度 482</span>
+        <span>回复 390</span>
+        <span>2026/09/14 20:40</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49695876" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://tenderlovemaking.com/2026/09/11/what-a-time-to-be-alive/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49695876.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Today Reuters and the Wall Street Journal both reported about rogue AI agents at OpenAI attacking RubyGems.org. https://www.rubyhack.ai/ has an amazing writeup, and you should read it. I just wanted to make a quick post about it because it’s wild. TL;DR: It seems like OpenAI Bots knew about the RubyGems caching vulnerability, tried to take advantage of it, and at the same time ran some weird web scraping code on RubyDoc.info. Back in May, socket.dev reported about a “GemStuffer Campaign” where someone (I guess OpenAI) was uploading tons of junk gems to RubyGems.org. For some reason, the gems would scrape UK government websites, then repackage the data as gems, and attempt to upload them to RubyGems. I honestly didn’t think much about this (or even look into it) until Sydney Von Arx and Spencer Kitts (both co-authors on https://www.rubyhack.ai) contacted me asking about RubyGems. I thought the claims they were making were completely outlandish until I actually read the code in these “GemStuffer” gems. After reading the code in these gems, a couple things stood out to me. YARD Documentation First, the gems leverage YARD documentation to execute arbitrary code on host machines. In most of the examples you’ll see a .yardopts file that looks like this: --load ./script.rb README.md lib/**/*.rb Here’s a link to an example. If you have YARD installed, and you install this gem, then YARD will load and run whatever is in ./script.rb from inside the gem. I think it’s pretty common knowledge that C extensions will execute extconf.rb (so you basically have an RCE vector), but I was surprised to find out that a documentation tool would do that too. Nobody is going to install a gem named slnleaker5 though, so why would this matter? Well, any time a Gem is published RubyDoc.info will download the gem and process the YARD documentation. RubyDoc.info will execute the arbitrary code inside a Docker container. The Docker container still has network access though, so these gems could happily do their web scraping from inside the container.</li><li>In other words, if you publish a gem on RubyGems.org, you can execute arbitrary code on RubyDoc.info.</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">vipshek</span>
+        
+        <span>2026/09/15 04:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In the physical world, it seems like when an tool/device/instrument causes harm (or is used to cause harm), we assign blame to either the user of the tool or its creator.<p>When do we blame the user? When the tool is operating as intended by its creator, and we agree the tool meets certain quality standards and isn't defective.</p><p>When do we blame the creator? When the device doesn't meet those quality standards and reasonable use caused harm inadvertently. For example, for consumer devices, certifications like UL/CE are used to define acceptable performance levels and safety standards.</p><p>Maybe we need "quality certifications" for AI agents - essentially eval suites that demonstrate those agents won't cause harm under reasonable patterns of usage. Right now, these eval suites are run best-effort by the labs themselves.</p><p>The tricky thing is, a lot (all?) of these recent safety incidents have occurred <i>while evaluating</i> these models! This suggests we need much more rigorous standards for how exactly an eval can be run. Perhaps all of them should occur in truly air-gapped environments... though that may run counter to evaluating agents in a realistic way.</p><p>Regardless, it feels like the "industry standards" common in, say, electrical engineering and other disciplines are sorely lacking here. Unsurprising given how new these technologies are, but concerning since the blast radius for this technology is likely much larger than other technologies we've encountered in the past, except maybe nuclear technology.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49703433">In the physical world, it seems like when an tool/device/instrument causes harm (or is used to cause harm), we assign blame to either the user of the tool or its creator.<p>When do we blame the user? When the tool is operating as intended by its creator, and we agree the tool meets certain quality standards and isn't defective.</p><p>When do we blame the creator? When the device doesn't meet those quality standards and reasonable use caused harm inadvertently. For example, for consumer devices, certifications like UL/CE are used to define acceptable performance levels and safety standards.</p><p>Maybe we need "quality certifications" for AI agents - essentially eval suites that demonstrate those agents won't cause harm under reasonable patterns of usage. Right now, these eval suites are run best-effort by the labs themselves.</p><p>The tricky thing is, a lot (all?) of these recent safety incidents have occurred <i>while evaluating</i> these models! This suggests we need much more rigorous standards for how exactly an eval can be run. Perhaps all of them should occur in truly air-gapped environments... though that may run counter to evaluating agents in a realistic way.</p><p>Regardless, it feels like the "industry standards" common in, say, electrical engineering and other disciplines are sorely lacking here. Unsurprising given how new these technologies are, but concerning since the blast radius for this technology is likely much larger than other technologies we've encountered in the past, except maybe nuclear technology.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49703433">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49703433" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">bonzini</span>
+        
+        <span>2026/09/15 19:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Maybe we need "quality certifications" for AI agents<p>We need to use the laws that exist. Whoever decided to start the experiment that led to the Huggingface hack, and anyone above him up to Sam Altman, needs to be prosecuted under the CFAA.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49711094">&gt; Maybe we need "quality certifications" for AI agents<p>We need to use the laws that exist. Whoever decided to start the experiment that led to the Huggingface hack, and anyone above him up to Sam Altman, needs to be prosecuted under the CFAA.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49711094">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49711094" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">merlindru</span>
+        
+        <span>2026/09/15 21:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">might as well halt all ML development then. this is the first sign of hardship, i think it'd be a massive blow to mankind's foot for us to stop. it'd be akin to shutting down all nuclear plants and stopping all research because of chernobyl</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49712415">might as well halt all ML development then. this is the first sign of hardship, i think it'd be a massive blow to mankind's foot for us to stop. it'd be akin to shutting down all nuclear plants and stopping all research because of chernobyl</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49712415">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49712415" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jz391</span>
+        
+        <span>2026/09/16 03:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is a very interesting discussion. Your analogy of nuclear power is insightful to me. New technology with great positive &amp; negative impact potential, some difficulty in controlling and a military applications (possible weapons-grade material production), being developed for commercial use.<p>Nuclear power development took different paths in different countries, with different government/private mix and light/heavier regulation (eg in US, AEC was supposed to both promote development _and_ regulate).</p><p>The central problem here is pace of AI development. It takes time to establish functional controls/laws/practices. I'm sure that in 1950s/60s, the pace of nuclear _military_ proliferation seemed running out of control. This lead to fear of falling behind (hence arms race), fear of nuclear war (CND) and some eventual stabilisation of the international landscape. However, the commercial development was largely unopposed, due to the techno-utopism of the era. Obviously governments found it much easier to control the public narrative at that time. Our societies are having this lively public debate now, before we have a good understanding (based on experience i.e. accidents/mistakes).</p><p>Another difference is that nuclear power involved only governments and v. large corporates, i.e. much fewer entities compared to AI use rollout to basically everybody in developed countries. Imagine the difficulties we would have faced with that technology, if consumers in 1960s had available nuclear-generated power which required them to exercise precautions to avoid radiation.</p><p>It is much easier to accelerate development of tech vs pace of societal processes such as public debate, law, regulations, broad understanding (aka "common sense"). I expect some artificial slowing down will need to be applied to the technology side, to allow the humans to catch up.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49717585">This is a very interesting discussion. Your analogy of nuclear power is insightful to me. New technology with great positive &amp; negative impact potential, some difficulty in controlling and a military applications (possible weapons-grade material production), being developed for commercial use.<p>Nuclear power development took different paths in different countries, with different government/private mix and light/heavier regulation (eg in US, AEC was supposed to both promote development _and_ regulate).</p><p>The central problem here is pace of AI development. It takes time to establish functional controls/laws/practices. I'm sure that in 1950s/60s, the pace of nuclear _military_ proliferation seemed running out of control. This lead to fear of falling behind (hence arms race), fear of nuclear war (CND) and some eventual stabilisation of the international landscape. However, the commercial development was largely unopposed, due to the techno-utopism of the era. Obviously governments found it much easier to control the public narrative at that time. Our societies are having this lively public debate now, before we have a good understanding (based on experience i.e. accidents/mistakes).</p><p>Another difference is that nuclear power involved only governments and v. large corporates, i.e. much fewer entities compared to AI use rollout to basically everybody in developed countries. Imagine the difficulties we would have faced with that technology, if consumers in 1960s had available nuclear-generated power which required them to exercise precautions to avoid radiation.</p><p>It is much easier to accelerate development of tech vs pace of societal processes such as public debate, law, regulations, broad understanding (aka "common sense"). I expect some artificial slowing down will need to be applied to the technology side, to allow the humans to catch up.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49717585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49717585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">brookst</span>
+        
+        <span>2026/09/15 22:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">So you’re saying the CFAA should not require any intent to break the law, only the outcome? Are we really saying the Aaron Swartz prosecution was actually correct, after all these years?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49712783">So you’re saying the CFAA should not require any intent to break the law, only the outcome? Are we really saying the Aaron Swartz prosecution was actually correct, after all these years?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49712783">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49712783" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bonzini</span>
+        
+        <span>2026/09/15 23:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">No, but surely it's negligent to let an agent run unsupervised and without guardrails for days while at the same time bragging about AI carrying a potential extinction risk?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49714526">No, but surely it's negligent to let an agent run unsupervised and without guardrails for days while at the same time bragging about AI carrying a potential extinction risk?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49714526">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49714526" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">dragonwriter</span>
+        
+        <span>2026/09/15 04:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; In the physical world, it seems like when an tool/device/instrument causes harm (or is used to cause harm), we assign blame to either the user of the tool or its creator.<p>Software executes in the physical world, and is generally not exempt from existing liability rules, and actually (especially with commercial products) blame in traditional liability is non-exclusive and much broader than “either the maker or the user”.</p><p>E.g., for a harms caused by a defective automobile it can simultaneously covered by a duty of the owner to maintain it it in safe operating condition that applies <i>indepedently</i> of any defects <i>and</i> liability for defective products which applies to <i>every actor in the chain of commerce between the manufacturer and end user</i>, not just the maker.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49703764">&gt; In the physical world, it seems like when an tool/device/instrument causes harm (or is used to cause harm), we assign blame to either the user of the tool or its creator.<p>Software executes in the physical world, and is generally not exempt from existing liability rules, and actually (especially with commercial products) blame in traditional liability is non-exclusive and much broader than “either the maker or the user”.</p><p>E.g., for a harms caused by a defective automobile it can simultaneously covered by a duty of the owner to maintain it it in safe operating condition that applies <i>indepedently</i> of any defects <i>and</i> liability for defective products which applies to <i>every actor in the chain of commerce between the manufacturer and end user</i>, not just the maker.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49703764">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49703764" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">fragmede</span>
+        
+        <span>2026/09/15 11:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If I park my car on a hill but forget to set the parking brake and it rolls down the hill and kills somebody, who is at fault? Me? The Manufacturer? Gravity?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49707319">If I park my car on a hill but forget to set the parking brake and it rolls down the hill and kills somebody, who is at fault? Me? The Manufacturer? Gravity?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49707319">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49707319" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dragonwriter</span>
+        
+        <span>2026/09/16 01:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You. Assuming that not having a brake that automatically sets is considered a product defect (it generally is not today, but one can imagine a situation in which it would be), you had bought the car new through normal channels, and your car had this condition as a result of manufacturing problem and not something you did after purchasing it, then under normal product liability law the manufacturer <i>and every other entity in the chain of commerce between them and you</i> would also be liable (and that mat start earlier than the manufacturer of the vehicle but also include the upstream part manufacturer and everyone between them and the vehicle manufacturer in the chain of commerce if the defect was in the manufacture of a part and not just the final vehicle.<p>But that liability doesn't reduce yours; you and all the entities in the chain of commerce can be “jointly and severally liable”, mean anyone who suffers injury can recover the full amount from any combination of you and those other parties.</p><p>Gravity is not legal person and cannot be at fault.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49715868">You. Assuming that not having a brake that automatically sets is considered a product defect (it generally is not today, but one can imagine a situation in which it would be), you had bought the car new through normal channels, and your car had this condition as a result of manufacturing problem and not something you did after purchasing it, then under normal product liability law the manufacturer <i>and every other entity in the chain of commerce between them and you</i> would also be liable (and that mat start earlier than the manufacturer of the vehicle but also include the upstream part manufacturer and everyone between them and the vehicle manufacturer in the chain of commerce if the defect was in the manufacture of a part and not just the final vehicle.<p>But that liability doesn't reduce yours; you and all the entities in the chain of commerce can be “jointly and severally liable”, mean anyone who suffers injury can recover the full amount from any combination of you and those other parties.</p><p>Gravity is not legal person and cannot be at fault.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49715868">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49715868" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">28304283409234</span>
+        
+        <span>2026/09/15 18:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://www.whatvan.co.uk/news/no-handbrake-van-driver-convicted-of-causing-death-by-careless-driving/" target="_blank" rel="noopener noreferrer">https://www.whatvan.co.uk/news/no-handbrake-van-driver-convi...</a><p>You.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49710281"><a href="https://www.whatvan.co.uk/news/no-handbrake-van-driver-convicted-of-causing-death-by-careless-driving/" target="_blank" rel="noopener noreferrer">https://www.whatvan.co.uk/news/no-handbrake-van-driver-convi...</a><p>You.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49710281">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49710281" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">henry2023</span>
+        
+        <span>2026/09/15 13:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Obviously you.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49708032">Obviously you.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49708032">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49708032" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mercurywells</span>
+        
+        <span>2026/09/15 21:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My vehicle automatically sets the parking brake if it senses it is on a steeper slope so I never consciously make a decision to set it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49712430">My vehicle automatically sets the parking brake if it senses it is on a steeper slope so I never consciously make a decision to set it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49712430">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49712430" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Gorath</span>
+        
+        <span>2026/09/15 13:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not as obvious as you may think depending on your states laws for liability. <a href="https://law.justia.com/cases/california/court-of-appeal/3d/1/841.html" target="_blank" rel="noopener noreferrer">https://law.justia.com/cases/california/court-of-appeal/3d/1...</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49708260">Not as obvious as you may think depending on your states laws for liability. <a href="https://law.justia.com/cases/california/court-of-appeal/3d/1/841.html" target="_blank" rel="noopener noreferrer">https://law.justia.com/cases/california/court-of-appeal/3d/1...</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49708260">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49708260" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nextaccountic</span>
+        
+        <span>2026/09/15 16:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If you <i>forget</i> to set the parking brake, you were negligent<p>If you set the brake but it didn't work, the car malfunctioned</p><p>From the link you sent,</p><p>&gt; One of the questions herein was whether there was a defect in the automobile mechanism for locking the transmission gears when the automobile was in a parked position.</p><p>&gt; (...)</p><p>&gt; The parking lot sloped in that area, and he put the gearshift lever in "park lock," and went into the building.</p><p>&gt; (...)</p><p>&gt; In response to a hypothetical question, based upon assumed facts justified by and embodied in the evidence, Mr. Nass testified in substance that it was his opinion that the automobile rolled down the slope of the parking lot because the transmission internally was not in park-lock; that it was not in park-lock because the engine was "moving around"; and that the engine and shift console were not in proper synchronization because the motor mounts were not restraining the engine and were not holding the engine in position.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49709309">If you <i>forget</i> to set the parking brake, you were negligent<p>If you set the brake but it didn't work, the car malfunctioned</p><p>From the link you sent,</p><p>&gt; One of the questions herein was whether there was a defect in the automobile mechanism for locking the transmission gears when the automobile was in a parked position.</p><p>&gt; (...)</p><p>&gt; The parking lot sloped in that area, and he put the gearshift lever in "park lock," and went into the building.</p><p>&gt; (...)</p><p>&gt; In response to a hypothetical question, based upon assumed facts justified by and embodied in the evidence, Mr. Nass testified in substance that it was his opinion that the automobile rolled down the slope of the parking lot because the transmission internally was not in park-lock; that it was not in park-lock because the engine was "moving around"; and that the engine and shift console were not in proper synchronization because the motor mounts were not restraining the engine and were not holding the engine in position.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49709309">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49709309" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">codedokode</span>
+        
+        <span>2026/09/15 17:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As I remember, you are also supposed to turn the wheels so that even if a car starts rolling, it won't be able to go staight.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49709727">As I remember, you are also supposed to turn the wheels so that even if a car starts rolling, it won't be able to go staight.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49709727">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49709727" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nhinck2</span>
+        
+        <span>2026/09/15 15:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That case had the owner performing an action they were led to believe would have prevented the car from rolling but potential defects prevented it from doing so.<p>Not a great fit.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49709049">That case had the owner performing an action they were led to believe would have prevented the car from rolling but potential defects prevented it from doing so.<p>Not a great fit.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49709049">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49709049" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">brookst</span>
+        
+        <span>2026/09/15 21:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It’s a good thought, but the tricky part is that few tools in the physical world are Turing complete and general purpose enough to do any job.<p>The agent isn’t the model; it’s a layer on top of the model. So it’s kind of like saying that all of the tools made with a lathe are dangerous because you can make dangerous tools with a lathe. That’s not quite right of course because agents are packaged more tightly with models than any tool is with its manufacturing tooling.</p><p>Perhaps a better analogy is…  actual humans. If I hire you to do a seemingly mundane job and it turns out to be criminal, that’s on me. If I hire you to perform and explicit and obvious criminal act, that’s on both of us. If I hire you to perform a perfectly legal act and you break the law so do it, that’s exclusively on you.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49712515">It’s a good thought, but the tricky part is that few tools in the physical world are Turing complete and general purpose enough to do any job.<p>The agent isn’t the model; it’s a layer on top of the model. So it’s kind of like saying that all of the tools made with a lathe are dangerous because you can make dangerous tools with a lathe. That’s not quite right of course because agents are packaged more tightly with models than any tool is with its manufacturing tooling.</p><p>Perhaps a better analogy is…  actual humans. If I hire you to do a seemingly mundane job and it turns out to be criminal, that’s on me. If I hire you to perform and explicit and obvious criminal act, that’s on both of us. If I hire you to perform a perfectly legal act and you break the law so do it, that’s exclusively on you.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49712515">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49712515" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">cindyllm</span>
+        
+        <span>2026/09/15 22:46</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49713390">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49713390">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49713390" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">ozim</span>
+        
+        <span>2026/09/15 06:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Software industry standards are as in Microsoft EULA. If your house burns down because of known flaw in Microsoft Windows they are not liable (well as far as EULA let’s them, you can most likely still sue them).<p>Software as big as operating system already is non deterministic when integrating with unknown hardware or 3rd party software.</p><p>That is why Apple controls the hardware and OS for their products, because they can limit non-deterministic things from happening this way.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49704790">Software industry standards are as in Microsoft EULA. If your house burns down because of known flaw in Microsoft Windows they are not liable (well as far as EULA let’s them, you can most likely still sue them).<p>Software as big as operating system already is non deterministic when integrating with unknown hardware or 3rd party software.</p><p>That is why Apple controls the hardware and OS for their products, because they can limit non-deterministic things from happening this way.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49704790">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49704790" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">AdieuToLogic</span>
+        
+        <span>2026/09/15 08:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; If your house burns down because of known flaw in Microsoft Windows they are not liable (well as far as EULA let’s them, you can most likely still sue them).<p>A EULA does not obviate responsibility of a company for its products.  Continuing with your example, while it may be very difficult to prove a known flaw in MS Windows was the cause of your house being set afire, if one had said proof, a EULA would not absolve Microsoft.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49706109">&gt; If your house burns down because of known flaw in Microsoft Windows they are not liable (well as far as EULA let’s them, you can most likely still sue them).<p>A EULA does not obviate responsibility of a company for its products.  Continuing with your example, while it may be very difficult to prove a known flaw in MS Windows was the cause of your house being set afire, if one had said proof, a EULA would not absolve Microsoft.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49706109">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49706109" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
