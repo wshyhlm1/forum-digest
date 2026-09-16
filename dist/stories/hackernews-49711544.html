@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Show HN: An e-ink frame that hears birds and draws them as 1800s illustrations | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-16/">返回日报</a>
+      <div class="source-chip">Hacker News #2</div>
+      <h1>Show HN: An e-ink frame that hears birds and draws them as 1800s illustrations</h1>
+      <p class="original-title">Show HN: An e-ink frame that hears birds and draws them as 1800s illustrations</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 arnemunthekaas</span>
+        <span>热度 1788</span>
+        <span>回复 217</span>
+        <span>2026/09/15 20:31</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49711544" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://github.com/arnegiacomo/fugleramme" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49711544.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>E-ink bird frame for Raspberry Pi - real-time bird detection by audio, fully local AI, rendered as real, hand-cut 1800s bird illustrations.</li><li>Sorry about the dirty window - squirrels have been stealing the bird food.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">See also: <i>Avian Visitors</i> - <a href="https://news.ycombinator.com/item?id=48343424" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48343424</a> - May 2026 (20 comments)</div>
+      <div class="post-body is-hidden" data-role="story-raw">See also: <i>Avian Visitors</i> - <a href="https://news.ycombinator.com/item?id=48343424" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=48343424</a> - May 2026 (20 comments)</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jadbox</span>
+        
+        <span>2026/09/16 03:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is the coolest thing on HN that I've seen in a minute. The whole thing is a perfect blend of ideas with the end result of something that feels... magical. Honestly this is the highest inspiration to me as a builder as I just want to create magical experiences, even if they are just small oddities.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49717700">This is the coolest thing on HN that I've seen in a minute. The whole thing is a perfect blend of ideas with the end result of something that feels... magical. Honestly this is the highest inspiration to me as a builder as I just want to create magical experiences, even if they are just small oddities.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49717700">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49717700" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">sydd</span>
+        
+        <span>2026/09/16 16:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Really cool, except the price. Around 500 Euro for the full thing... I miss the times you could make amazing things with a Pi under 100 Euro.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49723422">Really cool, except the price. Around 500 Euro for the full thing... I miss the times you could make amazing things with a Pi under 100 Euro.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49723422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49723422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">puzzlingcaptcha</span>
+        
+        <span>2026/09/16 16:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's the e-ink monopoly for you. Though you could probably use a slightly smaller b&amp;w eink display with a second hand raspberry 4 to shave a lot from that number.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49723592">That's the e-ink monopoly for you. Though you could probably use a slightly smaller b&amp;w eink display with a second hand raspberry 4 to shave a lot from that number.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49723592">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49723592" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">hmartin</span>
+        
+        <span>2026/09/16 12:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Agree, this was really a beautiful thing to see!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49722134">Agree, this was really a beautiful thing to see!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49722134">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49722134" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">fock</span>
+        
+        <span>2026/09/16 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">EDIT: no Ai for pictures - cool!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49722940">EDIT: no Ai for pictures - cool!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49722940">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49722940" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">pelican0</span>
+        
+        <span>2026/09/16 05:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>&gt; This is the coolest thing on HN that I've seen in a minute.</i><p>Off-topic, but what is up with the increased use of the phrase "in a minute", presumably to mean "in a long time", lately?</p><p>I've only started encountering it in the past year.</p><p>Did it get popularized by some celebrity, tv show, influencers, etc?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49719243"><i>&gt; This is the coolest thing on HN that I've seen in a minute.</i><p>Off-topic, but what is up with the increased use of the phrase "in a minute", presumably to mean "in a long time", lately?</p><p>I've only started encountering it in the past year.</p><p>Did it get popularized by some celebrity, tv show, influencers, etc?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49719243">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49719243" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">seanwessmith</span>
+        
+        <span>2026/09/16 05:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">seems like you know what you're talking about 5k% increase starting in July this year<p><a href="https://trends.google.com/explore?q=I%27ve%20seen%20in%20a%20minute&amp;date=today%205-y&amp;geo=US" target="_blank" rel="noopener noreferrer">https://trends.google.com/explore?q=I%27ve%20seen%20in%20a%2...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49719357">seems like you know what you're talking about 5k% increase starting in July this year<p><a href="https://trends.google.com/explore?q=I%27ve%20seen%20in%20a%20minute&amp;date=today%205-y&amp;geo=US" target="_blank" rel="noopener noreferrer">https://trends.google.com/explore?q=I%27ve%20seen%20in%20a%2...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49719357">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49719357" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bezmi</span>
+        
+        <span>2026/09/16 07:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think the trend is probably misleading. A popular youtuber may have released a video in August with a title containing "in a minute".</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49720034">I think the trend is probably misleading. A popular youtuber may have released a video in August with a title containing "in a minute".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49720034">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49720034" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">scheme271</span>
+        
+        <span>2026/09/16 06:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's been around in slang for a few years with a few variants, e.g. "I haven't seen her in a hot minute."  I think it's just filtered into wider cultural vernacular.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49720012">It's been around in slang for a few years with a few variants, e.g. "I haven't seen her in a hot minute."  I think it's just filtered into wider cultural vernacular.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49720012">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49720012" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mrbombastic</span>
+        
+        <span>2026/09/16 08:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">people have been saying "it's been a minute" to mean a long time since at least the 90s in NY</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49720807">people have been saying "it's been a minute" to mean a long time since at least the 90s in NY</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49720807">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49720807" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kulahan</span>
+        
+        <span>2026/09/17 03:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, I’ve been saying hot minutes for decades myself!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49731401">Yeah, I’ve been saying hot minutes for decades myself!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49731401">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49731401" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">palad1n</span>
+        
+        <span>2026/09/16 07:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Scarlett Johansson says, “See you in a minute" in Avengers: Endgame.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49720251">Scarlett Johansson says, “See you in a minute" in Avengers: Endgame.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49720251">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49720251" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Carrok</span>
+        
+        <span>2026/09/16 07:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This phrase has been around for years, I know because it has always infuriated me.<p>They took a well-defined unit of time, which is relatively short, and made it mean “some unknown but very long period of time”.</p><p>So frustrating. /oldmanyellsatcloud</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49720338">This phrase has been around for years, I know because it has always infuriated me.<p>They took a well-defined unit of time, which is relatively short, and made it mean “some unknown but very long period of time”.</p><p>So frustrating. /oldmanyellsatcloud</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49720338">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49720338" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">devindotcom</span>
+        
+        <span>2026/09/16 07:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">it's been around. I more commonly see it as "been a minute!" when you see someone you haven't seen in a good while.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49720335">it's been around. I more commonly see it as "been a minute!" when you see someone you haven't seen in a good while.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49720335">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49720335" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">divbzero</span>
+        
+        <span>2026/09/16 00:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The underlying classifier, BirdNET, is a traditional neural network and not an LLM:<p><a href="https://doi.org/10.1016/j.ecoinf.2021.101236" target="_blank" rel="noopener noreferrer">https://doi.org/10.1016/j.ecoinf.2021.101236</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49715349">The underlying classifier, BirdNET, is a traditional neural network and not an LLM:<p><a href="https://doi.org/10.1016/j.ecoinf.2021.101236" target="_blank" rel="noopener noreferrer">https://doi.org/10.1016/j.ecoinf.2021.101236</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49715349">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49715349" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tuvix</span>
+        
+        <span>2026/09/16 01:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Are there any LLMs being widely used for audio classification? I know VLMs are being used a lot in image stuff.<p>It always seems kind of silly to me to throw everything at an LLM. I know they’re huge and can automatically handle a huge number of tasks but something in me finds it wasteful when we could be creating easily trainable, cheap to run bespoke models for a lot of stuff</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49716222">Are there any LLMs being widely used for audio classification? I know VLMs are being used a lot in image stuff.<p>It always seems kind of silly to me to throw everything at an LLM. I know they’re huge and can automatically handle a huge number of tasks but something in me finds it wasteful when we could be creating easily trainable, cheap to run bespoke models for a lot of stuff</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49716222">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49716222" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">lambda</span>
+        
+        <span>2026/09/16 05:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are LLMs that support audio input, similar to those with vision support.<p>From my testing of open weights LLMs with audio support, they basically are only trained to recognize audio as an alternative to text input, they treat audio as basically equivalent to a transcript, and can't recognize or distinguish things like music, accents, background sounds, etc.</p><p>So they're only really good for transcribing or summarizing or using audio input in place of text input for prompts, but not anything that requires distinguishing any information about the audio that would not be present in a transcript.</p><p>It can be tempting to try to use an LLM for a variety of tasks; kind of the whole thing about an LLM is that you don't have to do a separate complex training run for every task, but can just provide instructions in natural language. But it only works as far as what the training data covers, if the training basically always treated audio and a text transcript as equivalent, the model has nothing causing it to learn other relevant features of the audio. If there's enough bird call identification in the training data of an LLM, it might be able to do that, but I think multimodal training data tends to be much more limited than the text training corpus</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49719010">There are LLMs that support audio input, similar to those with vision support.<p>From my testing of open weights LLMs with audio support, they basically are only trained to recognize audio as an alternative to text input, they treat audio as basically equivalent to a transcript, and can't recognize or distinguish things like music, accents, background sounds, etc.</p><p>So they're only really good for transcribing or summarizing or using audio input in place of text input for prompts, but not anything that requires distinguishing any information about the audio that would not be present in a transcript.</p><p>It can be tempting to try to use an LLM for a variety of tasks; kind of the whole thing about an LLM is that you don't have to do a separate complex training run for every task, but can just provide instructions in natural language. But it only works as far as what the training data covers, if the training basically always treated audio and a text transcript as equivalent, the model has nothing causing it to learn other relevant features of the audio. If there's enough bird call identification in the training data of an LLM, it might be able to do that, but I think multimodal training data tends to be much more limited than the text training corpus</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49719010">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49719010" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sbrother</span>
+        
+        <span>2026/09/16 12:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Have you had any luck fine tuning one with musical data for classification or music-aware QA? I've been hacking on <a href="https://trebel.la/" target="_blank" rel="noopener noreferrer">https://trebel.la/</a> which I would like to be a music practice companion, and the biggest missing feature is actually useful audio-based feedback pipeline.<p>My current approach, not yet validated, is trying to generate training data from masterclass recordings on Youtube, and then fine tuning MOSS-audio on a bunch of those. But I'm interested if there are better models, or large training sets I don't know about.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49721981">Have you had any luck fine tuning one with musical data for classification or music-aware QA? I've been hacking on <a href="https://trebel.la/" target="_blank" rel="noopener noreferrer">https://trebel.la/</a> which I would like to be a music practice companion, and the biggest missing feature is actually useful audio-based feedback pipeline.<p>My current approach, not yet validated, is trying to generate training data from masterclass recordings on Youtube, and then fine tuning MOSS-audio on a bunch of those. But I'm interested if there are better models, or large training sets I don't know about.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49721981">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49721981" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">MisterMunchkin</span>
+        
+        <span>2026/09/16 22:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You're selling a music feedback app and it doesn't do the music feedback part yet?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49727252">You're selling a music feedback app and it doesn't do the music feedback part yet?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49727252">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49727252" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sbrother</span>
+        
+        <span>2026/09/17 03:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not selling anything; I'm developing it live and there is a landing page, but there's no payment hooked up since like you said, it's not functional yet.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49731624">I'm not selling anything; I'm developing it live and there is a landing page, but there's no payment hooked up since like you said, it's not functional yet.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49731624">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49731624" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
