@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了个读长文用的光带，顺带发现 bookmarklet 不受页面 CSP 管，但 loader 受 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-17/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>做了个读长文用的光带，顺带发现 bookmarklet 不受页面 CSP 管，但 loader 受</h1>
+      <p class="original-title">做了个读长文用的光带，顺带发现 bookmarklet 不受页面 CSP 管，但 loader 受</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 keainiaikeke</span>
+        <span>热度 2</span>
+        <span>回复 2</span>
+        <span>2026/09/17 22:17</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1242810" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1242810.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>先说毛病：我读长文章，读到第三行就不知道自己在读哪一行了。</li><li>不是走神——注意力还在文章上,是&quot;我刚才读到哪&quot;这件事本身...,得回去重新扫一遍找那句。一篇长文读下来,大概三分之一的时间花在找行上。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>先说毛病：我读长文章，读到第三行就不知道自己在读哪一行了。</p>
+<p>不是走神——注意力还在文章上,是"我刚才读到哪"这件事本身...,得回去重新扫一遍找那句。一篇长文读下来,大概三分之一的时间花在找行上。</p>
+<p>所以写了一个： <a href="https://spotlightreading.com" target="_blank" rel="noopener noreferrer">https://spotlightreading.com</a></p>
+<p>贴个链接或者粘段文字进去就能读，也能直接开 txt / pdf / epub 。有条光带压在正在读的几行上，可以拖，可以点一句读一句，也可以按 F 让它跟着鼠标自动贴合整句或整段。</p>
+<p>三个跟直觉相反的地方</p>
+<ol>
+<li>把其它行遮住是错的。</li>
+</ol>
+<p>第一版我把光带以外的内容整个遮掉了，结果更难受——你会失去"自己在这一页什么位置"的空间感。现在的做法是光带以外的文字不遮，只让对比度沿梯度连续衰减。轮廓还在，但不抢注意力。</p>
+<ol>
+<li>虚化比变暗更糟。</li>
+</ol>
+<p>早期版本是把周围文字 blur 掉，用起来明显更累。因为人看到模糊的东西会下意识地努力辨认，这个本能关不掉。改成单纯降对比之后，那些字读起来像"现在不轮到你"，而不是"这里坏了"。</p>
+<ol>
+<li>真正起作用的大头不是光带，是排版。</li>
+</ol>
+<p>把文字重排成窄栏（中文一行 23 字左右、英文 65 字符左右）、行距拉到 2 倍上下，这一项的收益比光带还大。丢行主要发生在回扫那一瞬间——眼睛读完一行跳回下一行行首，行越长，落点误差越大。现在大部分网页一行四五十字，那是为了塞广告排的，不是为了给人读的。</p>
+<p>几个实现上的坑</p>
+<p>bookmarklet 不受页面 CSP 约束，但 loader 受。</p>
+<p>书签工具我一开始按常规写法，在 bookmarklet 里 append 一个 &lt;script src="..."&gt;。本地测得好好的，一到 Wikipedia 就死——Wikipedia 有 script-src CSP ，外部脚本直接被拦。而 Wikipedia 恰恰是最需要阅读辅助的地方。</p>
+<p>解法是把整个压缩后的脚本内联进 javascript: URL 里，不走资源加载。因为 bookmarklet 是作为用户手势执行的，不算页面发起的资源请求，所以不受该页 CSP 管辖。6KB 塞在 href 里毫无压力。Wikipedia / MDN / BBC 实测都能跑。</p>
+<p>CSS 自定义属性不 @<a href="/member/property" target="_blank" rel="noopener noreferrer">property</a> 注册，就没有过渡动画。</p>
+<p>变暗的区域是一整个 gradient ，色标位置是 var(--t) 和 var(--b)。给它加 transition 完全没反应——自定义属性默认是无类型的，浏览器不知道怎么插值，只能在两个值之间硬跳，光带就是瞬移。用 @<a href="/member/property" target="_blank" rel="noopener noreferrer">property</a> { syntax: '&lt;length&gt;' } 注册之后才开始滑动。</p>
+<p>贴链接那条走 Worker 代抓。</p>
+<p>浏览器有 CORS 进不去别人的站，所以 /api/read 由 Cloudflare Worker 代抓，用 HTMLRewriter 流式提取正文，扔掉导航、广告、侧栏、目录、语言列表。带 SSRF 防护（拒 localhost 、私有网段、非 http 协议）。</p>
+<p>PDF 的断行要重新缝合。</p>
+<p>pdf.js 拿到的文本是按排版切的，一句话经常被断成好几段。得按行高和右边界判断哪些是硬换行、哪些是排版导致的软换行，再缝回去，不然光带没法按句子贴合。</p>
+<p>隐私</p>
+<p>纯客户端。文件全部在浏览器里解析，不上传。没有账号，没有统计。只按文本指纹记住你上次读到哪——文本本身不存，只存位置。</p>
+<p>做不到的</p>
+<p>Canvas 渲染的阅读器（ Kindle 网页版这类把文字画成图的）只能整页染色，没法吸附句子。原生 App （微信读书、多看、Apple Books ）完全没有入口——这不是我偷懒，是不存在通道。</p>
+<p>想听听：</p>
+<p>你们读长文档丢行吗，还是只有我这样
+手机上光带的拖动手感怎么样
+还有哪些站的 CSP 会把书签工具挡住的，我想收集一下</p>
+<p>（是我自己做的。）</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>先说毛病：我读长文章，读到第三行就不知道自己在读哪一行了。</p>
+<p>不是走神——注意力还在文章上,是"我刚才读到哪"这件事本身...,得回去重新扫一遍找那句。一篇长文读下来,大概三分之一的时间花在找行上。</p>
+<p>所以写了一个： <a href="https://spotlightreading.com" target="_blank" rel="noopener noreferrer">https://spotlightreading.com</a></p>
+<p>贴个链接或者粘段文字进去就能读，也能直接开 txt / pdf / epub 。有条光带压在正在读的几行上，可以拖，可以点一句读一句，也可以按 F 让它跟着鼠标自动贴合整句或整段。</p>
+<p>三个跟直觉相反的地方</p>
+<ol>
+<li>把其它行遮住是错的。</li>
+</ol>
+<p>第一版我把光带以外的内容整个遮掉了，结果更难受——你会失去"自己在这一页什么位置"的空间感。现在的做法是光带以外的文字不遮，只让对比度沿梯度连续衰减。轮廓还在，但不抢注意力。</p>
+<ol>
+<li>虚化比变暗更糟。</li>
+</ol>
+<p>早期版本是把周围文字 blur 掉，用起来明显更累。因为人看到模糊的东西会下意识地努力辨认，这个本能关不掉。改成单纯降对比之后，那些字读起来像"现在不轮到你"，而不是"这里坏了"。</p>
+<ol>
+<li>真正起作用的大头不是光带，是排版。</li>
+</ol>
+<p>把文字重排成窄栏（中文一行 23 字左右、英文 65 字符左右）、行距拉到 2 倍上下，这一项的收益比光带还大。丢行主要发生在回扫那一瞬间——眼睛读完一行跳回下一行行首，行越长，落点误差越大。现在大部分网页一行四五十字，那是为了塞广告排的，不是为了给人读的。</p>
+<p>几个实现上的坑</p>
+<p>bookmarklet 不受页面 CSP 约束，但 loader 受。</p>
+<p>书签工具我一开始按常规写法，在 bookmarklet 里 append 一个 &lt;script src="..."&gt;。本地测得好好的，一到 Wikipedia 就死——Wikipedia 有 script-src CSP ，外部脚本直接被拦。而 Wikipedia 恰恰是最需要阅读辅助的地方。</p>
+<p>解法是把整个压缩后的脚本内联进 javascript: URL 里，不走资源加载。因为 bookmarklet 是作为用户手势执行的，不算页面发起的资源请求，所以不受该页 CSP 管辖。6KB 塞在 href 里毫无压力。Wikipedia / MDN / BBC 实测都能跑。</p>
+<p>CSS 自定义属性不 @<a href="/member/property" target="_blank" rel="noopener noreferrer">property</a> 注册，就没有过渡动画。</p>
+<p>变暗的区域是一整个 gradient ，色标位置是 var(--t) 和 var(--b)。给它加 transition 完全没反应——自定义属性默认是无类型的，浏览器不知道怎么插值，只能在两个值之间硬跳，光带就是瞬移。用 @<a href="/member/property" target="_blank" rel="noopener noreferrer">property</a> { syntax: '&lt;length&gt;' } 注册之后才开始滑动。</p>
+<p>贴链接那条走 Worker 代抓。</p>
+<p>浏览器有 CORS 进不去别人的站，所以 /api/read 由 Cloudflare Worker 代抓，用 HTMLRewriter 流式提取正文，扔掉导航、广告、侧栏、目录、语言列表。带 SSRF 防护（拒 localhost 、私有网段、非 http 协议）。</p>
+<p>PDF 的断行要重新缝合。</p>
+<p>pdf.js 拿到的文本是按排版切的，一句话经常被断成好几段。得按行高和右边界判断哪些是硬换行、哪些是排版导致的软换行，再缝回去，不然光带没法按句子贴合。</p>
+<p>隐私</p>
+<p>纯客户端。文件全部在浏览器里解析，不上传。没有账号，没有统计。只按文本指纹记住你上次读到哪——文本本身不存，只存位置。</p>
+<p>做不到的</p>
+<p>Canvas 渲染的阅读器（ Kindle 网页版这类把文字画成图的）只能整页染色，没法吸附句子。原生 App （微信读书、多看、Apple Books ）完全没有入口——这不是我偷懒，是不存在通道。</p>
+<p>想听听：</p>
+<p>你们读长文档丢行吗，还是只有我这样
+手机上光带的拖动手感怎么样
+还有哪些站的 CSP 会把书签工具挡住的，我想收集一下</p>
+<p>（是我自己做的。）</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">2</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">youwink</span>
+        <span>#1</span>
+        <span>2026/09/18 01:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有点帅啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18098281">有点帅啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18098281">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242810#reply18098281" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tomchen</span>
+        <span>#2</span>
+        <span>2026/09/18 02:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所以 bookmarklet 在哪里？<br /><br />这种通常还是做成 userscript ，在原文上弄这玩意儿吧。变成网站或 app 或者浏览器 extension 新开个窗口什么的，又重，又麻烦，还要粘贴进去。当然 pdf 、ebook 什么的确实只能这样。。<br /><br />还有你把别的行都遮住或者变得很淡，没法一目十行地读啊😂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18098286">所以 bookmarklet 在哪里？<br /><br />这种通常还是做成 userscript ，在原文上弄这玩意儿吧。变成网站或 app 或者浏览器 extension 新开个窗口什么的，又重，又麻烦，还要粘贴进去。当然 pdf 、ebook 什么的确实只能这样。。<br /><br />还有你把别的行都遮住或者变得很淡，没法一目十行地读啊😂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18098286">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1242810#reply18098286" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
