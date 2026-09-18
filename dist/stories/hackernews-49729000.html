@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Small programming tricks | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-18/">返回日报</a>
+      <div class="source-chip">Hacker News #7</div>
+      <h1>Small programming tricks</h1>
+      <p class="original-title">Small programming tricks</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 signa11</span>
+        <span>热度 656</span>
+        <span>回复 287</span>
+        <span>2026/09/16 23:56</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49729000" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://will-keleher.com/posts/small-programming-tricks-matter/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49729000.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Day to day, I think a surprising amount of engineering productivity comes from small nuggets of knowledge: being aware that a language feature exists; knowing that an unexplained tcp delay is probably related to the TCP_NO_DELAY setting and Nagle’s algorithm; knowing the right git incantation to get out of a pickle; or knowing a trick with sed to rewrite a file. In one sense, this is self-evident: anything you know is going to be made up of smaller pieces of knowledge. Of course those smaller pieces of knowledge matter. But I think there are some nuggets of knowledge that are particularly valuable and don’t require a lot of supporting mental infrastructure. You don’t need to know any python to use python3 -m http.server to start a simple server in a directory, but it might still make your work marginally easier. Let me share a few examples:</li><li>You probably know that ctrl + r allows searching your terminal’s command history, but if you install fzf, you can set it up so that ctrl + r does a fuzzy search. If you want even more power, atuin replaces your shell history with a searchable SQLite database. per-directory-history lets you switch back and forth between searching for commands that have been run in a specific directory or searching all previous commands. Finally, you can configure how much history to store: stackoverflow question. You can SELECT without a FROM. This can be useful for testing out how a function in your database actually works or reminding yourself how SELECT TRUE &lt;&gt; NULL works.1 PostgresSQL and MySQL both support explain analyze which will actually run the query you’re trying to optimize and give you a ton more information about its performance. In regular expressions, \b, the word boundary assertion, makes it easy to look for the beginnings or ends of words. You can use logarithms with metrics to get a sense of the distribution of values for a field you’re interested in: const bucket = Math.floor(Math.log10(userInGroupCount)) metrics.increment(&quot;my_metric&quot;, { bucket });</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">alexpotato</span>
+        
+        <span>2026/09/17 20:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For people asking "do these small tricks/trivia really matter??" I have an example of when they do:<p>- having strange networking issues on the blue side of a blue/green deployment</p><p>- networking engineers are involved</p><p>- nobody seems to be able to figure out what's going on despite LOTS of tcpdump/wireshark etc</p><p>- I suggest tcpflow[0] (which I used for protocol analysis of chat services etc)</p><p>- (there is some skepticism as I was SRE and not networking)</p><p>- Turns out that the TCP messages were getting truncated on the problem side</p><p>- Networking guys realize the config issue and fix it</p><p>I have other examples but this is why it's always good to learn new commands/tools etc.</p><p>This, in turn, reminds me of a quote from an army jungle survival expert: "People ask me if it's a good idea to read survival books. I say: 100%. You would be surprised how many people survive an emergency situation because their brain pops out some critical piece of information from a book or article they read 10 years ago."</p><p>0 - <a href="https://linux.die.net/man/1/tcpflow" target="_blank" rel="noopener noreferrer">https://linux.die.net/man/1/tcpflow</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49739634">For people asking "do these small tricks/trivia really matter??" I have an example of when they do:<p>- having strange networking issues on the blue side of a blue/green deployment</p><p>- networking engineers are involved</p><p>- nobody seems to be able to figure out what's going on despite LOTS of tcpdump/wireshark etc</p><p>- I suggest tcpflow[0] (which I used for protocol analysis of chat services etc)</p><p>- (there is some skepticism as I was SRE and not networking)</p><p>- Turns out that the TCP messages were getting truncated on the problem side</p><p>- Networking guys realize the config issue and fix it</p><p>I have other examples but this is why it's always good to learn new commands/tools etc.</p><p>This, in turn, reminds me of a quote from an army jungle survival expert: "People ask me if it's a good idea to read survival books. I say: 100%. You would be surprised how many people survive an emergency situation because their brain pops out some critical piece of information from a book or article they read 10 years ago."</p><p>0 - <a href="https://linux.die.net/man/1/tcpflow" target="_blank" rel="noopener noreferrer">https://linux.die.net/man/1/tcpflow</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49739634">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49739634" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">xorcist</span>
+        
+        <span>2026/09/18 17:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">No to belittle your find even the slightest, but it might be good to notice that tcpflow decodes tcp flows, which is <i>exactly</i> what Wireshark does, only the latter in a GUI and with a plethora of other protocol decoders. Just right click any tcp packet and select Follow.<p>Both tools even use the same filtering language, coming from tcpdump itself. Wireshark's protocol decoder is more advanced than tcpflow. It does understand fragmented packets. So given a choice, Wireshark is often the preferred tool.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49752151">No to belittle your find even the slightest, but it might be good to notice that tcpflow decodes tcp flows, which is <i>exactly</i> what Wireshark does, only the latter in a GUI and with a plethora of other protocol decoders. Just right click any tcp packet and select Follow.<p>Both tools even use the same filtering language, coming from tcpdump itself. Wireshark's protocol decoder is more advanced than tcpflow. It does understand fragmented packets. So given a choice, Wireshark is often the preferred tool.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49752151">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49752151" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">js2</span>
+        
+        <span>2026/09/18 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I debugged terrible git clone performance over the VPN at my last company. It turned out our firewall was stripping TCP window scaling by default, which included both our internal GitHub Enterprise instance hosted on AWS and github.com. I collected a bunch of packet traces (tcpdump was sufficient) and eventually got the networking folks to fix the firewall config.<p>This was a company of a few thousand people with programmers working from home who all must've assumed it was fine to get no more than ~1 Mbps git clone performance. After a few months of putting up with it I finally got tired of the issue and spent 30 minutes tracking down the cause. It still took a week or more of back and forth between me, and the networking and security teams. And it became an ongoing issue as they were allow-listing IP addresses, not fixing the root cause. Why are Cisco firewalls stripping TCP window scaling by default in 2026? I have no idea!</p><p>So, yeah...</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49743343">I debugged terrible git clone performance over the VPN at my last company. It turned out our firewall was stripping TCP window scaling by default, which included both our internal GitHub Enterprise instance hosted on AWS and github.com. I collected a bunch of packet traces (tcpdump was sufficient) and eventually got the networking folks to fix the firewall config.<p>This was a company of a few thousand people with programmers working from home who all must've assumed it was fine to get no more than ~1 Mbps git clone performance. After a few months of putting up with it I finally got tired of the issue and spent 30 minutes tracking down the cause. It still took a week or more of back and forth between me, and the networking and security teams. And it became an ongoing issue as they were allow-listing IP addresses, not fixing the root cause. Why are Cisco firewalls stripping TCP window scaling by default in 2026? I have no idea!</p><p>So, yeah...</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49743343">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49743343" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">phforms</span>
+        
+        <span>2026/09/17 01:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The thing with a lot of these tricks is that you have to get into the habit of using them. I knew `Ctrl+r` for history since I learned about the command line. I even have a nice shell integration with fzf. But I still used the up/down arrow keys for years or scrolled up when I was looking for a previous command, because I never remembered the shortcut and just took the path of least resistance to find something.<p>Usually what I do is writing these tricks down to a document that is easily accessible at a place where I know that I will look for when failing to remember them. I have a directory of docs where I write stuff like this down by language/tool/etc., so I can quickly look it up without having to search the internet. But I also have to actively remind myself that these things exist whenever I have a problem, stop me from just doing the inefficient thing.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49730584">The thing with a lot of these tricks is that you have to get into the habit of using them. I knew `Ctrl+r` for history since I learned about the command line. I even have a nice shell integration with fzf. But I still used the up/down arrow keys for years or scrolled up when I was looking for a previous command, because I never remembered the shortcut and just took the path of least resistance to find something.<p>Usually what I do is writing these tricks down to a document that is easily accessible at a place where I know that I will look for when failing to remember them. I have a directory of docs where I write stuff like this down by language/tool/etc., so I can quickly look it up without having to search the internet. But I also have to actively remind myself that these things exist whenever I have a problem, stop me from just doing the inefficient thing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49730584">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49730584" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">kulahan</span>
+        
+        <span>2026/09/17 08:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’ve read that if you’re trying to overturn a habit with a new habit, it’s best to undo whatever it is you did the old way, then redo it the new way.<p>So if you want to use ctrl-r, but you’re using the up key, use the down key to navigate back to a clear line, then use ctrl-r. Do it enough times and your brain will work overtime to find a shortcut (aka just doing it the new way).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49734949">I’ve read that if you’re trying to overturn a habit with a new habit, it’s best to undo whatever it is you did the old way, then redo it the new way.<p>So if you want to use ctrl-r, but you’re using the up key, use the down key to navigate back to a clear line, then use ctrl-r. Do it enough times and your brain will work overtime to find a shortcut (aka just doing it the new way).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49734949">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49734949" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">or_am_i</span>
+        
+        <span>2026/09/17 13:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Temporarily binding the up arrow in the shell to echo "Use Ctrl-R" is probably the quickest way to un-/re-learn</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49736611">Temporarily binding the up arrow in the shell to echo "Use Ctrl-R" is probably the quickest way to un-/re-learn</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49736611">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49736611" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">estetlinus</span>
+        
+        <span>2026/09/17 13:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’ve done this, nowadays asking Claude to rebind things so that I’m forced to learn. It comes with interesting side effects!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49736919">I’ve done this, nowadays asking Claude to rebind things so that I’m forced to learn. It comes with interesting side effects!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49736919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49736919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">RugnirViking</span>
+        
+        <span>2026/09/17 20:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ive just done this, thanks for the suggestion:<p>"Use Ctrl-R for fuzzy history, or Ctrl-P/Ctrl-N for history entries"</p><p>(I have those bound to bindkey '^P' up-history and bindkey '^N' down-history instead of up and down arrow's "up-line-or-history" which is really annoying with multiline commands)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49739575">ive just done this, thanks for the suggestion:<p>"Use Ctrl-R for fuzzy history, or Ctrl-P/Ctrl-N for history entries"</p><p>(I have those bound to bindkey '^P' up-history and bindkey '^N' down-history instead of up and down arrow's "up-line-or-history" which is really annoying with multiline commands)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49739575">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49739575" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jachee</span>
+        
+        <span>2026/09/17 15:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I learned to type `ls` properly the first time, <i>every time</i>, shortly after installing `sl`.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49737641">I learned to type `ls` properly the first time, <i>every time</i>, shortly after installing `sl`.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49737641">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49737641" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mitxela</span>
+        
+        <span>2026/09/18 18:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I use ctrl-c to abort command entry and start with a clear line.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49752364">I use ctrl-c to abort command entry and start with a clear line.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49752364">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49752364" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">diath</span>
+        
+        <span>2026/09/17 02:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; But I still used the up/down arrow keys for years or scrolled up when I was looking for a previous command<p>It's not even that bad of a habit with zsh either where it will only scroll through history matching a substring in your history, for instance if I type "rg -i" and then start pressing up arrow, it will only cycle through history entries starting with "rg -i".</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49730719">&gt; But I still used the up/down arrow keys for years or scrolled up when I was looking for a previous command<p>It's not even that bad of a habit with zsh either where it will only scroll through history matching a substring in your history, for instance if I type "rg -i" and then start pressing up arrow, it will only cycle through history entries starting with "rg -i".</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49730719">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49730719" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">weaksauce</span>
+        
+        <span>2026/09/17 03:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">if you enable history substring search in zsh you can get that feature anywhere in the command and not just the start. it's very useful if you remember some snippet of the command like it had the word debug in it etc. in fish that is built in and on by default.<p>though one function that i recently added will narrow your history down based on a space separated set of filters which i found useful</p><p></p><pre><code>    function hgrep
+        set -l cmd history
+        for pattern in $argv
+            set cmd "$cmd | grep -- "(string escape "$pattern")
+        end
+        eval $cmd | cat
+    end
+</code></pre>
+use `hgrep ruby debug foo` would filter for a line that contained all the words ruby, debug and foo.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49731423">if you enable history substring search in zsh you can get that feature anywhere in the command and not just the start. it's very useful if you remember some snippet of the command like it had the word debug in it etc. in fish that is built in and on by default.<p>though one function that i recently added will narrow your history down based on a space separated set of filters which i found useful</p><p></p><pre><code>    function hgrep
+        set -l cmd history
+        for pattern in $argv
+            set cmd "$cmd | grep -- "(string escape "$pattern")
+        end
+        eval $cmd | cat
+    end
+</code></pre>
+use `hgrep ruby debug foo` would filter for a line that contained all the words ruby, debug and foo.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49731423">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49731423" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mkehrt</span>
+        
+        <span>2026/09/17 11:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is a readline feature.  You can enable it in bash (and other shells?) with:<p>bind '"\e[A": history-search-backward'</p><p>bind '"\e[B": history-search-forward'</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49736159">This is a readline feature.  You can enable it in bash (and other shells?) with:<p>bind '"\e[A": history-search-backward'</p><p>bind '"\e[B": history-search-forward'</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49736159">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49736159" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">harikb</span>
+        
+        <span>2026/09/17 03:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Clearly I am missing some setting. On zsh on macOS and I tried what you just said and it doesn't work like this</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49731483">Clearly I am missing some setting. On zsh on macOS and I tried what you just said and it doesn't work like this</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49731483">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49731483" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">chrisweekly</span>
+        
+        <span>2026/09/17 04:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">FWIW I'm also on macos 15.7.9, zsh 5.9, oh-my-zsh - and I do get this behavior (TIL).<p>type eg "rg" then up or down arrow, and the history shown is filtered by that rg prefix.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49732304">FWIW I'm also on macos 15.7.9, zsh 5.9, oh-my-zsh - and I do get this behavior (TIL).<p>type eg "rg" then up or down arrow, and the history shown is filtered by that rg prefix.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49732304">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49732304" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">saghm</span>
+        
+        <span>2026/09/17 10:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Isn't oh-my-zsh one of those batteries-included distributions? It sounds like that's just one of the configurations that it provides.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49735580">Isn't oh-my-zsh one of those batteries-included distributions? It sounds like that's just one of the configurations that it provides.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49735580">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49735580" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">applicative</span>
+        
+        <span>2026/09/17 05:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was missing it too.  Google says it's a builtin zsh feature but mac doesn't turn it on by default, so you add these to `~/.zshrc`<p></p><pre><code>    bindkey '^[[A' history-search-backward
+    bindkey '^[[B' history-search-forward
+</code></pre>
+So far it works. Thank you diath.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49733320">I was missing it too.  Google says it's a builtin zsh feature but mac doesn't turn it on by default, so you add these to `~/.zshrc`<p></p><pre><code>    bindkey '^[[A' history-search-backward
+    bindkey '^[[B' history-search-forward
+</code></pre>
+So far it works. Thank you diath.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49733320">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49733320" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">saghm</span>
+        
+        <span>2026/09/17 10:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not really sure what "turn it on by default" even means in the context of a shell. I've had that manually in my config for years.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49735587">I'm not really sure what "turn it on by default" even means in the context of a shell. I've had that manually in my config for years.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49735587">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49735587" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">MomsAVoxell</span>
+        
+        <span>2026/09/18 05:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I comment my shell commands, thus:<p></p><pre><code>    $ ,:(){ :|:&amp; };: #forkbomb
+</code></pre>
+This way, when I want to find it again, I CTRL-R and type ‘forkbomb’ .. voila, instant recall!<p>All I have to remember is the small ontology I keep in my head for the most important commands I use .. pretty easy if I also construct a narrative for those commands, contextually.  “#downup #clearlog #checkconn #amialone #forkbomb”, etc.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49746995">I comment my shell commands, thus:<p></p><pre><code>    $ ,:(){ :|:&amp; };: #forkbomb
+</code></pre>
+This way, when I want to find it again, I CTRL-R and type ‘forkbomb’ .. voila, instant recall!<p>All I have to remember is the small ontology I keep in my head for the most important commands I use .. pretty easy if I also construct a narrative for those commands, contextually.  “#downup #clearlog #checkconn #amialone #forkbomb”, etc.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49746995">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49746995" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">dec0dedab0de</span>
+        
+        <span>2026/09/17 03:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was my most effective when I had a bunch of cheat sheets taped up in my workspace.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49731857">I was my most effective when I had a bunch of cheat sheets taped up in my workspace.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49731857">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49731857" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
