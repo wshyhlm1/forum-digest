@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bend – a language that blocks AI mistakes via proof and runs on GPUs | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-19/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>Bend – a language that blocks AI mistakes via proof and runs on GPUs</h1>
+      <p class="original-title">Bend – a language that blocks AI mistakes via proof and runs on GPUs</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 nicolas-siplis</span>
+        <span>热度 599</span>
+        <span>回复 305</span>
+        <span>2026/09/18 04:36</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49746163" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://bend-lang.com/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49746163.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>~/bend hubbenderget Bend</li><li>×1.Install curl -fsSL https://bend-lang.com/install.sh | sh 2.Add this to your AGENTS.md When using Bend: - run `bend guide` to learn it - use `LAWS.bend` to keep important rules - run `bend PROOF.bend` before committing - parallelize the code whenever possible 3.Enjoy bug-free, fast vibe-coded apps!</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">LightMachine</span>
+        
+        <span>2026/09/18 05:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Hi, I'm the author.<p>HN staff: someone posted before me. Could we change the title to 
+"Bend - a language that blocks AI mistakes via proof and runs on GPUs"?</p><p>Everyone: feel free to ask any question, but I'd be highly appreciative if you could be a bit civilized and respectful this time. I've worked on this for 1 year, nearly 16h/day, 7 days a week, and I'm giving it for free. You need not to use it. So, I'd be thankful if you could point occasional failures politely rather than throwing me in a lava pit.</p><p>Thank you!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49746605">Hi, I'm the author.<p>HN staff: someone posted before me. Could we change the title to 
+"Bend - a language that blocks AI mistakes via proof and runs on GPUs"?</p><p>Everyone: feel free to ask any question, but I'd be highly appreciative if you could be a bit civilized and respectful this time. I've worked on this for 1 year, nearly 16h/day, 7 days a week, and I'm giving it for free. You need not to use it. So, I'd be thankful if you could point occasional failures politely rather than throwing me in a lava pit.</p><p>Thank you!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49746605">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49746605" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">pdpi</span>
+        
+        <span>2026/09/18 05:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Don't know whether this is a common outcome, but I tried the "remove the walls" example, and the result was... scary. It completely changed the game so that movement is now diagonal, and made the arbitrary decision that up/down move you on the positive diagonal, and left/right move you on the negative diagonal.<p>The problem, of course, is that having only the one single "you can't win" law is severely underspecified, but the solution was too clever by half, and highlights the problem with this approach — every program will be under-specified, because, at some point, writing the laws becomes a bigger problem than writing the code itself.</p><p>This becomes a real issue because the combination of underspecified but rigid laws pushes the aI towards this sort of "creative" solution that matches the letter but not spirit of the law. In this case, the issue was obvious, but I seriously worry about what sort of shenanigans will occur in less obvious cases.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49747071">Don't know whether this is a common outcome, but I tried the "remove the walls" example, and the result was... scary. It completely changed the game so that movement is now diagonal, and made the arbitrary decision that up/down move you on the positive diagonal, and left/right move you on the negative diagonal.<p>The problem, of course, is that having only the one single "you can't win" law is severely underspecified, but the solution was too clever by half, and highlights the problem with this approach — every program will be under-specified, because, at some point, writing the laws becomes a bigger problem than writing the code itself.</p><p>This becomes a real issue because the combination of underspecified but rigid laws pushes the aI towards this sort of "creative" solution that matches the letter but not spirit of the law. In this case, the issue was obvious, but I seriously worry about what sort of shenanigans will occur in less obvious cases.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49747071">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49747071" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">LightMachine</span>
+        
+        <span>2026/09/18 06:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Exactly, "you can't win" is grossly under-specified. The goal of the demo is just to show that laws can't be broken. Yet, if that's your only law, the AI can do whatever to protect it - including changing how the character moves, or even removing the flag entirely!<p>So, yes, that's the issue with laws: they only protect what you remember to write. They're not a silver bullet. But they can still be incredibly useful, because it takes a small law to protect against entire classes of bug, covering your entire codebase. For example:</p><p>LAW: "the sum of all balances in this contract must be zero"</p><p>This one liner would have prevented Ethereum's infamous "The DAO" hack, where millions were stolen and almost undermined the entire project. But if your laws are under-specifying or ill-specifying your intents, Bend can't do anything to protect you.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49747338">Exactly, "you can't win" is grossly under-specified. The goal of the demo is just to show that laws can't be broken. Yet, if that's your only law, the AI can do whatever to protect it - including changing how the character moves, or even removing the flag entirely!<p>So, yes, that's the issue with laws: they only protect what you remember to write. They're not a silver bullet. But they can still be incredibly useful, because it takes a small law to protect against entire classes of bug, covering your entire codebase. For example:</p><p>LAW: "the sum of all balances in this contract must be zero"</p><p>This one liner would have prevented Ethereum's infamous "The DAO" hack, where millions were stolen and almost undermined the entire project. But if your laws are under-specifying or ill-specifying your intents, Bend can't do anything to protect you.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49747338">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49747338" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">DeusExMachina</span>
+        
+        <span>2026/09/18 19:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; LAW: "the sum of all balances in this contract must be zero"<p>What prevents AI from writing an arbitrary calculation that makes sure that sum is always zero while breaking a whole other bunch of assumptions?</p><p>If the answer is more laws, then this does not address the parent comment.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49752830">&gt; LAW: "the sum of all balances in this contract must be zero"<p>What prevents AI from writing an arbitrary calculation that makes sure that sum is always zero while breaking a whole other bunch of assumptions?</p><p>If the answer is more laws, then this does not address the parent comment.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49752830">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49752830" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Isinlor</span>
+        
+        <span>2026/09/18 23:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Gross, obvious exploits can be easily picked up by AI reviews.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49755633">Gross, obvious exploits can be easily picked up by AI reviews.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49755633">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49755633" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">DeusExMachina</span>
+        
+        <span>2026/09/19 01:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What AI reviews? I thought AI needed to be bound by Bend laws.<p>The AI either knows what the user wants perfectly and is able to prevent problems, or is a rougue agent that needs to be bound by laws to not misbehave. You can't have both.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49757875">What AI reviews? I thought AI needed to be bound by Bend laws.<p>The AI either knows what the user wants perfectly and is able to prevent problems, or is a rougue agent that needs to be bound by laws to not misbehave. You can't have both.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49757875">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49757875" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">yencabulator</span>
+        
+        <span>2026/09/19 01:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And then the agentic loop over the reviews will rewrite them into less obvious exploits.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49757753">And then the agentic loop over the reviews will rewrite them into less obvious exploits.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49757753">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49757753" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">skissane</span>
+        
+        <span>2026/09/18 07:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thought about automated discovery of laws in an existing codebase?<p>If you can find a law which the existing code obeys, and show it to a human, and if they agree, save it. And maybe the AI could make a decent guess as to what kind of laws would appeal to a human versus which wouldn't – a simple law identifying a fundamental constraint the system obeys is good, something really complicated or constraining something coincidentally true isn't</p><p>Or some kind of measure of coverage? you'd never want 100% – then your laws would become so complex you couldn't follow or maintain them – but if it is very low, that can be a signal to increase it</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49748226">Thought about automated discovery of laws in an existing codebase?<p>If you can find a law which the existing code obeys, and show it to a human, and if they agree, save it. And maybe the AI could make a decent guess as to what kind of laws would appeal to a human versus which wouldn't – a simple law identifying a fundamental constraint the system obeys is good, something really complicated or constraining something coincidentally true isn't</p><p>Or some kind of measure of coverage? you'd never want 100% – then your laws would become so complex you couldn't follow or maintain them – but if it is very low, that can be a signal to increase it</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49748226">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49748226" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">drfloyd51</span>
+        
+        <span>2026/09/18 09:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Discover the laws in a current code base?<p>They are usually in the “tests” folder.</p><p>So anything capable of extracting unit tests is extracting “laws”.</p><p>One might consider the test name the text of a law. And the AI fills in the details.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49749168">Discover the laws in a current code base?<p>They are usually in the “tests” folder.</p><p>So anything capable of extracting unit tests is extracting “laws”.</p><p>One might consider the test name the text of a law. And the AI fills in the details.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49749168">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49749168" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">skissane</span>
+        
+        <span>2026/09/18 10:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don’t think that’s right.<p>Unit tests check whether a specific code module is implemented correctly given its (implicit) specification.</p><p>Good “laws” are independent of the structure of the code.</p><p>Tests may be a useful source for inferring what the laws are, but much of the actual content of the tests aren’t “laws” at all.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49749419">I don’t think that’s right.<p>Unit tests check whether a specific code module is implemented correctly given its (implicit) specification.</p><p>Good “laws” are independent of the structure of the code.</p><p>Tests may be a useful source for inferring what the laws are, but much of the actual content of the tests aren’t “laws” at all.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49749419">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49749419" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">serf</span>
+        
+        <span>2026/09/18 12:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think the premise is more that if one is given a grouping/constellation of unit tests that one can derive generalized laws by looking at what behavior those tests were checking for or against.<p>if there are a dozen unit tests trying to determine if some regex can escape a sensitive area, then one can derive a generalized 'don't let the regex escape from here' type rule -- or at least you could theoretically. I'm sure in reality that'd be a big minefield much like harness self-skill-writing has been.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49750345">I think the premise is more that if one is given a grouping/constellation of unit tests that one can derive generalized laws by looking at what behavior those tests were checking for or against.<p>if there are a dozen unit tests trying to determine if some regex can escape a sensitive area, then one can derive a generalized 'don't let the regex escape from here' type rule -- or at least you could theoretically. I'm sure in reality that'd be a big minefield much like harness self-skill-writing has been.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49750345">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49750345" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">schlich</span>
+        
+        <span>2026/09/18 19:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">you might be interested in property-based testing, which somewhat enumerates tests based on invariance  and induction</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49752836">you might be interested in property-based testing, which somewhat enumerates tests based on invariance  and induction</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49752836">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49752836" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">actionfromafar</span>
+        
+        <span>2026/09/18 17:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">From the codebases I have seen the "laws" are scattered between unit tests and lots of little tests and assertions in the actual code, plus cultural norms and "do it like this" patterns.<p>But a good start could be found in the unit tests.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49751832">From the codebases I have seen the "laws" are scattered between unit tests and lots of little tests and assertions in the actual code, plus cultural norms and "do it like this" patterns.<p>But a good start could be found in the unit tests.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49751832">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49751832" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tonic_note</span>
+        
+        <span>2026/09/18 06:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah all of these attempts to try and control AI outputs by using language fail to grasp that language is itself the problem. It is a closed system with no ground truth. Words only point to other words in an endless self-referential chain. There is no "closure" in language, ambiguity cannot be erased.<p>Imo LLM researchers would benefit a <i>lot</i> by reading what continental philosophers have said on the topic of language. Barthes, Sarte, Deluze, Derrida, et. Al have a lot to say that explains why we're running into the same problems over and over.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49747554">Yeah all of these attempts to try and control AI outputs by using language fail to grasp that language is itself the problem. It is a closed system with no ground truth. Words only point to other words in an endless self-referential chain. There is no "closure" in language, ambiguity cannot be erased.<p>Imo LLM researchers would benefit a <i>lot</i> by reading what continental philosophers have said on the topic of language. Barthes, Sarte, Deluze, Derrida, et. Al have a lot to say that explains why we're running into the same problems over and over.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49747554">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49747554" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">fortzi</span>
+        
+        <span>2026/09/18 06:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Natural language is ambiguous. Specifying exactly what you want in a way that is truly verifiable is the act of coding.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49747580">Natural language is ambiguous. Specifying exactly what you want in a way that is truly verifiable is the act of coding.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49747580">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49747580" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">frank00001</span>
+        
+        <span>2026/09/18 12:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Start printing the t-shirts!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49750055">Start printing the t-shirts!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49750055">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49750055" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">shakna</span>
+        
+        <span>2026/09/18 15:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You mean t-shirts of this comic, from 2016?<p>[0] <a href="https://www.commitstrip.com/en/2016/08/25/a-very-comprehensive-and-precise-spec/" target="_blank" rel="noopener noreferrer">https://www.commitstrip.com/en/2016/08/25/a-very-comprehensi...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49751074">You mean t-shirts of this comic, from 2016?<p>[0] <a href="https://www.commitstrip.com/en/2016/08/25/a-very-comprehensive-and-precise-spec/" target="_blank" rel="noopener noreferrer">https://www.commitstrip.com/en/2016/08/25/a-very-comprehensi...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49751074">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49751074" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">corv</span>
+        
+        <span>2026/09/18 08:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Bend would make Dijkstra happy even when proof checking can’t verify if the laws are what was actually meant.<p>I actually think Asimov is more instructive here, while Gödel and Tarski tell us the tool can’t prove itself…</p><p>Nonetheless, it is a worthwhile endeavor and I hope more rigorous practices like this catch on.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49748609">Bend would make Dijkstra happy even when proof checking can’t verify if the laws are what was actually meant.<p>I actually think Asimov is more instructive here, while Gödel and Tarski tell us the tool can’t prove itself…</p><p>Nonetheless, it is a worthwhile endeavor and I hope more rigorous practices like this catch on.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49748609">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49748609" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">krapp</span>
+        
+        <span>2026/09/18 07:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think LLM researchers understand how LLMs work and what the limits of using natural language as an interface are. The problem is everyone else thinks they're basically magic, expecting them to be infinitely intuitive but also strictly deterministic, like the computer from Star Trek.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49747973">I think LLM researchers understand how LLMs work and what the limits of using natural language as an interface are. The problem is everyone else thinks they're basically magic, expecting them to be infinitely intuitive but also strictly deterministic, like the computer from Star Trek.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49747973">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49747973" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">actionfromafar</span>
+        
+        <span>2026/09/18 17:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The computer from Star Trek sounds like it could entirely plausibly have been made with LLM components and a century of harness tweaking piled on.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49751921">The computer from Star Trek sounds like it could entirely plausibly have been made with LLM components and a century of harness tweaking piled on.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49751921">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49751921" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

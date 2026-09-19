@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloudflare Quick Tunnels | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-19/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>Cloudflare Quick Tunnels</h1>
+      <p class="original-title">Cloudflare Quick Tunnels</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 jcbhmr</span>
+        <span>热度 728</span>
+        <span>回复 285</span>
+        <span>2026/09/18 22:18</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49754785" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://try.cloudflare.com/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49754785.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Now with JSON output for coding agents Localhost,meet the Internet. One command turns the server on your laptop into a public, encrypted URL on Cloudflare&#39;s edge. No account. No DNS. No open ports. $ cloudflared tunnel --url http://localhost:8000 See how it works ↓ 335+ CITIES~3S TO URL0 PORTS OPENEDFREE</li><li>Your laptop stays private.The URL goes everywhere. cloudflared opens an outbound-only connection to the nearest edge location. Traffic to your tunnel URL rides Cloudflare&#39;s network back to your machine — encrypted, DDoS-filtered, and never touching an inbound port.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">noname120</span>
+        
+        <span>2026/09/19 06:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Cloudflare Quick Tunnels have existed for more than 5 years (yes, including the anonymous quick tunnels). I copy-pasted the url of the HN link in archive.org, see for yourself: <a href="https://web.archive.org/web/20211202005430/http://try.cloudflare.com/" target="_blank" rel="noopener noreferrer">https://web.archive.org/web/20211202005430/http://try.cloudf...</a><p>Is a new vibe-coded landing page for a 5-year old product really worthy of being on the front page nowadays? There should at least be a [2021] in the title.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49761235">Cloudflare Quick Tunnels have existed for more than 5 years (yes, including the anonymous quick tunnels). I copy-pasted the url of the HN link in archive.org, see for yourself: <a href="https://web.archive.org/web/20211202005430/http://try.cloudflare.com/" target="_blank" rel="noopener noreferrer">https://web.archive.org/web/20211202005430/http://try.cloudf...</a><p>Is a new vibe-coded landing page for a 5-year old product really worthy of being on the front page nowadays? There should at least be a [2021] in the title.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49761235">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49761235" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">peter_retief</span>
+        
+        <span>2026/09/19 20:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yet so many developers do not know about it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49765970">Yet so many developers do not know about it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49765970">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49765970" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">malfist</span>
+        
+        <span>2026/09/19 06:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I did not know about them and I have a good use for them today. So I found it useful though I agree it needs the date disclaimer</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49761316">I did not know about them and I have a good use for them today. So I found it useful though I agree it needs the date disclaimer</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49761316">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49761316" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nijave</span>
+        
+        <span>2026/09/19 07:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Didn't these used to be called Argo Tunnels a long time ago? I think Argo Tunnels got repositioned for connecting to origin servers without needing an incoming connection to the origin but I thought they originally did something like this/ngrok<p>Yeah, I just checked the page
+&gt;can connect their server to the Internet with Argo Tunnel for free</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49761646">Didn't these used to be called Argo Tunnels a long time ago? I think Argo Tunnels got repositioned for connecting to origin servers without needing an incoming connection to the origin but I thought they originally did something like this/ngrok<p>Yeah, I just checked the page
+&gt;can connect their server to the Internet with Argo Tunnel for free</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49761646">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49761646" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">wbl</span>
+        
+        <span>2026/09/20 00:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There was a problem with the name: toxic mine trailings weren't what was wanted. <a href="https://en.wikipedia.org/wiki/Argo_Tunnel" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Argo_Tunnel</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49767846">There was a problem with the name: toxic mine trailings weren't what was wanted. <a href="https://en.wikipedia.org/wiki/Argo_Tunnel" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Argo_Tunnel</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49767846">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49767846" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">hypercube33</span>
+        
+        <span>2026/09/19 22:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They are useful for taking local llm models and delivering them with HTTPS to harnesses that expect it or to another machine. Other than that I'm not sure what I'd personally use them for.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49766691">They are useful for taking local llm models and delivering them with HTTPS to harnesses that expect it or to another machine. Other than that I'm not sure what I'd personally use them for.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49766691">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49766691" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">makingstuffs</span>
+        
+        <span>2026/09/19 16:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I saw the post and was literally thinking "I have been using these tunnels extensively for a couple years now"</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49764590">I saw the post and was literally thinking "I have been using these tunnels extensively for a couple years now"</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49764590">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49764590" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/09/20 02:25</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49768954"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49768954">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49768954" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">kqp</span>
+        
+        <span>2026/09/19 17:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Why do you think it’s vibe coded? Just asking to see if I can learn something. I can see it’s very standard corpo-aesthetic, uses callouts for the sake of callouts, and is horribly laggy, but corpo websites were doing all that long before AI. It also seems to be using a bunch of Cloudflare-specific terminology that I’d think would take longer to review and correct an AI on than to type yourself.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49765012">Why do you think it’s vibe coded? Just asking to see if I can learn something. I can see it’s very standard corpo-aesthetic, uses callouts for the sake of callouts, and is horribly laggy, but corpo websites were doing all that long before AI. It also seems to be using a bunch of Cloudflare-specific terminology that I’d think would take longer to review and correct an AI on than to type yourself.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49765012">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49765012" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tefkah</span>
+        
+        <span>2026/09/19 18:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Other than the general vibe, there's a number of extremely specific Claude-isms you could pick up on:<p>1. the blinking "now with JSON output for coding agents". It loves to create these blinking badges</p><p>2. "Some text, and then &lt;Text in a different color&gt;"</p><p>Then further along the page, the "Your agent needs a URL, not a laptop" has a lot of tells of just being a straight Claude (design) output</p><p>- The small all-caps "built for the agent era" eyebrow. Once you start noticing this it's EVERYWHERE</p><p>- The 01 02 03 list</p><p>If you have access to Claude you should try have it generate a landing page for a tech product. It will almost always look like this.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49765151">Other than the general vibe, there's a number of extremely specific Claude-isms you could pick up on:<p>1. the blinking "now with JSON output for coding agents". It loves to create these blinking badges</p><p>2. "Some text, and then &lt;Text in a different color&gt;"</p><p>Then further along the page, the "Your agent needs a URL, not a laptop" has a lot of tells of just being a straight Claude (design) output</p><p>- The small all-caps "built for the agent era" eyebrow. Once you start noticing this it's EVERYWHERE</p><p>- The 01 02 03 list</p><p>If you have access to Claude you should try have it generate a landing page for a tech product. It will almost always look like this.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49765151">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49765151" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rgoulter</span>
+        
+        <span>2026/09/19 22:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The punch and profound-sounding phrasing is also Claude; but pre-LLM it might make sense for a marketing page.<p>"Your laptop stays private.
+The URL goes everywhere."</p><p>A <i>URL</i> ... <i>goes</i>, does it?</p><p>I've seen it pointed out (&amp; have noticed) that anthorpomorphising like this is an LLM smell.</p><p>In this case, although "URL goes" can be valid, it's just awkward here.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49766674">The punch and profound-sounding phrasing is also Claude; but pre-LLM it might make sense for a marketing page.<p>"Your laptop stays private.
+The URL goes everywhere."</p><p>A <i>URL</i> ... <i>goes</i>, does it?</p><p>I've seen it pointed out (&amp; have noticed) that anthorpomorphising like this is an LLM smell.</p><p>In this case, although "URL goes" can be valid, it's just awkward here.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49766674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49766674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">efortis</span>
+        
+        <span>2026/09/19 20:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">One tell is: if you can code that hero there's no excuse for the silly bugs.<p>For example, the hero is fairly impressive in mobile but it's broken in desktop. And then you scroll down to the next section and there's overflowing text.</p><p>IOW, the skill level is inconsistent.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49766071">One tell is: if you can code that hero there's no excuse for the silly bugs.<p>For example, the hero is fairly impressive in mobile but it's broken in desktop. And then you scroll down to the next section and there's overflowing text.</p><p>IOW, the skill level is inconsistent.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49766071">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49766071" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jofzar</span>
+        
+        <span>2026/09/19 09:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">5 years ago imo it was less relevant, if you showed me this then I would be like "cool tech, but other then a specific scenario, why would I care"</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49762395">5 years ago imo it was less relevant, if you showed me this then I would be like "cool tech, but other then a specific scenario, why would I care"</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49762395">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49762395" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">stingraycharles</span>
+        
+        <span>2026/09/19 13:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Why is it more relevant today?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49763619">Why is it more relevant today?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49763619">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49763619" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">TIPSIO</span>
+        
+        <span>2026/09/19 00:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My wife and I have a mobile group/shared bot system where we can make mini apps and collab.<p>Anything from baby stuff, groceries, shopping, planning, wine tracker app, simple/fun/useful data things, etc…</p><p>We have Tailscale on our phones and can instantly and privately see without deployment or anything crazy via our secure VPN.</p><p>Think shared Claude Artifacts that don’t live @ Anthropic.</p><p>Tried to first do this with Cloudflare Tunnels (because I love Cloudflare), but between the broken dashboard side of Zero Trust and nightmare of Warp… it was basically impossible to setup. I guess that’s all super enterprise,  which seems to be very anti-Cloudflare philosophically to not be able to self do things.</p><p>Will check out Quick Tunnels but I think it’s missing the bigger integration offerings Tailscale has/does still.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49756985">My wife and I have a mobile group/shared bot system where we can make mini apps and collab.<p>Anything from baby stuff, groceries, shopping, planning, wine tracker app, simple/fun/useful data things, etc…</p><p>We have Tailscale on our phones and can instantly and privately see without deployment or anything crazy via our secure VPN.</p><p>Think shared Claude Artifacts that don’t live @ Anthropic.</p><p>Tried to first do this with Cloudflare Tunnels (because I love Cloudflare), but between the broken dashboard side of Zero Trust and nightmare of Warp… it was basically impossible to setup. I guess that’s all super enterprise,  which seems to be very anti-Cloudflare philosophically to not be able to self do things.</p><p>Will check out Quick Tunnels but I think it’s missing the bigger integration offerings Tailscale has/does still.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49756985">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49756985" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">theturtletalks</span>
+        
+        <span>2026/09/19 01:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Tailscale is truly a cheat code. I have a web app that I run locally to control terminals on my Mac. I access the website on my phone using the 100.xx IP address and can code on the go. No need for a Mac or iOS app.<p>You can also use Tailscale serve to get a HTTPS url like Cloudflared but it's only visible to your tailnet. Be careful using Cloudflare tunnels because they are public and bots start poking around immediately.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49757202">Tailscale is truly a cheat code. I have a web app that I run locally to control terminals on my Mac. I access the website on my phone using the 100.xx IP address and can code on the go. No need for a Mac or iOS app.<p>You can also use Tailscale serve to get a HTTPS url like Cloudflared but it's only visible to your tailnet. Be careful using Cloudflare tunnels because they are public and bots start poking around immediately.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49757202">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49757202" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">0x1ch</span>
+        
+        <span>2026/09/19 02:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Alternatively, Netbird has been a dream to use over the last half year or so. I think their server software has had some hiccups on new releases, but I stagger those updates anyways. All self hosted, similar concept to Tailscale, very good management UI baked into the self hosted product.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49757983">Alternatively, Netbird has been a dream to use over the last half year or so. I think their server software has had some hiccups on new releases, but I stagger those updates anyways. All self hosted, similar concept to Tailscale, very good management UI baked into the self hosted product.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49757983">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49757983" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">garettmd</span>
+        
+        <span>2026/09/19 02:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Netbird's great. I've been using Pangolin (<a href="https://pangolin.net/" target="_blank" rel="noopener noreferrer">https://pangolin.net/</a>) lately for my homelab. It's very similar in functionality to Netbird, but I like the UX of it better.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49758343">Netbird's great. I've been using Pangolin (<a href="https://pangolin.net/" target="_blank" rel="noopener noreferrer">https://pangolin.net/</a>) lately for my homelab. It's very similar in functionality to Netbird, but I like the UX of it better.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49758343">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49758343" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">0x1ch</span>
+        
+        <span>2026/09/19 03:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Also a very good alternative. I went on a spree and tried out all of the self hostable alternatives and this was definitely a runner up to netbird. The self hosted tailscale is also good, just not as polished as these two projects are.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49759344">Also a very good alternative. I went on a spree and tried out all of the self hostable alternatives and this was definitely a runner up to netbird. The self hosted tailscale is also good, just not as polished as these two projects are.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49759344">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49759344" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nickspacek</span>
+        
+        <span>2026/09/19 10:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Switched from Pangolin to Netbird recently and enjoy Netbird more!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49762615">Switched from Pangolin to Netbird recently and enjoy Netbird more!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49762615">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49762615" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
