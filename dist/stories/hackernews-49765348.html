@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>I built non-autoregressive decision models with RL a year ago | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-20/">返回日报</a>
+      <div class="source-chip">Hacker News #7</div>
+      <h1>I built non-autoregressive decision models with RL a year ago</h1>
+      <p class="original-title">I built non-autoregressive decision models with RL a year ago</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 nandakishor_ml</span>
+        <span>热度 1235</span>
+        <span>回复 295</span>
+        <span>2026/09/19 18:46</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49765348" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://laya.convaiinnovations.com/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49765348.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Everyone in AI right now is talking about a new kind of model: an architecture that is not autoregressive, does not generate text, and gives lightning-fast probability predictions over structured schemas.Seeing the hype online feels both validating and deeply frustrating.I worked on this literally one year back in March 2025. I spent months of hard work, sweat, and sleepless nights building it, published an arXiv paper (arXiv:2503.23303), released the model weights on Hugging Face (sales-conversion-model-reinf-learning), published the open dataset (saas-sales-conversations), built a PyPI package, and posted the whole approach on Reddit (r/LocalLLaMA discussion).Then in September 2025, I published a second paper (arXiv:2510.01237), formalizing the framework for schema-based decisions guided by reinforcement learning. The guiding brain in my system was always reinforcement learning, not just an embedding model or an autoregressive LLM.And then in September 2026, a well-funded frontier lab called TypeSafe AI (founded by Diogo Almeida, a co-inventor of ChatGPT at OpenAI) launched Jev. They proposed the exact same non-autoregressive decision concept as if it was a brand-new scientific breakthrough. Except they launched without technical papers, without open weights, and with zero open training datasets.My earlier model used PPO over sequence representations to output turn-by-turn conversion trajectories (probabilities from 0.0 to 1.0) in vertical sales conversations. Jev generalized parallel sampling using what they called RLCD (Reinforcement Learning for Calibrated Decisions) to output confidence distributions and schema choices horizontally, charging $0.042 per million input tokens with typical response times around 150 ms.Instead of staying bitter, I decided to take everything I learned, fix every architectural limitation of the old approach, and build a completely open, horizontal System 1 decision model family: Laya.And because we built it properly on bidirectional encoders, our models run in 32.8 milliseconds on a single GPU (7.2 ms/question batched), making it 6 to 8 times faster than Jev, with full support for over 100 languages, zero API subscription costs, and 100% open-source Apache 2.0 weights.1. The Core Realization: System 1 vs System 2Every modern AI pipeline has a giant bottleneck: we use generative LLMs for simple reflex decisions.When a customer support ticket arrives, or an email hits your inbox, or a user submits a prompt to your API, you usually only need to answer simple, structured questions:Which department should this ticket route to?Is this incoming email a phishing attack or spam?Is this prompt trying to jailbreak or inject instructions?How urgent is this issue on an ordinal rubric (0 to 3)?Does this query require code execution or a simple factual reply?Calling an 8B, 70B, or frontier generative LLM for this is complete overkill. You wait 500 ms to 2,000 ms for tokens to stream out, spend real money on inference, and then have to write regex or JSON parsers to extract a clean label from free-form text. Worst of all, LLMs love to hallucinate and generate fake confidence. When an LLM outputs &quot;confidence: 0.95&quot;, it is just predicting tokens that sound confident. There is zero mathematical calibration behind it.We needed a model that works like the human brain&#39;s System 1: instant reflex decisions with honest, calibrated probabilities, taking only 30 to 35 milliseconds on standard commodity hardware.2. The Three Decision PrimitivesLaya evaluates typed questions over any state (raw text, email, ticket, or JSON document) in a single forward pass. It relies on three primitives:choice: Pick one option from a dictionary of criteria. Returns the selected key, probability distribution across all options, and a calibrated confidence score.score: Place the state on an ordinal rubric (levels 0, 1, 2, ...). Returns the expected level, the distribution over rubric ranks, and confidence.noul: A direct boolean question returning calibrated probability P(true) from 0.0 to 1.0 (with P(false) = 1 - P(true) by construction).Because the output space consists purely of probabilities and numbers, the model never generates text, cannot hallucinate, and schema violations or malformed JSON are physically impossible.3. The Three Checkpoints &amp; Bundled Hub ArchitectureOne model cannot be optimal for every task and language. We released three specialized checkpoints, now consolidated under a single repository hub on Hugging Face:CheckpointBackbone EncoderParamsContextPrimary Strengthconvaiinnovations/layaModernBERT-large421M512English text classification, guardrails, email triageconvaiinnovations/laya-multilingualmmBERT-base (256k vocab)322M1024 (up to 8k)100+ languages, 2.2x faster, cross-lingual NLIconvaiinnovations/laya-typed-decisionsModernBERT-large421M1024Agent observability, customer service, invoice processing, security alerts (0.766 acc)Selective Subfolder DownloadsRather than forcing users to manage three separate repositories or download 2.5 GB of combined weights, the main repository convaiinnovations/laya bundles all three. Using Hugging Face&#39;s allow_patterns, Laya&#39;s SDK downloads only the specific subfolder requested:# Downloads English model (~808 MB) agent_en = laya.load(&quot;convaiinnovations/laya&quot;)</li><li># Downloads ONLY the multilingual subfolder (~647 MB), not the entire 2.5 GB bundle agent_ml = laya.load(&quot;convaiinnovations/laya&quot;, subfolder=&quot;multilingual&quot;)4. Why Routing Is Essential: The Multi-Script RealityOne of the most eye-opening findings from our 51-language sweep on the MASSIVE benchmark (20 options, random baseline = 0.050) was how English models fail outside Latin script.ModernBERT-large&#39;s 50,000-token English BPE vocabulary simply shreds non-Latin alphabets:Khmer: 0.000 accuracy at 0.952 mean confidence. Not one correct decision in 100 questions, while reporting ~95% confidence.Armenian: 0.050 accuracy (exact coin-flip random) at 0.885 confidence.Hebrew: 0.060 accuracy at 0.964 confidence.Bengali: 0.080 accuracy at 0.945 confidence.Hindi: 0.100 accuracy at 0.941 confidence.This is the crucial lesson: the model&#39;s own confidence gives no warning when it cannot read the input script. Across 51 languages, the English checkpoint&#39;s mean confidence never drops below 0.885, regardless of whether its accuracy is 82% or 0%.Therefore, confidence gating cannot protect you. The decision of which model to use must be made before the forward pass.Sub-Millisecond Pure Python RoutingLaya includes a built-in Router that inspects the Unicode scripts of incoming text across 22 alphabets (Devanagari, CJK Han, Cyrillic, Arabic, Hebrew, Tamil, Thai, etc.) and analyzes Latin stopword distributions:Standard English text: 0.09 ms detection overhead.Devanagari / Indic text: 0.54 ms detection overhead.Large 200-row nested JSON documents: 0.73 ms detection overhead.Compared to a 33 ms forward pass, routing overhead is negligible (&lt;2%). And with Router(preload=True), all required models stay resident in VRAM/RAM, completely eliminating the 7 to 10-second cold-swap penalty when traffic alternates between languages.from laya import Router</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">johnfn</span>
+        
+        <span>2026/09/20 02:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It’s a tale as old as time — people don’t understand that marketing and branding are just as important, if not more so, than the product. Jev is exceptionally-well branded. Anyone can look at the webpage and understand it, and the implications, instantly.<p>OPs “marketing” is a single post on Reddit titled “ Predicting sales conversion probability from conversations using pure Reinforcement Learning”. Can you understand what that means? I can’t, and I consider myself reasonably technical. Is it obvious it has the same implications as Jev? Again, no idea. And it was just a single post on a subreddit that I don’t even browse! I see people on this thread saying “Jev is just BERT”. Sure, and Dropbox is just a ftp account mounted with curlftpfs!</p><p>I do feel bad for the author for finding something cool and being unable to brand it. But the full definition of “product” INCLUDES being able to coherently communicate it. In some sense the branding is just as much the “breakthrough” as the model.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769116">It’s a tale as old as time — people don’t understand that marketing and branding are just as important, if not more so, than the product. Jev is exceptionally-well branded. Anyone can look at the webpage and understand it, and the implications, instantly.<p>OPs “marketing” is a single post on Reddit titled “ Predicting sales conversion probability from conversations using pure Reinforcement Learning”. Can you understand what that means? I can’t, and I consider myself reasonably technical. Is it obvious it has the same implications as Jev? Again, no idea. And it was just a single post on a subreddit that I don’t even browse! I see people on this thread saying “Jev is just BERT”. Sure, and Dropbox is just a ftp account mounted with curlftpfs!</p><p>I do feel bad for the author for finding something cool and being unable to brand it. But the full definition of “product” INCLUDES being able to coherently communicate it. In some sense the branding is just as much the “breakthrough” as the model.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769116">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769116" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">calebkaiser</span>
+        
+        <span>2026/09/20 04:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is also a really common thing in ML specifically. We joke about getting Schmidthuber'd, which is when Jurgen Schmidthuber (sometimes correctly) announces that he or one of his colleagues actually proposed your thing 37 years ago in a Japanese linguists journal.<p>Statistical modeling, from simple classical stuff up to modern deep learning, just has this dynamic where the theory is rich and bottomless, but the actual components of implementation are pretty neat and compact. So for any given idea, there are probably 20,000 other people who have had the same intuition, just with subtly different application or implementation. Add in that depending on what your particular flavor of research is, you might name an almost identical implementation something completely different. And it leads to a huge amount of sour grapes whenever anyone's idea really garners attention.</p><p>If you listen to any podcast with a founder in the ML space who has been in it for long enough, they will invariably say at some point "We actually developed xyz over a year before OpenAI"</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769850">This is also a really common thing in ML specifically. We joke about getting Schmidthuber'd, which is when Jurgen Schmidthuber (sometimes correctly) announces that he or one of his colleagues actually proposed your thing 37 years ago in a Japanese linguists journal.<p>Statistical modeling, from simple classical stuff up to modern deep learning, just has this dynamic where the theory is rich and bottomless, but the actual components of implementation are pretty neat and compact. So for any given idea, there are probably 20,000 other people who have had the same intuition, just with subtly different application or implementation. Add in that depending on what your particular flavor of research is, you might name an almost identical implementation something completely different. And it leads to a huge amount of sour grapes whenever anyone's idea really garners attention.</p><p>If you listen to any podcast with a founder in the ML space who has been in it for long enough, they will invariably say at some point "We actually developed xyz over a year before OpenAI"</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769850">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769850" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">hiddencost</span>
+        
+        <span>2026/09/20 12:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Schmidhuber rarely ever executed the idea correctly, which makes his claims particularly obnoxious.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49772447">Schmidhuber rarely ever executed the idea correctly, which makes his claims particularly obnoxious.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49772447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49772447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">robrenaud</span>
+        
+        <span>2026/09/20 03:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;  “Predicting sales conversion probability from conversations using pure Reinforcement Learning”. Can you understand what that means?<p>I can understand it, and it wouldn't excite me at all.</p><p>Jev has a beautiful API and is advertised as something much more general.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769358">&gt;  “Predicting sales conversion probability from conversations using pure Reinforcement Learning”. Can you understand what that means?<p>I can understand it, and it wouldn't excite me at all.</p><p>Jev has a beautiful API and is advertised as something much more general.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769358">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769358" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">verdverm</span>
+        
+        <span>2026/09/20 03:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The title doesn't reflect the content of the paper or project, which uses things like RAG and an orchestrator, so more than "pure RL"<p>(the project before it was rehashed into Laya since Jev was released)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769532">The title doesn't reflect the content of the paper or project, which uses things like RAG and an orchestrator, so more than "pure RL"<p>(the project before it was rehashed into Laya since Jev was released)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769532">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769532" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">XTXinverseXTY</span>
+        
+        <span>2026/09/20 04:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">OP's was leaky slop from day one [0][1], as is his article [2]<p>It is arrogant and entitled for the author to take credit for the concept of RL over sequence embeddings, and none of the work that went into pretraining, not to mention the egregious target leakage [1]</p><p>[0]: Author fails to grasp the concept of virtual environments <a href="https://www.reddit.com/r/LocalLLaMA/comments/1kl0uvv/comment/ms0n31z/?utm_source=share&amp;utm_medium=web3x&amp;utm_name=web3xcss&amp;utm_term=1&amp;utm_content=share_button" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/LocalLLaMA/comments/1kl0uvv/comment...</a></p><p>[1]: his `train.py` has `outcome` as a model input (conversation_metrics built from _parse_conversation which includes outcome): <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L73" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a>
+<a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L170" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>[2]: 100% of this post is AI-generated <a href="https://www.pangram.com/history/97e0be84-391d-46b8-9c16-2d8fcf8aebf5?ucc=X4GRCBL3tlK" target="_blank" rel="noopener noreferrer">https://www.pangram.com/history/97e0be84-391d-46b8-9c16-2d8f...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49770027">OP's was leaky slop from day one [0][1], as is his article [2]<p>It is arrogant and entitled for the author to take credit for the concept of RL over sequence embeddings, and none of the work that went into pretraining, not to mention the egregious target leakage [1]</p><p>[0]: Author fails to grasp the concept of virtual environments <a href="https://www.reddit.com/r/LocalLLaMA/comments/1kl0uvv/comment/ms0n31z/?utm_source=share&amp;utm_medium=web3x&amp;utm_name=web3xcss&amp;utm_term=1&amp;utm_content=share_button" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/LocalLLaMA/comments/1kl0uvv/comment...</a></p><p>[1]: his `train.py` has `outcome` as a model input (conversation_metrics built from _parse_conversation which includes outcome): <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L73" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a>
+<a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L170" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>[2]: 100% of this post is AI-generated <a href="https://www.pangram.com/history/97e0be84-391d-46b8-9c16-2d8fcf8aebf5?ucc=X4GRCBL3tlK" target="_blank" rel="noopener noreferrer">https://www.pangram.com/history/97e0be84-391d-46b8-9c16-2d8f...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49770027">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49770027" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">OceanKing</span>
+        
+        <span>2026/09/20 19:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For anyone else verifying, the target leakage appears to be as follows:<p>1)`outcome` is part of `metrics` at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L226" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a> and <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L272" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>2) `metrics` goes into `ConversationState` at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L285" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a> and <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L238" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>3) `metrics` (including `outcome`) makes its way into `ConversationState.state_vector` at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L73" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a>, and is returned from environment `step()` and `reset()` functions at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L243" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a> and <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L290" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>4) model ingests `state_vector` as input at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L537" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49774719">For anyone else verifying, the target leakage appears to be as follows:<p>1)`outcome` is part of `metrics` at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L226" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a> and <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L272" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>2) `metrics` goes into `ConversationState` at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L285" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a> and <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L238" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>3) `metrics` (including `outcome`) makes its way into `ConversationState.state_vector` at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L73" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a>, and is returned from environment `step()` and `reset()` functions at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L243" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a> and <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L290" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p><p>4) model ingests `state_vector` as input at <a href="https://huggingface.co/DeepMostInnovations/sales-conversion-model-reinf-learning/blob/main/train.py#L537" target="_blank" rel="noopener noreferrer">https://huggingface.co/DeepMostInnovations/sales-conversion-...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49774719">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49774719" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">WhitneyLand</span>
+        
+        <span>2026/09/21 00:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">How many people actually read the full post?  It builds up this amazing underdog story where all the benchmarks are taken as victories, and then only late in the post and section 6 is it finally revealed that the only way they won was to fine tune directly on the benchmark.<p>This comparison doesn’t even make sense.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49777313">How many people actually read the full post?  It builds up this amazing underdog story where all the benchmarks are taken as victories, and then only late in the post and section 6 is it finally revealed that the only way they won was to fine tune directly on the benchmark.<p>This comparison doesn’t even make sense.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49777313">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49777313" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">TomGarden</span>
+        
+        <span>2026/09/20 04:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not to go all meta but the very post were commenting in is also good marketing and branding.<p>So while the initial post was not good, the author is currently succeeding to some extent at what you're describing</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769991">Not to go all meta but the very post were commenting in is also good marketing and branding.<p>So while the initial post was not good, the author is currently succeeding to some extent at what you're describing</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769991">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769991" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">glerk</span>
+        
+        <span>2026/09/20 11:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Predicting sales conversion probability from conversations<p>That's not just bad marketing, it's an example of anti-marketing.</p><p>Sales conversion? That makes me think of an old car's salesman trying to scam me into buying something I don't want. I positively don't want to read this paper based on the title.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49772178">&gt; Predicting sales conversion probability from conversations<p>That's not just bad marketing, it's an example of anti-marketing.</p><p>Sales conversion? That makes me think of an old car's salesman trying to scam me into buying something I don't want. I positively don't want to read this paper based on the title.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49772178">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49772178" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">bennett_dev</span>
+        
+        <span>2026/09/20 03:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Especially with „ sales conversion probability“ it just doesn’t sound universal to other issues - there’s tons of unique models for specific use cases</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769342">Especially with „ sales conversion probability“ it just doesn’t sound universal to other issues - there’s tons of unique models for specific use cases</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769342">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769342" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">anonzzzies</span>
+        
+        <span>2026/09/20 03:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think OP, as said on Reddit, wanted to get a lot of investment and ride the wave but did not know how to. This was said as such on Reddit today by them. This is indeed a shame especially it was a year earlier but indeed a lack of marketing; many people on Reddit told what to do in this case, in hindsight, it’s worth checking it out imho.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769663">I think OP, as said on Reddit, wanted to get a lot of investment and ride the wave but did not know how to. This was said as such on Reddit today by them. This is indeed a shame especially it was a year earlier but indeed a lack of marketing; many people on Reddit told what to do in this case, in hindsight, it’s worth checking it out imho.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769663">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769663" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">verdverm</span>
+        
+        <span>2026/09/20 04:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">this is a prior HN post from OP adding color to their underlying motivations<p><a href="https://news.ycombinator.com/item?id=49674396" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49674396</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769826">this is a prior HN post from OP adding color to their underlying motivations<p><a href="https://news.ycombinator.com/item?id=49674396" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49674396</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769826">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769826" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">victor9000</span>
+        
+        <span>2026/09/20 03:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's also well established that an algorithm or architecture alone are not enough to produce a useful model.  The same architecture can produce vastly different results depending on the training data, post-training, harness, etc.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769344">It's also well established that an algorithm or architecture alone are not enough to produce a useful model.  The same architecture can produce vastly different results depending on the training data, post-training, harness, etc.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769344">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769344" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tinyhouse</span>
+        
+        <span>2026/09/20 03:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You're right but it's not the full picture. It's much easier to market when you have a name brand behind you. Not sure the author would've done much better even if he messaged it better. It's like the difference between someone random saying something smart on Twitter and no one gives a shit and Karapthy saying the same thing and everyone talks about it. I'm not saying it in a bad way - those with clout around them earned the people's trust by doing something right. But it's not easy to get there and there are many people doing great things that get very little publicity if at all. Not to mention in this case Jev came from a startup that raised a lot of money and can spend it on good marketing.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49769513">You're right but it's not the full picture. It's much easier to market when you have a name brand behind you. Not sure the author would've done much better even if he messaged it better. It's like the difference between someone random saying something smart on Twitter and no one gives a shit and Karapthy saying the same thing and everyone talks about it. I'm not saying it in a bad way - those with clout around them earned the people's trust by doing something right. But it's not easy to get there and there are many people doing great things that get very little publicity if at all. Not to mention in this case Jev came from a startup that raised a lot of money and can spend it on good marketing.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49769513">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49769513" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">mcapodici</span>
+        
+        <span>2026/09/20 07:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1052 pts on HN. I'd say they are pretty good at marketing actually.<p>While they may not initially done well they are certainly riding this wave.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49771179">1052 pts on HN. I'd say they are pretty good at marketing actually.<p>While they may not initially done well they are certainly riding this wave.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49771179">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49771179" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">onion2k</span>
+        
+        <span>2026/09/20 13:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>1052 pts on HN. I'd say they are pretty good at marketing actually.</i><p>HN readers are awesome at saying something is great and upvoting it, but unless HN readers are your market it means absolutely nothing. Marketing is as much about putting your message to the right audience as it is about saying the right thing.</p><p>This is made more complicated because a group as diverse as HN readers probably <i>does</i> contain some people who are in your target market, to be fair. The problem is that you're getting a strong signal from the whole cohort rather than the bit you're interested in, and it's <i>really</i> easy to conflate that with a sign of success.</p><p>As always with any startup activity, unless people are actually giving you their money it doesn't count and you should consider it a vanity metric.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49772848"><i>1052 pts on HN. I'd say they are pretty good at marketing actually.</i><p>HN readers are awesome at saying something is great and upvoting it, but unless HN readers are your market it means absolutely nothing. Marketing is as much about putting your message to the right audience as it is about saying the right thing.</p><p>This is made more complicated because a group as diverse as HN readers probably <i>does</i> contain some people who are in your target market, to be fair. The problem is that you're getting a strong signal from the whole cohort rather than the bit you're interested in, and it's <i>really</i> easy to conflate that with a sign of success.</p><p>As always with any startup activity, unless people are actually giving you their money it doesn't count and you should consider it a vanity metric.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49772848">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49772848" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">derwiki</span>
+        
+        <span>2026/09/20 22:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I would have clicked sooner if it was titled “I built Jev a year ago”; instead, I waited until this had 1400 points to see what all the fuss was about</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49776120">I would have clicked sooner if it was titled “I built Jev a year ago”; instead, I waited until this had 1400 points to see what all the fuss was about</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49776120">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49776120" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">porridgeraisin</span>
+        
+        <span>2026/09/20 04:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think their problem is more not being cited by the team at typesafe, as in general academic politeness. On the one hand you have the charitable assumption that they developed it independently. On the other hand, my opinion is that it is naive to expect companies to do that even if they took inspo from it, especially when this is a core product theme, and not just some supporting infra. They will of course market it as their own. If they ever release a technical report, they might cite it there, but there is no way their landing page and announcement tweet cites it.<p>Also, the way highly empirical fields like ML work is that it could very well be the case that typesafe had to do a _lot_ of work to improve this one, and in this field it ends up different enough that they feel they are doing something entirely novel[1]. I am not endorsing that 100%, but that happens a lot even between academics. In many cases it is valid.</p><p>[1] For example, this guys implementation seems to have atleast one serious issue, as {solution to OLS} points out in a sibling comment: <a href="https://news.ycombinator.com/item?id=49770027" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49770027</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49770060">I think their problem is more not being cited by the team at typesafe, as in general academic politeness. On the one hand you have the charitable assumption that they developed it independently. On the other hand, my opinion is that it is naive to expect companies to do that even if they took inspo from it, especially when this is a core product theme, and not just some supporting infra. They will of course market it as their own. If they ever release a technical report, they might cite it there, but there is no way their landing page and announcement tweet cites it.<p>Also, the way highly empirical fields like ML work is that it could very well be the case that typesafe had to do a _lot_ of work to improve this one, and in this field it ends up different enough that they feel they are doing something entirely novel[1]. I am not endorsing that 100%, but that happens a lot even between academics. In many cases it is valid.</p><p>[1] For example, this guys implementation seems to have atleast one serious issue, as {solution to OLS} points out in a sibling comment: <a href="https://news.ycombinator.com/item?id=49770027" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=49770027</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49770060">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49770060" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">d--b</span>
+        
+        <span>2026/09/20 07:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I feel like a HN post hitting 1000+ points is a good way to catch up, communication wise.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49771189">I feel like a HN post hitting 1000+ points is a good way to catch up, communication wise.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49771189">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49771189" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
