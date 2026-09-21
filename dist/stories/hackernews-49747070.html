@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to Write with an LLM | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-21/">返回日报</a>
+      <div class="source-chip">Hacker News #7</div>
+      <h1>How to Write with an LLM</h1>
+      <p class="original-title">How to Write with an LLM</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 joeriddles</span>
+        <span>热度 728</span>
+        <span>回复 404</span>
+        <span>2026/09/18 05:48</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49747070" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://sockpuppet.org/blog/2026/09/17/how-to-write-with-an-llm/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49747070.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Two simple rules that let LLMs streamline and improve your writing without pasteurizing and jacking it with corn syrup. It’s tricky to write about writing. It comes across as a brag; you’re implying that you write well. Maybe you do, and maybe you don’t, but there’s for damned sure a quorum of critics on the Internet somewhere that think you suck at it. I’m vain and insecure like everybody else and find writing this piece weirdly unpleasant. But I’m getting over myself and getting this down because this advice is important, hard to argue with, and straightforward. Readers can detect LLM words in the parts per trillion. However much work you put into scuffing up and humanizing it, an LLM paragraph will register to much of your audience not as writing but as output. So, first the bad news: you have to write for yourself. But LLMs are still extraordinarily useful. It’s just you need to use them like a copyeditor rather than a ghostwriter. So, step one of my method: write your piece. Then, step two: feed it to a good model to find flaws. But before we talk about how that works, there are two rules you need to understand. They’ll ward off LLM-creep that will knock you into the uncanny valley between expression and output and knock you out of your reader’s attention. Rule Number One: You may not use a single word an LLM suggests to you. Breaking this rule is what’s going to get you into trouble. Reason being: frontier models are supernaturally good at selecting pleasing turns of phrase. It’s sort of their whole thing. The problems with what models suggest are subtle. Think of it this way: frontier models are wedged in a mode where everything they write is a magazine headline. Headlines are good, but you’d wonder about someone who wrote an article with dozens of them. So I think that as a form of intellectual personal protective equipment you should adopt the rule that any specific turn of phrase an LLM suggests is off limits. Be strict about the rule! The whole premise here is that you’re not going to reliably spot all the ways frontier models will try to turn your writing into Velveeta. Even if you like the words, even if you’re sure they’re better than what you already have, LLM-generated phrases are DQ’d. Rule Number Two: Avoid encouragement LLMs also infect your writing through influence campaigns. This is a much subtler problem, and the damage is less obvious, but it’s still a way in which LLMs will make your writing worse, and if that’s going to be the outcome, you might as well not enlist LLMs at all. The issue: hand any piece of writing off to an LLM, and it replies “that’s gold, Jerry!” But that’s not what you need to hear! In your first draft, most of your paragraphs are bad, your topic flow is incoherent, and you’ve got at least 750 words you don’t need. The model encourages you about your overall structure. Then, later, about paragraphs and transitions. Then word choices and metaphors. Pop culture references. They’re bad! All bad! Don’t listen! Here’s how this is going to fuck you. You’re going to double down on all your first-draft impulses. But that’s not normally what you’d do. You’d edit, rethink, and replace paragraphs. Those rethinks are load-bearing parts of your voice. Readers won’t put their fingers on what’s wrong, but they’ll sense that you’ve become artificially-flavored. For a couple years I opened every copyediting prompt with the lie that I am not the author, but instead the editor of an online publication, screening pieces for inclusion. This helps, but the model usually overshoots, overfitting to the “goals” of my “publication”. So for now, my best practical advice is: forbid the model from encouragement, and then be hypervigilant about praise. So, What Can These Things Do? They’re excellent at flagging problems. Boy, do you have a lot of them. You can spot them mechanically, but that’s tedious and exhausting work. The models don’t get tired. So they’re better than you at noticing:</li><li>You’re overusing (or, if you’re taking the LLM’s word for everything, maybe underusing) passive voice, nominalizing your verbs or burying their action, and repeating the same turns of phrase or word choices.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">semiquaver</span>
+        
+        <span>2026/09/18 20:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This would sound insane to me from two years ago but I have recently started insisting on writing all my own commit messages and pull request descriptions. I do usually have an agent review them for factual accuracy, but not rephrase them.<p>It slows things down a bit, but in the best possible way. It has helped immensely to improve the depth of my understanding of the agent-generated code. When agents are doing everything its way too easy to “skim” diffs and not really absorb them.</p><p>I always prided myself on my technical writing, and commit messages and PRs were a great place to hone that skill. I found that I missed it and my work is better now I’ve reclaimed that part of my old job back.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49753666">This would sound insane to me from two years ago but I have recently started insisting on writing all my own commit messages and pull request descriptions. I do usually have an agent review them for factual accuracy, but not rephrase them.<p>It slows things down a bit, but in the best possible way. It has helped immensely to improve the depth of my understanding of the agent-generated code. When agents are doing everything its way too easy to “skim” diffs and not really absorb them.</p><p>I always prided myself on my technical writing, and commit messages and PRs were a great place to hone that skill. I found that I missed it and my work is better now I’ve reclaimed that part of my old job back.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49753666">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49753666" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">LeafItAlone</span>
+        
+        <span>2026/09/19 02:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A big win of LLMs in my book is the absolute reduction of commit messages with just “fixes” or “updates”. Commit messages have become more meaningful and useful, even if far from perfect.<p>We have one dev who uses LLMs to write the code, but still commits by hand. Most of his messages are of the type above, and none of them are useful.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49758142">A big win of LLMs in my book is the absolute reduction of commit messages with just “fixes” or “updates”. Commit messages have become more meaningful and useful, even if far from perfect.<p>We have one dev who uses LLMs to write the code, but still commits by hand. Most of his messages are of the type above, and none of them are useful.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49758142">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49758142" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">vova_hn2</span>
+        
+        <span>2026/09/19 18:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think that the idea of generating a commit message based on the content (diff) of the commit is fundamentally wrong.<p>Even before coding harnesses become mainstream, a lot of tools offered to automatically generate commit messages based on the diff (I think JetBrains IDEs started to offer it very early) and I always cringed when I've seen it.</p><p>The reason why I don't like diff-base commit messages is because they are <i>redundant</i>. If I want an LLM-generated summary of the diff, I can easily generate it myself, there is absolutely no reason to put it in the commit message.</p><p>What I <i>would</i> like to see in the commit message is some additional context that is not a part of the diff. I don't need to read <i>what</i> has changed, because I can already can see it in the diff (or get an LLM to summarize it for me). But I often do need to understand <i>why</i> this change was made. What were they trying to achieve? That's the important part that is not contained in the diff itself. And this is the part that diff-base commits rarely contain.</p><p>I think that even something simple like a link to a Jira (or other bugtracker ticket) is much more helpful than diff summary. Maybe instead of "fix" or "update" you could write just a couple of words about <i>what</i> are you trying to fix and <i>why</i> does it need updated. Still better, than a diff-summary.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49765190">I think that the idea of generating a commit message based on the content (diff) of the commit is fundamentally wrong.<p>Even before coding harnesses become mainstream, a lot of tools offered to automatically generate commit messages based on the diff (I think JetBrains IDEs started to offer it very early) and I always cringed when I've seen it.</p><p>The reason why I don't like diff-base commit messages is because they are <i>redundant</i>. If I want an LLM-generated summary of the diff, I can easily generate it myself, there is absolutely no reason to put it in the commit message.</p><p>What I <i>would</i> like to see in the commit message is some additional context that is not a part of the diff. I don't need to read <i>what</i> has changed, because I can already can see it in the diff (or get an LLM to summarize it for me). But I often do need to understand <i>why</i> this change was made. What were they trying to achieve? That's the important part that is not contained in the diff itself. And this is the part that diff-base commits rarely contain.</p><p>I think that even something simple like a link to a Jira (or other bugtracker ticket) is much more helpful than diff summary. Maybe instead of "fix" or "update" you could write just a couple of words about <i>what</i> are you trying to fix and <i>why</i> does it need updated. Still better, than a diff-summary.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49765190">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49765190" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/09/19 18:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is why, if you have the agent generate the commit message at all, <i>it has to be the same agent that wrote the code, in the same session</i>.<p>I usually have it lead with a paragraph or two of context on why the change was made (though I often use it as just a tool to turn my rambling on that question into proper English), followed by a couple paragraphs of "abstract" explaining the change (because an LLM-generated summary reviewed by the person who made the commit is better than something which the person reading can get themselves).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49765407">This is why, if you have the agent generate the commit message at all, <i>it has to be the same agent that wrote the code, in the same session</i>.<p>I usually have it lead with a paragraph or two of context on why the change was made (though I often use it as just a tool to turn my rambling on that question into proper English), followed by a couple paragraphs of "abstract" explaining the change (because an LLM-generated summary reviewed by the person who made the commit is better than something which the person reading can get themselves).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49765407">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49765407" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">adastra22</span>
+        
+        <span>2026/09/20 17:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't see how that would improve the situation? If I do it with the same agent/same context, it tends to just report what it did. Which is the diff, repeated in prose.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49774016">I don't see how that would improve the situation? If I do it with the same agent/same context, it tends to just report what it did. Which is the diff, repeated in prose.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49774016">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49774016" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/09/20 17:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The agent is usually told why it was making the change (I at least tend to start my prompts with a description of the problem we're solving), so, if prompted correctly, it can lead with "there was a bug, we root-caused it and here's what the root-cause was", then explain what the fix entailed.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49774140">The agent is usually told why it was making the change (I at least tend to start my prompts with a description of the problem we're solving), so, if prompted correctly, it can lead with "there was a bug, we root-caused it and here's what the root-cause was", then explain what the fix entailed.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49774140">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49774140" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pc86</span>
+        
+        <span>2026/09/20 23:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>But I often do need to understand why this change was made.</i><p>This is the reason (and IMO the <i>only</i> reason) code should be commented. The why can often be hundreds of characters explaining technical limitations at the time, business considerations, or even just "we know this will break in a non-trivial number of instances but it's an incremental step forward to our end goal so we're just doing it."</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49777025">&gt; <i>But I often do need to understand why this change was made.</i><p>This is the reason (and IMO the <i>only</i> reason) code should be commented. The why can often be hundreds of characters explaining technical limitations at the time, business considerations, or even just "we know this will break in a non-trivial number of instances but it's an incremental step forward to our end goal so we're just doing it."</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49777025">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49777025" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/09/19 21:36</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49766501"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49766501">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49766501" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">grayxu</span>
+        
+        <span>2026/09/20 11:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">true</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49772374">true</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49772374">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49772374" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">this_user</span>
+        
+        <span>2026/09/19 05:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not sure that Claude's "Realigned the shape of the load-bearing ownership gate to reduce the blast radius of the design contract; confirmed, not assumed" is more meaningful than "fix".</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49760602">I'm not sure that Claude's "Realigned the shape of the load-bearing ownership gate to reduce the blast radius of the design contract; confirmed, not assumed" is more meaningful than "fix".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49760602">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49760602" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">skissane</span>
+        
+        <span>2026/09/19 12:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I'm not sure that Claude's "Realigned the shape of the load-bearing ownership gate to reduce the blast radius of the design contract; confirmed, not assumed" is more meaningful than "fix".<p>For PR/commit descriptions, I mainly use Claude Sonnet 4.5. It isn’t perfect, but it produces significantly less of this weird gibberish than 5.x models or even Opus 4.x do</p><p>I also use an iterative process in which it writes the description, I read it, and then either manually edit it or ask it to make changes</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49763295">&gt; I'm not sure that Claude's "Realigned the shape of the load-bearing ownership gate to reduce the blast radius of the design contract; confirmed, not assumed" is more meaningful than "fix".<p>For PR/commit descriptions, I mainly use Claude Sonnet 4.5. It isn’t perfect, but it produces significantly less of this weird gibberish than 5.x models or even Opus 4.x do</p><p>I also use an iterative process in which it writes the description, I read it, and then either manually edit it or ask it to make changes</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49763295">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49763295" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">my-next-account</span>
+        
+        <span>2026/09/19 12:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I use Astra at Very High, and shit is still bad. It doesn't actually understand anything, so it often says things which are clearly not needed to be stated. Recently, I've learned that I have very high standards for these things. For example, "fixes" as a commit msg just is NOT acceptable and would never fly where I work.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49763418">I use Astra at Very High, and shit is still bad. It doesn't actually understand anything, so it often says things which are clearly not needed to be stated. Recently, I've learned that I have very high standards for these things. For example, "fixes" as a commit msg just is NOT acceptable and would never fly where I work.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49763418">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49763418" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rrr_oh_man</span>
+        
+        <span>2026/09/19 17:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Very high does not improve the model, fyi.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49764902">Very high does not improve the model, fyi.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49764902">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49764902" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">my-next-account</span>
+        
+        <span>2026/09/19 19:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Wat, what am I paying for then?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49765809">Wat, what am I paying for then?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49765809">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49765809" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">adastra22</span>
+        
+        <span>2026/09/20 17:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A few things, but generally more chain of thought before generating a response. So the model is tuned to think more. Given that what it outputs for this task is a summary of its thinking, tuning it to think more will just make a more verbose, less useful commit message.<p>Tune your model parameters to what is right for the task, not the highest you can afford.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49774048">A few things, but generally more chain of thought before generating a response. So the model is tuned to think more. Given that what it outputs for this task is a summary of its thinking, tuning it to think more will just make a more verbose, less useful commit message.<p>Tune your model parameters to what is right for the task, not the highest you can afford.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49774048">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49774048" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mitxela</span>
+        
+        <span>2026/09/19 21:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Dario's yacht and FOMO.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49766487">Dario's yacht and FOMO.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49766487">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49766487" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rrr_oh_man</span>
+        
+        <span>2026/09/19 22:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Arguably, your LLM provider might be paying you, in a sense</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49766841">Arguably, your LLM provider might be paying you, in a sense</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49766841">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49766841" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oblio</span>
+        
+        <span>2026/09/20 01:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As OpenAI's IPO troubles seem to indicate, that's an OpenAI skill issue.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49768389">As OpenAI's IPO troubles seem to indicate, that's an OpenAI skill issue.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49768389">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49768389" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oblio</span>
+        
+        <span>2026/09/21 00:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Touchy OpenAI employees?  :-)))</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49777585">Touchy OpenAI employees?  :-)))</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49777585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49777585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">manmal</span>
+        
+        <span>2026/09/19 13:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Astra is such a mixed bag. It makes some amazing reviews and sometimes architecture suggestions that I like. But it’s also lazy and will just make up things.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49763512">Astra is such a mixed bag. It makes some amazing reviews and sometimes architecture suggestions that I like. But it’s also lazy and will just make up things.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49763512">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49763512" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

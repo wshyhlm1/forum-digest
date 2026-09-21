@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT now knows what you do on other websites via ad collector | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-21/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>ChatGPT now knows what you do on other websites via ad collector</h1>
+      <p class="original-title">ChatGPT now knows what you do on other websites via ad collector</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 lmbbuchodi</span>
+        <span>热度 717</span>
+        <span>回复 382</span>
+        <span>2026/09/20 23:18</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49776729" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://www.buchodi.com/chatgpt-now-knows-what-you-do-on-other-websites-via-ad-collector/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49776729.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>OpenAI&#39;s ad collector at bzr.openai.com sets a cookie called __obi, scoped to .openai.com. The value is while you are on ChatGPT and tied to your ChatGPT account. __obi is then sent to OpenAI from ordinary websites you visit.Any company that buys ads on ChatGPT installs a small piece of OpenAI code on its own site, the same way retailers already install Meta and Google tracking code. Loading that code, sends __obi to OpenAI along with data about the page you are browsing. This includes products you are searching for, articles you are reading, and purchase behaviors.The bottom line is that OpenAI can connect what you do on those sites to your ChatGPT account.I reproduced the full mechanism on my own phone, verified with two independent capture methods, and cross-checked against several months of observed traffic covering 936 distinct advertiser pixels across 1,029 hostnames.How it worksStep 1. ChatGPT creates an identifier and signs it.On chatgpt.com, the client generates 16 random bytes and calls POST /backend-api/bazaar/obi/sync-token (or /backend-anon/ when signed out). The backend returns an RS256 JWT:{ &quot;iss&quot;: &quot;chatgpt-wadi&quot;, &quot;aud&quot;: &quot;bzr.openai.com&quot;, &quot;purpose&quot;: &quot;obi_sync&quot;, &quot;operation&quot;: &quot;set&quot;, &quot;consent_decision&quot;: &quot;analytics_allowed&quot;, &quot;consent_policy_version&quot;: &quot;user_granular_consent_v1&quot;, &quot;sub&quot;: &quot;«redacted: 64-hex account subject»&quot;, &quot;subject_type&quot;: &quot;account_user&quot;, &quot;obi&quot;: &quot;«redacted: 22-char identifier»&quot;, &quot;exp&quot;: &quot;«iat + 60s»&quot; } sub is the account. obi is the identifier. The token binds them, is scoped to the collector, and expires in 60 seconds. bzr stands for bazaar, OpenAI&#39;s internal name for the ads platform; wadi is the issuing service.Step 2. The identifier becomes a cookie on OpenAI&#39;s domain.The client POSTs {&quot;token&quot;: &quot;«JWT»&quot;} cross-site to bzr.openai.com/v1/obi/sync. The response:Set-Cookie: __obi=«redacted»; Domain=.openai.com; HttpOnly; Max-Age=31536000; Path=/; SameSite=none; Secure SameSite=none with Secure is the configuration a cookie needs to be sent on cross-site requests. Max-Age is one year. The obi value in the JWT and the value in the cookie are identical.Step 3. Advertiser sites send it back.Three request classes go from an advertiser&#39;s page to OpenAI&#39;s hosts. On a phone with __obi in the jar, all three carried it:</li><li>Request Carried __obi Notes</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">thih9</span>
+        
+        <span>2026/09/21 02:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I am once again happy that the EU is fighting practices like these via legislation.<p>Some outcomes can be annoying, but the net result is still positive, for the consumers and their data privacy at least.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49778582">I am once again happy that the EU is fighting practices like these via legislation.<p>Some outcomes can be annoying, but the net result is still positive, for the consumers and their data privacy at least.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49778582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49778582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">dmix</span>
+        
+        <span>2026/09/21 07:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The adtech/data broker business is still very lively in EU. The last time I read into it a year or two ago the consensus seemed to be the privacy gains over the last decade have been modest at best. There was a few big name trackers that were forced to narrow data collection but the general ad/location tracking and data broker business is still mostly the same.<p><a href="https://arxiv.org/abs/2411.06862" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2411.06862</a></p><p><a href="https://netzpolitik.org/2025/databroker-files-targeting-the-eu/" target="_blank" rel="noopener noreferrer">https://netzpolitik.org/2025/databroker-files-targeting-the-...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49781066">The adtech/data broker business is still very lively in EU. The last time I read into it a year or two ago the consensus seemed to be the privacy gains over the last decade have been modest at best. There was a few big name trackers that were forced to narrow data collection but the general ad/location tracking and data broker business is still mostly the same.<p><a href="https://arxiv.org/abs/2411.06862" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2411.06862</a></p><p><a href="https://netzpolitik.org/2025/databroker-files-targeting-the-eu/" target="_blank" rel="noopener noreferrer">https://netzpolitik.org/2025/databroker-files-targeting-the-...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49781066">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49781066" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">singularity2001</span>
+        
+        <span>2026/09/21 15:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Do the big guys sell to the small guys? Like if I'm a shady small company trying to buy as much information as I can about a certain user, will I freely get the data from X and Facebook and Google?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49784044">Do the big guys sell to the small guys? Like if I'm a shady small company trying to buy as much information as I can about a certain user, will I freely get the data from X and Facebook and Google?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49784044">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49784044" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">buzer</span>
+        
+        <span>2026/09/21 12:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are multiple reasons for it. One of the major issues is that some DPAs pretty refuse to enforce GDPR (e.g. DPC in Ireland). Hopefully the changes to cross-border enforcement that are coming in force next year will help with this as it at least has some deadlines unlike currently.<p>Another issue is that controllers generally do not need to change their behavior before the final lawful decision which can take a lot of time to go through the court system, especially if it needs CJEU referral. And once the decision comes in force they can often make small changes and restart the whole process.</p><p>Also another issue is that DPAs do not often initiate the investigations themselves (unless breach is involved), they only happen at the request of data subjects and not that many people bother making complaints or follow them up. Just yesterday I had to follow up with 9 page reply to the controller's response to the DPA inquiry.</p><p>Additionally ePD and GDPR enforcement is sometimes split between different agencies. In those cases GDPR agency tends to wait for ePD case to be solved before investigating the GDPR aspects, often because the ePD consent validity will affects e.g. GDPR legal basis analysis.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49782959">There are multiple reasons for it. One of the major issues is that some DPAs pretty refuse to enforce GDPR (e.g. DPC in Ireland). Hopefully the changes to cross-border enforcement that are coming in force next year will help with this as it at least has some deadlines unlike currently.<p>Another issue is that controllers generally do not need to change their behavior before the final lawful decision which can take a lot of time to go through the court system, especially if it needs CJEU referral. And once the decision comes in force they can often make small changes and restart the whole process.</p><p>Also another issue is that DPAs do not often initiate the investigations themselves (unless breach is involved), they only happen at the request of data subjects and not that many people bother making complaints or follow them up. Just yesterday I had to follow up with 9 page reply to the controller's response to the DPA inquiry.</p><p>Additionally ePD and GDPR enforcement is sometimes split between different agencies. In those cases GDPR agency tends to wait for ePD case to be solved before investigating the GDPR aspects, often because the ePD consent validity will affects e.g. GDPR legal basis analysis.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49782959">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49782959" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">thih9</span>
+        
+        <span>2026/09/21 13:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Perhaps, perhaps not. Big trackers reducing data collection is a win in my book. OpenAI is not doing ad personalization for the EU customers. There are no Flock cameras.<p>It’s an ongoing fight for sure but it’s some fight at least.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49783408">Perhaps, perhaps not. Big trackers reducing data collection is a win in my book. OpenAI is not doing ad personalization for the EU customers. There are no Flock cameras.<p>It’s an ongoing fight for sure but it’s some fight at least.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49783408">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49783408" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">fooker</span>
+        
+        <span>2026/09/21 04:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Some outcomes can be annoying<p>I'd classify mandatory encryption backdoors as an industry crisis rather than an annoyance.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49779698">&gt; Some outcomes can be annoying<p>I'd classify mandatory encryption backdoors as an industry crisis rather than an annoyance.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49779698">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49779698" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dspillett</span>
+        
+        <span>2026/09/21 05:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Which has nothing to do with the stalking of the adtech industry, unless you are suggesting that the EU might sell access to the keys to the likes of OpenAI?<p>[though you are not wrong that encryption backdoors are a backwards step on individuals rights to privacy]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780089">Which has nothing to do with the stalking of the adtech industry, unless you are suggesting that the EU might sell access to the keys to the likes of OpenAI?<p>[though you are not wrong that encryption backdoors are a backwards step on individuals rights to privacy]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780089">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780089" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Llamamoe</span>
+        
+        <span>2026/09/21 05:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Encryption backdoors by definition mean everybody who wants it gets hands on your data. You can't make backdoors only the "good guys" can access.<p>And while, sure, adtech corpos maybe won't due to the bad PR, what about the Kremlin, criminal organizations, or your insane abusive ex?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780522">Encryption backdoors by definition mean everybody who wants it gets hands on your data. You can't make backdoors only the "good guys" can access.<p>And while, sure, adtech corpos maybe won't due to the bad PR, what about the Kremlin, criminal organizations, or your insane abusive ex?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780522">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780522" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Barbing</span>
+        
+        <span>2026/09/21 06:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Rather tragic that less-technical folks in positions of power can find this:<p>&gt; You can't make backdoors only the "good guys" can access.</p><p>incomprehensible. I’m sure genuinely so, even.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780696">Rather tragic that less-technical folks in positions of power can find this:<p>&gt; You can't make backdoors only the "good guys" can access.</p><p>incomprehensible. I’m sure genuinely so, even.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780696">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780696" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Avicebron</span>
+        
+        <span>2026/09/21 06:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">"It is difficult to get a man to understand something when his salary depends upon his not understanding it." -<i>Upton Sinclair</i></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780784">"It is difficult to get a man to understand something when his salary depends upon his not understanding it." -<i>Upton Sinclair</i></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780784">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780784" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">djtango</span>
+        
+        <span>2026/09/21 12:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I care a lot less about the KGB knowing the ins and outs of my body than my health insurer...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49783089">I care a lot less about the KGB knowing the ins and outs of my body than my health insurer...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49783089">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49783089" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">phatfish</span>
+        
+        <span>2026/09/21 06:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What can the Kremlin do that is worse than the tech bros? Leverage data to deliver people additive divisive content until it all boils over into the "real world" and splits society? Oh wait...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780749">What can the Kremlin do that is worse than the tech bros? Leverage data to deliver people additive divisive content until it all boils over into the "real world" and splits society? Oh wait...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780749">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780749" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">StilesCrisis</span>
+        
+        <span>2026/09/21 11:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Pretty sure the Kremlin just murders folks that they have a problem with.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49782631">Pretty sure the Kremlin just murders folks that they have a problem with.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49782631">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49782631" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bergkvist</span>
+        
+        <span>2026/09/21 09:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Or deciding where to send a drone attack to take out a political opponent</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49782076">Or deciding where to send a drone attack to take out a political opponent</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49782076">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49782076" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bko</span>
+        
+        <span>2026/09/21 08:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It kind of does. It's like "I want an all powerful regulatory agency that can impose rules by dictat, but I only want them to do this things I agree with"</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49781601">It kind of does. It's like "I want an all powerful regulatory agency that can impose rules by dictat, but I only want them to do this things I agree with"</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49781601">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49781601" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pona-a</span>
+        
+        <span>2026/09/21 11:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's just what a government is. The idea is you elect it democratically and bind it with a constitution.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49782869">That's just what a government is. The idea is you elect it democratically and bind it with a constitution.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49782869">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49782869" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">patrickmcnamara</span>
+        
+        <span>2026/09/21 05:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">When has the EU mandated encryption backdoors?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780178">When has the EU mandated encryption backdoors?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780178">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780178" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">buzer</span>
+        
+        <span>2026/09/21 05:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They keep trying it via e.g. chat control</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780339">They keep trying it via e.g. chat control</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780339">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780339" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tensor</span>
+        
+        <span>2026/09/21 05:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The US has also tried it multiple times. So has Canada. It's been shut down each time. This isn't a unique to the EU problem.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780382">The US has also tried it multiple times. So has Canada. It's been shut down each time. This isn't a unique to the EU problem.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780382">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780382" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bayindirh</span>
+        
+        <span>2026/09/21 06:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Didn't UK had "The Snooper's Charter" as well?<p>Encryption backdoors is not a case of extending reach for a government, but an effort to get the capabilities <i>back</i>.</p><p>They were able to do that before. They just want to be able to continue now.</p><p>Note: No, I don't support the idea of backdoors. On the contrary.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49780639">Didn't UK had "The Snooper's Charter" as well?<p>Encryption backdoors is not a case of extending reach for a government, but an effort to get the capabilities <i>back</i>.</p><p>They were able to do that before. They just want to be able to continue now.</p><p>Note: No, I don't support the idea of backdoors. On the contrary.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49780639">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49780639" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
