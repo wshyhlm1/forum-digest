@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attention is all you have | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-22/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>Attention is all you have</h1>
+      <p class="original-title">Attention is all you have</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 zer0tonin</span>
+        <span>热度 879</span>
+        <span>回复 265</span>
+        <span>2026/09/21 22:26</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49787726" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://alicegg.tech/2026/09/21/attention" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49787726.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>The Tetris effect is one of psychology’s most easy to reproduce experiments. Simply spend a bit of time playing the eponymous game every day for a few weeks. After a little while, you’ll start recognizing familiar Tetromino shapes in clouds, buildings, and everyday objects. You might even see them appear before your eyes when you start falling asleep.</li><li>Photo by Tom Tang</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">econ</span>
+        
+        <span>2026/09/22 00:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The Mosaic browser (1993) had full text history search.<p>We then got a bookmark system that was every bit as terrible as a web directory.</p><p>It stayed that way. The delicious search revenue made organizing websites uninteresting. That obscure website you enjoyed a decade ago but don't even remember, they had lots of traffic like you. No point updating or keeping it online. You can't have rss in Firefox but here is a Facebook like button in your address bar in stead.</p><p>I've tried to maintain the bookmark menu but I rarely use it since everything is dead. Why aren't browsers storing a text version of the bookmark? Did people in 1993 have more resources than us? Should I be afraid it grows to a few GB over the decades?</p><p>A good few dead websites have a backup some place but there is no automation to find it. If you had a string of text from a page you might be able to search for it. If the page found is highly similar we might automate the process to have alternative location for bookmarks with a nice warning dialog.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49789866">The Mosaic browser (1993) had full text history search.<p>We then got a bookmark system that was every bit as terrible as a web directory.</p><p>It stayed that way. The delicious search revenue made organizing websites uninteresting. That obscure website you enjoyed a decade ago but don't even remember, they had lots of traffic like you. No point updating or keeping it online. You can't have rss in Firefox but here is a Facebook like button in your address bar in stead.</p><p>I've tried to maintain the bookmark menu but I rarely use it since everything is dead. Why aren't browsers storing a text version of the bookmark? Did people in 1993 have more resources than us? Should I be afraid it grows to a few GB over the decades?</p><p>A good few dead websites have a backup some place but there is no automation to find it. If you had a string of text from a page you might be able to search for it. If the page found is highly similar we might automate the process to have alternative location for bookmarks with a nice warning dialog.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49789866">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49789866" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nostrademons</span>
+        
+        <span>2026/09/22 02:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Bookmarks died because most humans are allergic to having to do bookkeeping and cleanup tasks that are incidental to what they <i>really</i> want to do.<p>We see that over and over again, in a bunch of non-tech fields.  My kids never want to clean up their toys; they will pull out new ones, but it is a struggle to get them into the habit of putting the old ones away first.  My parents used to keep a notebook with every gas fill-up they made; nobody born after about 1990 does that anymore.  We were taught how to balance a checkbook in elementary school; basically nobody does that anymore, we put everything on autopay and if you are diligent you check a statement or import it into Quicken once a month (most people don't even do that, they have no idea what they are spending and predictably, usually no money left over).  GMail succeeded because instead of putting your mail in folders, you just leave it in one lump with Google and rely on full-text search.  A lot of Zoomer computer users don't even know what files and folders are, they just use <i>apps</i>, which take them straight to what they want to do and don't offer things like possession of your own data.</p><p>Back in the (~early 2010s) days when Google still allowed internal innovation, there were recurrent demos produced by engineers of full-text search over your web history, though of course it was your web history as stored by Google and none of this was local.  It never became a product, largely because users are too lazy to go to a separate search product just for your history, or because they're too lazy to check a separate box saying "Search my history".  Instead I think web history became a ranking input to general search and it would mix in results that you frequently visited to the general results, which honestly I think was a more useful approach.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49791537">Bookmarks died because most humans are allergic to having to do bookkeeping and cleanup tasks that are incidental to what they <i>really</i> want to do.<p>We see that over and over again, in a bunch of non-tech fields.  My kids never want to clean up their toys; they will pull out new ones, but it is a struggle to get them into the habit of putting the old ones away first.  My parents used to keep a notebook with every gas fill-up they made; nobody born after about 1990 does that anymore.  We were taught how to balance a checkbook in elementary school; basically nobody does that anymore, we put everything on autopay and if you are diligent you check a statement or import it into Quicken once a month (most people don't even do that, they have no idea what they are spending and predictably, usually no money left over).  GMail succeeded because instead of putting your mail in folders, you just leave it in one lump with Google and rely on full-text search.  A lot of Zoomer computer users don't even know what files and folders are, they just use <i>apps</i>, which take them straight to what they want to do and don't offer things like possession of your own data.</p><p>Back in the (~early 2010s) days when Google still allowed internal innovation, there were recurrent demos produced by engineers of full-text search over your web history, though of course it was your web history as stored by Google and none of this was local.  It never became a product, largely because users are too lazy to go to a separate search product just for your history, or because they're too lazy to check a separate box saying "Search my history".  Instead I think web history became a ranking input to general search and it would mix in results that you frequently visited to the general results, which honestly I think was a more useful approach.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49791537">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49791537" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ColonelBlimp</span>
+        
+        <span>2026/09/22 19:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This resonates with me. I record every purchase I make and every bill I pay in a budgeting app. 90% of the process is automated. So, there's very little I have to do once the budget categories, the goals and limits are set. The system works for me, it gives me certainty and peace of mind with very little effort. Yet, every relative and friend that hears about it treats me as a freak despite them being the ones complaining about money and not knowing "where the money goes every month". It's a lost cause.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49799631">This resonates with me. I record every purchase I make and every bill I pay in a budgeting app. 90% of the process is automated. So, there's very little I have to do once the budget categories, the goals and limits are set. The system works for me, it gives me certainty and peace of mind with very little effort. Yet, every relative and friend that hears about it treats me as a freak despite them being the ones complaining about money and not knowing "where the money goes every month". It's a lost cause.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49799631">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49799631" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">conrod2</span>
+        
+        <span>2026/09/22 23:43</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49803170">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49803170">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49803170" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bognition</span>
+        
+        <span>2026/09/22 03:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That and google had a major interest in killing bookmarks. Bookmarks were actively competing with google search traffic, so they put in a lot of effort to get you to stop using them. Why bookmark something when you can just search for it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49792186">That and google had a major interest in killing bookmarks. Bookmarks were actively competing with google search traffic, so they put in a lot of effort to get you to stop using them. Why bookmark something when you can just search for it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49792186">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49792186" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nostrademons</span>
+        
+        <span>2026/09/22 03:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Eh, it's true that Google's incentives aren't really aligned with bookmarking tools, but the magnitude of the effect is much less than you're thinking of.  Basically 100% of Google's revenues come from commercial-seeking queries, cases where the user has a purchasing intent before they came to the search engine.  All of the non-commercial uses - coding, random facts, research, education, navigational queries, etc - are just loss-leaders so that your fingers automatically reach for Google when you're searching for lawyers, contractors, home-improvement fixtures, apps, furniture, flowers, restaurants, consumer electronics, etc.  Google (of the 2010s certainly, but also true now) considered Amazon to be its primary competition, not Yahoo or del.icio.us.<p>They put precisely zero effort into killing bookmarks.  I know because I was there, and probably would've been tasked with doing it.  Well, that and because bookmarks still exist and I can still use them.  They also put zero effort into improving bookmarks or making them easier for you to use, but it's death by inaction and consumer choice, not by anything Google did.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49792345">Eh, it's true that Google's incentives aren't really aligned with bookmarking tools, but the magnitude of the effect is much less than you're thinking of.  Basically 100% of Google's revenues come from commercial-seeking queries, cases where the user has a purchasing intent before they came to the search engine.  All of the non-commercial uses - coding, random facts, research, education, navigational queries, etc - are just loss-leaders so that your fingers automatically reach for Google when you're searching for lawyers, contractors, home-improvement fixtures, apps, furniture, flowers, restaurants, consumer electronics, etc.  Google (of the 2010s certainly, but also true now) considered Amazon to be its primary competition, not Yahoo or del.icio.us.<p>They put precisely zero effort into killing bookmarks.  I know because I was there, and probably would've been tasked with doing it.  Well, that and because bookmarks still exist and I can still use them.  They also put zero effort into improving bookmarks or making them easier for you to use, but it's death by inaction and consumer choice, not by anything Google did.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49792345">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49792345" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Ajakks</span>
+        
+        <span>2026/09/22 14:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't really understand why they were able to exist as they do and not lose users. I have not had Chrome for over a decade, I use Gmail exclusively for my actual real identity, which I don't recall the last time I used - I can only access my Gmail from a tablet I never use. I used to use Google search, when all other options failed - but these days, google is the first to fail, I literally do not remember the time I used it.
+It is a genuinely novel experience for me, to see any sort of ad on the internet - that is not hyperbole.
+I am not as capable as so many of the people who frequent HN, tbh - very little of what I do is hard, why do all of you live as you do??
+I don't understand at all.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49797499">I don't really understand why they were able to exist as they do and not lose users. I have not had Chrome for over a decade, I use Gmail exclusively for my actual real identity, which I don't recall the last time I used - I can only access my Gmail from a tablet I never use. I used to use Google search, when all other options failed - but these days, google is the first to fail, I literally do not remember the time I used it.
+It is a genuinely novel experience for me, to see any sort of ad on the internet - that is not hyperbole.
+I am not as capable as so many of the people who frequent HN, tbh - very little of what I do is hard, why do all of you live as you do??
+I don't understand at all.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49797499">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49797499" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tokioyoyo</span>
+        
+        <span>2026/09/22 15:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Think of some very fringe group of 0.1%, which you question from time to time how they function/exist/for what purpose. That’s basically how general populace looks at people who go through efforts of de-Googlifying. Stuff that matters to you (privacy, owning your data and etc.) does not matter to super majority of the people, especially outside of the tech circles.<p>I’m somewhat in-between of two extremes, but in grand scheme of things I don’t really care, as I have completely different priorities in life. Convenience services enable me to focus on those priorities, and I don’t really care about all other stuff to a specific degree.</p><p>I’ve been lucky enough to see how people from every walk of life interact with the Internet, and realized the way I function is extremely different. To them, I am the “flat earth weirdo and do stuff differently than the others”.</p><p>To give another example - I’m expecting people in HN type about 100 words per minute on average because of our general exposure to coding, typing, internet and etc. That puts us to 99th percentile. Average person does not live like us, nor cares about it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49797923">Think of some very fringe group of 0.1%, which you question from time to time how they function/exist/for what purpose. That’s basically how general populace looks at people who go through efforts of de-Googlifying. Stuff that matters to you (privacy, owning your data and etc.) does not matter to super majority of the people, especially outside of the tech circles.<p>I’m somewhat in-between of two extremes, but in grand scheme of things I don’t really care, as I have completely different priorities in life. Convenience services enable me to focus on those priorities, and I don’t really care about all other stuff to a specific degree.</p><p>I’ve been lucky enough to see how people from every walk of life interact with the Internet, and realized the way I function is extremely different. To them, I am the “flat earth weirdo and do stuff differently than the others”.</p><p>To give another example - I’m expecting people in HN type about 100 words per minute on average because of our general exposure to coding, typing, internet and etc. That puts us to 99th percentile. Average person does not live like us, nor cares about it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49797923">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49797923" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">edgyquant</span>
+        
+        <span>2026/09/22 21:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Frankly I just don’t care that much, I hate Google and llms have mostly replaced the search but after work I want to spend time with family and do hobbies and degoogling is a nice to have that is nowhere near the top of my priorities list.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49800972">Frankly I just don’t care that much, I hate Google and llms have mostly replaced the search but after work I want to spend time with family and do hobbies and degoogling is a nice to have that is nowhere near the top of my priorities list.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49800972">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49800972" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">aucisson_masque</span>
+        
+        <span>2026/09/22 05:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don’t know if they did or didn’t try to kill bookmarks.<p>But on the commercial incentives, it does make sense for them to kill it.</p><p>Companies pay good advertisement so they show up first on the search result when a user want to find them.</p><p>Eg you want to go to carglass website: you type carglass in google and the company will most likely pay Google to show up first in the ads section because competitors are trying to sway away customers from them. If they didn’t outbid their competitors, even though the customer want to go to carglass, he will click on first result and may end up buying from their competitor without even noticing.</p><p>That wouldn’t happen if people had put carglass.com website in bookmark.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49793851">I don’t know if they did or didn’t try to kill bookmarks.<p>But on the commercial incentives, it does make sense for them to kill it.</p><p>Companies pay good advertisement so they show up first on the search result when a user want to find them.</p><p>Eg you want to go to carglass website: you type carglass in google and the company will most likely pay Google to show up first in the ads section because competitors are trying to sway away customers from them. If they didn’t outbid their competitors, even though the customer want to go to carglass, he will click on first result and may end up buying from their competitor without even noticing.</p><p>That wouldn’t happen if people had put carglass.com website in bookmark.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49793851">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49793851" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nostrademons</span>
+        
+        <span>2026/09/22 05:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Google doesn't show ads on navigational queries because of the potential trademark-infringement legal issues that could result from recommending a competitor when somebody searches for a trademark.<p>Search for [carglass], no ads.  Search for [facebook], no ads.  Search for [spotify], no ads.  Search for [american airlines], no ads.  All of these would be very desirable queries to advertise a competitor on.</p><p>(IIRC they've gone back and forth on this depending on what the lawyers thought they could get away with; ISTR when Bing launched Microsoft would run ads on [google] that pointed to Bing.  It's been a long time since I've seen an ad on a navigational query though.)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49793996">Google doesn't show ads on navigational queries because of the potential trademark-infringement legal issues that could result from recommending a competitor when somebody searches for a trademark.<p>Search for [carglass], no ads.  Search for [facebook], no ads.  Search for [spotify], no ads.  Search for [american airlines], no ads.  All of these would be very desirable queries to advertise a competitor on.</p><p>(IIRC they've gone back and forth on this depending on what the lawyers thought they could get away with; ISTR when Bing launched Microsoft would run ads on [google] that pointed to Bing.  It's been a long time since I've seen an ad on a navigational query though.)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49793996">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49793996" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kid64</span>
+        
+        <span>2026/09/22 10:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">When you say "navigational queries" do you mean Google Maps?<p>If so, you may not be aware that the locations represented by square dots on the map are ads.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49796296">When you say "navigational queries" do you mean Google Maps?<p>If so, you may not be aware that the locations represented by square dots on the map are ads.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49796296">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49796296" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nostrademons</span>
+        
+        <span>2026/09/23 00:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A "navigational query" is a query with a certain website in mind.  So like if you search for [facebook], 99.99% of the time you are looking to go to Facebook, if you search for [hacker news] 99.99% of the time you are looking to go to news.ycombinator.com.  Basically it replaces the address bar for people who don't know what URLs are.  You aren't looking for information <i>about</i> the business, you want to go to the site/business itself.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49804063">A "navigational query" is a query with a certain website in mind.  So like if you search for [facebook], 99.99% of the time you are looking to go to Facebook, if you search for [hacker news] 99.99% of the time you are looking to go to news.ycombinator.com.  Basically it replaces the address bar for people who don't know what URLs are.  You aren't looking for information <i>about</i> the business, you want to go to the site/business itself.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49804063">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49804063" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kid64</span>
+        
+        <span>2026/09/23 00:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks to you and @bradley for the explanation.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49804377">Thanks to you and @bradley for the explanation.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49804377">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49804377" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bradly</span>
+        
+        <span>2026/09/22 11:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This a search domain term that means a search query where the user is trying to find a specific destination/product. I don't know how Google search works, but often a search will first go through an intent classifier and then use a different model based on the query type.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49796449">This a search domain term that means a search query where the user is trying to find a specific destination/product. I don't know how Google search works, but often a search will first go through an intent classifier and then use a different model based on the query type.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49796449">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49796449" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">picture</span>
+        
+        <span>2026/09/22 07:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As a counter example, a couple days ago I was to install DaVinci Resolve on a new windows installation, so I searched "davinci resolve." Since I was used to having adblocker, I just clicked the top result, which is titled "DaVinci Resolve" but actually takes you to some awful shady thing like wondershare or softonic/uptodown, I forgot.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49794982">As a counter example, a couple days ago I was to install DaVinci Resolve on a new windows installation, so I searched "davinci resolve." Since I was used to having adblocker, I just clicked the top result, which is titled "DaVinci Resolve" but actually takes you to some awful shady thing like wondershare or softonic/uptodown, I forgot.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49794982">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49794982" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">abustamam</span>
+        
+        <span>2026/09/22 08:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I feel like, navigational queries or no, Google should be held liable for allowing scam sites like that to advertise. I think there was a trending HN post recently on that front.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49795121">I feel like, navigational queries or no, Google should be held liable for allowing scam sites like that to advertise. I think there was a trending HN post recently on that front.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49795121">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49795121" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/09/22 16:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Should the police be liable for not preventing your house from being broken into?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49797983">Should the police be liable for not preventing your house from being broken into?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49797983">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49797983" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">someguyiguess</span>
+        
+        <span>2026/09/22 20:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Did the police gives out keys to my house and give some of them to criminals? Then yes.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49800093">Did the police gives out keys to my house and give some of them to criminals? Then yes.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49800093">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49800093" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">abustamam</span>
+        
+        <span>2026/09/22 21:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">No? I'm not sure what the comparison here is.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49801346">No? I'm not sure what the comparison here is.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49801346">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49801346" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
