@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我把视频字幕工具做进了浏览器里 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-23/">返回日报</a>
+      <div class="source-chip">V2EX #10</div>
+      <h1>我把视频字幕工具做进了浏览器里</h1>
+      <p class="original-title">我把视频字幕工具做进了浏览器里</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 anghunk</span>
+        <span>热度 10</span>
+        <span>回复 10</span>
+        <span>2026/09/23 19:57</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1244328" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1244328.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>今天我刚好就遇到了这么一个问题，公司需要录制几段简单的教程视频，等我录制完准备添加字幕的时候发现，我找了一圈没找到特别顺手的工具，不是要登录注册就是要上传字幕文件等。</li><li>我的需求很简单，就是给一段视频填写几段字幕说明，这么一个简单的需求，硬是折腾了我半天，最后我使用了口播的方式去解决了。但是当我坐下来休息的时候开始思考，为什么没有这么简单的工具，大概率是有的，只是我没找到而已。</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>今天我刚好就遇到了这么一个问题，公司需要录制几段简单的教程视频，等我录制完准备添加字幕的时候发现，我找了一圈没找到特别顺手的工具，不是要登录注册就是要上传字幕文件等。</p>
+<p>我的需求很简单，就是给一段视频填写几段字幕说明，这么一个简单的需求，硬是折腾了我半天，最后我使用了口播的方式去解决了。但是当我坐下来休息的时候开始思考，为什么没有这么简单的工具，大概率是有的，只是我没找到而已。</p>
+<p>想了半天决定自己动手。</p>
+<p>于是我做了“字幕工作室”：一个完全运行在浏览器里的视频字幕编辑和烧录工具。拖进一个本地 MP4 ，在时间轴上分段、写字、调样式，预览满意后直接导出带字幕的视频。不用注册，不用后端，也没有水印。</p>
+<p>99% 的代码由 deepseek-flash 完成，我就负责 yes 。</p>
+<p> </p>
+<p>Github: <a href="https://github.com/anghunk/video-transcript" target="_blank" rel="noopener noreferrer">https://github.com/anghunk/video-transcript</a><br />
+在线访问: <a href="https://video-transcript.zishu.me" target="_blank" rel="noopener noreferrer">https://video-transcript.zishu.me</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>今天我刚好就遇到了这么一个问题，公司需要录制几段简单的教程视频，等我录制完准备添加字幕的时候发现，我找了一圈没找到特别顺手的工具，不是要登录注册就是要上传字幕文件等。</p>
+<p>我的需求很简单，就是给一段视频填写几段字幕说明，这么一个简单的需求，硬是折腾了我半天，最后我使用了口播的方式去解决了。但是当我坐下来休息的时候开始思考，为什么没有这么简单的工具，大概率是有的，只是我没找到而已。</p>
+<p>想了半天决定自己动手。</p>
+<p>于是我做了“字幕工作室”：一个完全运行在浏览器里的视频字幕编辑和烧录工具。拖进一个本地 MP4 ，在时间轴上分段、写字、调样式，预览满意后直接导出带字幕的视频。不用注册，不用后端，也没有水印。</p>
+<p>99% 的代码由 deepseek-flash 完成，我就负责 yes 。</p>
+<p> </p>
+<p>Github: <a href="https://github.com/anghunk/video-transcript" target="_blank" rel="noopener noreferrer">https://github.com/anghunk/video-transcript</a><br />
+在线访问: <a href="https://video-transcript.zishu.me" target="_blank" rel="noopener noreferrer">https://video-transcript.zishu.me</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">10</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#1</span>
+        <span>2026/09/23 20:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不错，但是转换后好像没有声音了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121032">不错，但是转换后好像没有声音了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121032">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121032" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anghunk</span>
+        <span>#2</span>
+        <span>2026/09/23 20:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 是不是取消了保留原音轨哇？我没测试带声音的文件，等我试试去</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121039">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 是不是取消了保留原音轨哇？我没测试带声音的文件，等我试试去</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121039">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121039" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ashita</span>
+        <span>#3</span>
+        <span>2026/09/23 20:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看起来不错，要是能加上 asr 分析，手动调整字幕样式什么的好像挺舒服的样子。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121074">看起来不错，要是能加上 asr 分析，手动调整字幕样式什么的好像挺舒服的样子。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121074">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121074" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anghunk</span>
+        <span>#4</span>
+        <span>2026/09/23 21:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 修复了导出音轨丢失的问题</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121095">@<a href="/member/wonderfulcxm" target="_blank" rel="noopener noreferrer">wonderfulcxm</a> 修复了导出音轨丢失的问题</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121095">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121095" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anghunk</span>
+        <span>#5</span>
+        <span>2026/09/23 21:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ashita" target="_blank" rel="noopener noreferrer">ashita</a> 有这个计划，一个是本地处理，一个是接 asr 模型分析</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121097">@<a href="/member/ashita" target="_blank" rel="noopener noreferrer">ashita</a> 有这个计划，一个是本地处理，一个是接 asr 模型分析</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121097">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121097" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">iorilu</span>
+        <span>#6</span>
+        <span>2026/09/23 21:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://opencut.app/" target="_blank" rel="noopener noreferrer">https://opencut.app/</a><br /><br />这个很全面, 号称可平替剪影</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121098"><a href="https://opencut.app/" target="_blank" rel="noopener noreferrer">https://opencut.app/</a><br /><br />这个很全面, 号称可平替剪影</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121098">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121098" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anghunk</span>
+        <span>#7</span>
+        <span>2026/09/23 21:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/iorilu" target="_blank" rel="noopener noreferrer">iorilu</a> 这个可以很强，确实可以替代剪映，我先收藏了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121104">@<a href="/member/iorilu" target="_blank" rel="noopener noreferrer">iorilu</a> 这个可以很强，确实可以替代剪映，我先收藏了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121104">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121104" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wonderfulcxm</span>
+        <span>#8</span>
+        <span>2026/09/23 21:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/anghunk" target="_blank" rel="noopener noreferrer">anghunk</a> good!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121119">@<a href="/member/anghunk" target="_blank" rel="noopener noreferrer">anghunk</a> good!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121119">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121119" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">moonrailgun</span>
+        <span>#9</span>
+        <span>2026/09/23 22:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也整了一个。因为 opencut 虽然吹得很厉害但是没办法真的用。<br />fork 了一下加了一万个功能。已经用这个做了好几个视频了<br /><a href="https://cutia.msgbyte.com/" target="_blank" rel="noopener noreferrer">https://cutia.msgbyte.com/</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121254">我也整了一个。因为 opencut 虽然吹得很厉害但是没办法真的用。<br />fork 了一下加了一万个功能。已经用这个做了好几个视频了<br /><a href="https://cutia.msgbyte.com/" target="_blank" rel="noopener noreferrer">https://cutia.msgbyte.com/</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121254">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121254" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anghunk</span>
+        <span>#10</span>
+        <span>2026/09/23 22:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/moonrailgun" target="_blank" rel="noopener noreferrer">moonrailgun</a> 你这个看起来成熟度也很高啊，也挺流畅，收藏了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18121292">@<a href="/member/moonrailgun" target="_blank" rel="noopener noreferrer">moonrailgun</a> 你这个看起来成熟度也很高啊，也挺流畅，收藏了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18121292">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244328#reply18121292" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
