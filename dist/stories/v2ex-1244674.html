@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用半年时间打磨的 HTTPS 抓包和调试工具-ApiCatcher，对标 Proxyman | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-24/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>用半年时间打磨的 HTTPS 抓包和调试工具-ApiCatcher，对标 Proxyman</h1>
+      <p class="original-title">用半年时间打磨的 HTTPS 抓包和调试工具-ApiCatcher，对标 Proxyman</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 wujiuye99</span>
+        <span>热度 10</span>
+        <span>回复 10</span>
+        <span>2026/09/24 23:58</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1244674" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1244674.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>25 年年底，我当时还在上班，有一天领导让我接手一个我不了解的项目，上来就要改接口，于是就有了用抓包工具从 app 端抓包看涉及的功能都调用了哪些接口，这才有了后续我们做抓包工具的灵感，后来我想用到一些功能但试了几款都没有，就更想自己做一款了。</li><li>25 年我在 app store 看到的抓包工具还不到十款吧（现在再去看就多了），基本长得都差不多，功能也差不多，体验也差不多。一看就知道都是基于开源的版本改的。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>25 年年底，我当时还在上班，有一天领导让我接手一个我不了解的项目，上来就要改接口，于是就有了用抓包工具从 app 端抓包看涉及的功能都调用了哪些接口，这才有了后续我们做抓包工具的灵感，后来我想用到一些功能但试了几款都没有，就更想自己做一款了。</p>
+<p>25 年我在 app store 看到的抓包工具还不到十款吧（现在再去看就多了），基本长得都差不多，功能也差不多，体验也差不多。一看就知道都是基于开源的版本改的。</p>
+<p>我感觉这是个机会吧，虽然是小众需求，但能选择的产品不多，而且现有产品也不好用，于是就想开发一款比现有产品都好用的抓包工具：UI 简洁、容易上手、操作简单。把 90%常用的功能做得足够简单，让用户使用不需要看说明书，并且操作步骤能一步完成就不要让用户操作两步。</p>
+<p>第一个版本只做了几个核心功能，但用了一个月时间写完，因审核问题，又延迟一个月，到 26 年 1 月低才上架成功。</p>
+<p></p>
+<p>当时我其实没有了解到有 Proxyman 这款产品，我发布后不久才发现的，因为我没去做什么调研，只在 AppStore 上搜索有哪些抓包工具，而 Proxyman 又没有上架中国。</p>
+<p>所以后面当我了解到 Proxyman 后，也是看 Proxyman 提供哪些功能我们还没有的就加上了，ApiCatcher 的功能才慢慢增多。</p>
+<p>我并不想在价格上做优势，面向全球用户，Proxyman 定价多少我们也定价多少，我们想卷的是用户体验！</p>
+<p>这半年我大部分时间都投入到了 ApiCatcher ，从开发 iOS 版本，到开发桌面端，再到 Android 端，目前已经支持 iOS 、Android 、Windows 、macOS 四个平台。也做了 Burp Suite 插件，能够在移动设备上实时捕获 HTTP/HTTPS 流量并实时传到 Burp Suite 上分析。还开放了实时同步协议，让所有用户都能实现自己开发接收端，实现类似 Burp Suite 插件这样的需求，这其实也是用户向我们提的需求。</p>
+<p>在完成几个端的开发后，我们开始优化产品的一些细节体验，细节是最难描述的，但如果用过 ApiCatcher ，应该能感受到一些细节上的用心，举几个例子：</p>
+<ul>
+<li>编辑请求头时会提供常见请求头 key 和 value 选项（能选就不输入，因为记不住，还得去搜索复制）。</li>
+<li>写脚本提供 AI 生成，APP 将请求自动生成 API 文档加入系统提示词，用户只需要描述需求就能生成脚本，生成的脚本还可以从历史请求中选择一个请求测试，不仅能查看结果还能看脚本打印的日志。</li>
+<li>写正则表达式不会写？ AI 一键生成，生成后可以选择一个请求测试，测试失败可以一键修复。</li>
+</ul>
+<p>..... 这样的细节非常多，在此不过多介绍，说再多不如上手体验。</p>
+<p></p>
+<p>Proxyman 做的一些 AI 功能我们并不想做，不想为了做而做。我们加入 AI 更想让 AI 做擅长的事情、做真正用户需要的事情：帮生成正则表达式、帮生成 cron 表达式、帮生成脚本等。</p>
+<p>抓包工具那么多，但用户需求的功能就那几个，所以我们要做的并不是跟 Proxyman 等抓包工具比谁的功能更多、比谁的功能更强，而是在用户实际需求、常用的功能上，比谁的体验用户更喜欢。当然，我们不会做推广，知道 Proxyman 的用户并不知道 ApiCatcher 。</p>
+<p></p>
+<p><a href="https://apicatcher.net" target="_blank" rel="noopener noreferrer">ApiCatcher</a>的抓包功能是免费的，欢迎大家下载体验！
+官网： <a href="https://apicatcher.net" target="_blank" rel="noopener noreferrer">https://apicatcher.net</a></p>
+<p>这里也赠送几个终身会员免费优惠链接：(在 iOS 上点击链接跳转到 AppStore 领取)</p>
+<p>4XNLWHMLM3TY4RAJTT,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=4XNLWHMLM3TY4RAJTT" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=4XNLWHMLM3TY4RAJTT</a></p>
+<p>3AAEL7TL8EK67WNEM4,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3AAEL7TL8EK67WNEM4" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3AAEL7TL8EK67WNEM4</a></p>
+<p>MAR8LAE8XMNLW4JYPE,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=MAR8LAE8XMNLW4JYPE" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=MAR8LAE8XMNLW4JYPE</a></p>
+<p>3WA83RPW6M4633XNAW,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3WA83RPW6M4633XNAW" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3WA83RPW6M4633XNAW</a></p>
+<p>FPHFLNK8TEWT6T7X43,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=FPHFLNK8TEWT6T7X43" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=FPHFLNK8TEWT6T7X43</a></p>
+<p>NERKHXYLENPJ4MFK4N,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=NERKHXYLENPJ4MFK4N" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=NERKHXYLENPJ4MFK4N</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>25 年年底，我当时还在上班，有一天领导让我接手一个我不了解的项目，上来就要改接口，于是就有了用抓包工具从 app 端抓包看涉及的功能都调用了哪些接口，这才有了后续我们做抓包工具的灵感，后来我想用到一些功能但试了几款都没有，就更想自己做一款了。</p>
+<p>25 年我在 app store 看到的抓包工具还不到十款吧（现在再去看就多了），基本长得都差不多，功能也差不多，体验也差不多。一看就知道都是基于开源的版本改的。</p>
+<p>我感觉这是个机会吧，虽然是小众需求，但能选择的产品不多，而且现有产品也不好用，于是就想开发一款比现有产品都好用的抓包工具：UI 简洁、容易上手、操作简单。把 90%常用的功能做得足够简单，让用户使用不需要看说明书，并且操作步骤能一步完成就不要让用户操作两步。</p>
+<p>第一个版本只做了几个核心功能，但用了一个月时间写完，因审核问题，又延迟一个月，到 26 年 1 月低才上架成功。</p>
+<p></p>
+<p>当时我其实没有了解到有 Proxyman 这款产品，我发布后不久才发现的，因为我没去做什么调研，只在 AppStore 上搜索有哪些抓包工具，而 Proxyman 又没有上架中国。</p>
+<p>所以后面当我了解到 Proxyman 后，也是看 Proxyman 提供哪些功能我们还没有的就加上了，ApiCatcher 的功能才慢慢增多。</p>
+<p>我并不想在价格上做优势，面向全球用户，Proxyman 定价多少我们也定价多少，我们想卷的是用户体验！</p>
+<p>这半年我大部分时间都投入到了 ApiCatcher ，从开发 iOS 版本，到开发桌面端，再到 Android 端，目前已经支持 iOS 、Android 、Windows 、macOS 四个平台。也做了 Burp Suite 插件，能够在移动设备上实时捕获 HTTP/HTTPS 流量并实时传到 Burp Suite 上分析。还开放了实时同步协议，让所有用户都能实现自己开发接收端，实现类似 Burp Suite 插件这样的需求，这其实也是用户向我们提的需求。</p>
+<p>在完成几个端的开发后，我们开始优化产品的一些细节体验，细节是最难描述的，但如果用过 ApiCatcher ，应该能感受到一些细节上的用心，举几个例子：</p>
+<ul>
+<li>编辑请求头时会提供常见请求头 key 和 value 选项（能选就不输入，因为记不住，还得去搜索复制）。</li>
+<li>写脚本提供 AI 生成，APP 将请求自动生成 API 文档加入系统提示词，用户只需要描述需求就能生成脚本，生成的脚本还可以从历史请求中选择一个请求测试，不仅能查看结果还能看脚本打印的日志。</li>
+<li>写正则表达式不会写？ AI 一键生成，生成后可以选择一个请求测试，测试失败可以一键修复。</li>
+</ul>
+<p>..... 这样的细节非常多，在此不过多介绍，说再多不如上手体验。</p>
+<p></p>
+<p>Proxyman 做的一些 AI 功能我们并不想做，不想为了做而做。我们加入 AI 更想让 AI 做擅长的事情、做真正用户需要的事情：帮生成正则表达式、帮生成 cron 表达式、帮生成脚本等。</p>
+<p>抓包工具那么多，但用户需求的功能就那几个，所以我们要做的并不是跟 Proxyman 等抓包工具比谁的功能更多、比谁的功能更强，而是在用户实际需求、常用的功能上，比谁的体验用户更喜欢。当然，我们不会做推广，知道 Proxyman 的用户并不知道 ApiCatcher 。</p>
+<p></p>
+<p><a href="https://apicatcher.net" target="_blank" rel="noopener noreferrer">ApiCatcher</a>的抓包功能是免费的，欢迎大家下载体验！
+官网： <a href="https://apicatcher.net" target="_blank" rel="noopener noreferrer">https://apicatcher.net</a></p>
+<p>这里也赠送几个终身会员免费优惠链接：(在 iOS 上点击链接跳转到 AppStore 领取)</p>
+<p>4XNLWHMLM3TY4RAJTT,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=4XNLWHMLM3TY4RAJTT" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=4XNLWHMLM3TY4RAJTT</a></p>
+<p>3AAEL7TL8EK67WNEM4,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3AAEL7TL8EK67WNEM4" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3AAEL7TL8EK67WNEM4</a></p>
+<p>MAR8LAE8XMNLW4JYPE,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=MAR8LAE8XMNLW4JYPE" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=MAR8LAE8XMNLW4JYPE</a></p>
+<p>3WA83RPW6M4633XNAW,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3WA83RPW6M4633XNAW" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=3WA83RPW6M4633XNAW</a></p>
+<p>FPHFLNK8TEWT6T7X43,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=FPHFLNK8TEWT6T7X43" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=FPHFLNK8TEWT6T7X43</a></p>
+<p>NERKHXYLENPJ4MFK4N,<a href="https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=NERKHXYLENPJ4MFK4N" target="_blank" rel="noopener noreferrer">https://apps.apple.com/redeem?ctx=offercodes&amp;id=6757103562&amp;code=NERKHXYLENPJ4MFK4N</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">10</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CalledKingsley</span>
+        <span>#1</span>
+        <span>2026/09/25 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">op 你好，为啥点击都是无法使用促销优惠呢，奇怪，我美区国区账户都试过了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126180">op 你好，为啥点击都是无法使用促销优惠呢，奇怪，我美区国区账户都试过了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126180">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126180" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">btpuadom</span>
+        <span>#2</span>
+        <span>2026/09/25 00:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">被人用完了吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126196">被人用完了吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126196">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126196" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wujiuye99</span>
+        <span>#3</span>
+        <span>2026/09/25 00:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CalledKingsley" target="_blank" rel="noopener noreferrer">CalledKingsley</a> 国区是可以用的哦，估计是被用了。没想到这么快就被用了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126210">@<a href="/member/CalledKingsley" target="_blank" rel="noopener noreferrer">CalledKingsley</a> 国区是可以用的哦，估计是被用了。没想到这么快就被用了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126210">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126210" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CalledKingsley</span>
+        <span>#4</span>
+        <span>2026/09/25 00:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> #3 奇怪，之前领别的码的时候，被用的话都是提示只能使用一次。 这个码居然是这个提示。不管怎么样，op ，中秋快乐，国庆快乐🎉</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126216">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> #3 奇怪，之前领别的码的时候，被用的话都是提示只能使用一次。 这个码居然是这个提示。不管怎么样，op ，中秋快乐，国庆快乐🎉</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126216">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126216" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">itart</span>
+        <span>#5</span>
+        <span>2026/09/25 00:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> 不是被使用了，估计是还没生效</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126218">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> 不是被使用了，估计是还没生效</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126218">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126218" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wujiuye99</span>
+        <span>#6</span>
+        <span>2026/09/25 00:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/itart" target="_blank" rel="noopener noreferrer">itart</a> 哦哦，好像是，之前遇到过。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126222">@<a href="/member/itart" target="_blank" rel="noopener noreferrer">itart</a> 哦哦，好像是，之前遇到过。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126222">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126222" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wujiuye99</span>
+        <span>#7</span>
+        <span>2026/09/25 00:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CalledKingsley" target="_blank" rel="noopener noreferrer">CalledKingsley</a> 谢谢你！祝你假期多欢乐！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126223">@<a href="/member/CalledKingsley" target="_blank" rel="noopener noreferrer">CalledKingsley</a> 谢谢你！祝你假期多欢乐！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126223">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126223" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CalledKingsley</span>
+        <span>#8</span>
+        <span>2026/09/25 01:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> #6 那这些码啥时候生效呢🤣</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126228">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> #6 那这些码啥时候生效呢🤣</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126228">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126228" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#9</span>
+        <span>2026/09/25 01:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">奇怪，显示的是无法使用，而非被使用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126231">奇怪，显示的是无法使用，而非被使用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126231">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126231" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">in211240520</span>
+        <span>#10</span>
+        <span>2026/09/25 02:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> 国区也看了，不能使用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126294">@<a href="/member/wujiuye99" target="_blank" rel="noopener noreferrer">wujiuye99</a> 国区也看了，不能使用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126294">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244674#reply18126294" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

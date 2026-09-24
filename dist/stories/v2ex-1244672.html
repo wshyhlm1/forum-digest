@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分享一个制作沉浸式网页视频的 Skill，附《奥德赛》案例和制作过程 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-24/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>分享一个制作沉浸式网页视频的 Skill，附《奥德赛》案例和制作过程</h1>
+      <p class="original-title">分享一个制作沉浸式网页视频的 Skill，附《奥德赛》案例和制作过程</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 03danielwen</span>
+        <span>热度 3</span>
+        <span>回复 3</span>
+        <span>2026/09/24 23:17</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1244672" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1244672.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近做了一个《奥德赛》的沉浸式网页：往下滚动，镜头就沿着故事往前走，从特洛伊战后的海面进入洞穴，再经过冥界和海上大漩涡，最后回到伊萨卡 先放效果：</li><li>Skill： https://github.com/OpenSenseNova/SenseNova-Skills</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近做了一个《奥德赛》的沉浸式网页：往下滚动，镜头就沿着故事往前走，从特洛伊战后的海面进入洞穴，再经过冥界和海上大漩涡，最后回到伊萨卡
+先放效果：</p>
+<p></p>
+<p><strong>Skill： <a href="https://github.com/OpenSenseNova/SenseNova-Skills" target="_blank" rel="noopener noreferrer">https://github.com/OpenSenseNova/SenseNova-Skills</a></strong></p>
+<p><strong>使用文档： <a href="https://github.com/OpenSenseNova/SenseNova-Skills/blob/main/docs/sn-motion-html_cn.md" target="_blank" rel="noopener noreferrer">https://github.com/OpenSenseNova/SenseNova-Skills/blob/main/docs/sn-motion-html_cn.md</a></strong></p>
+1. 开始前，把内容资料和视觉参考准备好
+<p>建议把资料来源，交互参考录屏，还有其他各部分内容分开整理，可以参考我这个结构</p>
+<pre><code>references/
+  brief.md                  # 目标、受众、章节规模、语言
+  story-notes.md            # 故事梗概、必须保留的事件
+  sources.md                # 资料来源、阅读范围、优先级
+  interaction-reference.mp4 # 交互参考录屏
+  reference-notes.md        # 录屏时间段及需要参考的细节
+  visual-style.jpg          # 画风、色彩、材质参考
+  character-reference.png   # 主角外形参考
+  
+</code></pre>
+<p>内容资料也可以很朴素，比如 <a href="http://story-notes.md" target="_blank" rel="noopener noreferrer">story-notes.md</a> 先写“核心是返乡旅程”，再列必须保留的章节、每章希望读者理解的一件事，以及可以省略的支线。原著或梗概负责提供依据，这份笔记负责告诉 AI 你准备怎样取舍。</p>
+<p>材料说明的 prompt ，可以发给 Agent：
+请先读取我提供的资料，再提出制作方案。</p>
+<p>材料用途如下：</p>
+<pre><code>1. story-notes.md 是内容主线，里面标注“必须保留”的事件要保留。
+2. sources.md 是核对来源。不同资料冲突时，优先采用我指定的主要版本，
+   不要把影视改编情节直接当成原著情节。
+3. interaction-reference.mp4 参考固定全屏画面、滚动推进镜头、章节切换。
+   具体参考片段见 reference-notes.md 。
+4. visual-style.jpg 参考色调、绘画质感和光线。
+5. character-reference.png 用来保持主角外形一致。
+
+请先告诉我：从每份材料里提取了什么、哪些内容无法读取、
+还有哪些冲突需要处理。不能访问的链接不要假装已经看过。
+如果参考来自不同作品，建议再补一句哪些元素需要舍弃，例如：只参考一个网站的滚动方式，不沿用它的 Logo 、字体组合和装饰图案，这样最后做出来的页面更容易形成自己的风格
+</code></pre>
+2. 第一轮 prompt 先把制作目标说具体
+<p>第一条消息不必包含所有镜头细节，但要交代主题、读者、内容范围、视觉方向、交互方式和交付要求</p>
+<p>比如：</p>
+<pre><code>请使用 sn-motion-html ，制作一个关于《奥德赛》的沉浸式叙事网页。
+
+主题：一个经历战争和漂泊的人，如何回到故乡。
+受众：没有读过原著、但愿意通过画面了解故事的人。
+内容：以我提供的资料为依据，把返乡旅程组织成约 7 个章节。
+      可以压缩支线，但要保留关键因果；明确标记为叙事改编。
+语言：页面标题、导航和正文使用英文；制作过程用中文和我沟通。
+
+视觉：有绘画质感的古希腊史诗插画，保留布料、青铜、岩石和海水的细节。
+      主角外形、服装主色和船只特征需要在不同章节中保持一致。
+
+交互：一个固定的全屏画面，由页面滚动进度控制镜头进程。
+      相邻场景之间设计有方向感的连接镜头，支持向上回看和章节跳转。
+
+排版：标题突出，正文精简。每章文字同时完整显示，
+      按主体位置选择左侧、右侧或底部留白，避免挡住人物和关键道具。
+
+设备：优先保证桌面效果，同时检查手机竖屏裁切与文字可读性。
+声音：默认静音。
+</code></pre>
+<p>第一轮先输出内容大纲、分镜方案和视觉提案。
+样图阶段先做开头、中间、结尾的小样。
+等我分别确认视觉方向、内容与镜头安排后，再生成完整图片集。
+收费视频生成前，单独说明模型、数量、预计费用和重试范围，等我授权。</p>
+<p>最终交付可运行项目、本地预览地址、素材和修改说明。</p>
+3. 先审大纲和分镜，别急着把所有素材生成出来
+<p>《奥德赛》这种长故事需要压缩，压缩的时候，一章可以交代几个有关联的事件，但画面还是最好只有一个主要视觉事件，这一轮我会要求 Agent 把方案展开：
+请把章节方案整理成分镜表，每章包含：</p>
+<ul>
+<li>章节标题及它在整条故事线中的作用；</li>
+<li>页面实际显示的文案；</li>
+<li>一个主画面事件，以及必须出现的人物、道具；</li>
+<li>构图、景别和镜头运动方向；</li>
+<li>文字放在左、右还是底部，为什么；</li>
+<li>从上一章进入本章的方式；</li>
+<li>从本章离开时，镜头停在哪里，怎样连接下一章。</li>
+</ul>
+<p>先找出最容易发生跳切、人物变化或空间关系不成立的位置，
+给出具体调整建议。</p>
+<p>比如独眼巨人洞穴这一幕，如果主角在左侧、巨人在后方，文字就可以放在右侧相对空的区域，离开洞穴时，可以让镜头朝洞口光线推进；下一段如何接入海面，要在分镜阶段说明方向和中间经过什么。</p>
+5. 用少量样图确定风格，再固定人物设定
+<p>人物一致性需要单独写，尤其是有主角贯穿的故事。只重复角色名字是不能充分约束生成结果的！！</p>
+<p>以案例中的主角为基础，可以写一个固定的角色设定块，prompt 是：</p>
+<pre><code>主角统一设定：
+成年男性，深色中长卷发，短须，体格结实。
+穿暗红色披风、青铜色胸甲、深蓝色短衣，佩戴皮革绑带。
+脸部轮廓、发型、胡须长度和服装主色在各场景中保持一致。
+允许因旅途出现湿水、尘土或轻微破损。
+
+这个设定是本项目的视觉设计；需要换装的剧情节点另行标注。
+生成时优先使用已经确认的角色参考图。
+
+再把风格设定和本章画面分开写，后续修改会容易很多：
+统一风格：
+古希腊史诗插画，细腻绘画质感。
+主要材料为青铜、粗布、木材、岩石和海水。
+暖金色自然光与深蓝色阴影形成对比，保留清晰的前中后景。
+沿用已确认的人物参考，不重新设计主角。
+画面内不生成文字、Logo 、水印或现代物品。
+
+本章画面：
+特洛伊战后的海岸。主角站在木船前部，回望远处冒烟的城池。
+前景有船舷与绳索，中景是主角，背景是海面与城市。
+主角偏右，左侧留下可放标题和两段正文的空间。
+关键人物保持在手机裁切仍能看见的安全区域。
+</code></pre>
+<p>样图不合适时，修改意见也尽量具体：
+保留目前的色调、绘画质感和光线。
+第二张的主角脸型变窄、胡须变短，请按第一张参考统一。
+第三张主角太靠边，请移向画面中央一些，避免手机竖屏裁掉脸。
+第一张左侧准备放正文，请减少该区域的高亮烟雾和密集细节。</p>
+6. 网页阶段，把镜头进程、文字和滚动关系调好
+<p>有了素材，网页还需要解决几个问题：停在某一章时文字能否读完，转场时文字何时退出，手机上主体有没有被裁掉，以及视频加载失败时页面显示什么。
+《奥德赛》案例里，文字位置随构图变化：有些章节在左侧，有些在右侧，结尾落到下方。规划时就应该把这件事交代给 Agent 。
+可以这样提出网页制作要求：</p>
+<pre><code>请按已经确认的分镜和素材组装网页。
+
+所有场景放在同一个固定全屏舞台里。
+滚动进度映射到场景与连接镜头的时间线，支持向上回看。
+
+每章的完整文案同时出现，让用户可以停下来阅读。
+连接镜头期间隐藏正文，下一章进入后再显示对应文案。
+文字位置按分镜安排，不遮住脸部、手部动作和关键道具。
+用局部柔和渐变改善对比，保留画面的可见范围。
+
+提供章节导航、总进度，以及视频尚未加载时的静态封面。
+手机端重新检查裁切和文字位置。
+系统启用减少动态效果时，保留可以阅读的静态版本。
+
+正文与章节配置保存在 content/story.json ，方便后续修改。
+素材也需要统一规格。Skill 会用 FFmpeg 处理尺寸、帧率、编码、时长等，并为网页按进度定位视频做准备。视频能正常播放，只能说明素材可用；滚动前进、后退时是否顺畅，还需要在页面里检查。
+这里还有一个容易混淆的地方：视频时长和读者停留时间是两回事。页面把滚动进度映射到视频位置，读者可以停下来读文字。如果感觉某章一滚就过去了，应该检查这一章分配的滚动距离和文字出现区间，再决定是否调整素材。
+
+</code></pre>
+<p>项目生成后，常用的本地检查和预览命令是：</p>
+<pre><code>python scripts/verify_media.py .
+python scripts/contact_sheet.py .
+python scripts/serve_project.py . --port 8080
+</code></pre>
+<p>这些命令在生成后的项目目录中运行。第一个检查素材规格，第二个生成便于横向查看的画面总览，第三个启动本地预览。也可以让 Agent 执行并解释检查结果。
+返工时，最好指到具体章节和具体问题。比如：</p>
+<pre><code>第二章人物没问题，但标题压到了洞口的亮部，正文不好读。
+先调整文字位置和局部渐变，保留当前素材。
+
+第三章进入第四章时，前一个镜头向前，后一个突然向左，接缝很明显。
+请检查这两段实际边界帧，提出新的连接路线，先给我看方案。
+
+第五章手机端把主角的脸裁掉了。
+请先检查视频的显示位置；如果原始构图没有调整空间，
+再说明需要重做哪张图、哪段视频，以及受影响的相邻连接镜头。
+</code></pre>
+<p>写作不易，希望大家支持！</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近做了一个《奥德赛》的沉浸式网页：往下滚动，镜头就沿着故事往前走，从特洛伊战后的海面进入洞穴，再经过冥界和海上大漩涡，最后回到伊萨卡
+先放效果：</p>
+<p></p>
+<p><strong>Skill： <a href="https://github.com/OpenSenseNova/SenseNova-Skills" target="_blank" rel="noopener noreferrer">https://github.com/OpenSenseNova/SenseNova-Skills</a></strong></p>
+<p><strong>使用文档： <a href="https://github.com/OpenSenseNova/SenseNova-Skills/blob/main/docs/sn-motion-html_cn.md" target="_blank" rel="noopener noreferrer">https://github.com/OpenSenseNova/SenseNova-Skills/blob/main/docs/sn-motion-html_cn.md</a></strong></p>
+1. 开始前，把内容资料和视觉参考准备好
+<p>建议把资料来源，交互参考录屏，还有其他各部分内容分开整理，可以参考我这个结构</p>
+<pre><code>references/
+  brief.md                  # 目标、受众、章节规模、语言
+  story-notes.md            # 故事梗概、必须保留的事件
+  sources.md                # 资料来源、阅读范围、优先级
+  interaction-reference.mp4 # 交互参考录屏
+  reference-notes.md        # 录屏时间段及需要参考的细节
+  visual-style.jpg          # 画风、色彩、材质参考
+  character-reference.png   # 主角外形参考
+  
+</code></pre>
+<p>内容资料也可以很朴素，比如 <a href="http://story-notes.md" target="_blank" rel="noopener noreferrer">story-notes.md</a> 先写“核心是返乡旅程”，再列必须保留的章节、每章希望读者理解的一件事，以及可以省略的支线。原著或梗概负责提供依据，这份笔记负责告诉 AI 你准备怎样取舍。</p>
+<p>材料说明的 prompt ，可以发给 Agent：
+请先读取我提供的资料，再提出制作方案。</p>
+<p>材料用途如下：</p>
+<pre><code>1. story-notes.md 是内容主线，里面标注“必须保留”的事件要保留。
+2. sources.md 是核对来源。不同资料冲突时，优先采用我指定的主要版本，
+   不要把影视改编情节直接当成原著情节。
+3. interaction-reference.mp4 参考固定全屏画面、滚动推进镜头、章节切换。
+   具体参考片段见 reference-notes.md 。
+4. visual-style.jpg 参考色调、绘画质感和光线。
+5. character-reference.png 用来保持主角外形一致。
+
+请先告诉我：从每份材料里提取了什么、哪些内容无法读取、
+还有哪些冲突需要处理。不能访问的链接不要假装已经看过。
+如果参考来自不同作品，建议再补一句哪些元素需要舍弃，例如：只参考一个网站的滚动方式，不沿用它的 Logo 、字体组合和装饰图案，这样最后做出来的页面更容易形成自己的风格
+</code></pre>
+2. 第一轮 prompt 先把制作目标说具体
+<p>第一条消息不必包含所有镜头细节，但要交代主题、读者、内容范围、视觉方向、交互方式和交付要求</p>
+<p>比如：</p>
+<pre><code>请使用 sn-motion-html ，制作一个关于《奥德赛》的沉浸式叙事网页。
+
+主题：一个经历战争和漂泊的人，如何回到故乡。
+受众：没有读过原著、但愿意通过画面了解故事的人。
+内容：以我提供的资料为依据，把返乡旅程组织成约 7 个章节。
+      可以压缩支线，但要保留关键因果；明确标记为叙事改编。
+语言：页面标题、导航和正文使用英文；制作过程用中文和我沟通。
+
+视觉：有绘画质感的古希腊史诗插画，保留布料、青铜、岩石和海水的细节。
+      主角外形、服装主色和船只特征需要在不同章节中保持一致。
+
+交互：一个固定的全屏画面，由页面滚动进度控制镜头进程。
+      相邻场景之间设计有方向感的连接镜头，支持向上回看和章节跳转。
+
+排版：标题突出，正文精简。每章文字同时完整显示，
+      按主体位置选择左侧、右侧或底部留白，避免挡住人物和关键道具。
+
+设备：优先保证桌面效果，同时检查手机竖屏裁切与文字可读性。
+声音：默认静音。
+</code></pre>
+<p>第一轮先输出内容大纲、分镜方案和视觉提案。
+样图阶段先做开头、中间、结尾的小样。
+等我分别确认视觉方向、内容与镜头安排后，再生成完整图片集。
+收费视频生成前，单独说明模型、数量、预计费用和重试范围，等我授权。</p>
+<p>最终交付可运行项目、本地预览地址、素材和修改说明。</p>
+3. 先审大纲和分镜，别急着把所有素材生成出来
+<p>《奥德赛》这种长故事需要压缩，压缩的时候，一章可以交代几个有关联的事件，但画面还是最好只有一个主要视觉事件，这一轮我会要求 Agent 把方案展开：
+请把章节方案整理成分镜表，每章包含：</p>
+<ul>
+<li>章节标题及它在整条故事线中的作用；</li>
+<li>页面实际显示的文案；</li>
+<li>一个主画面事件，以及必须出现的人物、道具；</li>
+<li>构图、景别和镜头运动方向；</li>
+<li>文字放在左、右还是底部，为什么；</li>
+<li>从上一章进入本章的方式；</li>
+<li>从本章离开时，镜头停在哪里，怎样连接下一章。</li>
+</ul>
+<p>先找出最容易发生跳切、人物变化或空间关系不成立的位置，
+给出具体调整建议。</p>
+<p>比如独眼巨人洞穴这一幕，如果主角在左侧、巨人在后方，文字就可以放在右侧相对空的区域，离开洞穴时，可以让镜头朝洞口光线推进；下一段如何接入海面，要在分镜阶段说明方向和中间经过什么。</p>
+5. 用少量样图确定风格，再固定人物设定
+<p>人物一致性需要单独写，尤其是有主角贯穿的故事。只重复角色名字是不能充分约束生成结果的！！</p>
+<p>以案例中的主角为基础，可以写一个固定的角色设定块，prompt 是：</p>
+<pre><code>主角统一设定：
+成年男性，深色中长卷发，短须，体格结实。
+穿暗红色披风、青铜色胸甲、深蓝色短衣，佩戴皮革绑带。
+脸部轮廓、发型、胡须长度和服装主色在各场景中保持一致。
+允许因旅途出现湿水、尘土或轻微破损。
+
+这个设定是本项目的视觉设计；需要换装的剧情节点另行标注。
+生成时优先使用已经确认的角色参考图。
+
+再把风格设定和本章画面分开写，后续修改会容易很多：
+统一风格：
+古希腊史诗插画，细腻绘画质感。
+主要材料为青铜、粗布、木材、岩石和海水。
+暖金色自然光与深蓝色阴影形成对比，保留清晰的前中后景。
+沿用已确认的人物参考，不重新设计主角。
+画面内不生成文字、Logo 、水印或现代物品。
+
+本章画面：
+特洛伊战后的海岸。主角站在木船前部，回望远处冒烟的城池。
+前景有船舷与绳索，中景是主角，背景是海面与城市。
+主角偏右，左侧留下可放标题和两段正文的空间。
+关键人物保持在手机裁切仍能看见的安全区域。
+</code></pre>
+<p>样图不合适时，修改意见也尽量具体：
+保留目前的色调、绘画质感和光线。
+第二张的主角脸型变窄、胡须变短，请按第一张参考统一。
+第三张主角太靠边，请移向画面中央一些，避免手机竖屏裁掉脸。
+第一张左侧准备放正文，请减少该区域的高亮烟雾和密集细节。</p>
+6. 网页阶段，把镜头进程、文字和滚动关系调好
+<p>有了素材，网页还需要解决几个问题：停在某一章时文字能否读完，转场时文字何时退出，手机上主体有没有被裁掉，以及视频加载失败时页面显示什么。
+《奥德赛》案例里，文字位置随构图变化：有些章节在左侧，有些在右侧，结尾落到下方。规划时就应该把这件事交代给 Agent 。
+可以这样提出网页制作要求：</p>
+<pre><code>请按已经确认的分镜和素材组装网页。
+
+所有场景放在同一个固定全屏舞台里。
+滚动进度映射到场景与连接镜头的时间线，支持向上回看。
+
+每章的完整文案同时出现，让用户可以停下来阅读。
+连接镜头期间隐藏正文，下一章进入后再显示对应文案。
+文字位置按分镜安排，不遮住脸部、手部动作和关键道具。
+用局部柔和渐变改善对比，保留画面的可见范围。
+
+提供章节导航、总进度，以及视频尚未加载时的静态封面。
+手机端重新检查裁切和文字位置。
+系统启用减少动态效果时，保留可以阅读的静态版本。
+
+正文与章节配置保存在 content/story.json ，方便后续修改。
+素材也需要统一规格。Skill 会用 FFmpeg 处理尺寸、帧率、编码、时长等，并为网页按进度定位视频做准备。视频能正常播放，只能说明素材可用；滚动前进、后退时是否顺畅，还需要在页面里检查。
+这里还有一个容易混淆的地方：视频时长和读者停留时间是两回事。页面把滚动进度映射到视频位置，读者可以停下来读文字。如果感觉某章一滚就过去了，应该检查这一章分配的滚动距离和文字出现区间，再决定是否调整素材。
+
+</code></pre>
+<p>项目生成后，常用的本地检查和预览命令是：</p>
+<pre><code>python scripts/verify_media.py .
+python scripts/contact_sheet.py .
+python scripts/serve_project.py . --port 8080
+</code></pre>
+<p>这些命令在生成后的项目目录中运行。第一个检查素材规格，第二个生成便于横向查看的画面总览，第三个启动本地预览。也可以让 Agent 执行并解释检查结果。
+返工时，最好指到具体章节和具体问题。比如：</p>
+<pre><code>第二章人物没问题，但标题压到了洞口的亮部，正文不好读。
+先调整文字位置和局部渐变，保留当前素材。
+
+第三章进入第四章时，前一个镜头向前，后一个突然向左，接缝很明显。
+请检查这两段实际边界帧，提出新的连接路线，先给我看方案。
+
+第五章手机端把主角的脸裁掉了。
+请先检查视频的显示位置；如果原始构图没有调整空间，
+再说明需要重做哪张图、哪段视频，以及受影响的相邻连接镜头。
+</code></pre>
+<p>写作不易，希望大家支持！</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">3</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cowcomic</span>
+        <span>#1</span>
+        <span>2026/09/24 23:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">点赞<br />要是没有参考视频呢？通过描述能达到类似的效果么</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126110">点赞<br />要是没有参考视频呢？通过描述能达到类似的效果么</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126110">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244672#reply18126110" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tidilist</span>
+        <span>#2</span>
+        <span>2026/09/25 00:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">牛的。去试试效果。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126156">牛的。去试试效果。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126156">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244672#reply18126156" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tidilist</span>
+        <span>#3</span>
+        <span>2026/09/25 00:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tidilist" target="_blank" rel="noopener noreferrer">tidilist</a> 这喵的是个推广帖子吧？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18126176">@<a href="/member/tidilist" target="_blank" rel="noopener noreferrer">tidilist</a> 这喵的是个推广帖子吧？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18126176">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244672#reply18126176" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
