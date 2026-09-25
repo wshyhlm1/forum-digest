@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了一个免费开源的截图工具 Kiri，支持标注、本地 OCR 和录屏 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-25/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>做了一个免费开源的截图工具 Kiri，支持标注、本地 OCR 和录屏</h1>
+      <p class="original-title">做了一个免费开源的截图工具 Kiri，支持标注、本地 OCR 和录屏</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 ashita</span>
+        <span>热度 8</span>
+        <span>回复 8</span>
+        <span>2026/09/25 20:45</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1244782" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1244782.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>大家好，分享一下我做的小工具 Kiri ，免费开源，支持 macOS 和 Windows 。</li><li>平时截个图、标一下重点，或者从图片里复制一段文字，就可以用它。按快捷键后选窗口或框一块区域，截图可以加箭头、文字和马赛克，也可以直接识别文字，或者录成 MP4 / GIF 。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>大家好，分享一下我做的小工具 Kiri ，免费开源，支持 macOS 和 Windows 。</p>
+<p>平时截个图、标一下重点，或者从图片里复制一段文字，就可以用它。按快捷键后选窗口或框一块区域，截图可以加箭头、文字和马赛克，也可以直接识别文字，或者录成 MP4 / GIF 。</p>
+<p>截图和录屏会放进本地图库，可以按名字、标签查找。OCR 默认在本机运行；如果自己配置了远程 OCR ，每次上传前也需要确认。</p>
+<p>官网放了操作演示，可以先看看用起来是什么样：</p>
+<ul>
+<li>官网与演示： <a href="https://kiri.yuxino.cn/zh/#demo" target="_blank" rel="noopener noreferrer">https://kiri.yuxino.cn/zh/#demo</a></li>
+<li>源码： <a href="https://github.com/yuxino/kiri" target="_blank" rel="noopener noreferrer">https://github.com/yuxino/kiri</a></li>
+<li>下载： <a href="https://github.com/yuxino/kiri/releases/latest" target="_blank" rel="noopener noreferrer">https://github.com/yuxino/kiri/releases/latest</a></li>
+</ul>
+<p>目前需要 macOS 14+ 或 Windows 11 x64 。macOS 安装包还没有 Apple 公证，首次打开可能要到「隐私与安全性」里点「仍要打开」； Windows 安装包也没有 Authenticode 签名，可能会遇到 SmartScreen 提示。</p>
+<p>这个小工具花了不少时间打磨，希望大家用着顺手 (˶ᵔ ᵕ ᵔ˶) 有不顺手的地方，欢迎告诉我，最好带上系统版本和复现步骤，我会继续改。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>大家好，分享一下我做的小工具 Kiri ，免费开源，支持 macOS 和 Windows 。</p>
+<p>平时截个图、标一下重点，或者从图片里复制一段文字，就可以用它。按快捷键后选窗口或框一块区域，截图可以加箭头、文字和马赛克，也可以直接识别文字，或者录成 MP4 / GIF 。</p>
+<p>截图和录屏会放进本地图库，可以按名字、标签查找。OCR 默认在本机运行；如果自己配置了远程 OCR ，每次上传前也需要确认。</p>
+<p>官网放了操作演示，可以先看看用起来是什么样：</p>
+<ul>
+<li>官网与演示： <a href="https://kiri.yuxino.cn/zh/#demo" target="_blank" rel="noopener noreferrer">https://kiri.yuxino.cn/zh/#demo</a></li>
+<li>源码： <a href="https://github.com/yuxino/kiri" target="_blank" rel="noopener noreferrer">https://github.com/yuxino/kiri</a></li>
+<li>下载： <a href="https://github.com/yuxino/kiri/releases/latest" target="_blank" rel="noopener noreferrer">https://github.com/yuxino/kiri/releases/latest</a></li>
+</ul>
+<p>目前需要 macOS 14+ 或 Windows 11 x64 。macOS 安装包还没有 Apple 公证，首次打开可能要到「隐私与安全性」里点「仍要打开」； Windows 安装包也没有 Authenticode 签名，可能会遇到 SmartScreen 提示。</p>
+<p>这个小工具花了不少时间打磨，希望大家用着顺手 (˶ᵔ ᵕ ᵔ˶) 有不顺手的地方，欢迎告诉我，最好带上系统版本和复现步骤，我会继续改。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">8</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Need4more</span>
+        <span>#1</span>
+        <span>2026/09/25 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">和系统自带的 win+shift+t 的截图有什么优势吗？<br /><br /><a href="https://i.imgur.com/4nDm4nJ.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127577">和系统自带的 win+shift+t 的截图有什么优势吗？<br /><br /><a href="https://i.imgur.com/4nDm4nJ.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127577">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127577" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ashita</span>
+        <span>#2</span>
+        <span>2026/09/25 22:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Need4more" target="_blank" rel="noopener noreferrer">Need4more</a> 谢谢 Need 老师，是个很好的问题。我平时主要用 Mac ，感觉自带的截图工具用着不是特别顺手，还真不知道 Windows 现在自带的已经这么好用了，感谢科普。以前用 Windows ，基本都是用 QQ 或者微信截图。<br /><br />如果只是截完复制一下，系统自带的确实很方便。Kiri 在截图之外还做了一些功能：<br /><br />图片可以加文字、箭头、马赛克，保存后还能重新修改标注，不用因为写错一个字就重新截图。已有的图片也能导入来改。<br /><br />视频可以做些简单剪辑，比如剪掉录错的地方、把等待的部分加速，加文字和箭头，给账号信息打码，或者放大某个操作细节。自己录的和导入的视频都能处理。<br /><br />OCR 除了当时识别、复制，之前识别过的文字也会保存下来。以后记得其中几个字，就能搜出来，也能看到当时的截图。<br /><br />主要是按自己平时的需求慢慢做的，原帖这部分没介绍清楚，谢谢 Need 老师的提问～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127612">@<a href="/member/Need4more" target="_blank" rel="noopener noreferrer">Need4more</a> 谢谢 Need 老师，是个很好的问题。我平时主要用 Mac ，感觉自带的截图工具用着不是特别顺手，还真不知道 Windows 现在自带的已经这么好用了，感谢科普。以前用 Windows ，基本都是用 QQ 或者微信截图。<br /><br />如果只是截完复制一下，系统自带的确实很方便。Kiri 在截图之外还做了一些功能：<br /><br />图片可以加文字、箭头、马赛克，保存后还能重新修改标注，不用因为写错一个字就重新截图。已有的图片也能导入来改。<br /><br />视频可以做些简单剪辑，比如剪掉录错的地方、把等待的部分加速，加文字和箭头，给账号信息打码，或者放大某个操作细节。自己录的和导入的视频都能处理。<br /><br />OCR 除了当时识别、复制，之前识别过的文字也会保存下来。以后记得其中几个字，就能搜出来，也能看到当时的截图。<br /><br />主要是按自己平时的需求慢慢做的，原帖这部分没介绍清楚，谢谢 Need 老师的提问～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127612">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127612" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Need4more</span>
+        <span>#3</span>
+        <span>2026/09/25 22:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ashita" target="_blank" rel="noopener noreferrer">ashita</a> 您太客气了，我不是老师哈。<br />你的项目使用 rust 不是 electron ，这点给个赞。仅针对 windows 的话，系统自带的功能满足绝大部分场景了，除了长截图，但是微信弥补了这点。建议你考虑加个长截图，重点优化下 mac 系统~</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127643">@<a href="/member/ashita" target="_blank" rel="noopener noreferrer">ashita</a> 您太客气了，我不是老师哈。<br />你的项目使用 rust 不是 electron ，这点给个赞。仅针对 windows 的话，系统自带的功能满足绝大部分场景了，除了长截图，但是微信弥补了这点。建议你考虑加个长截图，重点优化下 mac 系统~</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127643">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127643" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ashita</span>
+        <span>#4</span>
+        <span>2026/09/25 22:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Need4more" target="_blank" rel="noopener noreferrer">Need4more</a> 哈哈好的，感谢建议！！我也想先把 Mac 上的体验做好～<br /><br />长截图之前调研过，确实有点难度，主要是滚动之后图片的衔接，处理不好就会有内容重复、错位，拼出来的长图看着怪怪的哈哈哈。这个我再研究研究～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127656">@<a href="/member/Need4more" target="_blank" rel="noopener noreferrer">Need4more</a> 哈哈好的，感谢建议！！我也想先把 Mac 上的体验做好～<br /><br />长截图之前调研过，确实有点难度，主要是滚动之后图片的衔接，处理不好就会有内容重复、错位，拼出来的长图看着怪怪的哈哈哈。这个我再研究研究～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127656">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127656" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Sosocould</span>
+        <span>#5</span>
+        <span>2026/09/25 23:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">来个 linux 的吧大佬，linux 现在 Wayland 下没有什么好的截图标注+ocr 的程序</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127681">来个 linux 的吧大佬，linux 现在 Wayland 下没有什么好的截图标注+ocr 的程序</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127681">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127681" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ashita</span>
+        <span>#6</span>
+        <span>2026/09/25 23:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Sosocould" target="_blank" rel="noopener noreferrer">Sosocould</a> 好的！后续会尝试做一下。目前其实已经有小伙伴提了 PR 在做 Linux 版本，不过我这阵子改动有点多，可能让小伙伴跟着适配有些吃力了～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127692">@<a href="/member/Sosocould" target="_blank" rel="noopener noreferrer">Sosocould</a> 好的！后续会尝试做一下。目前其实已经有小伙伴提了 PR 在做 Linux 版本，不过我这阵子改动有点多，可能让小伙伴跟着适配有些吃力了～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127692">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127692" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ob</span>
+        <span>#7</span>
+        <span>2026/09/26 01:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">视频做的挺好，视频播放器和右边跳转章节用的啥技术栈，学习一下。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127833">视频做的挺好，视频播放器和右边跳转章节用的啥技术栈，学习一下。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127833">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127833" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ashita</span>
+        <span>#8</span>
+        <span>2026/09/26 01:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ob" target="_blank" rel="noopener noreferrer">ob</a> 是根据视频的内容定位到对应时间点的。整个视频都是用 Codex 做的，包括配音、截图等。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18127844">@<a href="/member/ob" target="_blank" rel="noopener noreferrer">ob</a> 是根据视频的内容定位到对应时间点的。整个视频都是用 Codex 做的，包括配音、截图等。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18127844">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244782#reply18127844" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
