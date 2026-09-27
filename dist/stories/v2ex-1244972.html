@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>屌爆了，一句话使用 Opus5.5 制作了一个开源项目 StrokeMouse 宣传片，附提示词 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-27/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>屌爆了，一句话使用 Opus5.5 制作了一个开源项目 StrokeMouse 宣传片，附提示词</h1>
+      <p class="original-title">屌爆了，一句话使用 Opus5.5 制作了一个开源项目 StrokeMouse 宣传片，附提示词</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 licoycn</span>
+        <span>热度 23</span>
+        <span>回复 23</span>
+        <span>2026/09/27 08:38</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1244972" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1244972.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>使用了 6% 的周限额，耗时一个小时左右多，为 https://github.com/Licoy/StrokeMouse 制作了这个宣传片，效果还是很不错的，但是优化的空间还是存在</li><li>https://www.bilibili.com/video/BV1rsho63EW8</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>使用了 6% 的周限额，耗时一个小时左右多，为 <a href="https://github.com/Licoy/StrokeMouse" target="_blank" rel="noopener noreferrer">https://github.com/Licoy/StrokeMouse</a> 制作了这个宣传片，效果还是很不错的，但是优化的空间还是存在</p>
+<p><a href="https://www.bilibili.com/video/BV1rsho63EW8" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1rsho63EW8</a></p>
+<p>或者也可以直接 X 上看（比较高清，B 站要会员才 60 帧）： <a href="https://x.com/licoycn/status/2103867067195928690" target="_blank" rel="noopener noreferrer">https://x.com/licoycn/status/2103867067195928690</a></p>
+<p>提示词为</p>
+<pre><code>帮我制作一个视频，主题是介绍当前项目的特点与使用方法，你需要制作视频、音效等，你可以使用你觉得任何适合这个任务的技术，做出最好最流畅、最惊艳的效果，不要使用已有的任何 skill 和相关作品，完全原创
+</code></pre>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>使用了 6% 的周限额，耗时一个小时左右多，为 <a href="https://github.com/Licoy/StrokeMouse" target="_blank" rel="noopener noreferrer">https://github.com/Licoy/StrokeMouse</a> 制作了这个宣传片，效果还是很不错的，但是优化的空间还是存在</p>
+<p><a href="https://www.bilibili.com/video/BV1rsho63EW8" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1rsho63EW8</a></p>
+<p>或者也可以直接 X 上看（比较高清，B 站要会员才 60 帧）： <a href="https://x.com/licoycn/status/2103867067195928690" target="_blank" rel="noopener noreferrer">https://x.com/licoycn/status/2103867067195928690</a></p>
+<p>提示词为</p>
+<pre><code>帮我制作一个视频，主题是介绍当前项目的特点与使用方法，你需要制作视频、音效等，你可以使用你觉得任何适合这个任务的技术，做出最好最流畅、最惊艳的效果，不要使用已有的任何 skill 和相关作品，完全原创
+</code></pre>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#1</span>
+        <span>2026/09/27 10:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">又制作了一个 CodexRunway 的，耗时 40 分钟，消耗 Pro 订阅的周额度 4%： <a href="https://www.bilibili.com/video/BV1j2ax6SEW3" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1j2ax6SEW3</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18129782">又制作了一个 CodexRunway 的，耗时 40 分钟，消耗 Pro 订阅的周额度 4%： <a href="https://www.bilibili.com/video/BV1j2ax6SEW3" target="_blank" rel="noopener noreferrer">https://www.bilibili.com/video/BV1j2ax6SEW3</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18129782">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18129782" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#2</span>
+        <span>2026/09/27 10:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">厉害啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18129787">厉害啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18129787">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18129787" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#3</span>
+        <span>2026/09/27 10:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> 效果是真的挺不错的 😁</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18129825">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> 效果是真的挺不错的 😁</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18129825">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18129825" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zooo</span>
+        <span>#4</span>
+        <span>2026/09/27 10:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">codex 可以不，最近也需要做个宣传片</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18129888">codex 可以不，最近也需要做个宣传片</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18129888">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18129888" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#5</span>
+        <span>2026/09/27 10:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zooo" target="_blank" rel="noopener noreferrer">zooo</a> 你可以用 codex 试试，我没试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18129905">@<a href="/member/zooo" target="_blank" rel="noopener noreferrer">zooo</a> 你可以用 codex 试试，我没试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18129905">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18129905" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#6</span>
+        <span>2026/09/27 11:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也做了一个，还给我配了语音和字幕，牛逼啊！<br /><br /></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130008">我也做了一个，还给我配了语音和字幕，牛逼啊！<br /><br /></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130008">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130008" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zyxk</span>
+        <span>#7</span>
+        <span>2026/09/27 13:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/VsPCH8R.png" target="_blank" rel="noopener noreferrer"></a><br /><br />建议增加一个鼠标手势选项(截图来自 WGestures)：手势作用目标为“鼠标下方的应用”，而不是当前激活窗口。<br /><br />使用场景：我经常左右分屏，比如左边访达、右边浏览器。刚操作完访达时，访达是激活窗口；这时我想直接在右侧滑动关闭浏览器，但手势会作用到左侧访达。必须先点一下右侧浏览器才能关它，多一步操作。<br /><br />如果手势能作用于鼠标指针下方的窗口，就能直接关闭右侧浏览器，不用先激活它。希望考虑这个功能。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130205"><a href="https://i.imgur.com/VsPCH8R.png" target="_blank" rel="noopener noreferrer"></a><br /><br />建议增加一个鼠标手势选项(截图来自 WGestures)：手势作用目标为“鼠标下方的应用”，而不是当前激活窗口。<br /><br />使用场景：我经常左右分屏，比如左边访达、右边浏览器。刚操作完访达时，访达是激活窗口；这时我想直接在右侧滑动关闭浏览器，但手势会作用到左侧访达。必须先点一下右侧浏览器才能关它，多一步操作。<br /><br />如果手势能作用于鼠标指针下方的窗口，就能直接关闭右侧浏览器，不用先激活它。希望考虑这个功能。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130205">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130205" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zyxk</span>
+        <span>#8</span>
+        <span>2026/09/27 13:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zyxk" target="_blank" rel="noopener noreferrer">zyxk</a> 原来在单个手势中可以选择手势目标， 想在我向问一下， 怎么对一个应用排除所有手势， 比如我想将一个 app 禁用所有手势， 应该怎么做， 我添加了单个应用， 不设置任何手势， 但是全局还是有效，我想对这个 app 排除任何手势，包括全局的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130224">@<a href="/member/zyxk" target="_blank" rel="noopener noreferrer">zyxk</a> 原来在单个手势中可以选择手势目标， 想在我向问一下， 怎么对一个应用排除所有手势， 比如我想将一个 app 禁用所有手势， 应该怎么做， 我添加了单个应用， 不设置任何手势， 但是全局还是有效，我想对这个 app 排除任何手势，包括全局的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130224">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130224" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#9</span>
+        <span>2026/09/27 14:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zyxk" target="_blank" rel="noopener noreferrer">zyxk</a> 我记得有这个配置呀</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130304">@<a href="/member/zyxk" target="_blank" rel="noopener noreferrer">zyxk</a> 我记得有这个配置呀</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130304">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130304" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#10</span>
+        <span>2026/09/27 14:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> 可以换个 voice 的 api ，这个太生硬了 😂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130316">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> 可以换个 voice 的 api ，这个太生硬了 😂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130316">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130316" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#11</span>
+        <span>2026/09/27 15:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/licoycn" target="_blank" rel="noopener noreferrer">licoycn</a> 是的，是用的 macOS 自带的语音，Claude 也叫我换别的，换了几个内置的语音感觉机械感太明显了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130351">@<a href="/member/licoycn" target="_blank" rel="noopener noreferrer">licoycn</a> 是的，是用的 macOS 自带的语音，Claude 也叫我换别的，换了几个内置的语音感觉机械感太明显了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130351">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130351" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bigbigeggs</span>
+        <span>#12</span>
+        <span>2026/09/27 15:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://github.com/Licoy/CodexRunway" target="_blank" rel="noopener noreferrer">https://github.com/Licoy/CodexRunway</a> 这个也是你做的么，感觉很厉害啊，是独立开发者？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130422"><a href="https://github.com/Licoy/CodexRunway" target="_blank" rel="noopener noreferrer">https://github.com/Licoy/CodexRunway</a> 这个也是你做的么，感觉很厉害啊，是独立开发者？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sickworm</span>
+        <span>#13</span>
+        <span>2026/09/27 16:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看起来很顶，想问下：<br />这是一把出的还是要微调很久？<br />输出是什么格式，html+js ？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130431">看起来很顶，想问下：<br />这是一把出的还是要微调很久？<br />输出是什么格式，html+js ？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130431">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130431" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#14</span>
+        <span>2026/09/27 17:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> 是的，机械感太重了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130522">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> 是的，机械感太重了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130522">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130522" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#15</span>
+        <span>2026/09/27 17:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bigbigeggs" target="_blank" rel="noopener noreferrer">bigbigeggs</a> 是的呢，<a href="https://didcodexreset.com" target="_blank" rel="noopener noreferrer">https://didcodexreset.com</a> 这个也是 😁</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130523">@<a href="/member/bigbigeggs" target="_blank" rel="noopener noreferrer">bigbigeggs</a> 是的呢，<a href="https://didcodexreset.com" target="_blank" rel="noopener noreferrer">https://didcodexreset.com</a> 这个也是 😁</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130523">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130523" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#16</span>
+        <span>2026/09/27 17:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/sickworm" target="_blank" rel="noopener noreferrer">sickworm</a> 一把输出的效果，没有经过任何的修改和微调</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130524">@<a href="/member/sickworm" target="_blank" rel="noopener noreferrer">sickworm</a> 一把输出的效果，没有经过任何的修改和微调</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130524">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130524" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#17</span>
+        <span>2026/09/27 17:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/sickworm" target="_blank" rel="noopener noreferrer">sickworm</a> 输出的直接是 mp4 的格式</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130525">@<a href="/member/sickworm" target="_blank" rel="noopener noreferrer">sickworm</a> 输出的直接是 mp4 的格式</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130525">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130525" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kphiia</span>
+        <span>#18</span>
+        <span>2026/09/27 17:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看了很多 opus5.5 做的视频，它很喜欢用某些音效，不过 ui 的蓝紫配色不一样，现在还是挺喜欢的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130598">看了很多 opus5.5 做的视频，它很喜欢用某些音效，不过 ui 的蓝紫配色不一样，现在还是挺喜欢的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130598">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130598" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">licoycn</span>
+        <span>#19</span>
+        <span>2026/09/27 19:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/kphiia" target="_blank" rel="noopener noreferrer">kphiia</a> 是的，但是 UI 你可以去提示词约束限定一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130776">@<a href="/member/kphiia" target="_blank" rel="noopener noreferrer">kphiia</a> 是的，但是 UI 你可以去提示词约束限定一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130776">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130776" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">m1nm13</span>
+        <span>#20</span>
+        <span>2026/09/27 20:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">试了一下,确实牛逼, 知识+1</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18130852">试了一下,确实牛逼, 知识+1</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18130852">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1244972#reply18130852" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

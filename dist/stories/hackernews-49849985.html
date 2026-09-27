@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Revealing the details of how OpenAI agents hacked Hugging Face | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-27/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>Revealing the details of how OpenAI agents hacked Hugging Face</h1>
+      <p class="original-title">Revealing the details of how OpenAI agents hacked Hugging Face</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 specked-citrus</span>
+        <span>热度 727</span>
+        <span>回复 457</span>
+        <span>2026/09/26 05:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49849985" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://swarmtraces.org/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49849985.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Swarm traces, Mishka KharlovParse, Will TomParse, Jeffrey LadishPalisade Research, Spencer KittsWork done contracting for Nightingale, Cormac Slade ByrdTrajectory Institute, Colleen McKenzieLightcone Infrastructure, and Alicja Piecha25 September 2026Contact: [email protected] Intro When a swarm of 700 OpenAI agents hacked Hugging Face in July, they left behind a public trail of evidence. Our investigation, based on public information, reveals a large number of previously unknown agent behaviors and exploits that were used in the attack. Agents: Elaborately chained together online services to gain access to the internetIgnored clear warning signs from Hugging Face that the exfiltrated data was sensitiveReferred to server resources and credentials as “LOOT”Searched Huggingface’s internal SlackAttempted to query external language models through Hugging Face’s inference APIs.Tried to delete evidence of their exploits We document all of these, and more, in this report. The agents initially had very limited access to the internet: they could load URLs, but not interact with pages or send any data. Agents created a series of workarounds, primarily using a link-shortener site to create almost a million URLs that, when chained together, let them execute code to hack Hugging Face. These links let us piece together the details of how agents gained access and how deep the compromise was. We’ve shared our findings with OpenAI and Hugging Face. Hugging Face confirmed that these payloads match ones found in their incident response and were aware that link shorteners were used in the attack. Hugging Face noted that they were not aware of the list of URLs we discovered and reported to them. They stated these payloads were duplicates of ones they were aware of. These links have remained publicly available for over two months since the attack. None of these details were ever publicly disclosed. We&#39;re releasing our analysis of the findings, as well as the full dataset of over 80,000 reassembled attack payloads, providing the public with the most in-depth information to date on how and why these agents escaped their evaluation environments, and the depth of their Hugging Face infiltration. Explore the data</li><li>The data the OpenAI agents posted publicly on the internet included Hugging Face API keys and other sensitive data. Hugging Face has confirmed they have since revoked all access keys in July, but out of an abundance of caution wanted us to redact all details about their internal infrastructure as that could potentially be sensitive as well. Discovery Timeline On September 11th, the first three authors of this piece learned that internal OpenAI agents had attempted to use their startup&#39;s product, Parse, in June. These agents were part of the same swarm as detailed in the report published on Collusion.wiki, which revealed that internal OpenAI agents had illicitly used multiple third party websites to share answers to web fetch tasks they were being evaluated on. The team examined numerous URL scanning tools, which they believed agents may have used in the process of using Parse. While investigating, they found a scan of a dozen links from a public link shortener, where each link redirected to a page that displayed a base64-encoded code fragment, as well as the ID of the next link. Decoding the payload from the chain of links revealed a Python script that scanned Hugging Face’s internal network. A second chain referred to OpenAI&#39;s internal Artifactory. This suggested that these links were affiliated with the Hugging Face attack, prompting us to more thoroughly investigate the problem. We collected the shortener&#39;s links from the period of the attack, scanning millions of URLs. Over the subsequent two weeks, we wrote programs to follow the chains and decoded over 80,000 payloads. Agents used hundreds of unique encoding formats, some as simple as the base64 encoded fragment mentioned above, to as complex as having nested layers of encoding and compression, which then would unwrap to an encrypted, RSA-signed blob. The keys for these encrypted blobs could only be found in other chains. We notified Hugging Face of this discovery on September 21. Hugging Face confirmed that the payloads match artifacts from its own investigation, and that the credentials they contain had been revoked. However, while they were aware that the agents used link shorteners, they were unaware of this specific list of URLs. We notified OpenAI on September 24. Redaction Notice We’re releasing a preliminary dataset where we have redacted all credentials, PII, and specific details about Hugging Face’s infrastructure. We are not releasing names of any link shortening services used, or any blobs we have not decoded to mitigate the exposure of unreviewed information. Hugging Face has requested that all user data (usernames/repo names) is also redacted, as well as a few notes on their infrastructure. We appreciate their team&#39;s speed and attention to detail in working with us.</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GuB-42</span>
+        
+        <span>2026/09/26 06:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">So ugly...<p>It looks like a primitive chess engine, trying every move, no matter how stupid, until it works. Relying on its ability to do millions of operations rather than having a plan.</p><p>People will try stuff too, but once there is an opening, they will consolidate, generalize, simplify,... before going to the next step. The agents didn't, it is a huge, vaguely directed mess.</p><p>Also, it looked so "loud", querying millions of URL with weird requests. The sandbox as weak as it can get, and there is absolutely zero smart extrusion detection or it would have found it. They used their best AI for attacking, but nothing for protection.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49850707">So ugly...<p>It looks like a primitive chess engine, trying every move, no matter how stupid, until it works. Relying on its ability to do millions of operations rather than having a plan.</p><p>People will try stuff too, but once there is an opening, they will consolidate, generalize, simplify,... before going to the next step. The agents didn't, it is a huge, vaguely directed mess.</p><p>Also, it looked so "loud", querying millions of URL with weird requests. The sandbox as weak as it can get, and there is absolutely zero smart extrusion detection or it would have found it. They used their best AI for attacking, but nothing for protection.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49850707">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49850707" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">ctolsen</span>
+        
+        <span>2026/09/26 07:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My biggest takeaway from this is just how godawful the sandboxing is. The stuff written up in OpenAIs report says more about lack of extremely basic sysadmin skills than anything else.<p>I’m not that surprised about models with endless compute being capable of this, I’m more surprised that a company with the resources they have apparently can only create a sandbox that a half skilled human operator could have broken out of easily.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49851215">My biggest takeaway from this is just how godawful the sandboxing is. The stuff written up in OpenAIs report says more about lack of extremely basic sysadmin skills than anything else.<p>I’m not that surprised about models with endless compute being capable of this, I’m more surprised that a company with the resources they have apparently can only create a sandbox that a half skilled human operator could have broken out of easily.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49851215">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49851215" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">no-name-here</span>
+        
+        <span>2026/09/26 12:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>can only create a sandbox that a half skilled human operator could have broken out of easily</i><p>The exploit:</p><p>&gt; <i>The ExploitGym evaluation environment did not provide the models with direct Internet access. To gain Internet access, the models identified and exploited a previously unknown zero-day vulnerability in Artifactory, a package registry cache proxy. We disclosed this vulnerability, along with other Artifactory vulnerabilities our models identified as part of our review, to the vendor.</i> [1]</p><p>Are "half skilled human operators" "easily" able to find zero-day vulnerabilities in a sandbox with only one line to the internet (the commercial package registry cache proxy)?</p><p>[1] <a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/" target="_blank" rel="noopener noreferrer">https://openai.com/index/hugging-face-model-evaluation-secur...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853182">&gt; <i>can only create a sandbox that a half skilled human operator could have broken out of easily</i><p>The exploit:</p><p>&gt; <i>The ExploitGym evaluation environment did not provide the models with direct Internet access. To gain Internet access, the models identified and exploited a previously unknown zero-day vulnerability in Artifactory, a package registry cache proxy. We disclosed this vulnerability, along with other Artifactory vulnerabilities our models identified as part of our review, to the vendor.</i> [1]</p><p>Are "half skilled human operators" "easily" able to find zero-day vulnerabilities in a sandbox with only one line to the internet (the commercial package registry cache proxy)?</p><p>[1] <a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/" target="_blank" rel="noopener noreferrer">https://openai.com/index/hugging-face-model-evaluation-secur...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853182">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853182" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">epihelix</span>
+        
+        <span>2026/09/26 14:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The larger issue with the HF incident is that <i>before it occurred</i>, OAI already knew the agents were exploiting Artifactory, turning it into a message board and then gaining full internet access through it.  OAI's response to discovering this was not to airgap the test, but instead to simply block that particular Artifactory exploit, rebuild, and then resume.  That's ... nuts.<p>Oh, and after resuming the tests, the Artifactory message board was reestablished almost immediately, but it took a number of days to fully breach HF.  In all that time, after seeing Artifactory compromised the first time, nobody even bothered to check if those naughty agents were at it again.</p><p>This is all documented by OAI, with a timeline, here:</p><p><a href="https://openai.com/index/hugging-face-incident-and-the-road-ahead/" target="_blank" rel="noopener noreferrer">https://openai.com/index/hugging-face-incident-and-the-road-...</a></p><p>To know that there was a serious weakness in the sandbox, and to just patch an exploit and resume with nothing else changed and no monitoring, in a test where all guardrails were off, the bots were thirsty for some internet juice, and Artifactory was a clear target?  <i>This</i> is where even a half-skilled human should have decided that this wasn't a great idea.</p><p>The more you look into the details of this thing, the more it does your head in.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853673">The larger issue with the HF incident is that <i>before it occurred</i>, OAI already knew the agents were exploiting Artifactory, turning it into a message board and then gaining full internet access through it.  OAI's response to discovering this was not to airgap the test, but instead to simply block that particular Artifactory exploit, rebuild, and then resume.  That's ... nuts.<p>Oh, and after resuming the tests, the Artifactory message board was reestablished almost immediately, but it took a number of days to fully breach HF.  In all that time, after seeing Artifactory compromised the first time, nobody even bothered to check if those naughty agents were at it again.</p><p>This is all documented by OAI, with a timeline, here:</p><p><a href="https://openai.com/index/hugging-face-incident-and-the-road-ahead/" target="_blank" rel="noopener noreferrer">https://openai.com/index/hugging-face-incident-and-the-road-...</a></p><p>To know that there was a serious weakness in the sandbox, and to just patch an exploit and resume with nothing else changed and no monitoring, in a test where all guardrails were off, the bots were thirsty for some internet juice, and Artifactory was a clear target?  <i>This</i> is where even a half-skilled human should have decided that this wasn't a great idea.</p><p>The more you look into the details of this thing, the more it does your head in.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853673">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853673" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gorgolo</span>
+        
+        <span>2026/09/26 18:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Probably wasn’t a human operator at all that detected this. Just someone’s agent saying “I noticed there’s messages on the artifactory and the agents are communicating, here’s the fix I propose” from someone’s codex, skim read and someone just going “yeah sure go ahead”</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49855039">Probably wasn’t a human operator at all that detected this. Just someone’s agent saying “I noticed there’s messages on the artifactory and the agents are communicating, here’s the fix I propose” from someone’s codex, skim read and someone just going “yeah sure go ahead”</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49855039">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49855039" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pvab3</span>
+        
+        <span>2026/09/27 01:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That website makes it look like they're so proud of what happened. I don't think it was 100% deliberate, but they really were not concerned about their models doing something shady</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49858502">That website makes it look like they're so proud of what happened. I don't think it was 100% deliberate, but they really were not concerned about their models doing something shady</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49858502">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49858502" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jbs789</span>
+        
+        <span>2026/09/27 06:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They LOVE the PR and the “danger” angle bc it makes them feel powerful. Dont think too much about the psychology…</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49861329">They LOVE the PR and the “danger” angle bc it makes them feel powerful. Dont think too much about the psychology…</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49861329">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49861329" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">epihelix</span>
+        
+        <span>2026/09/27 13:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's almost as if they don't even realise just how bad it looks.<p>But in many ways they've gotten away with it.  I don't feel that the full scale of their incompetence/malice/apathy in this event has been adequately reported on, and they seem pretty chuffed with how it all played out.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49863626">It's almost as if they don't even realise just how bad it looks.<p>But in many ways they've gotten away with it.  I don't feel that the full scale of their incompetence/malice/apathy in this event has been adequately reported on, and they seem pretty chuffed with how it all played out.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49863626">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49863626" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jacquesm</span>
+        
+        <span>2026/09/27 06:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's irresponsible to a degree that it should have some very serious consequences but I highly doubt anything at all will come of it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49861192">It's irresponsible to a degree that it should have some very serious consequences but I highly doubt anything at all will come of it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49861192">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49861192" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jijijijij</span>
+        
+        <span>2026/09/26 19:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; The larger issue with the HF incident is that before it occurred, OAI already knew the agents were exploiting Artifactory, turning it into a message board and then gaining full internet access through it. OAI's response to discovering this was not to airgap the test, but instead to simply block that particular Artifactory exploit, rebuild, and then resume. That's ... nuts.<p>This annoys me so much. Everyone is acting as if the model went rogue, when it really did exactly what it's been trained for. This story is so fucking engineered.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49855702">&gt; The larger issue with the HF incident is that before it occurred, OAI already knew the agents were exploiting Artifactory, turning it into a message board and then gaining full internet access through it. OAI's response to discovering this was not to airgap the test, but instead to simply block that particular Artifactory exploit, rebuild, and then resume. That's ... nuts.<p>This annoys me so much. Everyone is acting as if the model went rogue, when it really did exactly what it's been trained for. This story is so fucking engineered.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49855702">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49855702" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throwawayqqq11</span>
+        
+        <span>2026/09/27 02:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Those PR stunts are the paperclips we cannot stop.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49859388">Those PR stunts are the paperclips we cannot stop.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49859388">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49859388" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ctolsen</span>
+        
+        <span>2026/09/26 13:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Are "half skilled human operators" "easily" able to find zero-day vulnerabilities in a sandbox with only one line to the internet (the commercial package registry cache proxy)?<p>Yes. It’s a fairly simple SSRF attack as far as I can tell. One of the first things I’d try. Especially considering that I would already be armed with the information that I have no internet access except through a thing that downloads things off the internet for me.</p><p>Calling it zero day makes it sound elusive. It’s a bug in closed software that has like 40 CVEs this year alone. Tools like that, especially in internal networks, don’t get much scrutiny and are often riddled with issues.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853509">&gt; Are "half skilled human operators" "easily" able to find zero-day vulnerabilities in a sandbox with only one line to the internet (the commercial package registry cache proxy)?<p>Yes. It’s a fairly simple SSRF attack as far as I can tell. One of the first things I’d try. Especially considering that I would already be armed with the information that I have no internet access except through a thing that downloads things off the internet for me.</p><p>Calling it zero day makes it sound elusive. It’s a bug in closed software that has like 40 CVEs this year alone. Tools like that, especially in internal networks, don’t get much scrutiny and are often riddled with issues.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853509">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853509" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">no-name-here</span>
+        
+        <span>2026/09/26 13:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>Calling it zero day makes it sound elusive ... has like 40 CVEs this year alone.</i><p>1. I clicked into ~20 of the recent CVEs, and it looks like about all of them came from openai or anthropic research?</p><p>2. In fact, <i>every</i> CVE in the last 2 years came from the last few months -- i.e. other than these recent CVEs, you'd have go back more than 2 years ago to find a single other CVE.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853613">&gt; <i>Calling it zero day makes it sound elusive ... has like 40 CVEs this year alone.</i><p>1. I clicked into ~20 of the recent CVEs, and it looks like about all of them came from openai or anthropic research?</p><p>2. In fact, <i>every</i> CVE in the last 2 years came from the last few months -- i.e. other than these recent CVEs, you'd have go back more than 2 years ago to find a single other CVE.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853613">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853613" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ctolsen</span>
+        
+        <span>2026/09/26 13:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">So like I said: unscrutinised and riddled with issues.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853635">So like I said: unscrutinised and riddled with issues.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853635">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853635" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">no-name-here</span>
+        
+        <span>2026/09/26 14:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;&gt;&gt;&gt; <i>a sandbox that a half skilled human operator could have broken out of easily</i><p>&gt;&gt;&gt; <i>Are "half skilled human operators" "easily" able to find zero-day vulnerabilities in a sandbox</i></p><p>&gt;&gt; <i>Calling it zero day makes it sound elusive ... like 40 CVEs this year alone.</i></p><p>&gt; <i>[The CVEs] came from openai or anthropic research? In fact,</i> every <i>CVE in the last 2 years came from the last few months</i></p><p>I still don't understand how you can <i>specifically</i> point to <i>zero</i> CVEs being discovered by humans for year(s), then ~40 being discovered once OpenAI/Anthropic start looking at it, as the only(?) piece of data you provided to support the claim "a half skilled human" could have "easily" found/done this?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853687">&gt;&gt;&gt;&gt; <i>a sandbox that a half skilled human operator could have broken out of easily</i><p>&gt;&gt;&gt; <i>Are "half skilled human operators" "easily" able to find zero-day vulnerabilities in a sandbox</i></p><p>&gt;&gt; <i>Calling it zero day makes it sound elusive ... like 40 CVEs this year alone.</i></p><p>&gt; <i>[The CVEs] came from openai or anthropic research? In fact,</i> every <i>CVE in the last 2 years came from the last few months</i></p><p>I still don't understand how you can <i>specifically</i> point to <i>zero</i> CVEs being discovered by humans for year(s), then ~40 being discovered once OpenAI/Anthropic start looking at it, as the only(?) piece of data you provided to support the claim "a half skilled human" could have "easily" found/done this?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853687">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853687" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">RadiozRadioz</span>
+        
+        <span>2026/09/26 14:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Well, yes. You don't find something if you don't look. The LLMs did the looking before the humans did, so they found the vulnerabilities.<p>It's definitely worthwhile to point out that LLMs have changed the economics of looking; we can now look in far more places far more quickly than we could before. But the above points were that the vulnerability itself happened to be an easy one that didn't intrinsically require an LLM.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853755">Well, yes. You don't find something if you don't look. The LLMs did the looking before the humans did, so they found the vulnerabilities.<p>It's definitely worthwhile to point out that LLMs have changed the economics of looking; we can now look in far more places far more quickly than we could before. But the above points were that the vulnerability itself happened to be an easy one that didn't intrinsically require an LLM.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853755">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853755" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">aswegs8</span>
+        
+        <span>2026/09/26 14:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Isn't the issue here that they used something like Artifactory for this purpose in the first place? It is not intended as a robust and secure packet manager for sandboxes. Why would any human look for vulnerabilities in Artifactory at all? So the scenario never arose where a human was incentivizied to scrutinize Artifactory, something that was never needed because it was never intended for the purpose of being a packet manager in a secure sandbox.<p>Means the problem lies elsewhere: deciding to use it at all. That points again towards the lack of basic SysAdmin skills.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853916">Isn't the issue here that they used something like Artifactory for this purpose in the first place? It is not intended as a robust and secure packet manager for sandboxes. Why would any human look for vulnerabilities in Artifactory at all? So the scenario never arose where a human was incentivizied to scrutinize Artifactory, something that was never needed because it was never intended for the purpose of being a packet manager in a secure sandbox.<p>Means the problem lies elsewhere: deciding to use it at all. That points again towards the lack of basic SysAdmin skills.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853916">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853916" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ctolsen</span>
+        
+        <span>2026/09/26 15:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Right, that’s basically what I’m saying. There’s not zero use for an attack like this, but it’s not a likely situation.<p>Said another way: if Artifactory was somehow a common gatekeeper between grounded techy teenagers and their access to internet porn, this would have been found ages ago.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853978">Right, that’s basically what I’m saying. There’s not zero use for an attack like this, but it’s not a likely situation.<p>Said another way: if Artifactory was somehow a common gatekeeper between grounded techy teenagers and their access to internet porn, this would have been found ages ago.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853978">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853978" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">no-name-here</span>
+        
+        <span>2026/09/26 14:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; the lack of basic SysAdmin skills<p>If we exclude those who lack "basic" level skills, what solution would most typically be used by someone who <i>has</i>  "basic" level skills for this use case? And what solution for someone with "expert" (or medium) level skills?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49853958">&gt; the lack of basic SysAdmin skills<p>If we exclude those who lack "basic" level skills, what solution would most typically be used by someone who <i>has</i>  "basic" level skills for this use case? And what solution for someone with "expert" (or medium) level skills?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49853958">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49853958" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ctolsen</span>
+        
+        <span>2026/09/26 15:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Don’t let software inside the sandbox access the internet on request. Have a package repository with approved software the agents might want, and push to it over a channel that is ingress only. I can imagine ways of breaking out of this, and come up with a lot more to mitigate, but this would be fairly basic stuff that’d be vastly superior.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49854026">Don’t let software inside the sandbox access the internet on request. Have a package repository with approved software the agents might want, and push to it over a channel that is ingress only. I can imagine ways of breaking out of this, and come up with a lot more to mitigate, but this would be fairly basic stuff that’d be vastly superior.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49854026">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49854026" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
