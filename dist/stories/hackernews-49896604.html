@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dots: Always-on agents | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-09-30/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>Dots: Always-on agents</h1>
+      <p class="original-title">Dots: Always-on agents</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 alvis</span>
+        <span>热度 689</span>
+        <span>回复 548</span>
+        <span>2026/09/30 01:07</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49896604" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://openai.com/index/introducing-dots/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49896604.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <p class="muted">暂无摘要</p>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jjcm</span>
+        
+        <span>2026/09/30 03:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There's a lot of negativity in here for Dots. I've been a pretty heavy user of Grok Bot, and here are a few thoughts a long the positive line.<p>1. Collaboration between always-on agents is a really, really powerful thing. It allows for domain-specific expertise that doesn't overload the context window, while still allowing for access to knowledge if they need it.</p><p>2. Domain-specific always on agents creates a good barrier of trust. One of the things I dislike about Claude is sometimes it's memory is all-encompassing. It's weird that it brings up things about my personal life when I'm talking about something related to my business. I've never had that happen with Grok Bot bots because I have one for my biz admin and one for my personal admin. They don't intertwine, which is quite nice.</p><p>3. Combined with cloud agents / cloud builds, things become really powerful for development. It was the first time that I felt there was a solution to the git worktrees / multiple streams at once issue. Each bot has its own computer and can spin up additional cloud agents. It comes at the cost of end to end speed - doing something via a grok bot often takes an hour end to end, whereas with a synchronous local prompt it'll take like 10min. The difference is I have to babysit one whereas the other "just works".</p><p>On the flip side, since using Grok Bots my inference spend has 2-3x'd. It's worth knowing that tradeoff. Nonetheless I think Luna is a fantastic driver for these, and OAI has very good pricing overall. I'd give these a shot - I think a lot of people would be surprised how helpful they are.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49899033">There's a lot of negativity in here for Dots. I've been a pretty heavy user of Grok Bot, and here are a few thoughts a long the positive line.<p>1. Collaboration between always-on agents is a really, really powerful thing. It allows for domain-specific expertise that doesn't overload the context window, while still allowing for access to knowledge if they need it.</p><p>2. Domain-specific always on agents creates a good barrier of trust. One of the things I dislike about Claude is sometimes it's memory is all-encompassing. It's weird that it brings up things about my personal life when I'm talking about something related to my business. I've never had that happen with Grok Bot bots because I have one for my biz admin and one for my personal admin. They don't intertwine, which is quite nice.</p><p>3. Combined with cloud agents / cloud builds, things become really powerful for development. It was the first time that I felt there was a solution to the git worktrees / multiple streams at once issue. Each bot has its own computer and can spin up additional cloud agents. It comes at the cost of end to end speed - doing something via a grok bot often takes an hour end to end, whereas with a synchronous local prompt it'll take like 10min. The difference is I have to babysit one whereas the other "just works".</p><p>On the flip side, since using Grok Bots my inference spend has 2-3x'd. It's worth knowing that tradeoff. Nonetheless I think Luna is a fantastic driver for these, and OAI has very good pricing overall. I'd give these a shot - I think a lot of people would be surprised how helpful they are.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49899033">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49899033" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">mike_hearn</span>
+        
+        <span>2026/09/30 20:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes. I built my own version of this for my side business about six/seven months ago and it's been great! I have two "AI employees" now and if I were actually focused on this business full time instead of part time, I'd create more.<p>Both are just Codexes running in a permanently rolling session in dedicated UNIX user accounts. They're wired up to Maildir so receiving a mail activates Codex and makes it read the new message, there are autonomy wakeup timers, they have accounts in my bug tracker and CI systems. They're currently useful for:</p><p>• Triaging and working on customer support tickets. Sometimes I wake up and the fix/response for a ticket filed by a customer is already there waiting for my approval. Recently I started letting them directly interact with customers in specific scenarios.</p><p>• Triaging the bug backlog. One of them decided to spend its "free time" finding old bugs that were fixed without being properly closed, or are dupes, so it's cleaning up detritus in the tracker.</p><p>• They obviously do all the coding and debugging by just assigning tickets.</p><p>• They keep an eye on a "pet" server the company has, and have proven able to fix it in the past when it ran out of disk space.</p><p>• They handle non-business projects I have for them.</p><p>• They help out with the release processes.</p><p>The dedicated home dir is very useful and they use it all the time as part of coding and investigating tricky issues.</p><p>My setup relies heavily on email, as everything bottoms out in email anyway. Watching them mail each other out of the blue to coordinate stuff is pretty cool.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49907695">Yes. I built my own version of this for my side business about six/seven months ago and it's been great! I have two "AI employees" now and if I were actually focused on this business full time instead of part time, I'd create more.<p>Both are just Codexes running in a permanently rolling session in dedicated UNIX user accounts. They're wired up to Maildir so receiving a mail activates Codex and makes it read the new message, there are autonomy wakeup timers, they have accounts in my bug tracker and CI systems. They're currently useful for:</p><p>• Triaging and working on customer support tickets. Sometimes I wake up and the fix/response for a ticket filed by a customer is already there waiting for my approval. Recently I started letting them directly interact with customers in specific scenarios.</p><p>• Triaging the bug backlog. One of them decided to spend its "free time" finding old bugs that were fixed without being properly closed, or are dupes, so it's cleaning up detritus in the tracker.</p><p>• They obviously do all the coding and debugging by just assigning tickets.</p><p>• They keep an eye on a "pet" server the company has, and have proven able to fix it in the past when it ran out of disk space.</p><p>• They handle non-business projects I have for them.</p><p>• They help out with the release processes.</p><p>The dedicated home dir is very useful and they use it all the time as part of coding and investigating tricky issues.</p><p>My setup relies heavily on email, as everything bottoms out in email anyway. Watching them mail each other out of the blue to coordinate stuff is pretty cool.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49907695">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49907695" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">writtenone</span>
+        
+        <span>2026/09/30 22:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I can't believe anyone trusts AI to do anything without strict oversight from a human. That's absolutely insane to me.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49909272">I can't believe anyone trusts AI to do anything without strict oversight from a human. That's absolutely insane to me.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49909272">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49909272" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">qazxcvbnmlp</span>
+        
+        <span>2026/09/30 22:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Trust is a funny thing. 2 years ago yes the ai needed supervision 99.8% of the time. Conversely if you've ever tried to work with / lead humans they also need supervision. The ai is starting to flirt with the line where its supervision effort is lower than human supervision effort. Like sure, it might do dumb stuff, but so do people.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49909394">Trust is a funny thing. 2 years ago yes the ai needed supervision 99.8% of the time. Conversely if you've ever tried to work with / lead humans they also need supervision. The ai is starting to flirt with the line where its supervision effort is lower than human supervision effort. Like sure, it might do dumb stuff, but so do people.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49909394">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49909394" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">MrDunham</span>
+        
+        <span>2026/10/01 00:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think this is a very important point. I've specifically started thinking about my AIs as humans. Not in the anthropomorphized sense, more like NOT treating them as deterministic software.<p>The challenge I've had is I tell it to do {thing}, it does {otherThing} after getting distracted. Then I get annoyed (let's not mention how I probably half-assed the instructions and wouldn't expect a senior human to be able to succeed).</p><p>For me, it was a CI/CD issue with our two person startup. I bypass CI/CD often because it was built to catch the AIs. Damn thing went chasing rabbits. Later that day I talk to my cofounder, who says: I have to go chase down this very important CI/CD issue!</p><p>Turns out both humans and AIs get distracted relatively easily.</p><p>I find that if I think of my AIs less like (deterministic) software and more like leading actually employees that I both get better output and curse (a lot) less.</p><p>LLMs _were_ trained on human writing, so it makes sense to me that they tend to act human-like... for better and worse. So yeah, they do dumb stuff, and so do people.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49910671">I think this is a very important point. I've specifically started thinking about my AIs as humans. Not in the anthropomorphized sense, more like NOT treating them as deterministic software.<p>The challenge I've had is I tell it to do {thing}, it does {otherThing} after getting distracted. Then I get annoyed (let's not mention how I probably half-assed the instructions and wouldn't expect a senior human to be able to succeed).</p><p>For me, it was a CI/CD issue with our two person startup. I bypass CI/CD often because it was built to catch the AIs. Damn thing went chasing rabbits. Later that day I talk to my cofounder, who says: I have to go chase down this very important CI/CD issue!</p><p>Turns out both humans and AIs get distracted relatively easily.</p><p>I find that if I think of my AIs less like (deterministic) software and more like leading actually employees that I both get better output and curse (a lot) less.</p><p>LLMs _were_ trained on human writing, so it makes sense to me that they tend to act human-like... for better and worse. So yeah, they do dumb stuff, and so do people.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49910671">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49910671" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">giancarlostoro</span>
+        
+        <span>2026/10/01 02:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I remember hearing a lot 2 years+ ago about how you could ask a model the same question twice, and the second time it would give you the correct answer. Some of us wondered why not just run one model that receives the initial question and answer, and a second one to proof the answer. I wont be surprised if some people will have two models working together for things they want to blindly trust on automation while humans sleep.<p>I think we'll get insanely close to being able to "trust" them not to do random stuff, but I am not as confident for jailbreaking still.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49912402">I remember hearing a lot 2 years+ ago about how you could ask a model the same question twice, and the second time it would give you the correct answer. Some of us wondered why not just run one model that receives the initial question and answer, and a second one to proof the answer. I wont be surprised if some people will have two models working together for things they want to blindly trust on automation while humans sleep.<p>I think we'll get insanely close to being able to "trust" them not to do random stuff, but I am not as confident for jailbreaking still.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49912402">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49912402" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jaggederest</span>
+        
+        <span>2026/10/01 03:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The thing I like to do is to use models from different training sets - so for frontier, OpenAI criticizes Anthropic and vice versa. They're very much peanut butter and chocolate in that regard - I honestly can't be bothered to set up the whole MMLQUALA benchmark suites or anything, but I wonder how high "the two best models running at max thinking working together" would score compared to either individually.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49913058">The thing I like to do is to use models from different training sets - so for frontier, OpenAI criticizes Anthropic and vice versa. They're very much peanut butter and chocolate in that regard - I honestly can't be bothered to set up the whole MMLQUALA benchmark suites or anything, but I wonder how high "the two best models running at max thinking working together" would score compared to either individually.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49913058">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49913058" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">breakpointalpha</span>
+        
+        <span>2026/10/01 02:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Jev, or 'Jevlikes', will go a long way towards trustable systems. There are demos of running every prompt through the first pass filter of Jev "Is this unsafe? y/N"<p>Seems to be that Jev is a "reflex" system for AI, where current LLMs are higher level thinking. Computers can now flinch!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49912579">Jev, or 'Jevlikes', will go a long way towards trustable systems. There are demos of running every prompt through the first pass filter of Jev "Is this unsafe? y/N"<p>Seems to be that Jev is a "reflex" system for AI, where current LLMs are higher level thinking. Computers can now flinch!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49912579">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49912579" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ttul</span>
+        
+        <span>2026/09/30 23:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Scary thought: AI is already directing humanity. Even when you think you’re overseeing its output, by making use of the output, it is in some material way directing you.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49910419">Scary thought: AI is already directing humanity. Even when you think you’re overseeing its output, by making use of the output, it is in some material way directing you.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49910419">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49910419" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sillyfluke</span>
+        
+        <span>2026/10/01 00:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's may be scary, but it's something that normally would be obvious to everyone but is ignored due to the convenience of speed. Everyone knows that the longer something they have to review is, the more they stick to changing only things that are glaringly obvious and leave the rest in place. So everything ends up being 95% AI and 5% human, if that.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49911265">It's may be scary, but it's something that normally would be obvious to everyone but is ignored due to the convenience of speed. Everyone knows that the longer something they have to review is, the more they stick to changing only things that are glaringly obvious and leave the rest in place. So everything ends up being 95% AI and 5% human, if that.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49911265">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49911265" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">michaelbuckbee</span>
+        
+        <span>2026/10/01 03:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There's still bounds to all of this. I _heavily_ use AI for support tasks but it's all on the investigation, root cause categorization and initial response generation which posts I draft to the helpdesk software which I tweak and approve (often just hitting send).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49913279">There's still bounds to all of this. I _heavily_ use AI for support tasks but it's all on the investigation, root cause categorization and initial response generation which posts I draft to the helpdesk software which I tweak and approve (often just hitting send).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49913279">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49913279" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/10/01 02:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's very easy to instruct agents to investigate and propose a plan, handing it off to a human for review and execution if that's what you want.<p>The example above of going through a bug backlog and double-checking closed bugs for accuracy is exactly the kind of work that is excellent for an agent. Assign that task to a normal human being and they would hate your guts. The agent won't protest as long as your token budget is there. You can confirm the results if you want.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49912332">It's very easy to instruct agents to investigate and propose a plan, handing it off to a human for review and execution if that's what you want.<p>The example above of going through a bug backlog and double-checking closed bugs for accuracy is exactly the kind of work that is excellent for an agent. Assign that task to a normal human being and they would hate your guts. The agent won't protest as long as your token budget is there. You can confirm the results if you want.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49912332">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49912332" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">breadzeppelin__</span>
+        
+        <span>2026/10/01 03:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was at a presentation a couple days ago where a spacecraft flight software engineer was describing the agentic setup that they're using with next to no human in the loop to create modules used for flight.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49912991">I was at a presentation a couple days ago where a spacecraft flight software engineer was describing the agentic setup that they're using with next to no human in the loop to create modules used for flight.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49912991">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49912991" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">giancarlostoro</span>
+        
+        <span>2026/10/01 02:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">We're getting to the point where you can, I would argue you mostly can, you can button it down really tightly, however, I want to be clear, I don't think any of this is AGI or anywhere near AGI. Don't let them tell you its AGI.<p>I also have a strong feeling we've hit a ceiling on the amount of training data needed for LLMs, what they're all (hopefully) realizing is that you need to focus on how the model reasons, and hopefully someone figures out how to stop people from jailbreaking models, and stops them from just blatantly hacking other companies, that part tells me if it ever were marketed as true AGI, we'd be in very serious trouble.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49912378">We're getting to the point where you can, I would argue you mostly can, you can button it down really tightly, however, I want to be clear, I don't think any of this is AGI or anywhere near AGI. Don't let them tell you its AGI.<p>I also have a strong feeling we've hit a ceiling on the amount of training data needed for LLMs, what they're all (hopefully) realizing is that you need to focus on how the model reasons, and hopefully someone figures out how to stop people from jailbreaking models, and stops them from just blatantly hacking other companies, that part tells me if it ever were marketed as true AGI, we'd be in very serious trouble.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49912378">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49912378" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jvwww</span>
+        
+        <span>2026/10/01 00:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Most humans are much more incompetent than a frontier AI. That's why.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49911200">Most humans are much more incompetent than a frontier AI. That's why.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49911200">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49911200" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">andai</span>
+        
+        <span>2026/09/30 21:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Nice. I also ended up with a Unix user for my agents! (I was looking into Docker etc and realized the only thing I needed was "it doesn't blow up my files", i.e. a linux user).<p>I only have one though. What do you have the separate employees for?</p><p>For free time, do you send it mail with cron?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49908688">Nice. I also ended up with a Unix user for my agents! (I was looking into Docker etc and realized the only thing I needed was "it doesn't blow up my files", i.e. a linux user).<p>I only have one though. What do you have the separate employees for?</p><p>For free time, do you send it mail with cron?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49908688">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49908688" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">fhackenberger</span>
+        
+        <span>2026/09/30 22:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was quite successful with docker compose on a cheap hetzner host. I've built (aka vibe coded) a whole workflow around agent boxes, that I can spin up with one command, and git with a quick cloned 'warm' checkout.<p>I currently communicate with the agents through Claude RC, but
+I'll consider adding support for messaging them through other channels.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49909550">I was quite successful with docker compose on a cheap hetzner host. I've built (aka vibe coded) a whole workflow around agent boxes, that I can spin up with one command, and git with a quick cloned 'warm' checkout.<p>I currently communicate with the agents through Claude RC, but
+I'll consider adding support for messaging them through other channels.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49909550">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49909550" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dominotw</span>
+        
+        <span>2026/10/01 04:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">your website makes like look like tesla is one of your clients<p><a href="https://www.hydraulic.dev/index.html" target="_blank" rel="noopener noreferrer">https://www.hydraulic.dev/index.html</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49913647">your website makes like look like tesla is one of your clients<p><a href="https://www.hydraulic.dev/index.html" target="_blank" rel="noopener noreferrer">https://www.hydraulic.dev/index.html</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49913647">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49913647" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">sealthedeal</span>
+        
+        <span>2026/10/01 00:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yep, I have a similar setup, we named him Routey and he is cute.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49910691">Yep, I have a similar setup, we named him Routey and he is cute.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49910691">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49910691" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">yonaguska</span>
+        
+        <span>2026/09/30 22:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I hope you have them interacting with customers from behind an mcp.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49909382">I hope you have them interacting with customers from behind an mcp.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49909382">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49909382" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
