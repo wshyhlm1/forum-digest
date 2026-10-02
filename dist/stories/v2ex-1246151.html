@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一份行为，三种宿主：聊聊 XiHan.UI 这个框架无关的 Headless 组件库 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-02/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>一份行为，三种宿主：聊聊 XiHan.UI 这个框架无关的 Headless 组件库</h1>
+      <p class="original-title">一份行为，三种宿主：聊聊 XiHan.UI 这个框架无关的 Headless 组件库</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 zhaifanhua</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/10/02 18:41</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1246151" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1246151.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>做前端久了，多半碰到过这种局面：后台用 Vue ，官网用 React ，角落里还剩几个没有框架的老页面。三边各有一个弹窗，按 Esc 有的关有的不关，关掉以后焦点有的回到按钮上，有的掉回页面顶部。用鼠标的人察觉不到，用键盘和读屏的人每天都被绊一下。再往后换框架，组件库整套重写，最先丢的正是这些看不见的东西：方向键往哪走，读屏念什么，焦点落在哪。</li><li>XiHan.UI 就是冲着这件事做的：</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">一份行为，三种宿主：聊聊 XiHan.UI 这个框架无关的 Headless 组件库
+<p></p>
+<p>做前端久了，多半碰到过这种局面：后台用 Vue ，官网用 React ，角落里还剩几个没有框架的老页面。三边各有一个弹窗，按 Esc 有的关有的不关，关掉以后焦点有的回到按钮上，有的掉回页面顶部。用鼠标的人察觉不到，用键盘和读屏的人每天都被绊一下。再往后换框架，组件库整套重写，最先丢的正是这些看不见的东西：方向键往哪走，读屏念什么，焦点落在哪。</p>
+<p>XiHan.UI 就是冲着这件事做的：</p>
+<blockquote>
+<p>快速、轻量、高效、用心的框架无关 Headless UI 组件库。是面向企业级前端的设计系统运行时，无头内核，多框架适配器。提供基础组件与 AI 组件，覆盖从中后台到 AI 对话的界面构建场景。曦寒懿（ XiHanFun ）开源生态的前端基座。</p>
+</blockquote>
+<p>下面把它的设计、细节和取舍摊开讲，也包括它现在做不到的地方。文档站每个组件都有能点、能切换框架的真实示例：</p>
+<ul>
+<li>文档站： <a href="https://ui.docs.xihanfun.com" target="_blank" rel="noopener noreferrer">https://ui.docs.xihanfun.com</a></li>
+<li>GitHub： <a href="https://github.com/XiHanFun/XiHan.UI" target="_blank" rel="noopener noreferrer">https://github.com/XiHanFun/XiHan.UI</a></li>
+<li>Gitee： <a href="https://gitee.com/XiHanFun/XiHan.UI" target="_blank" rel="noopener noreferrer">https://gitee.com/XiHanFun/XiHan.UI</a></li>
+<li>GitCode： <a href="https://gitcode.com/XiHanFun/XiHan.UI" target="_blank" rel="noopener noreferrer">https://gitcode.com/XiHanFun/XiHan.UI</a></li>
+</ul>
+一、先看用起来是什么样
+<pre><code>pnpm add @xihan-ui/vue @xihan-ui/tokens @xihan-ui/styles
+</code></pre>
+<p>入口引一次皮肤，组件按名字 import ，不用 <code>app.use()</code>。所有包都声明了 <code>sideEffects: false</code>，没用到的组件会被摇掉：</p>
+<pre><code>&lt;XhDialogRoot v-slot="{ setOpen }"&gt;
+  &lt;XhDialogTrigger&gt;打开对话框&lt;/XhDialogTrigger&gt;
+  &lt;XhDialogContent&gt;
+    &lt;XhDialogTitle&gt;确认操作&lt;/XhDialogTitle&gt;
+    &lt;XhButton @click="setOpen(false)"&gt;确定&lt;/XhButton&gt;
+  &lt;/XhDialogContent&gt;
+&lt;/XhDialogRoot&gt;
+</code></pre>
+<p>打开以后，焦点圈在内容区、Esc 或点遮罩关闭、关闭后焦点回到触发按钮、背后锁住滚动、其余部分对读屏隐藏，这些一行都不用写。React 19 的组件名和写法完全一样。没有框架的页面用自定义元素，结构自己写，用 <code>data-xh-part</code> 标出每个节点的角色：</p>
+<pre><code>&lt;xh-dialog&gt;
+  &lt;button data-xh-part="trigger"&gt;打开&lt;/button&gt;
+  &lt;div data-xh-part="positioner"&gt;
+    &lt;div data-xh-part="content"&gt;…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/xh-dialog&gt;
+</code></pre>
+<p>三种写法跑的是同一台状态机、同一份 <code>connect</code>，差别只在于谁把属性写到 DOM 上。</p>
+二、一个组件，五份产物
+<p>以对话框为例，它在仓库里落成五处：无头内核（解剖、状态机、键盘规格表、<code>connect</code>）、Vue 组件、React 组件、自定义元素 <code>&lt;xh-dialog&gt;</code>、纯 CSS 皮肤。行为只在内核里定义一次，适配器只做三件事：把状态机接进各自的响应式，把部件包成组件，把属性铺到节点上。</p>
+<p>全库的地基是解剖：每个部件在 DOM 上由 <code>data-scope</code> 加 <code>data-part</code> 唯一标识，皮肤、测试、诊断都建在这对属性上。皮肤只认属性不认类名，所以同一份 CSS 同时作用于三端：</p>
+<pre><code>[data-scope='button'][data-part='root'][data-variant='solid'] { … }
+</code></pre>
+<p><code>connect</code> 是内核的出口，一个纯函数：输入状态机服务，输出一组 <code>getXxxProps()</code>。每个 getter 产出结构标识、ARIA 语义、状态钩子、id 关联和事件处理器五类东西，里面没有一行 DOM 操作：</p>
+<pre><code>getTriggerProps: item =&gt; normalize.button({
+  ...parts.trigger.attrs,                    // data-scope + data-part
+  "id": triggerId(item.value),               // 由 scope 派生，同页多实例不冲突
+  "aria-controls": contentId(item.value),
+  "aria-expanded": isOpen(item.value) ? "true" : "false",
+  "data-state": stateAttr(item),             // 皮肤钩子
+  "onClick": () =&gt; { /* send({ type: 'ITEM.TOGGLE', … }) */ },
+});
+</code></pre>
+<p>不想要现成结构时，直接拿 <code>api</code> 用 <code>v-bind</code> 铺到自己的标签上。一次点击经过的路径是这样的：</p>
+<pre><code>用户点击 → 适配器把 DOM 事件交给 connect 产出的 onClick
+  → service.send({ type: 'TRIGGER.CLICK' })
+  → 状态机 closed → open ；行为原语锁滚动、建焦点域、压入层栈，浮层再请定位引擎算坐标
+  → 适配器重读 connect ，把新的 aria-* / data-* 铺到部件上
+  → 皮肤按 [data-state='open'] 命中新规则，动画播放
+</code></pre>
+<p>中间几步与框架无关，适配器只负责首尾。</p>
+<p>想接 Svelte 或 Solid ，要写的只有一份 <code>ReactiveRuntime</code>（五个接口）、一份 <code>NormalizeProps</code> 和一层组件包装，<code>@xihan-ui/core/vanilla</code> 就是参考实现。</p>
+三、状态机：很薄，规矩不少
+<p>状态机运行时自研、零依赖。<code>states</code> 里只能用字符串引用具名的动作、守卫和副作用，写内联函数或引用不存在的名字，<code>createMachine</code> 当场抛错，开发和生产一致。这样状态图本身是可静态分析的数据，测试能直接算转移覆盖率。</p>
+<p>受控与非受控收在 <code>cell</code> 一处：</p>
+<pre><code>value: cell&lt;string[]&gt;(() =&gt; ({
+  value: prop("value"),                      // 传了就是受控，组件只调 onChange 通知你
+  defaultValue: prop("defaultValue") ?? [],  // 只传它就是非受控，组件自己持有
+  onChange: value =&gt; prop("onValueChange")?.({ value }),
+})),
+</code></pre>
+<p>浮层开关走“意图加回写”，受控时点触发器只发 <code>open-change</code>，你写回 <code>open</code> 状态机才转移。服务没有直接改状态的入口，状态只能由事件驱动，所以永远能用一串事件复现，跨端一致性测试靠的就是这一点。</p>
+<p>副作用装配是事务化的：一批 effect 中后一项初始化失败，前面拿到的资源按逆序全部释放，回滚异常和原始异常一起放进 <code>AggregateError</code>。浮层打开时“登记层、消隐层、焦点域、滚动锁、背景失活”就在同一个事务里，失败不会留下一个永远占着栈顶的半成品。</p>
+四、三端一致是测出来的
+<p>框架无关的组件库最常见的病，是各适配器慢慢走样。这里每个组件有一份零框架的一致性规格，三个适配器各实现一个 harness ，运行器逐帧采集归一化后的 DOM 快照比对：id 的具体值和 <code>data-v-*</code> 被抹掉，<code>aria-controls</code> 这类引用翻译成 <code>@part(...)</code>，抹完必须逐字相同。还有抹不掉的差异，说明抽象漏了，要改的是库，不是测试。</p>
+<p>每个适配器也有自己的坑。React 的 props 变化不经过可订阅的源，推式依赖追踪会让所有 <code>track</code> 静默失效，所以 React 运行时改成每次提交后逐项比对，<code>flush</code> 用 <code>flushSync</code>；<code>pointerenter</code> 不冒泡、合成事件上没有 <code>stopImmediatePropagation()</code>，这类处理器改挂原生监听，有门禁逐组件核对；全局配置的代理实现了 <code>ownKeys</code>，否则 <code>{ ...props }</code> 一展开默认值就没了。</p>
+<p>Web Components 选的是 Light DOM 行为宿主：元素不渲染结构，只找到作者写的角色节点写入属性和事件。不用 Shadow DOM ，是因为它会封住结构、挡住外部 CSS ，表单关联和跨边界的 <code>aria-*</code> 引用都要额外机制。代价是结构得自己写，所以有校验：作者写 <code>data-xh-part</code>（声明），接线后写 <code>data-part</code>（事实），分得清“写了但没接上”。缺必备部件报 <code>wc.missing-part</code>，标签用错报 <code>wc.wrong-part-tag</code>，比如表单的 <code>label</code> 写成 <code>&lt;div&gt;</code>，<code>for</code> 关联会静默失效。布尔属性是三态的，缺席、<code>="false"</code>、其余各不相同；角色节点真的进出才重新接线；脚本到达前用 <code>:not(:defined)</code> 先收起浮层子树，免得裸文本被搜索引擎当正文；包里还附带 <code>custom-elements.json</code> 给编辑器补全。</p>
+五、无障碍：每个组件一张键盘规格表
+<p>每个组件有一份机读的键盘规格表：</p>
+<pre><code>export const accordionKeyboard: KeyboardTable = {
+  component: "accordion",
+  source: "https://www.w3.org/WAI/ARIA/apg/patterns/accordion/#keyboardinteraction",
+  rows: [
+    { id: "accordion.kbd.toggle", keys: ["Space", "Enter"],
+      when: "focus in trigger, not disabled", does: "展开/收起该条目的 content" },
+    // …
+  ],
+};
+</code></pre>
+<p>测试用例通过 <code>covers</code> 反查行 id ，少覆盖一行套件就失败，文档站的键盘表也由它渲染。想让测试通过只能补用例，不能改分母。</p>
+<p>几处 ARIA 处理：禁用项仍需可聚焦时用 <code>aria-disabled</code>，不用会让元素失焦的原生 <code>disabled</code>；手风琴按 APG 规定不做 roving tabindex ；方向键的轴向和 RTL 换向收在一处；不属于导航的按键一律不 <code>preventDefault</code>。输入法组合期的按键单独识别，这条对中文用户格外重要：拼音输入时的回车是在确认候选词，所以提示输入框里组合中的 Enter 一律放行。</p>
+<p>焦点环向内收一个环宽，聚焦前后占位不变。环内收以后，紧挨着它的是元素自己的面，WCAG 2.2 要求 3:1 ，而实心面上品牌色的环能低到 1:1 ，这些档位的环改取该面配对的前景色。环也不随语气变色，warning 色对白底只有 2.70:1 。这条由静态计算和真实 Chromium 逐档实测两道门禁一起守，两边的分母还要互相对账。axe 扫描同样跑在真实 Chromium 里，明暗各一遍；存量违规登记成表，某条不再命中就判定登记过期，必须删掉。</p>
+<p>同一份皮肤还要在紧凑密度、RTL 、粗指针（命中区至少 44×44px ）、减弱动效、减少透明度、强制色和打印下都成立。</p>
+六、浮层：最容易出 bug ，拆得最细
+<p>点外面关闭、焦点陷入、背景禁止滚动，这些在 core 里实现一次，所有浮层调用。</p>
+<p>浮层叠成一个栈。每层要登记 <code>branches</code>（逻辑属于本层、DOM 在别处的节点，比如 portal 出去的子菜单，漏了的话点子菜单会关掉父层）和 <code>surfaces</code>（遮罩这类点了要关本层的面）。层级由逻辑栈派生，不靠各组件拿静态 <code>z-index</code> 去猜。</p>
+<p>只有栈顶响应 Esc 。Esc 、点外部、焦点移出都会派发一张可取消的表决票，<code>preventDefault()</code> 即否决，表单没填完先弹个确认，不用绕开组件实现。触屏上 pointerdown 只建立候选，同一目标上的 click 到来才提交，中途一滚动就作废，在手机上划页面不会误关浮层。</p>
+<p>滚动锁是引用计数的，让出来的滚动条宽度写在 <code>--xh-scroll-lock-gutter</code> 上，<code>fixed</code> 顶栏读它就不会在弹窗打开时跳一下。背景失活给其余子树加 <code>inert</code>。退场动画用租约：等浏览器真正创建的动画对象播完再卸载，不写死超时；焦点则在逻辑关闭那一刻就交回触发器。</p>
+<p>定位引擎也是自研的，十二种方位、主轴放不下自动翻面、交叉轴沿边推回并留 4px 余量，支持虚拟锚点。状态机传给引擎的 <code>strategy</code>、内联 <code>position</code>、皮肤里的 <code>position</code> 三处必须一致，否则整族浮层偏移一个滚动距离还不报错，有门禁专门核对。首帧坐标未定时浮层默认 <code>visibility: hidden</code>，引擎回报坐标后才显示，不会在左上角闪一下；用 visibility 不用 display ，是因为后者会让元素退出排版，量不到尺寸。</p>
+<p>浮层 portal 到 body 后，会把来源处的主题、品牌、密度、动效、书写方向，连同祖先上声明的 CSS 变量一起投到实例壳上，局部深色区里弹出的菜单还是深色。组件私有槽不跨 Portal ，表格斑马行改写的底色不会漏进行里的下拉菜单。子菜单用安全三角，指针斜着移过去途中扫过别的条目，子菜单不会被切走。</p>
+七、指针与手势
+<p>跟手交互要同时做对四件事：监听挂在 document 上，处理 <code>pointercancel</code>，第二根手指不能劫持会话，卸载时清干净监听。漏一条就是只在真机上偶发的 bug 。<code>@xihan-ui/pointer</code> 把这四条一次做对，压缩后 2.04 kB ，滑块、分栏、取色器、签名板、轮播、排序、表格、树都走它。</p>
+<p>双指缩放相对起始那一刻计算，避免逐帧累乘积累浮点误差；拖放落点按中心是否越过判定，不按矩形相交，项高不一时后者会来回跳；几何一律取按下时的快照，避免让位之后自激振荡；激活阈值用直线距离，斜着拖 4px + 4px 实际是 5.7px ，分轴比较会误判成没动。</p>
+八、主题：一个控制器，八条轴
+<p>令牌源是 DTCG 格式的 JSON ，产物提交进仓库，CI 重新生成后比对。颜色一律写成 <code>oklch</code>，同明度不同色相看起来一样亮，所以整套色板只定一条明度曲线：任何色相的 700 档铺白字都过 4.5:1 ，深色主题沿同一条曲线反向取档。令牌分原语、语义、组件覆盖槽三层，皮肤只能消费语义层。</p>
+<p><code>createVisualEnvironmentController</code> 统一管理明暗、品牌、密度、书写方向、对比度、动效、透明度、材质八条轴：</p>
+<pre><code>const visual = createVisualEnvironmentController({
+  root: document.documentElement,
+  storageKey: "app-visual-environment",
+  onStorageError: detail =&gt; console.error("视觉偏好持久化失败", detail),
+  initial: { mode: "system", motion: "system", transparency: "system" },
+});
+visual.setPreference({ mode: "dark", density: "compact" });
+</code></pre>
+<p>它最终投影成 <code>&lt;html data-theme="dark" data-density="compact" data-motion="reduce" dir="rtl" …&gt;</code> 这样一组属性，服务端渲染时直接输出就不会闪。开了持久化就必须传 <code>onStorageError</code>，失败不会被装成成功；局部区域用带 <code>parent</code> 的子控制器；密度只收紧高度和间距，不缩字号。</p>
+<p>品牌色给一枚种子就够：<code>registerBrand('acme', '#16a34a')</code> 派生出 11 档梯度。派生只取种子的色相和彩度，明度曲线不变，所以实心底白字 4.5:1 对任何种子都成立；半透明的种子直接拒绝。</p>
+<p>材质分 solid 、soft 、frosted （只给瞬态浮层用的磨砂）、elevated 几档，不提供“玻璃”。打开 <code>data-material="liquid"</code> 后，浮动按钮、轮播控制、看图工具条、吸顶顶栏会换成液态面：读下层亮暗选色调，切换点带 0.179 ± 0.04 的滞回区间，内容滚过分界附近不会来回闪；下层读不出颜色就停在可读下限，保证标签至少 4.5:1 。彩色区块上还可以声明墨色域，中性描边改用墨色按比例透明，同一支灰描边“黄底上 1.06:1 、黑底上 16.68:1”的落差就消失了。</p>
+九、皮肤：纯 CSS ，可以整套扔掉
+<p><code>@xihan-ui/styles</code> 不依赖任何 JS 。层序是 <code>xihan.reset, xihan.tokens, xihan.motion, xihan.components, xihan.overrides</code>，reset 只作用于带 <code>data-scope</code> 的库节点、特指度为 0 ，和现有页面共存不用隔离。改样式有三种粒度，优先用前两种，直接写死的规则会绕开令牌，深色和密度切换随之失效：</p>
+<pre><code>:root { --xh-shape-control: var(--xh-radius-md); }   /* 改语义令牌：影响全库 */
+:root { --xh-button-h: 40px; }                       /* 改组件覆盖槽：只影响一类组件 */
+@layer xihan.overrides {                              /* 直接写规则 */
+  [data-scope='button'][data-part='root'] { text-transform: uppercase; }
+}
+</code></pre>
+<p>CSS 级联有条容易忽略的规则：无层声明胜过任何有层声明，与特指度无关。宿主一条无层的 <code>button { padding: 0 }</code> 就能把皮肤压成裸元素，Tailwind v3 的 preflight 、normalize.css 、VitePress 都是这种无层重置。XiHan.UI 自己的文档站就撞上过，所以包里另提供一份同源生成的 <code>index.unlayered.css</code>，规则改按特指度竞争。全量皮肤压缩后约 130 kB ；按需引入时漏引一份是静默的，开发期可以开 <code>startSkinCheck()</code>，它会报出缺哪份、该怎么 import 。</p>
+<p>每个部件归入六个家族之一：Action Control 、Field Chrome 、Collection Item 、Surface 、Overlay 、Feedback 。Select 的 trigger 、option 、content 分属三个家族，同族成员的同类部件由门禁逐条比对，必须同值。几条全库规则：圆角只有 4 / 8 / 12px 三档，外加 pill 和 circle ；只有 Button 默认品牌实心；离散控件按下 120ms 缩到 0.97 、释放 200ms 回来，整行条目只换底色，但不允许零反馈；边界只由描边承担；字段默认 16rem 宽、压缩底线 12rem ；禁用不能只降 opacity 。</p>
+<p>皮肤最怕写错不报错：引用一个不存在的令牌名，整条声明会在计算值阶段静默失效。对应的门禁有查孤儿令牌、查未命名的共享字面量、查声明了却没接线的部件、查永远选不中节点的遗留规则。<code>data-tone</code> 也能用在自己的节点上，取到整族 <code>--xh-tone-*</code> 语气色，随明暗和品牌一起切。完全不要默认皮肤也行，组件只往 DOM 写属性：开合一律是 <code>data-state='open' | 'closed'</code>，布尔状态为真时属性存在。</p>
+十、动效、声音和背景
+<p><code>@xihan-ui/motion</code> 的缓动和时长与令牌同源，有门禁双向比对。JS 动画用 <code>readMotion(el)</code> 从元素上读实际生效的令牌，不写死毫秒；<code>resolveEasing</code> 认不出的写法直接抛错，不悄悄按匀速播放。弹簧用解析解，任意时刻 O(1) 可算，能烘焙成 CSS 的 <code>linear()</code> 交给浏览器，沉降时长与 0.1ms 步长的龙格-库塔积分逐点比对过；核心组件只用超调不超过 3% 的预设。减弱动效只有一条通道：最近祖先的 <code>data-motion</code>，其次是应用级 override ，最后是系统设置。降级是去掉位移、保留 120ms 淡变；有进场就有退场，初始内容不播进场。</p>
+<p><code>@xihan-ui/animations</code> 里的动画是一份可以 JSON 序列化的配方，播放前校验，不合法直接拒播。其中一条来自 WCAG 2.3.1：任意一秒内闪烁不超过三次。<code>splitText</code> 按码点拆字，原文写进 <code>aria-label</code>，免得读屏逐字念。</p>
+<p><code>@xihan-ui/sound</code> 没有任何音频文件，提示音在播放的那一瞬间用振荡器和噪声合成，整包不到 5 kB ，内置清亮、极简、柔和三套主题。<code>withNotificationSound(toast)</code> 包一层就能给通知配声，调用点不用改；浏览器自动播放策略挂起时只保留最近一声；单个元素配声挂在 <code>click</code> 上，键盘激活也会发声，按下后拖开取消的不发声。</p>
+<p><code>@xihan-ui/backgrounds</code> 是 WebGL2 背景效果（极光、星云、流体、星空等），WebGL2 不可用时降级成 CSS 背景。滚出视口自动暂停、减弱动效下冻结，页面开十个效果也只有一条共享的 rAF 循环。文字、图片、SVG 都能采样成点云，让粒子排成“曦寒”两个字，再形变到别的形状。</p>
+十一、组件：挑些细节说
+<p>组件按通用、布局、导航、数据录入、数据展示、图表、反馈、浮层、AI 对话分类，每个都有内核、三端组件和皮肤。挑几处：</p>
+<ul>
+<li>Select 只负责从固定选项里选，要边输入边筛选用 Combobox ，筛选结果由调用方掌管；多选显示为标签行，最多 3 枚，其余折成 <code>+N</code>。</li>
+<li>日期分两条路：已知日期用可键入的分段日期框，需要浏览用日历选择器；<code>min</code> / <code>max</code> 可以精确到时刻。</li>
+<li>TextField 的字数按字素算，组合 emoji 、国旗都算一个字； NumberField 长按会加速； FileUpload 支持粘贴上传和并发排队； Mention 插入的引用按整体删除； SignaturePad 输出 SVG ，可撤销重做； ColorPicker 支持 <code>oklch</code>、屏幕取色和最近使用色。</li>
+<li>Table 支持排序、选择、展开、吸顶、冻结列、合并单元格、表头分组、树形级联勾选和拖动列宽。Virtualizer 已接进树、列表、下拉、表格和日志，只渲染可见行，但键盘、检索、选择和读屏念的“第几项，共几项”都按完整集合计算。</li>
+<li>Tabs 、Toolbar 放不下时自动出现“更多”下拉；面包屑的折叠位可用键盘就地展开； Anchor 平滑滚动途中高亮锁定，直到滚动停稳； Tour 的目标还没挂载时会先等它出现。</li>
+<li>Carousel 悬停、聚焦、滚出视口或页面转入后台都会暂停，拖拽松手按速度判定翻页并由弹簧落位； ImageViewer 拖出图片范围有阻尼、快甩有惯性； Progress 加上分段色带、目标刻度和指针，就是仪表盘与子弹图。</li>
+<li>Dialog 可以拖标题栏，Drawer 可以拖动或用方向键调厚度；按钮在途时加载环压在按钮上、宽度不变，短请求不会闪； Watermark 节点被删掉会原位放回；二维码中心的 logo 挖掉的码字超过纠错能力时会报诊断。</li>
+</ul>
+<p>提示延迟、轮播间隔、轻提示停留这类“等待”不归动效管，由组件属性给缺省值：Tooltip 700 / 300ms ，子菜单 100 / 300ms ，卡片通知 5000ms ，轻提示 4000ms 。减弱动效不会让提示更早消失，唯一的例外是自动播放，减弱动效下轮播不自己起播。</p>
+十二、AI 对话
+<p>读流、收敛状态、增量渲染，拆成三个不碰 DOM 的包。</p>
+<p><code>@xihan-ui/chat-stream</code> 的链路是 SSE 读取 → 协议归一 → parts 归约 → 会话 store 。传输层是一个接口，<code>stream()</code> 不抛异常，错误在流的边界转成事件。一条消息由正文、思维链、工具调用、文件、引用来源等 part 组成，增量按块键回到原位，工具调用先到参数后到结果也不会错位。会话按树来存，每条消息记着自己的父消息：</p>
+<pre><code>const store = createThreadStore({ transport: createHttpSseTransport({ url: "/api/chat" }) });
+store.submit("你好");
+store.regenerate(messageId);   // 同一提问再要一条回复，原回复留作分支
+store.edit(messageId, "改过的问题");
+store.retry();                 // 撤掉失败的回复重新发起，不产生分支
+store.stop();                  // 保留已产出的内容，这条记为 aborted
+store.continue();              // 在截断处接着写
+</code></pre>
+<p><code>selectBranch</code> 用来做“‹ 2 / 3 ›”切换，<code>getTree()</code> 导出整棵树可恢复会话，非法操作立即报错。帧批处理把一帧内的增量合并成一次通知，打字机把网络抖动摊平成匀速输出。</p>
+<p><code>@xihan-ui/markdown</code> 每次接收截至当前的全文，已定型的前缀块冻结，只解析尾巴；生长中的块 key 恒为 <code>'live'</code>，框架复用同一份 DOM ，用户的选区和滚动位置不会丢。消毒在解析器内部完成，不透传原生 HTML ，所以直接 <code>v-html</code> 是安全的。没写完的 <code>**粗</code> 先按闭合显示，半截链接只显示文字，流结束后再严格解析。它是 CommonMark 的子集，官方用例通过 489/652 （ 75.0%），刨掉按设计不支持的两节原生 HTML 是 82.0%，仓库里有棘轮盯着，只许升不许降。</p>
+<p><code>@xihan-ui/code-highlight</code> 只区分注释、字符串、数字、关键字、标点五类。不内置 Shiki ，是因为几百 kB 的语法数据对偶尔出现一段代码的场景不成比例；着色器是端口，需要更高精度时把 Shiki 接进来，组件一行不用改。</p>
+<p>对话组件按职责拆开：PromptInput （处理输入法，发送与停止共用一颗按钮）、MessageFeed （粘底跟随、播报区、未读数）、ToolCall （运行时展开、结束收起，手动开合过一次就不再自动；等待批准的闸门常驻，不会被折叠藏起来）、Reasoning （显示已经想了几秒）、Approval （超时按拒绝，授权范围与判定原子提交）、QuestionFlow （一次一题，末题不替用户提交）、Citation 、CodeView 、DiffView （支持行评论）和 Log （支持 ANSI 着色）。</p>
+十三、图表：零依赖的引擎
+<p>最近一个大版本带来了 <code>@xihan-ui/viz</code>，比例尺、刻度、布局、拾取、降采样全是纯函数。CartesianChart 一个组件覆盖柱、条、堆叠、瀑布、折线、面积、散点、K 线、箱线和小提琴，支持参考线、趋势线、Ctrl / ⌘ 滚轮与双指缩放、刷选和多图联动；另有饼图、漏斗、雷达、桑基、关系图（五种布局）、层级图（矩形树图、旭日图等，可逐层下钻）、迷你图和热力图。</p>
+<p>标记超过 3000 个时数据层自动切到画布，键盘、读屏、主题和打印不受影响；列式数据仓配合降采样，百万点仍然流畅，实时追加会合并到同一帧刷新。无障碍没有省：绘图区只占一个 Tab 位，方向键在数据点之间移动，还会自动生成视觉隐藏的摘要和数据表。分类色亮暗各八支，过了对比度和色弱区分校验，超过八个系列会报诊断；强制色和打印下改用纹理区分系列；双 y 轴是刻意不提供的。</p>
+十四、表单、日期与国际化
+<p>复合控件给了 <code>name</code> 就会生成表单影子，随 <code>&lt;form&gt;</code> 一起提交：没勾选的 checkbox 不进 <code>FormData</code>，与原生一致。<code>form.reset()</code> 时组件按当下的 props 回到默认值；受控组件要响应重置必须传 <code>defaultValue</code>，否则组件的空值会被当默认值发出去，“重置”就成了“清空数据”。参与表单的组件名单由门禁从源码里扫，新组件没接重置会被拦下来。</p>
+<p>日期运算是自研的 <code>@xihan-ui/core/date</code>，命名沿用 Temporal 。之所以自己写，是因为日期的边界情况错一处，就会有某一天错位：1 月 31 日加一个月是 2 月 28 日；<code>Date</code> 表示时刻不是日期，跨夏令时会差一小时；周首日按地区不同，美国周日、中国周一、埃及周六； 2027-01-01 属于 2026 年的第 53 周。周规则按 CLDR 查表，不问各浏览器实现不一的 <code>Intl.Locale#getWeekInfo</code>；值对象写 <code>a &lt; b</code> 会直接抛错。</p>
+<pre><code>PlainDate.from("2026-01-31").add({ months: 1 }).toString(); // '2026-02-28'
+today("Asia/Shanghai").toString();                          // 上海此刻的日期
+</code></pre>
+<p>内建文案默认英文，日期组件跟随 <code>locale</code>，解析顺序是实例 props → 全局配置 → 浏览器语言 → <code>en-US</code>。中文项目在根组件调用一次 <code>provideXhConfig({ locale: 'zh-CN', translations })</code> 即可，按键合并，传 ref 还能运行时切换。服务端渲染要在两端注入同一个 <code>locale</code>，否则月历会水合不一致。</p>
+十五、命令式服务
+<p>删除前确认、保存后提示这类反馈，一次调用弹出最省事。库里有对话框、通知、顶部进度条三个服务工厂：</p>
+<pre><code>const ok = await dialog.confirm({
+  title: "删除这条记录？", tone: "danger", okText: "删除",
+  onOk: () =&gt; api.remove(id),   // 返回 Promise 时按钮自动加载，失败不关闭
+});
+
+const id = toast.loading("正在上传…");
+await upload(file);
+toast.update(id, { loading: false, tone: "success", title: "上传完成" });
+toast.info("已删除 3 条记录", { actionLabel: "撤销", onAction: () =&gt; restore() });
+</code></pre>
+<p>对话框多次调用会排队，前一个退场完才弹下一个。通知分轻提示和卡片两种预设，从加载中到完成是同一条通知就地改写，<code>dedupe: 'content'</code> 让连发的报错显示成「同步失败 ×2 」，超出上限时先挤掉低优先级的。进度条用在途计数：写成布尔开关的话，三个并发请求里第一个返回它就收起了。文档里还有一条建议：可撤销的操作别弹确认框，直接执行，再给一条带“撤销”按钮的轻提示。</p>
+十六、零第三方运行时依赖
+<p>除宿主框架本身，所有库包的运行时都不引入第三方依赖。日期、浮层定位、代码着色、Web Components 响应式基类、Markdown 、状态机和图表引擎全是自研，常见的同类选择分别是 date-fns 、Floating UI 、Shiki 、Lit 、markdown-it 、XState 和各类图表库。代价是每一块都要自己证明是对的，所以测试里拿成熟的响应式基类对拍自研版、用 CommonMark 官方用例集测渲染器，这些依赖只在测试里出现。新增运行时依赖要登记白名单，写明理由和移除条件；分层依赖由 dependency-cruiser 强制；全部 ESM ，体积有棘轮把关。</p>
+<p>图标是结构化记录，渲染时逐节点创建元素，运行期不解析 SVG 字符串，也就不存在写 <code>innerHTML</code> 的路径。<code>npx xihan-icons &lt;svg 目录&gt;</code> 能把任意图标集转成同样的模块，转换时丢掉 <code>class</code> 和 <code>onclick</code>，碰到 <code>&lt;script&gt;</code>、<code>&lt;use&gt;</code> 直接报错跳过。</p>
+十七、工程上的几道门
+<p><code>pnpm gate</code> 按包与依赖、令牌、皮肤、视觉、浮层、动效、无障碍、适配器、文档、仓库十个模块执行，前面提到的检查基本都在里面。除此之外还有几道：</p>
+<ul>
+<li>像素基线在固定的 Playwright Linux 容器里生成，字体钉死为 DejaVu Sans ，Windows 上用 Docker 跑出来的结果和 CI 逐像素一致； PR 里改了基线图片，要逐张说明、逐张审。</li>
+<li>视觉性能预算：磨砂对话框在 4 倍 CPU 降速下逐帧跑，统计帧间隔、长任务和 DOM 留存，报告不编造内存数字。</li>
+<li>公开面基线覆盖 JS 导出、解剖属性、状态属性、CSS 变量、自定义元素标签五种介质，删名或改名都判失败。所有包始终同号发布，破坏性变更直接升主版本，不留别名，也不留兼容层。</li>
+<li>组件契约问题投递到诊断通道，带稳定的 <code>code</code>、组件、部件和节点；开发期打印，生产环境静默，零开销。</li>
+<li>文档站会生成 <code>llms.txt</code> 等给 AI 读的纯文本，每页地址后缀改成 <code>.md</code> 就能拿到 Markdown ；仓库根有设计、开发、三端适配三份 Agent Skills 。</li>
+</ul>
+<p>还有个小彩蛋：在 <code>vite.config.ts</code> 里挂上 <code>xihanUiBanner()</code>，开发服务器启动时，终端会打出彩虹色的 Logo 和两句诗：</p>
+<pre><code>碧落降恩承淑颜，共挚崎缘挽曦寒。
+迁般故事终成忆，谨此葳蕤换思短。
+</code></pre>
+十八、它在哪儿被用着
+<p>XiHan.BasicApp 的前端整体用 XiHan.UI 重建，这是它在真实业务里的第一个大体量消费方。文档站另有一册“场景示例”，把后台壳、表单页、数据页、对话页整屏摆出来，都是真组件，没有一处裸色值，也没有一个写死的毫秒数。</p>
+十九、最后
+<p>XiHan.UI 是曦寒懿（ XiHanFun ）开源生态的前端基座，同一生态里还有：</p>
+<ul>
+<li><a href="https://github.com/XiHanFun/XiHan.Framework" target="_blank" rel="noopener noreferrer">XiHan.Framework</a>：快速、轻量、高效、用心的 .NET 现代模块化开发框架。是面向企业级应用的模块化后端框架，框架优先使用 .NET 原生功能，减少第三方依赖，理念现代、开箱即用、模块清晰、依赖可控、扩展可维护。曦寒懿（ XiHanFun ）开源生态的后端基座。</li>
+<li><a href="https://github.com/XiHanFun/XiHan.BasicApp" target="_blank" rel="noopener noreferrer">XiHan.BasicApp</a>：基于 XiHan.Framework 和 XiHan.UI 的超高颜值通用中后台内核。开箱即用，提供 RBAC + ABAC 混合权限管理、多租户隔离、代码生成、实时通信、灰度发布、AI 等核心能力，满足新型企业级中后台管理场景。属于曦寒懿（ XiHanFun ）开源生态的基础应用。</li>
+</ul>
+<p>本地跑起来看看（需要 Node.js 24+、pnpm 11+）：</p>
+<pre><code>git clone https://github.com/XiHanFun/XiHan.UI.git
+cd XiHan.UI/ui &amp;&amp; pnpm install --frozen-lockfile &amp;&amp; pnpm build
+cd ../docs &amp;&amp; pnpm install &amp;&amp; pnpm dev
+</code></pre>
+<p>项目采用 MIT 授权。组件状态图与 ARIA 接线参考了 Zag.js 的规格，无障碍交互依据 W3C APG ，Markdown 以 CommonMark 规范为判据，无障碍扫描用的是 axe-core ，在此一并致谢。欢迎提 Issue 和 PR ，觉得有用的话点个 Star 就是很大的鼓励。</p>
+<ul>
+<li>文档站： <a href="https://ui.docs.xihanfun.com" target="_blank" rel="noopener noreferrer">https://ui.docs.xihanfun.com</a></li>
+<li>生态门户： <a href="https://docs.xihanfun.com" target="_blank" rel="noopener noreferrer">https://docs.xihanfun.com</a></li>
+<li>QQ 交流群：462371834</li>
+</ul>
+<p>微信搜一搜「摘繁华」，关注公众号获取后续更新：</p>
+<p></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">一份行为，三种宿主：聊聊 XiHan.UI 这个框架无关的 Headless 组件库
+<p></p>
+<p>做前端久了，多半碰到过这种局面：后台用 Vue ，官网用 React ，角落里还剩几个没有框架的老页面。三边各有一个弹窗，按 Esc 有的关有的不关，关掉以后焦点有的回到按钮上，有的掉回页面顶部。用鼠标的人察觉不到，用键盘和读屏的人每天都被绊一下。再往后换框架，组件库整套重写，最先丢的正是这些看不见的东西：方向键往哪走，读屏念什么，焦点落在哪。</p>
+<p>XiHan.UI 就是冲着这件事做的：</p>
+<blockquote>
+<p>快速、轻量、高效、用心的框架无关 Headless UI 组件库。是面向企业级前端的设计系统运行时，无头内核，多框架适配器。提供基础组件与 AI 组件，覆盖从中后台到 AI 对话的界面构建场景。曦寒懿（ XiHanFun ）开源生态的前端基座。</p>
+</blockquote>
+<p>下面把它的设计、细节和取舍摊开讲，也包括它现在做不到的地方。文档站每个组件都有能点、能切换框架的真实示例：</p>
+<ul>
+<li>文档站： <a href="https://ui.docs.xihanfun.com" target="_blank" rel="noopener noreferrer">https://ui.docs.xihanfun.com</a></li>
+<li>GitHub： <a href="https://github.com/XiHanFun/XiHan.UI" target="_blank" rel="noopener noreferrer">https://github.com/XiHanFun/XiHan.UI</a></li>
+<li>Gitee： <a href="https://gitee.com/XiHanFun/XiHan.UI" target="_blank" rel="noopener noreferrer">https://gitee.com/XiHanFun/XiHan.UI</a></li>
+<li>GitCode： <a href="https://gitcode.com/XiHanFun/XiHan.UI" target="_blank" rel="noopener noreferrer">https://gitcode.com/XiHanFun/XiHan.UI</a></li>
+</ul>
+一、先看用起来是什么样
+<pre><code>pnpm add @xihan-ui/vue @xihan-ui/tokens @xihan-ui/styles
+</code></pre>
+<p>入口引一次皮肤，组件按名字 import ，不用 <code>app.use()</code>。所有包都声明了 <code>sideEffects: false</code>，没用到的组件会被摇掉：</p>
+<pre><code>&lt;XhDialogRoot v-slot="{ setOpen }"&gt;
+  &lt;XhDialogTrigger&gt;打开对话框&lt;/XhDialogTrigger&gt;
+  &lt;XhDialogContent&gt;
+    &lt;XhDialogTitle&gt;确认操作&lt;/XhDialogTitle&gt;
+    &lt;XhButton @click="setOpen(false)"&gt;确定&lt;/XhButton&gt;
+  &lt;/XhDialogContent&gt;
+&lt;/XhDialogRoot&gt;
+</code></pre>
+<p>打开以后，焦点圈在内容区、Esc 或点遮罩关闭、关闭后焦点回到触发按钮、背后锁住滚动、其余部分对读屏隐藏，这些一行都不用写。React 19 的组件名和写法完全一样。没有框架的页面用自定义元素，结构自己写，用 <code>data-xh-part</code> 标出每个节点的角色：</p>
+<pre><code>&lt;xh-dialog&gt;
+  &lt;button data-xh-part="trigger"&gt;打开&lt;/button&gt;
+  &lt;div data-xh-part="positioner"&gt;
+    &lt;div data-xh-part="content"&gt;…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/xh-dialog&gt;
+</code></pre>
+<p>三种写法跑的是同一台状态机、同一份 <code>connect</code>，差别只在于谁把属性写到 DOM 上。</p>
+二、一个组件，五份产物
+<p>以对话框为例，它在仓库里落成五处：无头内核（解剖、状态机、键盘规格表、<code>connect</code>）、Vue 组件、React 组件、自定义元素 <code>&lt;xh-dialog&gt;</code>、纯 CSS 皮肤。行为只在内核里定义一次，适配器只做三件事：把状态机接进各自的响应式，把部件包成组件，把属性铺到节点上。</p>
+<p>全库的地基是解剖：每个部件在 DOM 上由 <code>data-scope</code> 加 <code>data-part</code> 唯一标识，皮肤、测试、诊断都建在这对属性上。皮肤只认属性不认类名，所以同一份 CSS 同时作用于三端：</p>
+<pre><code>[data-scope='button'][data-part='root'][data-variant='solid'] { … }
+</code></pre>
+<p><code>connect</code> 是内核的出口，一个纯函数：输入状态机服务，输出一组 <code>getXxxProps()</code>。每个 getter 产出结构标识、ARIA 语义、状态钩子、id 关联和事件处理器五类东西，里面没有一行 DOM 操作：</p>
+<pre><code>getTriggerProps: item =&gt; normalize.button({
+  ...parts.trigger.attrs,                    // data-scope + data-part
+  "id": triggerId(item.value),               // 由 scope 派生，同页多实例不冲突
+  "aria-controls": contentId(item.value),
+  "aria-expanded": isOpen(item.value) ? "true" : "false",
+  "data-state": stateAttr(item),             // 皮肤钩子
+  "onClick": () =&gt; { /* send({ type: 'ITEM.TOGGLE', … }) */ },
+});
+</code></pre>
+<p>不想要现成结构时，直接拿 <code>api</code> 用 <code>v-bind</code> 铺到自己的标签上。一次点击经过的路径是这样的：</p>
+<pre><code>用户点击 → 适配器把 DOM 事件交给 connect 产出的 onClick
+  → service.send({ type: 'TRIGGER.CLICK' })
+  → 状态机 closed → open ；行为原语锁滚动、建焦点域、压入层栈，浮层再请定位引擎算坐标
+  → 适配器重读 connect ，把新的 aria-* / data-* 铺到部件上
+  → 皮肤按 [data-state='open'] 命中新规则，动画播放
+</code></pre>
+<p>中间几步与框架无关，适配器只负责首尾。</p>
+<p>想接 Svelte 或 Solid ，要写的只有一份 <code>ReactiveRuntime</code>（五个接口）、一份 <code>NormalizeProps</code> 和一层组件包装，<code>@xihan-ui/core/vanilla</code> 就是参考实现。</p>
+三、状态机：很薄，规矩不少
+<p>状态机运行时自研、零依赖。<code>states</code> 里只能用字符串引用具名的动作、守卫和副作用，写内联函数或引用不存在的名字，<code>createMachine</code> 当场抛错，开发和生产一致。这样状态图本身是可静态分析的数据，测试能直接算转移覆盖率。</p>
+<p>受控与非受控收在 <code>cell</code> 一处：</p>
+<pre><code>value: cell&lt;string[]&gt;(() =&gt; ({
+  value: prop("value"),                      // 传了就是受控，组件只调 onChange 通知你
+  defaultValue: prop("defaultValue") ?? [],  // 只传它就是非受控，组件自己持有
+  onChange: value =&gt; prop("onValueChange")?.({ value }),
+})),
+</code></pre>
+<p>浮层开关走“意图加回写”，受控时点触发器只发 <code>open-change</code>，你写回 <code>open</code> 状态机才转移。服务没有直接改状态的入口，状态只能由事件驱动，所以永远能用一串事件复现，跨端一致性测试靠的就是这一点。</p>
+<p>副作用装配是事务化的：一批 effect 中后一项初始化失败，前面拿到的资源按逆序全部释放，回滚异常和原始异常一起放进 <code>AggregateError</code>。浮层打开时“登记层、消隐层、焦点域、滚动锁、背景失活”就在同一个事务里，失败不会留下一个永远占着栈顶的半成品。</p>
+四、三端一致是测出来的
+<p>框架无关的组件库最常见的病，是各适配器慢慢走样。这里每个组件有一份零框架的一致性规格，三个适配器各实现一个 harness ，运行器逐帧采集归一化后的 DOM 快照比对：id 的具体值和 <code>data-v-*</code> 被抹掉，<code>aria-controls</code> 这类引用翻译成 <code>@part(...)</code>，抹完必须逐字相同。还有抹不掉的差异，说明抽象漏了，要改的是库，不是测试。</p>
+<p>每个适配器也有自己的坑。React 的 props 变化不经过可订阅的源，推式依赖追踪会让所有 <code>track</code> 静默失效，所以 React 运行时改成每次提交后逐项比对，<code>flush</code> 用 <code>flushSync</code>；<code>pointerenter</code> 不冒泡、合成事件上没有 <code>stopImmediatePropagation()</code>，这类处理器改挂原生监听，有门禁逐组件核对；全局配置的代理实现了 <code>ownKeys</code>，否则 <code>{ ...props }</code> 一展开默认值就没了。</p>
+<p>Web Components 选的是 Light DOM 行为宿主：元素不渲染结构，只找到作者写的角色节点写入属性和事件。不用 Shadow DOM ，是因为它会封住结构、挡住外部 CSS ，表单关联和跨边界的 <code>aria-*</code> 引用都要额外机制。代价是结构得自己写，所以有校验：作者写 <code>data-xh-part</code>（声明），接线后写 <code>data-part</code>（事实），分得清“写了但没接上”。缺必备部件报 <code>wc.missing-part</code>，标签用错报 <code>wc.wrong-part-tag</code>，比如表单的 <code>label</code> 写成 <code>&lt;div&gt;</code>，<code>for</code> 关联会静默失效。布尔属性是三态的，缺席、<code>="false"</code>、其余各不相同；角色节点真的进出才重新接线；脚本到达前用 <code>:not(:defined)</code> 先收起浮层子树，免得裸文本被搜索引擎当正文；包里还附带 <code>custom-elements.json</code> 给编辑器补全。</p>
+五、无障碍：每个组件一张键盘规格表
+<p>每个组件有一份机读的键盘规格表：</p>
+<pre><code>export const accordionKeyboard: KeyboardTable = {
+  component: "accordion",
+  source: "https://www.w3.org/WAI/ARIA/apg/patterns/accordion/#keyboardinteraction",
+  rows: [
+    { id: "accordion.kbd.toggle", keys: ["Space", "Enter"],
+      when: "focus in trigger, not disabled", does: "展开/收起该条目的 content" },
+    // …
+  ],
+};
+</code></pre>
+<p>测试用例通过 <code>covers</code> 反查行 id ，少覆盖一行套件就失败，文档站的键盘表也由它渲染。想让测试通过只能补用例，不能改分母。</p>
+<p>几处 ARIA 处理：禁用项仍需可聚焦时用 <code>aria-disabled</code>，不用会让元素失焦的原生 <code>disabled</code>；手风琴按 APG 规定不做 roving tabindex ；方向键的轴向和 RTL 换向收在一处；不属于导航的按键一律不 <code>preventDefault</code>。输入法组合期的按键单独识别，这条对中文用户格外重要：拼音输入时的回车是在确认候选词，所以提示输入框里组合中的 Enter 一律放行。</p>
+<p>焦点环向内收一个环宽，聚焦前后占位不变。环内收以后，紧挨着它的是元素自己的面，WCAG 2.2 要求 3:1 ，而实心面上品牌色的环能低到 1:1 ，这些档位的环改取该面配对的前景色。环也不随语气变色，warning 色对白底只有 2.70:1 。这条由静态计算和真实 Chromium 逐档实测两道门禁一起守，两边的分母还要互相对账。axe 扫描同样跑在真实 Chromium 里，明暗各一遍；存量违规登记成表，某条不再命中就判定登记过期，必须删掉。</p>
+<p>同一份皮肤还要在紧凑密度、RTL 、粗指针（命中区至少 44×44px ）、减弱动效、减少透明度、强制色和打印下都成立。</p>
+六、浮层：最容易出 bug ，拆得最细
+<p>点外面关闭、焦点陷入、背景禁止滚动，这些在 core 里实现一次，所有浮层调用。</p>
+<p>浮层叠成一个栈。每层要登记 <code>branches</code>（逻辑属于本层、DOM 在别处的节点，比如 portal 出去的子菜单，漏了的话点子菜单会关掉父层）和 <code>surfaces</code>（遮罩这类点了要关本层的面）。层级由逻辑栈派生，不靠各组件拿静态 <code>z-index</code> 去猜。</p>
+<p>只有栈顶响应 Esc 。Esc 、点外部、焦点移出都会派发一张可取消的表决票，<code>preventDefault()</code> 即否决，表单没填完先弹个确认，不用绕开组件实现。触屏上 pointerdown 只建立候选，同一目标上的 click 到来才提交，中途一滚动就作废，在手机上划页面不会误关浮层。</p>
+<p>滚动锁是引用计数的，让出来的滚动条宽度写在 <code>--xh-scroll-lock-gutter</code> 上，<code>fixed</code> 顶栏读它就不会在弹窗打开时跳一下。背景失活给其余子树加 <code>inert</code>。退场动画用租约：等浏览器真正创建的动画对象播完再卸载，不写死超时；焦点则在逻辑关闭那一刻就交回触发器。</p>
+<p>定位引擎也是自研的，十二种方位、主轴放不下自动翻面、交叉轴沿边推回并留 4px 余量，支持虚拟锚点。状态机传给引擎的 <code>strategy</code>、内联 <code>position</code>、皮肤里的 <code>position</code> 三处必须一致，否则整族浮层偏移一个滚动距离还不报错，有门禁专门核对。首帧坐标未定时浮层默认 <code>visibility: hidden</code>，引擎回报坐标后才显示，不会在左上角闪一下；用 visibility 不用 display ，是因为后者会让元素退出排版，量不到尺寸。</p>
+<p>浮层 portal 到 body 后，会把来源处的主题、品牌、密度、动效、书写方向，连同祖先上声明的 CSS 变量一起投到实例壳上，局部深色区里弹出的菜单还是深色。组件私有槽不跨 Portal ，表格斑马行改写的底色不会漏进行里的下拉菜单。子菜单用安全三角，指针斜着移过去途中扫过别的条目，子菜单不会被切走。</p>
+七、指针与手势
+<p>跟手交互要同时做对四件事：监听挂在 document 上，处理 <code>pointercancel</code>，第二根手指不能劫持会话，卸载时清干净监听。漏一条就是只在真机上偶发的 bug 。<code>@xihan-ui/pointer</code> 把这四条一次做对，压缩后 2.04 kB ，滑块、分栏、取色器、签名板、轮播、排序、表格、树都走它。</p>
+<p>双指缩放相对起始那一刻计算，避免逐帧累乘积累浮点误差；拖放落点按中心是否越过判定，不按矩形相交，项高不一时后者会来回跳；几何一律取按下时的快照，避免让位之后自激振荡；激活阈值用直线距离，斜着拖 4px + 4px 实际是 5.7px ，分轴比较会误判成没动。</p>
+八、主题：一个控制器，八条轴
+<p>令牌源是 DTCG 格式的 JSON ，产物提交进仓库，CI 重新生成后比对。颜色一律写成 <code>oklch</code>，同明度不同色相看起来一样亮，所以整套色板只定一条明度曲线：任何色相的 700 档铺白字都过 4.5:1 ，深色主题沿同一条曲线反向取档。令牌分原语、语义、组件覆盖槽三层，皮肤只能消费语义层。</p>
+<p><code>createVisualEnvironmentController</code> 统一管理明暗、品牌、密度、书写方向、对比度、动效、透明度、材质八条轴：</p>
+<pre><code>const visual = createVisualEnvironmentController({
+  root: document.documentElement,
+  storageKey: "app-visual-environment",
+  onStorageError: detail =&gt; console.error("视觉偏好持久化失败", detail),
+  initial: { mode: "system", motion: "system", transparency: "system" },
+});
+visual.setPreference({ mode: "dark", density: "compact" });
+</code></pre>
+<p>它最终投影成 <code>&lt;html data-theme="dark" data-density="compact" data-motion="reduce" dir="rtl" …&gt;</code> 这样一组属性，服务端渲染时直接输出就不会闪。开了持久化就必须传 <code>onStorageError</code>，失败不会被装成成功；局部区域用带 <code>parent</code> 的子控制器；密度只收紧高度和间距，不缩字号。</p>
+<p>品牌色给一枚种子就够：<code>registerBrand('acme', '#16a34a')</code> 派生出 11 档梯度。派生只取种子的色相和彩度，明度曲线不变，所以实心底白字 4.5:1 对任何种子都成立；半透明的种子直接拒绝。</p>
+<p>材质分 solid 、soft 、frosted （只给瞬态浮层用的磨砂）、elevated 几档，不提供“玻璃”。打开 <code>data-material="liquid"</code> 后，浮动按钮、轮播控制、看图工具条、吸顶顶栏会换成液态面：读下层亮暗选色调，切换点带 0.179 ± 0.04 的滞回区间，内容滚过分界附近不会来回闪；下层读不出颜色就停在可读下限，保证标签至少 4.5:1 。彩色区块上还可以声明墨色域，中性描边改用墨色按比例透明，同一支灰描边“黄底上 1.06:1 、黑底上 16.68:1”的落差就消失了。</p>
+九、皮肤：纯 CSS ，可以整套扔掉
+<p><code>@xihan-ui/styles</code> 不依赖任何 JS 。层序是 <code>xihan.reset, xihan.tokens, xihan.motion, xihan.components, xihan.overrides</code>，reset 只作用于带 <code>data-scope</code> 的库节点、特指度为 0 ，和现有页面共存不用隔离。改样式有三种粒度，优先用前两种，直接写死的规则会绕开令牌，深色和密度切换随之失效：</p>
+<pre><code>:root { --xh-shape-control: var(--xh-radius-md); }   /* 改语义令牌：影响全库 */
+:root { --xh-button-h: 40px; }                       /* 改组件覆盖槽：只影响一类组件 */
+@layer xihan.overrides {                              /* 直接写规则 */
+  [data-scope='button'][data-part='root'] { text-transform: uppercase; }
+}
+</code></pre>
+<p>CSS 级联有条容易忽略的规则：无层声明胜过任何有层声明，与特指度无关。宿主一条无层的 <code>button { padding: 0 }</code> 就能把皮肤压成裸元素，Tailwind v3 的 preflight 、normalize.css 、VitePress 都是这种无层重置。XiHan.UI 自己的文档站就撞上过，所以包里另提供一份同源生成的 <code>index.unlayered.css</code>，规则改按特指度竞争。全量皮肤压缩后约 130 kB ；按需引入时漏引一份是静默的，开发期可以开 <code>startSkinCheck()</code>，它会报出缺哪份、该怎么 import 。</p>
+<p>每个部件归入六个家族之一：Action Control 、Field Chrome 、Collection Item 、Surface 、Overlay 、Feedback 。Select 的 trigger 、option 、content 分属三个家族，同族成员的同类部件由门禁逐条比对，必须同值。几条全库规则：圆角只有 4 / 8 / 12px 三档，外加 pill 和 circle ；只有 Button 默认品牌实心；离散控件按下 120ms 缩到 0.97 、释放 200ms 回来，整行条目只换底色，但不允许零反馈；边界只由描边承担；字段默认 16rem 宽、压缩底线 12rem ；禁用不能只降 opacity 。</p>
+<p>皮肤最怕写错不报错：引用一个不存在的令牌名，整条声明会在计算值阶段静默失效。对应的门禁有查孤儿令牌、查未命名的共享字面量、查声明了却没接线的部件、查永远选不中节点的遗留规则。<code>data-tone</code> 也能用在自己的节点上，取到整族 <code>--xh-tone-*</code> 语气色，随明暗和品牌一起切。完全不要默认皮肤也行，组件只往 DOM 写属性：开合一律是 <code>data-state='open' | 'closed'</code>，布尔状态为真时属性存在。</p>
+十、动效、声音和背景
+<p><code>@xihan-ui/motion</code> 的缓动和时长与令牌同源，有门禁双向比对。JS 动画用 <code>readMotion(el)</code> 从元素上读实际生效的令牌，不写死毫秒；<code>resolveEasing</code> 认不出的写法直接抛错，不悄悄按匀速播放。弹簧用解析解，任意时刻 O(1) 可算，能烘焙成 CSS 的 <code>linear()</code> 交给浏览器，沉降时长与 0.1ms 步长的龙格-库塔积分逐点比对过；核心组件只用超调不超过 3% 的预设。减弱动效只有一条通道：最近祖先的 <code>data-motion</code>，其次是应用级 override ，最后是系统设置。降级是去掉位移、保留 120ms 淡变；有进场就有退场，初始内容不播进场。</p>
+<p><code>@xihan-ui/animations</code> 里的动画是一份可以 JSON 序列化的配方，播放前校验，不合法直接拒播。其中一条来自 WCAG 2.3.1：任意一秒内闪烁不超过三次。<code>splitText</code> 按码点拆字，原文写进 <code>aria-label</code>，免得读屏逐字念。</p>
+<p><code>@xihan-ui/sound</code> 没有任何音频文件，提示音在播放的那一瞬间用振荡器和噪声合成，整包不到 5 kB ，内置清亮、极简、柔和三套主题。<code>withNotificationSound(toast)</code> 包一层就能给通知配声，调用点不用改；浏览器自动播放策略挂起时只保留最近一声；单个元素配声挂在 <code>click</code> 上，键盘激活也会发声，按下后拖开取消的不发声。</p>
+<p><code>@xihan-ui/backgrounds</code> 是 WebGL2 背景效果（极光、星云、流体、星空等），WebGL2 不可用时降级成 CSS 背景。滚出视口自动暂停、减弱动效下冻结，页面开十个效果也只有一条共享的 rAF 循环。文字、图片、SVG 都能采样成点云，让粒子排成“曦寒”两个字，再形变到别的形状。</p>
+十一、组件：挑些细节说
+<p>组件按通用、布局、导航、数据录入、数据展示、图表、反馈、浮层、AI 对话分类，每个都有内核、三端组件和皮肤。挑几处：</p>
+<ul>
+<li>Select 只负责从固定选项里选，要边输入边筛选用 Combobox ，筛选结果由调用方掌管；多选显示为标签行，最多 3 枚，其余折成 <code>+N</code>。</li>
+<li>日期分两条路：已知日期用可键入的分段日期框，需要浏览用日历选择器；<code>min</code> / <code>max</code> 可以精确到时刻。</li>
+<li>TextField 的字数按字素算，组合 emoji 、国旗都算一个字； NumberField 长按会加速； FileUpload 支持粘贴上传和并发排队； Mention 插入的引用按整体删除； SignaturePad 输出 SVG ，可撤销重做； ColorPicker 支持 <code>oklch</code>、屏幕取色和最近使用色。</li>
+<li>Table 支持排序、选择、展开、吸顶、冻结列、合并单元格、表头分组、树形级联勾选和拖动列宽。Virtualizer 已接进树、列表、下拉、表格和日志，只渲染可见行，但键盘、检索、选择和读屏念的“第几项，共几项”都按完整集合计算。</li>
+<li>Tabs 、Toolbar 放不下时自动出现“更多”下拉；面包屑的折叠位可用键盘就地展开； Anchor 平滑滚动途中高亮锁定，直到滚动停稳； Tour 的目标还没挂载时会先等它出现。</li>
+<li>Carousel 悬停、聚焦、滚出视口或页面转入后台都会暂停，拖拽松手按速度判定翻页并由弹簧落位； ImageViewer 拖出图片范围有阻尼、快甩有惯性； Progress 加上分段色带、目标刻度和指针，就是仪表盘与子弹图。</li>
+<li>Dialog 可以拖标题栏，Drawer 可以拖动或用方向键调厚度；按钮在途时加载环压在按钮上、宽度不变，短请求不会闪； Watermark 节点被删掉会原位放回；二维码中心的 logo 挖掉的码字超过纠错能力时会报诊断。</li>
+</ul>
+<p>提示延迟、轮播间隔、轻提示停留这类“等待”不归动效管，由组件属性给缺省值：Tooltip 700 / 300ms ，子菜单 100 / 300ms ，卡片通知 5000ms ，轻提示 4000ms 。减弱动效不会让提示更早消失，唯一的例外是自动播放，减弱动效下轮播不自己起播。</p>
+十二、AI 对话
+<p>读流、收敛状态、增量渲染，拆成三个不碰 DOM 的包。</p>
+<p><code>@xihan-ui/chat-stream</code> 的链路是 SSE 读取 → 协议归一 → parts 归约 → 会话 store 。传输层是一个接口，<code>stream()</code> 不抛异常，错误在流的边界转成事件。一条消息由正文、思维链、工具调用、文件、引用来源等 part 组成，增量按块键回到原位，工具调用先到参数后到结果也不会错位。会话按树来存，每条消息记着自己的父消息：</p>
+<pre><code>const store = createThreadStore({ transport: createHttpSseTransport({ url: "/api/chat" }) });
+store.submit("你好");
+store.regenerate(messageId);   // 同一提问再要一条回复，原回复留作分支
+store.edit(messageId, "改过的问题");
+store.retry();                 // 撤掉失败的回复重新发起，不产生分支
+store.stop();                  // 保留已产出的内容，这条记为 aborted
+store.continue();              // 在截断处接着写
+</code></pre>
+<p><code>selectBranch</code> 用来做“‹ 2 / 3 ›”切换，<code>getTree()</code> 导出整棵树可恢复会话，非法操作立即报错。帧批处理把一帧内的增量合并成一次通知，打字机把网络抖动摊平成匀速输出。</p>
+<p><code>@xihan-ui/markdown</code> 每次接收截至当前的全文，已定型的前缀块冻结，只解析尾巴；生长中的块 key 恒为 <code>'live'</code>，框架复用同一份 DOM ，用户的选区和滚动位置不会丢。消毒在解析器内部完成，不透传原生 HTML ，所以直接 <code>v-html</code> 是安全的。没写完的 <code>**粗</code> 先按闭合显示，半截链接只显示文字，流结束后再严格解析。它是 CommonMark 的子集，官方用例通过 489/652 （ 75.0%），刨掉按设计不支持的两节原生 HTML 是 82.0%，仓库里有棘轮盯着，只许升不许降。</p>
+<p><code>@xihan-ui/code-highlight</code> 只区分注释、字符串、数字、关键字、标点五类。不内置 Shiki ，是因为几百 kB 的语法数据对偶尔出现一段代码的场景不成比例；着色器是端口，需要更高精度时把 Shiki 接进来，组件一行不用改。</p>
+<p>对话组件按职责拆开：PromptInput （处理输入法，发送与停止共用一颗按钮）、MessageFeed （粘底跟随、播报区、未读数）、ToolCall （运行时展开、结束收起，手动开合过一次就不再自动；等待批准的闸门常驻，不会被折叠藏起来）、Reasoning （显示已经想了几秒）、Approval （超时按拒绝，授权范围与判定原子提交）、QuestionFlow （一次一题，末题不替用户提交）、Citation 、CodeView 、DiffView （支持行评论）和 Log （支持 ANSI 着色）。</p>
+十三、图表：零依赖的引擎
+<p>最近一个大版本带来了 <code>@xihan-ui/viz</code>，比例尺、刻度、布局、拾取、降采样全是纯函数。CartesianChart 一个组件覆盖柱、条、堆叠、瀑布、折线、面积、散点、K 线、箱线和小提琴，支持参考线、趋势线、Ctrl / ⌘ 滚轮与双指缩放、刷选和多图联动；另有饼图、漏斗、雷达、桑基、关系图（五种布局）、层级图（矩形树图、旭日图等，可逐层下钻）、迷你图和热力图。</p>
+<p>标记超过 3000 个时数据层自动切到画布，键盘、读屏、主题和打印不受影响；列式数据仓配合降采样，百万点仍然流畅，实时追加会合并到同一帧刷新。无障碍没有省：绘图区只占一个 Tab 位，方向键在数据点之间移动，还会自动生成视觉隐藏的摘要和数据表。分类色亮暗各八支，过了对比度和色弱区分校验，超过八个系列会报诊断；强制色和打印下改用纹理区分系列；双 y 轴是刻意不提供的。</p>
+十四、表单、日期与国际化
+<p>复合控件给了 <code>name</code> 就会生成表单影子，随 <code>&lt;form&gt;</code> 一起提交：没勾选的 checkbox 不进 <code>FormData</code>，与原生一致。<code>form.reset()</code> 时组件按当下的 props 回到默认值；受控组件要响应重置必须传 <code>defaultValue</code>，否则组件的空值会被当默认值发出去，“重置”就成了“清空数据”。参与表单的组件名单由门禁从源码里扫，新组件没接重置会被拦下来。</p>
+<p>日期运算是自研的 <code>@xihan-ui/core/date</code>，命名沿用 Temporal 。之所以自己写，是因为日期的边界情况错一处，就会有某一天错位：1 月 31 日加一个月是 2 月 28 日；<code>Date</code> 表示时刻不是日期，跨夏令时会差一小时；周首日按地区不同，美国周日、中国周一、埃及周六； 2027-01-01 属于 2026 年的第 53 周。周规则按 CLDR 查表，不问各浏览器实现不一的 <code>Intl.Locale#getWeekInfo</code>；值对象写 <code>a &lt; b</code> 会直接抛错。</p>
+<pre><code>PlainDate.from("2026-01-31").add({ months: 1 }).toString(); // '2026-02-28'
+today("Asia/Shanghai").toString();                          // 上海此刻的日期
+</code></pre>
+<p>内建文案默认英文，日期组件跟随 <code>locale</code>，解析顺序是实例 props → 全局配置 → 浏览器语言 → <code>en-US</code>。中文项目在根组件调用一次 <code>provideXhConfig({ locale: 'zh-CN', translations })</code> 即可，按键合并，传 ref 还能运行时切换。服务端渲染要在两端注入同一个 <code>locale</code>，否则月历会水合不一致。</p>
+十五、命令式服务
+<p>删除前确认、保存后提示这类反馈，一次调用弹出最省事。库里有对话框、通知、顶部进度条三个服务工厂：</p>
+<pre><code>const ok = await dialog.confirm({
+  title: "删除这条记录？", tone: "danger", okText: "删除",
+  onOk: () =&gt; api.remove(id),   // 返回 Promise 时按钮自动加载，失败不关闭
+});
+
+const id = toast.loading("正在上传…");
+await upload(file);
+toast.update(id, { loading: false, tone: "success", title: "上传完成" });
+toast.info("已删除 3 条记录", { actionLabel: "撤销", onAction: () =&gt; restore() });
+</code></pre>
+<p>对话框多次调用会排队，前一个退场完才弹下一个。通知分轻提示和卡片两种预设，从加载中到完成是同一条通知就地改写，<code>dedupe: 'content'</code> 让连发的报错显示成「同步失败 ×2 」，超出上限时先挤掉低优先级的。进度条用在途计数：写成布尔开关的话，三个并发请求里第一个返回它就收起了。文档里还有一条建议：可撤销的操作别弹确认框，直接执行，再给一条带“撤销”按钮的轻提示。</p>
+十六、零第三方运行时依赖
+<p>除宿主框架本身，所有库包的运行时都不引入第三方依赖。日期、浮层定位、代码着色、Web Components 响应式基类、Markdown 、状态机和图表引擎全是自研，常见的同类选择分别是 date-fns 、Floating UI 、Shiki 、Lit 、markdown-it 、XState 和各类图表库。代价是每一块都要自己证明是对的，所以测试里拿成熟的响应式基类对拍自研版、用 CommonMark 官方用例集测渲染器，这些依赖只在测试里出现。新增运行时依赖要登记白名单，写明理由和移除条件；分层依赖由 dependency-cruiser 强制；全部 ESM ，体积有棘轮把关。</p>
+<p>图标是结构化记录，渲染时逐节点创建元素，运行期不解析 SVG 字符串，也就不存在写 <code>innerHTML</code> 的路径。<code>npx xihan-icons &lt;svg 目录&gt;</code> 能把任意图标集转成同样的模块，转换时丢掉 <code>class</code> 和 <code>onclick</code>，碰到 <code>&lt;script&gt;</code>、<code>&lt;use&gt;</code> 直接报错跳过。</p>
+十七、工程上的几道门
+<p><code>pnpm gate</code> 按包与依赖、令牌、皮肤、视觉、浮层、动效、无障碍、适配器、文档、仓库十个模块执行，前面提到的检查基本都在里面。除此之外还有几道：</p>
+<ul>
+<li>像素基线在固定的 Playwright Linux 容器里生成，字体钉死为 DejaVu Sans ，Windows 上用 Docker 跑出来的结果和 CI 逐像素一致； PR 里改了基线图片，要逐张说明、逐张审。</li>
+<li>视觉性能预算：磨砂对话框在 4 倍 CPU 降速下逐帧跑，统计帧间隔、长任务和 DOM 留存，报告不编造内存数字。</li>
+<li>公开面基线覆盖 JS 导出、解剖属性、状态属性、CSS 变量、自定义元素标签五种介质，删名或改名都判失败。所有包始终同号发布，破坏性变更直接升主版本，不留别名，也不留兼容层。</li>
+<li>组件契约问题投递到诊断通道，带稳定的 <code>code</code>、组件、部件和节点；开发期打印，生产环境静默，零开销。</li>
+<li>文档站会生成 <code>llms.txt</code> 等给 AI 读的纯文本，每页地址后缀改成 <code>.md</code> 就能拿到 Markdown ；仓库根有设计、开发、三端适配三份 Agent Skills 。</li>
+</ul>
+<p>还有个小彩蛋：在 <code>vite.config.ts</code> 里挂上 <code>xihanUiBanner()</code>，开发服务器启动时，终端会打出彩虹色的 Logo 和两句诗：</p>
+<pre><code>碧落降恩承淑颜，共挚崎缘挽曦寒。
+迁般故事终成忆，谨此葳蕤换思短。
+</code></pre>
+十八、它在哪儿被用着
+<p>XiHan.BasicApp 的前端整体用 XiHan.UI 重建，这是它在真实业务里的第一个大体量消费方。文档站另有一册“场景示例”，把后台壳、表单页、数据页、对话页整屏摆出来，都是真组件，没有一处裸色值，也没有一个写死的毫秒数。</p>
+十九、最后
+<p>XiHan.UI 是曦寒懿（ XiHanFun ）开源生态的前端基座，同一生态里还有：</p>
+<ul>
+<li><a href="https://github.com/XiHanFun/XiHan.Framework" target="_blank" rel="noopener noreferrer">XiHan.Framework</a>：快速、轻量、高效、用心的 .NET 现代模块化开发框架。是面向企业级应用的模块化后端框架，框架优先使用 .NET 原生功能，减少第三方依赖，理念现代、开箱即用、模块清晰、依赖可控、扩展可维护。曦寒懿（ XiHanFun ）开源生态的后端基座。</li>
+<li><a href="https://github.com/XiHanFun/XiHan.BasicApp" target="_blank" rel="noopener noreferrer">XiHan.BasicApp</a>：基于 XiHan.Framework 和 XiHan.UI 的超高颜值通用中后台内核。开箱即用，提供 RBAC + ABAC 混合权限管理、多租户隔离、代码生成、实时通信、灰度发布、AI 等核心能力，满足新型企业级中后台管理场景。属于曦寒懿（ XiHanFun ）开源生态的基础应用。</li>
+</ul>
+<p>本地跑起来看看（需要 Node.js 24+、pnpm 11+）：</p>
+<pre><code>git clone https://github.com/XiHanFun/XiHan.UI.git
+cd XiHan.UI/ui &amp;&amp; pnpm install --frozen-lockfile &amp;&amp; pnpm build
+cd ../docs &amp;&amp; pnpm install &amp;&amp; pnpm dev
+</code></pre>
+<p>项目采用 MIT 授权。组件状态图与 ARIA 接线参考了 Zag.js 的规格，无障碍交互依据 W3C APG ，Markdown 以 CommonMark 规范为判据，无障碍扫描用的是 axe-core ，在此一并致谢。欢迎提 Issue 和 PR ，觉得有用的话点个 Star 就是很大的鼓励。</p>
+<ul>
+<li>文档站： <a href="https://ui.docs.xihanfun.com" target="_blank" rel="noopener noreferrer">https://ui.docs.xihanfun.com</a></li>
+<li>生态门户： <a href="https://docs.xihanfun.com" target="_blank" rel="noopener noreferrer">https://docs.xihanfun.com</a></li>
+<li>QQ 交流群：462371834</li>
+</ul>
+<p>微信搜一搜「摘繁华」，关注公众号获取后续更新：</p>
+<p></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">5</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">murongxdb</span>
+        <span>#1</span>
+        <span>2026/10/02 19:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还在卷 UI 库吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18145589">还在卷 UI 库吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18145589">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246151#reply18145589" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flyqie</span>
+        <span>#2</span>
+        <span>2026/10/02 19:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不知道为什么，这文章总有种 AI 生成的错觉。。。？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18145591">不知道为什么，这文章总有种 AI 生成的错觉。。。？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18145591">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246151#reply18145591" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">WorldDominator</span>
+        <span>#3</span>
+        <span>2026/10/02 22:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">又是 ai 写的天书，真的是给人看的吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18145816">又是 ai 写的天书，真的是给人看的吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18145816">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246151#reply18145816" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v2gba</span>
+        <span>#4</span>
+        <span>2026/10/02 23:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你这个是我见过最屌的 标题看三个字就知道是 AI 答辩了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18145847">你这个是我见过最屌的 标题看三个字就知道是 AI 答辩了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18145847">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246151#reply18145847" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yidinghe</span>
+        <span>#5</span>
+        <span>2026/10/02 23:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看看楼上的回复。你这帖子没一点诚意。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18145865">看看楼上的回复。你这帖子没一点诚意。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18145865">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246151#reply18145865" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
