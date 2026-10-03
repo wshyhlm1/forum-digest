@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>muse.ai 把视频教程总结成图文教程 按教程搭建 3x-ui 系统和节点 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-03/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>muse.ai 把视频教程总结成图文教程 按教程搭建 3x-ui 系统和节点</h1>
+      <p class="original-title">muse.ai 把视频教程总结成图文教程 按教程搭建 3x-ui 系统和节点</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 txican</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/10/03 19:32</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1246277" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1246277.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>几个月前, 我写过呼吁小白们都使用 Agent 部署项目, 那还是基于项目的 README 这种图文教程.</li><li>几天前, 我在和一个群友交流使用 Agent 搭 3x-ui 系统时, TA 说看的 Youtube 视频教程 操作下来结果是正常使用的, 我当时还说, 要是图文教程我肯定有信心让 Agent 照着操作成功, 视频教程我不敢保证效果.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">前言
+<p>几个月前, 我写过<a href="https://zelikk.blogspot.com/2026/07/k-ui-workers-hermes-agent.html" target="_blank" rel="noopener noreferrer">呼吁小白们都使用 Agent 部署项目</a>, 那还是基于项目的 README 这种图文教程.</p>
+<p>几天前, 我在<a href="https://zelikk.blogspot.com/2026/09/how-to-request-agent-work-and-bad-case.html" target="_blank" rel="noopener noreferrer">和一个群友交流使用 Agent 搭 3x-ui 系统</a>时, TA 说看的 Youtube 视频教程 操作下来结果是正常使用的, 我当时还说, 要是图文教程我肯定有信心让 Agent 照着操作成功, 视频教程我不敢保证效果.</p>
+<p>我今天想, 试试看让 Agent 照着视频教程搭建会是什么结果?</p>
+<p>这两天 space-bunny-alpha 我感觉降智了. 那就用 muse 来吧.</p>
+实践
+<p>视频教程就是在 youtube 上搜的发布日期最新的 3x-ui 教程. (没有特别为某个频道背书的意思, 就是随便搜, 随便选的)</p>
+<p><code><a href="https://www.youtube.com/watch?v=8gmkLML-3CI" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=8gmkLML-3CI</a></code></p>
+<p>以下引用框里面就是我发给 Agent 的自然语言</p>
+<blockquote>
+<p>你能把这条视频 教程总结成图文教程吗？
+<code><a href="https://www.youtube.com/watch?v=8gmkLML-3CI" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=8gmkLML-3CI</a></code></p>
+</blockquote>
+<p></p>
+<blockquote>
+<p>IP	
+**.**.**.**</p>
+<p>User	
+root</p>
+<p>Password</p>
+<p>T********2</p>
+<p>SSH Port	
+22</p>
+<p>你按教程部署好, 并且你自己按教程测试节点可用.</p>
+</blockquote>
+<p>* 过程中, muse 会多次请你授权连接 IP 和端口, 记得点同意. </p>
+<p></p>
+<blockquote>
+<p>你能设置一个订阅链接吗?</p>
+</blockquote>
+<p></p>
+<p>我用 shadowrocket 测试发现 reality 协议不通.
+应该是 Xray-core v26.9.9 版本 REALITY 强制要求客户端在 ClientHello 里首个 key_share 必须是 X25519MLKEM768 （ 0x11ec ），后置可选的 X25519 。缺少这个 key share 的客户端会被直接拒绝。
+所以换个内核.</p>
+<blockquote>
+<p>你 把 服务端的内核换成这个
+<code><a href="https://github.com/crazypeace/Xray-core-fork" target="_blank" rel="noopener noreferrer">https://github.com/crazypeace/Xray-core-fork</a></code></p>
+</blockquote>
+<p>muse 忙完之后, 我的 shadowrocket 测试 reality 节点就通了.</p>
+后记
+<p>我一开始思考 Agent 学习视频教程的时候, 我想的是读入整个视频, 切帧很麻烦啊, 数据量很大啊.</p>
+<p>结果, 是从分析字幕入手的. </p>
+<p>比如说, 视频里说"大家注意看啊, 点这里", 不管视频有没有自带字幕信息, 都很容易通过音频转换得到字幕, 然后 Agent 就知道要在这个时间点附近切帧学习画面.</p>
+<p>以后, 视频教程没人看了, 都是 agent 看了. 做得好不好的标准是 agent 能不能学得会, 能不能照着教程部署成功的结果.</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">前言
+<p>几个月前, 我写过<a href="https://zelikk.blogspot.com/2026/07/k-ui-workers-hermes-agent.html" target="_blank" rel="noopener noreferrer">呼吁小白们都使用 Agent 部署项目</a>, 那还是基于项目的 README 这种图文教程.</p>
+<p>几天前, 我在<a href="https://zelikk.blogspot.com/2026/09/how-to-request-agent-work-and-bad-case.html" target="_blank" rel="noopener noreferrer">和一个群友交流使用 Agent 搭 3x-ui 系统</a>时, TA 说看的 Youtube 视频教程 操作下来结果是正常使用的, 我当时还说, 要是图文教程我肯定有信心让 Agent 照着操作成功, 视频教程我不敢保证效果.</p>
+<p>我今天想, 试试看让 Agent 照着视频教程搭建会是什么结果?</p>
+<p>这两天 space-bunny-alpha 我感觉降智了. 那就用 muse 来吧.</p>
+实践
+<p>视频教程就是在 youtube 上搜的发布日期最新的 3x-ui 教程. (没有特别为某个频道背书的意思, 就是随便搜, 随便选的)</p>
+<p><code><a href="https://www.youtube.com/watch?v=8gmkLML-3CI" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=8gmkLML-3CI</a></code></p>
+<p>以下引用框里面就是我发给 Agent 的自然语言</p>
+<blockquote>
+<p>你能把这条视频 教程总结成图文教程吗？
+<code><a href="https://www.youtube.com/watch?v=8gmkLML-3CI" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=8gmkLML-3CI</a></code></p>
+</blockquote>
+<p></p>
+<blockquote>
+<p>IP	
+**.**.**.**</p>
+<p>User	
+root</p>
+<p>Password</p>
+<p>T********2</p>
+<p>SSH Port	
+22</p>
+<p>你按教程部署好, 并且你自己按教程测试节点可用.</p>
+</blockquote>
+<p>* 过程中, muse 会多次请你授权连接 IP 和端口, 记得点同意. </p>
+<p></p>
+<blockquote>
+<p>你能设置一个订阅链接吗?</p>
+</blockquote>
+<p></p>
+<p>我用 shadowrocket 测试发现 reality 协议不通.
+应该是 Xray-core v26.9.9 版本 REALITY 强制要求客户端在 ClientHello 里首个 key_share 必须是 X25519MLKEM768 （ 0x11ec ），后置可选的 X25519 。缺少这个 key share 的客户端会被直接拒绝。
+所以换个内核.</p>
+<blockquote>
+<p>你 把 服务端的内核换成这个
+<code><a href="https://github.com/crazypeace/Xray-core-fork" target="_blank" rel="noopener noreferrer">https://github.com/crazypeace/Xray-core-fork</a></code></p>
+</blockquote>
+<p>muse 忙完之后, 我的 shadowrocket 测试 reality 节点就通了.</p>
+后记
+<p>我一开始思考 Agent 学习视频教程的时候, 我想的是读入整个视频, 切帧很麻烦啊, 数据量很大啊.</p>
+<p>结果, 是从分析字幕入手的. </p>
+<p>比如说, 视频里说"大家注意看啊, 点这里", 不管视频有没有自带字幕信息, 都很容易通过音频转换得到字幕, 然后 Agent 就知道要在这个时间点附近切帧学习画面.</p>
+<p>以后, 视频教程没人看了, 都是 agent 看了. 做得好不好的标准是 agent 能不能学得会, 能不能照着教程部署成功的结果.</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#1</span>
+        <span>2026/10/03 20:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个没有公网 IP 吧，怎么做的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18146766">这个没有公网 IP 吧，怎么做的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18146766">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246277#reply18146766" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">txican</span>
+        <span>#2</span>
+        <span>2026/10/03 20:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> <br />照着自己动手操作一遍就知道了.<br />有什么问题问 agent</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18146817">@<a href="/member/V2Try" target="_blank" rel="noopener noreferrer">V2Try</a> <br />照着自己动手操作一遍就知道了.<br />有什么问题问 agent</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18146817">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246277#reply18146817" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#3</span>
+        <span>2026/10/03 21:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我去，搞了半天原来是叫它上 vps 部署，我还在想怎么在 muse 自带的电脑上部署，我现在想到用 cloudflared 这种。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18146838">我去，搞了半天原来是叫它上 vps 部署，我还在想怎么在 muse 自带的电脑上部署，我现在想到用 cloudflared 这种。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18146838">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246277#reply18146838" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#4</span>
+        <span>2026/10/03 21:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不过唯一震惊我的是他居然自己做了个图文教程</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18146839">不过唯一震惊我的是他居然自己做了个图文教程</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18146839">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246277#reply18146839" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

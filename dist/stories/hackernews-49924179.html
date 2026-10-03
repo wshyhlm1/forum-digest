@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git 3.0&#39;s upcoming SHA-256 default will be a costly mistake | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-03/">返回日报</a>
+      <div class="source-chip">Hacker News #3</div>
+      <h1>Git 3.0&#39;s upcoming SHA-256 default will be a costly mistake</h1>
+      <p class="original-title">Git 3.0&#39;s upcoming SHA-256 default will be a costly mistake</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 chmaynard</span>
+        <span>热度 552</span>
+        <span>回复 527</span>
+        <span>2026/10/02 00:57</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49924179" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://blog.gitbutler.com/git-3-sha-256" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49924179.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Where to begin? I&#39;ve been sitting on this for a few years, mostly because there are smarter people who have been concentrating on this and I don&#39;t love being a back seat driver. However, I think that the Git 3.0 release is about to cost everyone a lot of time and angst for little benefit, and virtually nobody knows what&#39;s coming. So grab some popcorn and let me tell you a tale of how one of the new upcoming Git 3.0 breaking changes is about to be a huge, costly, global train wreck of a change for almost no practical value.</li><li>I&#39;ll keep this short as many of you probably know this at a basic level. Git is what&#39;s known as a content addressable database. This means that if you want to store and transmit data in it, Git will calculate a hash of the contents and use that in a key/value database as the key (the value being the content). The same content always gets the same hash, globally. Git&#39;s use of SHA-1 hashes as keys in it&#39;s key-value object database This is nice, because it means that the same file content is never stored twice. There is also a cool property where commits encode the hash of the commit that came before it, which means that this integrity essentially propagates - you can&#39;t change the hash of anything without changing the hash of everything that comes after it. This gives it &quot;cryptographic integrity&quot;, meaning that hashing the latest commit essentially also hashes potentially millions of file contents, trees and commits that came before it. In Git, this hash function has always been SHA-1. This was what Linus picked in 2005 when Git was started and it&#39;s worked pretty well for 20 years - it&#39;s relatively fast and impossible in a practical sense for two different files to accidentally hash to the same value. In fact, as far as I&#39;m aware, this has never happened in the history of every file, tree and commit ever made in Git in every repository ever created - billions and billions of them. Mathematically, for SHA-1’s 160-bit output, the birthday bound means that you would need about 1.4 septillion random files (1.4 quadrillion billion files - 1,400,000,000,000,000 billion - it&#39;s impossible to effectively describe) in a single project to have file hashes accidentally collide.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kpcyrd</span>
+        
+        <span>2026/10/02 01:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This article is full of mistakes and misleading claims:<p>1) It's claiming SHA1 insecurity is theoretical, while SHAttered from 2017 was specifically a pratical proof of concept. The only reason Git wasn't affected, is because they didn't bother bruteforcing a git-blob prefix.</p><p>2) It's claiming collision attacks don't matter, only second-preimage attacks do. This is incorrect, collision attacks are enough for code-smuggling problems, when two repositories are on the same git commit (verified by the full commit hash), yet contain different code in their git checkout.</p><p>3) The Linus quote "The real security is in distribution" is arguing that "git's content-addressed system should not be used to address content". It's arguing that, in case of curl|sh, you shouldn't use a sha256sum-gate to pin the content to something you've reviewed, you should instead ensure curl is fetching from an https server.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924738">This article is full of mistakes and misleading claims:<p>1) It's claiming SHA1 insecurity is theoretical, while SHAttered from 2017 was specifically a pratical proof of concept. The only reason Git wasn't affected, is because they didn't bother bruteforcing a git-blob prefix.</p><p>2) It's claiming collision attacks don't matter, only second-preimage attacks do. This is incorrect, collision attacks are enough for code-smuggling problems, when two repositories are on the same git commit (verified by the full commit hash), yet contain different code in their git checkout.</p><p>3) The Linus quote "The real security is in distribution" is arguing that "git's content-addressed system should not be used to address content". It's arguing that, in case of curl|sh, you shouldn't use a sha256sum-gate to pin the content to something you've reviewed, you should instead ensure curl is fetching from an https server.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924738">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924738" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">schacon</span>
+        
+        <span>2026/10/02 01:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1) I link to the SHAttered paper, as well as Shambles. Git projects were not affected because it is an inefficient attack vector. I say it's impractical to exploit, which I think everyone agrees with.<p>2) I specifically argue that even if both attacks were practical and cheap, it's still not the problem we should be focusing on.</p><p>3) Have you read this email (that I linked to)? It is almost the same general message (20 years ago) that this blog post is. It literally goes though a theoretical object replacement attack and how dumb this scenario is and so SHA-1 is fine.</p><p><a href="https://lore.kernel.org/git/Pine.LNX.4.58.0504291221250.18901@ppc970.osdl.org/" target="_blank" rel="noopener noreferrer">https://lore.kernel.org/git/Pine.LNX.4.58.0504291221250.1890...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924843">1) I link to the SHAttered paper, as well as Shambles. Git projects were not affected because it is an inefficient attack vector. I say it's impractical to exploit, which I think everyone agrees with.<p>2) I specifically argue that even if both attacks were practical and cheap, it's still not the problem we should be focusing on.</p><p>3) Have you read this email (that I linked to)? It is almost the same general message (20 years ago) that this blog post is. It literally goes though a theoretical object replacement attack and how dumb this scenario is and so SHA-1 is fine.</p><p><a href="https://lore.kernel.org/git/Pine.LNX.4.58.0504291221250.18901@ppc970.osdl.org/" target="_blank" rel="noopener noreferrer">https://lore.kernel.org/git/Pine.LNX.4.58.0504291221250.1890...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924843">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924843" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">onion2k</span>
+        
+        <span>2026/10/02 14:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>I say it's impractical to exploit, which I think everyone agrees with.</i><p>Impractical for an individual, definitely. For a large org, maybe, but if the payoff was big enough? For a nation state level actor intent on doing something, absolutely not.</p><p>The go-to example is Stuxnet. Some countries wanted to attack Iran's nuclear enrichment programme, so they spent <i>5 years</i> developing a worm that used multiple zero day exploits to attack a specific controller in a specific model of gas centrifuge. Could Mythos write Stuxnet? Unlikely, but a knowledgable team with access to it could probably write it in a lot less than 5 years.</p><p>'impractical' has very different values for different groups.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49930424"><i>I say it's impractical to exploit, which I think everyone agrees with.</i><p>Impractical for an individual, definitely. For a large org, maybe, but if the payoff was big enough? For a nation state level actor intent on doing something, absolutely not.</p><p>The go-to example is Stuxnet. Some countries wanted to attack Iran's nuclear enrichment programme, so they spent <i>5 years</i> developing a worm that used multiple zero day exploits to attack a specific controller in a specific model of gas centrifuge. Could Mythos write Stuxnet? Unlikely, but a knowledgable team with access to it could probably write it in a lot less than 5 years.</p><p>'impractical' has very different values for different groups.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49930424">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49930424" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">da_chicken</span>
+        
+        <span>2026/10/02 15:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes, and in the days of major supply chain attacks and state-sponsored near catastrophes like xz, "it's probably good enough" starts to look incredibly naive.<p>Linus's "what matters is distribution" comment also doesn't make sense when merge effectively <i>is</i> distribute. Which, again, is the reality of supply chain.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49930729">Yes, and in the days of major supply chain attacks and state-sponsored near catastrophes like xz, "it's probably good enough" starts to look incredibly naive.<p>Linus's "what matters is distribution" comment also doesn't make sense when merge effectively <i>is</i> distribute. Which, again, is the reality of supply chain.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49930729">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49930729" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hypfer</span>
+        
+        <span>2026/10/02 15:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Okay, fair enough.
+But does that make sense as a default setting then?<p>I can see that some things might have a risk profile that might possibly make all this costs still worth it, but does it make sense to have these unicorn projects effectively blow up 20 years of ecosystem?</p><p>Shouldn't the extra cost of doing something out of the ordinary be carried by whoever does something out of the ordinary?</p><p>This feels like a bridge to be crossed when one gets there (if at all).</p><p>__</p><p>FWIW, we actually do have a choice here. No one is forcing the industry at large to adopt an unpatched git 3.0 binary built from a source that makes that a default.</p><p>This should be a trivial overlay to carry around with effectively no downsides. So convincing whoever is steering that ship doesn't necessarily matter, as long as enough sane pragmatics agree on how defaults should actually be.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49930726">Okay, fair enough.
+But does that make sense as a default setting then?<p>I can see that some things might have a risk profile that might possibly make all this costs still worth it, but does it make sense to have these unicorn projects effectively blow up 20 years of ecosystem?</p><p>Shouldn't the extra cost of doing something out of the ordinary be carried by whoever does something out of the ordinary?</p><p>This feels like a bridge to be crossed when one gets there (if at all).</p><p>__</p><p>FWIW, we actually do have a choice here. No one is forcing the industry at large to adopt an unpatched git 3.0 binary built from a source that makes that a default.</p><p>This should be a trivial overlay to carry around with effectively no downsides. So convincing whoever is steering that ship doesn't necessarily matter, as long as enough sane pragmatics agree on how defaults should actually be.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49930726">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49930726" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">plopilop</span>
+        
+        <span>2026/10/02 16:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">We are migrating all of PKI to the more costly and less efficient postquantum cryptography, even though nobody will reasonably use a quantum computer to snoop on your home IoT daily reports. I mean, I assume that what you are doing on your free time is not worth governmental attention.<p>The rationale of mass migration is that if you don't impose it, nobody migrates. This has notably been the case with famously insecure SSL parameters (512 bits RSA keys, PKCSv1.5...). And many companies may believe they are not critical, which might be true until it is not.</p><p>Case in point: you manufacture walkie talkies and suddenly your products have bombs inside. Or you maintain a compression library for free and suddenly you are shipping a backdoor to all Linux products.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49931203">We are migrating all of PKI to the more costly and less efficient postquantum cryptography, even though nobody will reasonably use a quantum computer to snoop on your home IoT daily reports. I mean, I assume that what you are doing on your free time is not worth governmental attention.<p>The rationale of mass migration is that if you don't impose it, nobody migrates. This has notably been the case with famously insecure SSL parameters (512 bits RSA keys, PKCSv1.5...). And many companies may believe they are not critical, which might be true until it is not.</p><p>Case in point: you manufacture walkie talkies and suddenly your products have bombs inside. Or you maintain a compression library for free and suddenly you are shipping a backdoor to all Linux products.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49931203">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49931203" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">da_chicken</span>
+        
+        <span>2026/10/02 20:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Exactly. Reasonably speaking, nobody tries to pierce encryption at all, ever. That doesn't mean we should stick with 3DES. Reasonably speaking, nobody will try to break in to your house at all, ever. That doesn't mean you shouldn't lock your door. Security is already about protecting against infrequent events.<p>&gt; <i>And many companies may believe they are not critical, which might be true until it is not.</i></p><p>I'm at a K-12 public school. That shouldn't be on the front lines of a war with Iran, but, in cybersecurity terms, we are. If you disrupt a school district, you disrupt one of the largest employers in the area. You also disrupt the largest childcare facility in the area. The amount of economic damage you could inflict on a community by disrupting the public school system is pretty extreme compared to the amount of funding provided to protect it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49932734">Exactly. Reasonably speaking, nobody tries to pierce encryption at all, ever. That doesn't mean we should stick with 3DES. Reasonably speaking, nobody will try to break in to your house at all, ever. That doesn't mean you shouldn't lock your door. Security is already about protecting against infrequent events.<p>&gt; <i>And many companies may believe they are not critical, which might be true until it is not.</i></p><p>I'm at a K-12 public school. That shouldn't be on the front lines of a war with Iran, but, in cybersecurity terms, we are. If you disrupt a school district, you disrupt one of the largest employers in the area. You also disrupt the largest childcare facility in the area. The amount of economic damage you could inflict on a community by disrupting the public school system is pretty extreme compared to the amount of funding provided to protect it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49932734">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49932734" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Iolaum</span>
+        
+        <span>2026/10/02 17:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; nobody will reasonably use a quantum computer to snoop on your home IoT daily reports<p>Feel free to tell that to journalists investigating corruption ...</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49931418">&gt; nobody will reasonably use a quantum computer to snoop on your home IoT daily reports<p>Feel free to tell that to journalists investigating corruption ...</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49931418">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49931418" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">afavour</span>
+        
+        <span>2026/10/02 19:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Literally the next sentence:<p>&gt; I assume that what you are doing on your free time is not worth governmental attention.</p><p>Definitely does not apply to journalists investigating corruption.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49932463">Literally the next sentence:<p>&gt; I assume that what you are doing on your free time is not worth governmental attention.</p><p>Definitely does not apply to journalists investigating corruption.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49932463">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49932463" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">phkahler</span>
+        
+        <span>2026/10/02 22:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;&gt; &gt; I assume that what you are doing on your free time is not worth governmental attention.<p>&gt; Definitely does not apply to journalists investigating corruption.</p><p>And that bring to mind another aspect - When strong security is not the default, anyone using it looks suspicious in some eyes.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49934126">&gt;&gt; &gt; I assume that what you are doing on your free time is not worth governmental attention.<p>&gt; Definitely does not apply to journalists investigating corruption.</p><p>And that bring to mind another aspect - When strong security is not the default, anyone using it looks suspicious in some eyes.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49934126">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49934126" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">johnisgood</span>
+        
+        <span>2026/10/02 17:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I assume that what you are doing on your free time is not worth governmental attention.<p><a href="https://www.change.org/p/stop-the-chat-control-european-regulation" target="_blank" rel="noopener noreferrer">https://www.change.org/p/stop-the-chat-control-european-regu...</a> is worth a read, IMO!</p><p>As for "nobody will reasonably use a quantum computer to snoop on your home IoT daily reports", they already have access to your data one way or another, so really no need for a quantum computer. :P</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49931678">&gt; I assume that what you are doing on your free time is not worth governmental attention.<p><a href="https://www.change.org/p/stop-the-chat-control-european-regulation" target="_blank" rel="noopener noreferrer">https://www.change.org/p/stop-the-chat-control-european-regu...</a> is worth a read, IMO!</p><p>As for "nobody will reasonably use a quantum computer to snoop on your home IoT daily reports", they already have access to your data one way or another, so really no need for a quantum computer. :P</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49931678">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49931678" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hypfer</span>
+        
+        <span>2026/10/02 17:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My reply did not exhibit a lack of understanding of this mechanism.<p>It instead questioned to which degree execution of them is reasonable in a world that does not contain infinite resources.</p><p>Everything is a trade-off. Not all of them make sense.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49931377">My reply did not exhibit a lack of understanding of this mechanism.<p>It instead questioned to which degree execution of them is reasonable in a world that does not contain infinite resources.</p><p>Everything is a trade-off. Not all of them make sense.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49931377">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49931377" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">plopilop</span>
+        
+        <span>2026/10/02 20:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sure, but here I guess the main idea is that everything is linked, especially how libraries package managers work nowadays.<p>In order to compromise the big player, you only have to compromise the weakest link in its supply chain. In effect that means that leaving the migration optional is as useless as doing nothing.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49932890">Sure, but here I guess the main idea is that everything is linked, especially how libraries package managers work nowadays.<p>In order to compromise the big player, you only have to compromise the weakest link in its supply chain. In effect that means that leaving the migration optional is as useless as doing nothing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49932890">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49932890" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">LeFantome</span>
+        
+        <span>2026/10/02 23:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is the whole concept of Defense in Depth.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49934630">This is the whole concept of Defense in Depth.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49934630">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49934630" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hypfer</span>
+        
+        <span>2026/10/02 21:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Let me put it differently:<p>It is not of my concern to live in ways that are harder for me, just so that big tech can have it easier.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49933341">Let me put it differently:<p>It is not of my concern to live in ways that are harder for me, just so that big tech can have it easier.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49933341">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49933341" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">plopilop</span>
+        
+        <span>2026/10/02 22:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Big tech being compromised will also make your life harder. The opposition small/big players is not as clear cut as one would like.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49933914">Big tech being compromised will also make your life harder. The opposition small/big players is not as clear cut as one would like.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49933914">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49933914" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hypfer</span>
+        
+        <span>2026/10/02 23:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sure, buddy. Let's just not question anything at all. Move along, don't cause friction.<p>Jesus man.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49934794">Sure, buddy. Let's just not question anything at all. Move along, don't cause friction.<p>Jesus man.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49934794">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49934794" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">doc_ick</span>
+        
+        <span>2026/10/03 04:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It does make sense to set sha256 as the default. I would like even strong to future proof things a bit, but sha256 is a good upgrade.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49938528">It does make sense to set sha256 as the default. I would like even strong to future proof things a bit, but sha256 is a good upgrade.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49938528">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49938528" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Dylan16807</span>
+        
+        <span>2026/10/03 08:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah that argument you completely imagined and nobody implied <i>is</i> ridiculous!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49940292">Yeah that argument you completely imagined and nobody implied <i>is</i> ridiculous!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49940292">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49940292" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throwaway7356</span>
+        
+        <span>2026/10/02 21:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I mean, I assume that what you are doing on your free time is not worth governmental attention.<p>&gt; Or you maintain a compression library for free and suddenly you are shipping a backdoor to all Linux products.</p><p>You already showed yourself that your naive assumption is wrong for a relevant group that uses Git.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49933589">&gt; I mean, I assume that what you are doing on your free time is not worth governmental attention.<p>&gt; Or you maintain a compression library for free and suddenly you are shipping a backdoor to all Linux products.</p><p>You already showed yourself that your naive assumption is wrong for a relevant group that uses Git.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49933589">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49933589" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
