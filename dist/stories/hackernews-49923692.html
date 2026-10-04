@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clef: Open-weight decision models, and new RL fine-tuning platform | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-04/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Clef: Open-weight decision models, and new RL fine-tuning platform</h1>
+      <p class="original-title">Clef: Open-weight decision models, and new RL fine-tuning platform</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 jasondavies</span>
+        <span>热度 632</span>
+        <span>回复 217</span>
+        <span>2026/10/02 00:18</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49923692" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://blog.cloudflare.com/clef-decision-models/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49923692.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Over the last few weeks, there has been lots of buzz around decision models such as Typesafe AI’s Jev System One model. While classifier models have been around for some time, Jev introduces a new decision model concept into the world of AI — a model that produces bounded structured outputs cheaply, quickly and consistently that can be added into a workflow when a decision is required. These models are capable enough to work over any set of inputs without constantly retraining the model to incorporate new classification categories. This contrasts with the world of Large Language Models (LLMs), which are largely non-deterministic, but are open-ended enough to reason and generate text and tool calls for agentic workloads. Today, we’re releasing two Cloudflare-trained decision models, Clef and Clef-flash, hosted on Workers AI. Clef is currently the leader when evaluated against the Jev Decision Index, you can view full results on the live benchmark demo site. These models are smarter, faster, and fully Jev-API compatible, so you can experiment with these hosted models easily. We’re fully open-sourcing these models on Hugging Face under an Apache 2.0 license for you to run locally and experiment with yourselves. Lastly, we’re excited to debut our new reinforcement learning (RL) product, which allows customers to fine-tune Clef to suit their use cases as well.What is a decision model?A decision model makes classifications to help agents decide how to act, based on certain probabilities. For example, you can pass in a customer support message (inputs) and ask if it is urgent and which team should handle it. A decision model will return typed answers with probabilities (outputs), which your code can use to route the ticket, trigger an escalation, or defer to a human. This means that a human does not necessarily need to be in the loop for agentic decisions anymore — agents can programmatically gather context, make decisions, and take actions on tasks, or defer to a human when needed.Specifically at Cloudflare, we’ve been testing our new Clef model on our Threat Intelligence team to help us classify website domains. By giving a domain to Clef (with Browser Run) it can quickly identify categories that the domain falls under — for example, it might classify a domain with a 95% chance it is a fashion website, 85% ecommerce, &lt;1% phishing, etc. This classification took our Clef model 2.2s to fetch, render, and classify the website. In contrast, our fastest general LLM gpt-oss-120b took 4.7s in the same workflow, and only returned two classifications. As a user, you can imagine how a 2x savings in latency and results can help us improve our threat intelligence workflows and be faster in identifying malicious or legitimate domains. Generalize this to any use case where you need to make quick programmatic decisions, and you unlock powerful agentic workflows that are able to autonomously decide, reason, and execute.In music theory, a clef is a symbol placed at the beginning of a musical staff that assigns specific pitch names to the lines and spaces. A decision model is analogous to a music clef because it helps define the domain of the context and the subsequent notes (actions) that follow it. We chose Clef as the name of our family of decision models, as it serves similar purposes, and the CF hearkens to Cloudflare.How is Clef different from other decision models?Although the market is getting increasingly saturated with decision models, Clef has some unique properties that make us excited to release it to the public. First, it has a vision encoder so it’s able to take in images and classify visual content. This is different from Jev, which only does text classification today. Secondly, our model has a 64k context window (compared to Jev’s 32k), which allows users to squeeze more input state for the model to classify against.Third, our model is accurate and powerful, scoring competitively against other decision models on the market across various quality benchmarks. We shortlisted some evaluations below that are important for decision-making as defined by the Jev Decision Index and scored some of the more popular models on the market for it. Check out the table below for benchmarks, or view the scores on our live decision index demo site:BenchmarkClefClef-flashJevDiffusionGemma JevKev 9BLayaBFCL · case exact98.4798.7695.7596.5294.5138.13ToolRet · nDCG@1069.1966.4365.2861.2164.2612.69API-Bank · accuracy91.9393.1188.1983.6656.3011.41Home appliances · case exact82.9597.7352.2742.0525.000.00When2Call · accuracy72.3765.5880.9775.4449.6211.94BANKING77 · macro-F194.2090.9379.7474.2884.8314.29CLINC150+OOS · macro-F197.4366.7789.2783.4979.033.19BRIGHT · nDCG@1045.9139.2647.5242.9438.5319.90Amazon ESCI · macro-F157.4857.3955.2153.3749.2224.40PhishNChips · accuracy79.6075.0562.5585.3550.7550.15We also ran benchmarks across Typesafe’s own eval suite and our Clef models fared well, beating Jev in 3 out of 4 areas. Notably, our Clef-flash performs exceptionally well, given how much faster it is.WorkflowClefClef-flashJevInvoice processing64.757.161.8Customer service76.37776.0Security incidents62.961.761.7Agent trace observability68.569.871.6Across the 43 eval benchmarks that we ran, our Clef models beat the decision models on latency (except for Laya which is very fast but trades off quality in the benchmarks above):BenchmarkClefClef-flashJevDiffusionGemma JevKev-9BLayaMedian latency · ms209.338.8524.184.451.45.8p95 latency · ms238.6122.4536.0211.2187.9222.5On top of the latency benefits from the model itself, our Clef models are hosted on Workers AI. Because they are hosted on Cloudflare’s infrastructure, we’re able to take advantage of our GPUs at the edge, leading to low network latency and faster decisions. This means that you could put Clef into the hot path for agents to make decisions and combine that with one of our LLMs on Workers AI to take action. curl https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/cloudflare/clef \\ -X POST \\ -H &quot;Authorization: Bearer $CLOUDFLARE_AUTH_TOKEN&quot; \\ -d &#39;{ &quot;model&quot;: &quot;clef&quot;, &quot;state&quot;: &quot;Checkout has been failing for every customer for the last hour.&quot;, &quot;questions&quot;: { &quot;urgent&quot;: { &quot;type&quot;: &quot;noul&quot;, &quot;instructions&quot;: &quot;Is this support request urgent?&quot; }, &quot;team&quot;: { &quot;type&quot;: &quot;choice&quot;, &quot;instructions&quot;: &quot;Which team should handle this request?&quot;, &quot;criteria&quot;: { &quot;billing&quot;: &quot;Payments, invoices, and refunds&quot;, &quot;technical&quot;: &quot;Outages, errors, and configuration&quot;, &quot;sales&quot;: &quot;Plans and upgrades&quot; } }, &quot;severity&quot;: { &quot;type&quot;: &quot;score&quot;, &quot;instructions&quot;: &quot;How severe is the customer impact?&quot;, &quot;criteria&quot;: [&quot;No impact&quot;, &quot;Minor&quot;, &quot;Major&quot;, &quot;Critical&quot;] } } }&#39;Clef also produces strictly typed outputs similar to Jev and is fully API-compatible, so you can make the swap extremely easily. The larger Clef model is your more powerful precision model, while the Clef-Flash model is great for latency-critical decisions. The models are enterprise-ready with our guarantee that we don’t read, store, or train on your requests or responses (unless you want to use our fine-tuning product, which we go into below). You can get started with the Clef models today, starting with our developer documentation or play around with the open-source model on the Hugging Face repo.If you’d like help tuning Clef for a specific workload, we are also offering fine-tuning services — first as a hands-on partner with our forward-deployed engineer (FDE) team, and then later as a self-serve fine-tuning platform for customers to train and redeploy the model onto Cloudflare.How we trained ClefIn the same week that Jev came out, we posted about some experiments we had with our own homegrown decision model. Our demo goes into how we adapted the DiffusionGemma model to output deterministic probabilities by exposing the logprobs that are generated by a large language model. Our initial approach built upon independent research by Matt Mastracci, who has been active in the machine learning (ML) community with sharing new ideas and pull requests to vLLM inference engine to make DiffusionGemma support stronger.Clef builds upon this concept, but uses a different base model as the backbone. We currently use Qwen as the base model and post-trained it to suit decision model use cases. During inference, Clef uses Qwen for a prefill-only pass, then scores the valid schema choices in parallel. The decision step is non-autoregressive, so there’s no intermediate text to generate token by token, making Clef significantly faster than autoregressive LLMs. Rather than generating intermediate text to produce structured answers, Clef and Clef-flash derive schema choices directly from internal backbone representations. This approach relies on a specialized two-stage attention routing process: every valid choice extracts context relevant to the prompt, allowing individual field parameters to cross-attend with other fields and back to the original payload prior to scoring. By leveraging a lexical prior, the model preserves semantic intent across options. Ultimately, the architecture unites option-specific evidence routing, joint cross-field attention, and schema-bound scoring.By freezing Qwen3.8-27B for Clef and Qwen3.5-9B for Clef-flash, we jointly optimized the routing head alongside rank-256 low-rank adapters. Our post-training utilizes label-smoothed cross-entropy for valid schema outputs paired with a Brier loss to refine probability calibration. This training leverages our own internal synthetic datasets permutating field orders, prompts, and schema structures. We also developed Reinforcement Learning for Calibrated Decisions (RLCD) to serve as a secondary optimization target, granting partial credit to adjacent ordinal choices, rewarding fully precise record outputs, and applying a reference penalty to prevent distribution shift, giving us better accuracy and generalization.This means that we were able to achieve a few novel things with Clef: we improved accuracy of the model in classification, constrained it to output only probabilities instead of text generation, and made it faster than Jev and the base Qwen models.How fine-tuning can extend the capabilities of ClefWe heard a lot of internal use cases that required fine-tuning our Clef model to be built into our agentic workflows at Cloudflare. For example, internal teams want a classifier model to be able to evaluate Trust &amp; Safety submissions, help us triage Cloudflare Support requests, or even to be built-in to our Bot products to decide if a crawler is a good bot or bad bot.These use cases are incredibly specific and we have had many years of labelled decisions that we could use to train a specific classifier. When you fine-tune a model, you may give up some general purpose performance in exchange for higher accuracy in a specific domain.. Because Cloudflare has more than 15 years of network data across different domains, we can fine-tune a model to fit these specific use cases which is more accurate and faster than our generic Clef model. We’re working with internal teams already to figure out how we can post-train Clef to create powerful ML models that boost our impact and improve workflows across Cloudflare. These internal teams and use cases are the next remit of our new FDE fine-tuning team and basis for our reinforcement learning (RL) product.Our new RL serviceWe are offering a service to help customers fine-tune Clef to suit their workloads with our hands-on FDE team. From that, we’ll learn from our hands-on experiences to build a self-serve platform that customers can use to capture data, fine-tune, and redeploy the model, all on Cloudflare.This has actually been a long time coming — we’ve been building our AI platform to have the right primitives where we could be building a custom RL product. The interest in Jev shows the need for a fast, small, specific, classifier model, and we chose this to be our niche to start experimenting with RL environments.To do this, we leverage the primitives that we already have built on our Cloudflare platform:Cloudflare AI Gateway – pass all your AI traffic through AI Gateway and automatically create a dataset of requests for your use caseCloudflare Workers AI – generate rollouts against the base Clef modelCloudflare Containers – RL sandbox for scoring and replaying agent actions[NEW] Trainer – update weights of fine-tuned Clef modelCloudflare Workers AI + BYO Model – redeploy the fine-tuned model on Workers AIThis combines a few work-in-progress pieces of the AI Platform that we’ve been working on, including AI Gateway that captures your AI traffic so you can leverage your own request/response data, Containers for RL Sandboxes, and Workers AI’s Bring Your Own Model (Cog) work that has been progressing since our acquisition of Replicate. Try it out todayWe’re excited to launch our first Cloudflare-trained ML model from the Workers AI team today. We’re still early here and have a lot more improvements in store, but it is a wonderful first showcase of the hard work we’ve been doing on the AI Platform team. We believe that Clef has the ability to disrupt the way we use agents, which fits naturally into Cloudflare’s mission of being the agent cloud.If you have specific use cases and are already customers of these products — we’d love to chat with you and be design partners as we experiment in this space.Try out the Clef models hosted on Workers AI, download the weights on Hugging Face if you’d like to explore for yourself, and reach out if you have fine-tuning use cases you’d like us to help with.Our ML team has been growing in impact, from model optimizations to model training research. If you’re interested in joining our mission, check out our open roles.</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">manlymuppet</span>
+        
+        <span>2026/10/02 01:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Am I hearing this right, that they made a decision model based on Typesafe's new paradigm, and actually made a model <i>better</i> than Jev based on Typesafe's own ranking?<p>And it's only been a few weeks.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924445">Am I hearing this right, that they made a decision model based on Typesafe's new paradigm, and actually made a model <i>better</i> than Jev based on Typesafe's own ranking?<p>And it's only been a few weeks.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924445">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924445" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">segmondy</span>
+        
+        <span>2026/10/02 05:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A lot of people claim to have made better than jev, there's a jev benchmark, I have tried many of those models and they eventually end up failing, a non trivial task which doesn't seem like much but reminds me of the svg pelican bench is games, have one of these decision/classifier models play a game, hook it up to the input, most of the ones that are supposedly on jev level end up playing a terrible game, showing that they are very narrow.   Cloudflare doesn't compare to the top open bench alternatives, I just finished downloading it and will compare it to jev for non trivial tasks tonight.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49927360">A lot of people claim to have made better than jev, there's a jev benchmark, I have tried many of those models and they eventually end up failing, a non trivial task which doesn't seem like much but reminds me of the svg pelican bench is games, have one of these decision/classifier models play a game, hook it up to the input, most of the ones that are supposedly on jev level end up playing a terrible game, showing that they are very narrow.   Cloudflare doesn't compare to the top open bench alternatives, I just finished downloading it and will compare it to jev for non trivial tasks tonight.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49927360">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49927360" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">SebastianSosa</span>
+        
+        <span>2026/10/02 06:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Public benchmarks are easy to cheat, if I am typesafe I would also release a public benchmark to distract otherwise competent people in overfitting to a benchmark instead of making something actually useful.
+Diogo very much is against public benchmarks ;)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49927950">Public benchmarks are easy to cheat, if I am typesafe I would also release a public benchmark to distract otherwise competent people in overfitting to a benchmark instead of making something actually useful.
+Diogo very much is against public benchmarks ;)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49927950">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49927950" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Foobar8568</span>
+        
+        <span>2026/10/02 20:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You take Qwen3.6 35b on a 5090rtx, and here you get a higher score than Jev, for 2sec more latency on average.
+So yeah it's not subsecond, but I am sure that if I had VC money, I could too get within 500ms too!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49932578">You take Qwen3.6 35b on a 5090rtx, and here you get a higher score than Jev, for 2sec more latency on average.
+So yeah it's not subsecond, but I am sure that if I had VC money, I could too get within 500ms too!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49932578">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49932578" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">verdverm</span>
+        
+        <span>2026/10/02 06:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">watching Jev play Pokemon demonstrated this too, more hype than meat<p>- I'd like a potion, are you sure, no, repeat</p><p>- in and out of doors on loop</p><p>- sisyphean effort in the cave</p><p>- jev-ish level grinding</p><p>It was impressive, beat pokemon for less than $2, but not all that interesting. People asking how different Math.Random plays pokemon would be, and at the other end, regular llms playing games.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49927964">watching Jev play Pokemon demonstrated this too, more hype than meat<p>- I'd like a potion, are you sure, no, repeat</p><p>- in and out of doors on loop</p><p>- sisyphean effort in the cave</p><p>- jev-ish level grinding</p><p>It was impressive, beat pokemon for less than $2, but not all that interesting. People asking how different Math.Random plays pokemon would be, and at the other end, regular llms playing games.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49927964">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49927964" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">indoor47</span>
+        
+        <span>2026/10/02 19:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Well, it makes sense:<p>"Clef builds upon this concept, but uses a different base model as the backbone. We currently use Qwen as the base model and post-trained it to suit decision model use cases. "</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49932234">Well, it makes sense:<p>"Clef builds upon this concept, but uses a different base model as the backbone. We currently use Qwen as the base model and post-trained it to suit decision model use cases. "</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49932234">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49932234" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">slopnt</span>
+        
+        <span>2026/10/02 01:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They have to have decision models already in production. Part of their business is detecting bots, DDoSers and spammers.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924647">They have to have decision models already in production. Part of their business is detecting bots, DDoSers and spammers.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924647">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924647" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">alightsoul</span>
+        
+        <span>2026/10/02 03:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah that's a decision tree, random Forest or some other machine learning classifier. They have existed for a long time</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49926152">Yeah that's a decision tree, random Forest or some other machine learning classifier. They have existed for a long time</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49926152">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49926152" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">smallmancontrov</span>
+        
+        <span>2026/10/02 03:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm all for rebranding discriminative models as decision models, though.<p>"Discriminative" always had pointlessly bad optics, but I knew it was over when I started seeing prominent machine learning researchers who p=100% knew better describe discriminative models as generative because that was the buzzword of the year. "Decision model" sells the value proposition much better <i>and</i> doesn't sound like an anti-woke crusade.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49926240">I'm all for rebranding discriminative models as decision models, though.<p>"Discriminative" always had pointlessly bad optics, but I knew it was over when I started seeing prominent machine learning researchers who p=100% knew better describe discriminative models as generative because that was the buzzword of the year. "Decision model" sells the value proposition much better <i>and</i> doesn't sound like an anti-woke crusade.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49926240">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49926240" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tomrod</span>
+        
+        <span>2026/10/02 12:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Decision models have long been called `choice` models to may understanding. Huge statistical literature on dynamic discrete choice models and inference!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49929714">Decision models have long been called `choice` models to may understanding. Huge statistical literature on dynamic discrete choice models and inference!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49929714">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49929714" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">eastdakota</span>
+        
+        <span>2026/10/02 09:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think you just called me old.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49928918">I think you just called me old.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49928918">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49928918" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">TeMPOraL</span>
+        
+        <span>2026/10/02 01:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's not a "new paradigm", it's a low-hanging fruit that's been lying around for years; Typesafe were the first to bother to stop and pick it up, and market the shit out of it. But it was still a low-hanging fruit.<p>There are many, <i>many</i> of those left around, because AI frontier is moving forward so fast, everyone is racing ahead. Which is why I laugh when people say AI is not transformative and LLMs are a dead end (and my favorite, "what are we going to do with all those GPUs when the bubble pops?"). Even if SOTA LLMs hit a hard capability limit tomorrow and never advanced again, there's a good decade of growth and advancement to be extracted just from all the low-hanging fruits that were left unpicked along the way.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924635">It's not a "new paradigm", it's a low-hanging fruit that's been lying around for years; Typesafe were the first to bother to stop and pick it up, and market the shit out of it. But it was still a low-hanging fruit.<p>There are many, <i>many</i> of those left around, because AI frontier is moving forward so fast, everyone is racing ahead. Which is why I laugh when people say AI is not transformative and LLMs are a dead end (and my favorite, "what are we going to do with all those GPUs when the bubble pops?"). Even if SOTA LLMs hit a hard capability limit tomorrow and never advanced again, there's a good decade of growth and advancement to be extracted just from all the low-hanging fruits that were left unpicked along the way.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924635">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924635" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">btown</span>
+        
+        <span>2026/10/02 06:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Synthetic data is key here! Compared to 5 years ago, we now have oracles that can generate massive data sets of <i>perfectly</i> labeled multimodal data, practically for free. The number of architectures that can benefit from that is innumerable, and far beyond just LLMs themselves. On top of this, LLMs can implement any architectural ideas you have, and write custom tools to manage training and evaluation.<p>Whether or not LLMs can self-improve their frontier capabilities, they can <i>absolutely</i> create a wake for themselves that accelerates everything else that's training on their synthetic data. We'll see every architecture of the past 40 years suddenly show leaps and bounds.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49927817">Synthetic data is key here! Compared to 5 years ago, we now have oracles that can generate massive data sets of <i>perfectly</i> labeled multimodal data, practically for free. The number of architectures that can benefit from that is innumerable, and far beyond just LLMs themselves. On top of this, LLMs can implement any architectural ideas you have, and write custom tools to manage training and evaluation.<p>Whether or not LLMs can self-improve their frontier capabilities, they can <i>absolutely</i> create a wake for themselves that accelerates everything else that's training on their synthetic data. We'll see every architecture of the past 40 years suddenly show leaps and bounds.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49927817">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49927817" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gutchapa</span>
+        
+        <span>2026/10/04 04:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Agreed on the directions, it might appear to be piece of cake, but the "practically for free" part hides the hard bit: realism. Try simulating flight-search data with  source, destination, flight numbers, routes, schedules , try a diff it against a real corpus. Even frontier models produce data that looks right at first sight, but breaks on joint distributions (a flight number that never flies that route, layovers that violate minimum connect times). last mile is the daunting task.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49947438">Agreed on the directions, it might appear to be piece of cake, but the "practically for free" part hides the hard bit: realism. Try simulating flight-search data with  source, destination, flight numbers, routes, schedules , try a diff it against a real corpus. Even frontier models produce data that looks right at first sight, but breaks on joint distributions (a flight number that never flies that route, layovers that violate minimum connect times). last mile is the daunting task.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49947438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49947438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">btown</span>
+        
+        <span>2026/10/04 05:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">To lean into your example: if you want to design travel search, you might envision a system that goes from a user's typed query -&gt; a structured query -&gt; executed against a database of real-time flights -&gt; judging the result for feasibility of the resulting proposals created by those queries.<p>What you can do with LLMs is reverse this: from any numbers of snapshots of flight data, you can create large numbers of plausible user queries, based on your data, that are known to be feasible or infeasible. And now you have a labeled data set to train a model that focuses solely on the query-creation and judgment systems. And you can experiment with whether having a more flexible query protocol leads to higher success rates without sacrificing accuracy, or whether you can generate that last-mile feasibility check as a combination of auditable code checks alongside AI-based judgment.</p><p>LLMs don't absolve you of having to break down your system architectures into components that have well-defined boundaries (though certainly they can help with that design). They do make those components feasible to solve at scale.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49947819">To lean into your example: if you want to design travel search, you might envision a system that goes from a user's typed query -&gt; a structured query -&gt; executed against a database of real-time flights -&gt; judging the result for feasibility of the resulting proposals created by those queries.<p>What you can do with LLMs is reverse this: from any numbers of snapshots of flight data, you can create large numbers of plausible user queries, based on your data, that are known to be feasible or infeasible. And now you have a labeled data set to train a model that focuses solely on the query-creation and judgment systems. And you can experiment with whether having a more flexible query protocol leads to higher success rates without sacrificing accuracy, or whether you can generate that last-mile feasibility check as a combination of auditable code checks alongside AI-based judgment.</p><p>LLMs don't absolve you of having to break down your system architectures into components that have well-defined boundaries (though certainly they can help with that design). They do make those components feasible to solve at scale.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49947819">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49947819" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">seizethecheese</span>
+        
+        <span>2026/10/02 01:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Name a few of these low hanging fruit left around.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924640">Name a few of these low hanging fruit left around.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924640">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924640" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">TeMPOraL</span>
+        
+        <span>2026/10/02 01:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Jev is one.<p>Diffusion transformers are not "easy" but underfunded.</p><p>Random one in terms of applications: getting GPT-4-level[0] LLMs to operate at hundreds of tokens per second on edge hardware - opens up so many possibilities I'm probably unable to imagine half of them.</p><p>E.g. Imagine spellcheck/predictive text (or code autocomplete) where the model is able to process a whole paragraph + surrounding application/system context in between keystrokes. Or an OS being able to reliably guess what you're doing in real-time, in between your UI interactions, and offer <i>actually helpful contextual reactions</i>.</p><p>Or imagine finally funding some decent studies into exploring the models as computational artifacts - studying their latent spaces, how they form and how they model reality internally.</p><p>Or imagine automated sliding doors <i>that don't suck</i>.</p><p>--</p><p>[0] - Or anything substantially better than BERT-level models used in  Jev or that demo from the company doing inference ASICs, that has a chatbot online that does 14 <i>kilotokens</i> per second.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49924806">Jev is one.<p>Diffusion transformers are not "easy" but underfunded.</p><p>Random one in terms of applications: getting GPT-4-level[0] LLMs to operate at hundreds of tokens per second on edge hardware - opens up so many possibilities I'm probably unable to imagine half of them.</p><p>E.g. Imagine spellcheck/predictive text (or code autocomplete) where the model is able to process a whole paragraph + surrounding application/system context in between keystrokes. Or an OS being able to reliably guess what you're doing in real-time, in between your UI interactions, and offer <i>actually helpful contextual reactions</i>.</p><p>Or imagine finally funding some decent studies into exploring the models as computational artifacts - studying their latent spaces, how they form and how they model reality internally.</p><p>Or imagine automated sliding doors <i>that don't suck</i>.</p><p>--</p><p>[0] - Or anything substantially better than BERT-level models used in  Jev or that demo from the company doing inference ASICs, that has a chatbot online that does 14 <i>kilotokens</i> per second.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49924806">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49924806" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mdp2021</span>
+        
+        <span>2026/10/02 03:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are "low hanging fruits" - easier to achieve goals -, and there are super-fruits, milestone-fruits.<p>Among the most important ones:</p><p>-- the long-known Problem of Transparency, applied to the apparent emergent intelligence in NNs. Why does it happen - in detail?</p><p>-- then, a Theory of Apparent Intelligence through NNs. Transforming the results achieved into a Science. Which allows to do what we are doing - but in a lean and targeted way.</p><p>-- then, a General Theory of Intelligence, that includes the above to go beyond current architectures and get those features of Intelligence we expect and still not have.</p><p>The long-term direction we got into must lead to this.</p><p>(You note a ponderant detail of the above when you note the importance of explaining the emergence of a World Model from a Language Model.)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49926190">There are "low hanging fruits" - easier to achieve goals -, and there are super-fruits, milestone-fruits.<p>Among the most important ones:</p><p>-- the long-known Problem of Transparency, applied to the apparent emergent intelligence in NNs. Why does it happen - in detail?</p><p>-- then, a Theory of Apparent Intelligence through NNs. Transforming the results achieved into a Science. Which allows to do what we are doing - but in a lean and targeted way.</p><p>-- then, a General Theory of Intelligence, that includes the above to go beyond current architectures and get those features of Intelligence we expect and still not have.</p><p>The long-term direction we got into must lead to this.</p><p>(You note a ponderant detail of the above when you note the importance of explaining the emergence of a World Model from a Language Model.)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49926190">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49926190" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">patcon</span>
+        
+        <span>2026/10/02 04:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If anyone is interested, following Dr Michael Levin's Thoughtforms.life podcast is the cutting edge of where all this previously fuzzy stuff is becoming more concrete. So long as you can tolerate distinguished scientists flailing about as they discuss consciousness and life and developmental biology (and other less-obviously living things, like algorithms) as involving "free lunches" and "ingressing patterns from the platonic realm" :)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49926938">If anyone is interested, following Dr Michael Levin's Thoughtforms.life podcast is the cutting edge of where all this previously fuzzy stuff is becoming more concrete. So long as you can tolerate distinguished scientists flailing about as they discuss consciousness and life and developmental biology (and other less-obviously living things, like algorithms) as involving "free lunches" and "ingressing patterns from the platonic realm" :)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49926938">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49926938" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">TeMPOraL</span>
+        
+        <span>2026/10/02 04:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Those are the absolutely <i>fascinating</i> parts, and I sincerely hope AI won't get out of control before we're able to tackle some of these.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49926507">Those are the absolutely <i>fascinating</i> parts, and I sincerely hope AI won't get out of control before we're able to tackle some of these.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49926507">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49926507" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
