@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了个查 AI 用量的 App | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-05/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>做了个查 AI 用量的 App</h1>
+      <p class="original-title">做了个查 AI 用量的 App</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 chenzhe</span>
+        <span>热度 7</span>
+        <span>回复 7</span>
+        <span>2026/10/05 19:10</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1246529" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1246529.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>做了个 App 叫 usAge：连上账号，用了多少、什么时候重置、还剩多少钱，一屏看清；放个小组件在桌面，抬头就能看到。</li><li>Claude 、Codex 、Cursor 、智谱 GLM / Z.ai 、Kimi 、MiniMax 、Xiaomi MiMo 、Qoder 、OpenRouter 、DeepSeek （鸿蒙版的 Qoder 在下个版本）。</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>做了个 App 叫 <strong>usAge</strong>：连上账号，用了多少、什么时候重置、还剩多少钱，一屏看清；放个小组件在桌面，抬头就能看到。</p>
+<p></p>
+支持哪些服务
+<p>Claude 、Codex 、Cursor 、智谱 GLM / <a href="http://Z.ai" target="_blank" rel="noopener noreferrer">Z.ai</a> 、Kimi 、MiniMax 、Xiaomi MiMo 、Qoder 、OpenRouter 、DeepSeek （鸿蒙版的 Qoder 在下个版本）。</p>
+<ul>
+<li>订阅制看已用比例和重置倒计时，按量付费看余额和花销</li>
+<li>网页登录或者填 API Key 都能连</li>
+<li>没有你在用的？ App 里可以申请接入，直接回帖也行</li>
+</ul>
+主要功能
+<ul>
+<li><strong>一屏看全部额度</strong>：5 小时窗口、每周额度、Token 消耗、账号信息，点开就有</li>
+<li><strong>五种小组件</strong>：基础、数码管、贡献图、LED 、卡包，小中大三种尺寸，一个最多放 4 个账号。小组件上能直接切换额度、刷新，Codex 有重置卡时也能在小组件上直接用掉</li>
+<li><strong>分享卡片</strong>：Token 战绩、额度状态、AI 花销三种，可以拿来晒</li>
+<li><strong>多设备同步</strong>：Apple 设备走 iCloud ，华为设备走云空间，手机上连一次，其他设备自动出现</li>
+</ul>
+<p></p>
+<p></p>
+<p>Mac 版除了主窗口还有菜单栏，会读本机日志，显示今天 Codex CLI 和 Claude Code 用了多少 Token 、大概花了多少钱； Siri 、快捷指令、聚焦搜索里也能直接查额度和刷新。</p>
+<p></p>
+<p>鸿蒙版支持手机、平板和电脑，大屏是侧边栏两栏布局。Apple Watch 上抬腕也能看。</p>
+<p></p>
+<p></p>
+凭证安全
+<ul>
+<li>不注册也能用</li>
+<li>Cookie 、API Key 、OAuth 令牌只存在本机系统钥匙串里</li>
+<li>查用量的请求由你的设备直接发给各服务商，<strong>不经过我的服务器</strong></li>
+<li>同步走你自己的 iCloud / 华为云空间，凭证字段加密存储，可以随时关</li>
+<li>服务器只存 usAge 账号和购买记录，用来在别的设备上恢复 Pro</li>
+</ul>
+价格
+<ul>
+<li>免费版：连接 1 个服务，所有小组件样式和分享卡片都能用</li>
+<li>Pro：¥15 一次买断，不限连接数量，没有订阅、没有广告</li>
+<li>登录 usAge 账号后，Pro 在 Apple 、鸿蒙、安卓之间通用</li>
+<li>鸿蒙首发特惠 ¥6 ，到 10 月 30 日</li>
+</ul>
+<p>不想先连账号的话，设置里打开「演示数据」就能把所有界面看一遍。</p>
+下载
+<ul>
+<li><strong>Mac</strong>：已上架 Mac App Store → <a href="https://apps.apple.com/cn/app/id6812881047" target="_blank" rel="noopener noreferrer">https://apps.apple.com/cn/app/id6812881047</a></li>
+<li><strong>iPhone / iPad / Apple Watch</strong>：1.1 <strong>正在等待审核</strong>，过审后同一个链接就能下。（ 1.0 审了 12 天还没结果，索性撤回，直接拿 1.1 首发）</li>
+<li><strong>鸿蒙（手机 / 平板 / 电脑）</strong>：今天刚上架华为应用市场 → <a href="https://appgallery.huawei.com/app/detail?id=ltd.zhe.usage" target="_blank" rel="noopener noreferrer">https://appgallery.huawei.com/app/detail?id=ltd.zhe.usage</a></li>
+<li><strong>安卓</strong>：官网直装版 → <a href="https://usage.o-c.do/zh-Hans/android" target="_blank" rel="noopener noreferrer">https://usage.o-c.do/zh-Hans/android</a> ，Google Play 版也在审核中</li>
+<li>官网： <a href="https://usage.o-c.do" target="_blank" rel="noopener noreferrer">https://usage.o-c.do</a></li>
+</ul>
+<p>系统要求：iOS / iPadOS 18.6+、macOS 15.6+、watchOS 10+、HarmonyOS 6.1+、Android 12+</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>做了个 App 叫 <strong>usAge</strong>：连上账号，用了多少、什么时候重置、还剩多少钱，一屏看清；放个小组件在桌面，抬头就能看到。</p>
+<p></p>
+支持哪些服务
+<p>Claude 、Codex 、Cursor 、智谱 GLM / <a href="http://Z.ai" target="_blank" rel="noopener noreferrer">Z.ai</a> 、Kimi 、MiniMax 、Xiaomi MiMo 、Qoder 、OpenRouter 、DeepSeek （鸿蒙版的 Qoder 在下个版本）。</p>
+<ul>
+<li>订阅制看已用比例和重置倒计时，按量付费看余额和花销</li>
+<li>网页登录或者填 API Key 都能连</li>
+<li>没有你在用的？ App 里可以申请接入，直接回帖也行</li>
+</ul>
+主要功能
+<ul>
+<li><strong>一屏看全部额度</strong>：5 小时窗口、每周额度、Token 消耗、账号信息，点开就有</li>
+<li><strong>五种小组件</strong>：基础、数码管、贡献图、LED 、卡包，小中大三种尺寸，一个最多放 4 个账号。小组件上能直接切换额度、刷新，Codex 有重置卡时也能在小组件上直接用掉</li>
+<li><strong>分享卡片</strong>：Token 战绩、额度状态、AI 花销三种，可以拿来晒</li>
+<li><strong>多设备同步</strong>：Apple 设备走 iCloud ，华为设备走云空间，手机上连一次，其他设备自动出现</li>
+</ul>
+<p></p>
+<p></p>
+<p>Mac 版除了主窗口还有菜单栏，会读本机日志，显示今天 Codex CLI 和 Claude Code 用了多少 Token 、大概花了多少钱； Siri 、快捷指令、聚焦搜索里也能直接查额度和刷新。</p>
+<p></p>
+<p>鸿蒙版支持手机、平板和电脑，大屏是侧边栏两栏布局。Apple Watch 上抬腕也能看。</p>
+<p></p>
+<p></p>
+凭证安全
+<ul>
+<li>不注册也能用</li>
+<li>Cookie 、API Key 、OAuth 令牌只存在本机系统钥匙串里</li>
+<li>查用量的请求由你的设备直接发给各服务商，<strong>不经过我的服务器</strong></li>
+<li>同步走你自己的 iCloud / 华为云空间，凭证字段加密存储，可以随时关</li>
+<li>服务器只存 usAge 账号和购买记录，用来在别的设备上恢复 Pro</li>
+</ul>
+价格
+<ul>
+<li>免费版：连接 1 个服务，所有小组件样式和分享卡片都能用</li>
+<li>Pro：¥15 一次买断，不限连接数量，没有订阅、没有广告</li>
+<li>登录 usAge 账号后，Pro 在 Apple 、鸿蒙、安卓之间通用</li>
+<li>鸿蒙首发特惠 ¥6 ，到 10 月 30 日</li>
+</ul>
+<p>不想先连账号的话，设置里打开「演示数据」就能把所有界面看一遍。</p>
+下载
+<ul>
+<li><strong>Mac</strong>：已上架 Mac App Store → <a href="https://apps.apple.com/cn/app/id6812881047" target="_blank" rel="noopener noreferrer">https://apps.apple.com/cn/app/id6812881047</a></li>
+<li><strong>iPhone / iPad / Apple Watch</strong>：1.1 <strong>正在等待审核</strong>，过审后同一个链接就能下。（ 1.0 审了 12 天还没结果，索性撤回，直接拿 1.1 首发）</li>
+<li><strong>鸿蒙（手机 / 平板 / 电脑）</strong>：今天刚上架华为应用市场 → <a href="https://appgallery.huawei.com/app/detail?id=ltd.zhe.usage" target="_blank" rel="noopener noreferrer">https://appgallery.huawei.com/app/detail?id=ltd.zhe.usage</a></li>
+<li><strong>安卓</strong>：官网直装版 → <a href="https://usage.o-c.do/zh-Hans/android" target="_blank" rel="noopener noreferrer">https://usage.o-c.do/zh-Hans/android</a> ，Google Play 版也在审核中</li>
+<li>官网： <a href="https://usage.o-c.do" target="_blank" rel="noopener noreferrer">https://usage.o-c.do</a></li>
+</ul>
+<p>系统要求：iOS / iPadOS 18.6+、macOS 15.6+、watchOS 10+、HarmonyOS 6.1+、Android 12+</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">7</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BoomMan</span>
+        <span>#1</span>
+        <span>2026/10/05 20:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">同分享一个 mac os app ，支持查询方舟的 coding plan： <a href="https://github.com/boommanpro/coding-balance" target="_blank" rel="noopener noreferrer">https://github.com/boommanpro/coding-balance</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149462">同分享一个 mac os app ，支持查询方舟的 coding plan： <a href="https://github.com/boommanpro/coding-balance" target="_blank" rel="noopener noreferrer">https://github.com/boommanpro/coding-balance</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149462">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149462" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">581996</span>
+        <span>#2</span>
+        <span>2026/10/05 21:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这类已经很多轮子了 恭喜又造了一个 <a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149492">这类已经很多轮子了 恭喜又造了一个 <a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149492">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149492" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhaokai112</span>
+        <span>#3</span>
+        <span>2026/10/05 21:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">恭喜发布，请问下鸿蒙版本上架复杂吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149502">恭喜发布，请问下鸿蒙版本上架复杂吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149502">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149502" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chenzhe</span>
+        <span>#4</span>
+        <span>2026/10/05 21:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zhaokai112" target="_blank" rel="noopener noreferrer">zhaokai112</a> 鸿蒙上架还好，比国内安卓的上架容易不少。一个 ICP 备案即可。如果是安卓的还需要有软著或者电子版权证书。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149506">@<a href="/member/zhaokai112" target="_blank" rel="noopener noreferrer">zhaokai112</a> 鸿蒙上架还好，比国内安卓的上架容易不少。一个 ICP 备案即可。如果是安卓的还需要有软著或者电子版权证书。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149506">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149506" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chenzhe</span>
+        <span>#5</span>
+        <span>2026/10/05 21:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/581996" target="_blank" rel="noopener noreferrer">581996</a> 话是这么说，但是鸿蒙上的确还没有同类的应用。当然如果是 macOS 或者 Windows 上的确是有大把的产品了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149510">@<a href="/member/581996" target="_blank" rel="noopener noreferrer">581996</a> 话是这么说，但是鸿蒙上的确还没有同类的应用。当然如果是 macOS 或者 Windows 上的确是有大把的产品了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149510">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149510" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xjpz</span>
+        <span>#6</span>
+        <span>2026/10/05 22:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">小组件不错，另外 Mac 上官网无法打开是因为开代理了？要是送一些兑换码就好了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149606">小组件不错，另外 Mac 上官网无法打开是因为开代理了？要是送一些兑换码就好了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149606">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149606" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">arg0</span>
+        <span>#7</span>
+        <span>2026/10/05 23:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">同分享一个 <a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a>，主打火山，智谱多账号 coding plan ，主动推送用量到飞书，企微： <a href="https://github.com/since2006/coding-plan-usage" target="_blank" rel="noopener noreferrer">https://github.com/since2006/coding-plan-usage</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18149625">同分享一个 <a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a>，主打火山，智谱多账号 coding plan ，主动推送用量到飞书，企微： <a href="https://github.com/since2006/coding-plan-usage" target="_blank" rel="noopener noreferrer">https://github.com/since2006/coding-plan-usage</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18149625">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1246529#reply18149625" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

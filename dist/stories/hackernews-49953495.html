@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Run Qwen 3.8 Flash Next (125B) on consumer hardware (RTX 4090) at 100T/s | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-05/">返回日报</a>
+      <div class="source-chip">Hacker News #4</div>
+      <h1>Run Qwen 3.8 Flash Next (125B) on consumer hardware (RTX 4090) at 100T/s</h1>
+      <p class="original-title">Run Qwen 3.8 Flash Next (125B) on consumer hardware (RTX 4090) at 100T/s</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 snehesht</span>
+        <span>热度 816</span>
+        <span>回复 361</span>
+        <span>2026/10/04 20:51</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49953495" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://github.com/Niko1221/Strata" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49953495.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>English · 简体中文 · 日本語 · Deutsch · Français · Español · Português Run a 125-billion-parameter AI model on your own gaming PC NVIDIA or AMD graphics card (12 GB or more) · Windows or Linux · free and open source</li><li>A voxel pagoda garden, 1 shot prompt running on an RTX 5070 with Strata (IQ3_S, 128K context) · full video (49 s) Strata runs Qwen3.8-Flash-Next on a normal PC. This is a large, smart AI model that usually needs a server. It chats, writes code, reads pictures and works with your apps and coding agents. Nothing leaves your PC. How fast is it? We measured it on two ordinary gaming PCs. A token is about ¾ of a word.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">a11r</span>
+        
+        <span>2026/10/05 00:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm a little skeptical of going below 4-bit quants due to the potential for significant degradation in quality. I'm running 4-bit quants on an RTX Pro 6000 rented for approximately $1/hour and getting about 1.2 million tokens out and 40 million tokens in per hour with caching. The quality of 4-bit quant is good enough for difficult but well-scoped coding tasks. Here is the inference stack I am using: <a href="https://www.reddit.com/r/BlackwellPerformance/s/FrKwk3GoDK" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/BlackwellPerformance/s/FrKwk3GoDK</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49955565">I'm a little skeptical of going below 4-bit quants due to the potential for significant degradation in quality. I'm running 4-bit quants on an RTX Pro 6000 rented for approximately $1/hour and getting about 1.2 million tokens out and 40 million tokens in per hour with caching. The quality of 4-bit quant is good enough for difficult but well-scoped coding tasks. Here is the inference stack I am using: <a href="https://www.reddit.com/r/BlackwellPerformance/s/FrKwk3GoDK" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/BlackwellPerformance/s/FrKwk3GoDK</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49955565">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49955565" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Winfred-zz</span>
+        
+        <span>2026/10/05 05:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I just ran a set of benchmarks, ninfer-3090-qwen3.8-27b (so mix of Q4 and Q5) vs strata-qwen3.8-flash-next-iq3_xxs (so Q3):<p>│-------------------          │ Ninfer-3090    │ Strata</p><p>│ Code generation          │ 52/78 (66.7%)  │ 70/78 (89.7%)</p><p>│ Code completion          │ 40/50 (80.0%)  │ 44/50 (88.0%)</p><p>│ Total-------------                    │ 92/128 (71.9%) │ 114/128 (89.1%)</p><p>│ API failures------ │ 10             │ 5</p><p>- Ninfer generation: ~122 min total.</p><p>- Strata generation: ~142 min total.</p><p>So strata is a little slower, but keep in mind that ninfer-3090 is very optimized for a Qwen 3.8. Standard Qwen 3.8 runs at 20 t/s, this modified version can do 50 t/s (but it's <i>extremely long in it's thinking, it just goes on and on</i>.</p><p>This is on a 3090 that will crash unless power capped, with a Zen 2 CPU, 64GB DDR4 with a PCIe that refuses to go higher than 8x (basically pretty crappy all in all).</p><p>Yet with some tweaking and optimizing I still manage to get strata to run at 40 to 60 t/s.</p><p>That strata has been optimized on my Oh My Pi conversations. So when I'm using it, it's probably faster and closer to ninfer in speed than during those unoptimized benchmark tests.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49958120">I just ran a set of benchmarks, ninfer-3090-qwen3.8-27b (so mix of Q4 and Q5) vs strata-qwen3.8-flash-next-iq3_xxs (so Q3):<p>│-------------------          │ Ninfer-3090    │ Strata</p><p>│ Code generation          │ 52/78 (66.7%)  │ 70/78 (89.7%)</p><p>│ Code completion          │ 40/50 (80.0%)  │ 44/50 (88.0%)</p><p>│ Total-------------                    │ 92/128 (71.9%) │ 114/128 (89.1%)</p><p>│ API failures------ │ 10             │ 5</p><p>- Ninfer generation: ~122 min total.</p><p>- Strata generation: ~142 min total.</p><p>So strata is a little slower, but keep in mind that ninfer-3090 is very optimized for a Qwen 3.8. Standard Qwen 3.8 runs at 20 t/s, this modified version can do 50 t/s (but it's <i>extremely long in it's thinking, it just goes on and on</i>.</p><p>This is on a 3090 that will crash unless power capped, with a Zen 2 CPU, 64GB DDR4 with a PCIe that refuses to go higher than 8x (basically pretty crappy all in all).</p><p>Yet with some tweaking and optimizing I still manage to get strata to run at 40 to 60 t/s.</p><p>That strata has been optimized on my Oh My Pi conversations. So when I'm using it, it's probably faster and closer to ninfer in speed than during those unoptimized benchmark tests.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49958120">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49958120" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tharkun__</span>
+        
+        <span>2026/10/05 09:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You can use 4 spaces on HN to get code/monospaced formatting:<p></p><pre><code>    │------------------- │ Ninfer-3090    │ Strata    
+    │ Code generation    │ 52/78  (66.7%) │ 70/78   (89.7%)
+    │ Code completion    │ 40/50  (80.0%) │ 44/50   (88.0%)
+    │ Total------------- │ 92/128 (71.9%) │ 114/128 (89.1%)
+    │ API failures------ │ 10             │ 5</code></pre></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49959827">You can use 4 spaces on HN to get code/monospaced formatting:<p></p><pre><code>    │------------------- │ Ninfer-3090    │ Strata    
+    │ Code generation    │ 52/78  (66.7%) │ 70/78   (89.7%)
+    │ Code completion    │ 40/50  (80.0%) │ 44/50   (88.0%)
+    │ Total------------- │ 92/128 (71.9%) │ 114/128 (89.1%)
+    │ API failures------ │ 10             │ 5</code></pre></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49959827">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49959827" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">selicos</span>
+        
+        <span>2026/10/06 02:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">| Benchmark │ Ninfer-3090 │ Strata |<p>| --------- │ ----------- │ ------ |</p><p>│ Code generation │ 52/78 (66.7%) │ 70/78 (89.7%) |</p><p>│ Code completion │ 40/50 (80.0%) │ 44/50 (88.0%) |</p><p>│ Total │ 92/128 (71.9%) │ 114/128 (89.1%) |</p><p>│ API failures │ 10 │ 5 |</p><p>I wish Markdown tables worked here.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49968430">| Benchmark │ Ninfer-3090 │ Strata |<p>| --------- │ ----------- │ ------ |</p><p>│ Code generation │ 52/78 (66.7%) │ 70/78 (89.7%) |</p><p>│ Code completion │ 40/50 (80.0%) │ 44/50 (88.0%) |</p><p>│ Total │ 92/128 (71.9%) │ 114/128 (89.1%) |</p><p>│ API failures │ 10 │ 5 |</p><p>I wish Markdown tables worked here.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49968430">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49968430" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">seviu</span>
+        
+        <span>2026/10/05 13:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Unrelated... just use your just locally installed qwen 3.8 and instruct it to figure out why you arent at 16x.<p>For me, I didnt know I was on 4x and I was able to, giving it enough permissions, with a good harness like PI, to figure things out and go 4x -&gt; 8x -&gt; 16x.</p><p>It probably will take some opening the case and switching ssds around, but it's amazing how powerful these models have become.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49961154">Unrelated... just use your just locally installed qwen 3.8 and instruct it to figure out why you arent at 16x.<p>For me, I didnt know I was on 4x and I was able to, giving it enough permissions, with a good harness like PI, to figure things out and go 4x -&gt; 8x -&gt; 16x.</p><p>It probably will take some opening the case and switching ssds around, but it's amazing how powerful these models have become.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49961154">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49961154" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">airspresso</span>
+        
+        <span>2026/10/05 13:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; it's extremely long in it's thinking, it just goes on and on<p>Known issue with this model, I recommend setting thinking to 'medium' instead of default 'xhigh'.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49961097">&gt; it's extremely long in it's thinking, it just goes on and on<p>Known issue with this model, I recommend setting thinking to 'medium' instead of default 'xhigh'.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49961097">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49961097" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">spockz</span>
+        
+        <span>2026/10/05 18:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Ill check for this in my setup.  I thought it came with only one thinking level causing the “meandering” as it refers to its own long CoT.<p>I’m doubting the quality of the model, even comparing with luna 5.6, it is giving such bracingly wrong answers. It claims other tools have changed the code when pressed why it made a mistake. That code or tool didn’t come close to working on the project. It is scary.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49963046">Ill check for this in my setup.  I thought it came with only one thinking level causing the “meandering” as it refers to its own long CoT.<p>I’m doubting the quality of the model, even comparing with luna 5.6, it is giving such bracingly wrong answers. It claims other tools have changed the code when pressed why it made a mistake. That code or tool didn’t come close to working on the project. It is scary.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49963046">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49963046" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sethd</span>
+        
+        <span>2026/10/05 20:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You can also set a thinking budget in terms of how many tokens it can spend inside the reasoning/thinking phase.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49963917">You can also set a thinking budget in terms of how many tokens it can spend inside the reasoning/thinking phase.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49963917">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49963917" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">greenavocado</span>
+        
+        <span>2026/10/05 10:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In my private C coding benchmark, Strata's Qwen Flash Next Coder IQ1_M beats Luna low and runs at 125 tok/s on my 5090</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49960046">In my private C coding benchmark, Strata's Qwen Flash Next Coder IQ1_M beats Luna low and runs at 125 tok/s on my 5090</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49960046">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49960046" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">seviu</span>
+        
+        <span>2026/10/05 16:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not as fast for me. I was able to snatch a spark before the horrible price hike, and I have it at 40/50tok/sec. Before I had the great 3090 setup which is what led me to get the spark. That 3090 is now relegated to creating videos of my kids doing dumb things.<p>I now backordered two more sparks, before the hike... hoping they will honor the agreed price and dont cancel on me. They should arrive in a month,</p><p>Its evidently clear the frontier labs won't keep on giving us cheap inference for much longer. I also watch in disbelief how people say a sub is cheaper, which probably is. But you loose on so many other things (privacy, predictability, censorship...)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49961967">Not as fast for me. I was able to snatch a spark before the horrible price hike, and I have it at 40/50tok/sec. Before I had the great 3090 setup which is what led me to get the spark. That 3090 is now relegated to creating videos of my kids doing dumb things.<p>I now backordered two more sparks, before the hike... hoping they will honor the agreed price and dont cancel on me. They should arrive in a month,</p><p>Its evidently clear the frontier labs won't keep on giving us cheap inference for much longer. I also watch in disbelief how people say a sub is cheaper, which probably is. But you loose on so many other things (privacy, predictability, censorship...)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49961967">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49961967" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">greenavocado</span>
+        
+        <span>2026/10/05 21:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I pray for the flood of CXMT high speed memory and Huawei accelerator chips</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49964535">I pray for the flood of CXMT high speed memory and Huawei accelerator chips</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49964535">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49964535" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">sleight42</span>
+        
+        <span>2026/10/05 06:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Anecdotally, I've found that 27B at 4bit hallucinates a lot more than QFN at 3_xxs, particularly for less technical reasoning.<p>I've tried to use both for online comparison shopping. QFN not only seemed less delusional but also made useful observations and problem solved ways around many different website access issues.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49958674">Anecdotally, I've found that 27B at 4bit hallucinates a lot more than QFN at 3_xxs, particularly for less technical reasoning.<p>I've tried to use both for online comparison shopping. QFN not only seemed less delusional but also made useful observations and problem solved ways around many different website access issues.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49958674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49958674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">seamossfet</span>
+        
+        <span>2026/10/05 23:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;I'm a little skeptical of going below 4-bit quants due to the potential for significant degradation in quality<p>There's literature on this actually, if you want to get that low the model really should have quantization as a pretraining target otherwise larger models that are quantized after collapse.</p><p>In fact, to do this effectively, you need somewhere near 50x chinchilla to do QAT on super tiny targets like 1-bit or even 2-bit. These large models already need an astronomical amount of training data that doing proper QAT that small isn't really feasible unless there are breakthroughs in the architecture.</p><p>4-bit models and smaller _can_ perform well but not through just naively quantizing the existing weights of a large model.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49966142">&gt;I'm a little skeptical of going below 4-bit quants due to the potential for significant degradation in quality<p>There's literature on this actually, if you want to get that low the model really should have quantization as a pretraining target otherwise larger models that are quantized after collapse.</p><p>In fact, to do this effectively, you need somewhere near 50x chinchilla to do QAT on super tiny targets like 1-bit or even 2-bit. These large models already need an astronomical amount of training data that doing proper QAT that small isn't really feasible unless there are breakthroughs in the architecture.</p><p>4-bit models and smaller _can_ perform well but not through just naively quantizing the existing weights of a large model.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49966142">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49966142" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">happyPersonR</span>
+        
+        <span>2026/10/06 00:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My we should crowd fund distillation with 2 bit quants on a deepseek 4.1 flash and see how it does ? Bet it does well ..</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49967115">My we should crowd fund distillation with 2 bit quants on a deepseek 4.1 flash and see how it does ? Bet it does well ..</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49967115">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49967115" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">alfiedotwtf</span>
+        
+        <span>2026/10/05 23:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 4-bit models and smaller _can_ perform well but not through just naively quantizing the existing weights of a large model.<p>Doesn’t that describe the majority of quants on higgingface?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49966342">&gt; 4-bit models and smaller _can_ perform well but not through just naively quantizing the existing weights of a large model.<p>Doesn’t that describe the majority of quants on higgingface?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49966342">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49966342" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">seamossfet</span>
+        
+        <span>2026/10/05 23:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, there's a tradeoff. pre-training with QAT needs more data and a ton of hardware, so it's easier to just take an existing open weight model and quantize it. This works, but it'll underperform a model that had quantization as a training target.<p>Matters more for 1-bit and 2-bit models.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49966498">Yeah, there's a tradeoff. pre-training with QAT needs more data and a ton of hardware, so it's easier to just take an existing open weight model and quantize it. This works, but it'll underperform a model that had quantization as a training target.<p>Matters more for 1-bit and 2-bit models.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49966498">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49966498" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">sudo_cowsay</span>
+        
+        <span>2026/10/05 08:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For the 1 dollar per hour, may I ask (without trying to incite things) why you would not just buy a ChatGPT Plus subscription or other 20 dollar subscriptions? Do you like the privacy?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49959379">For the 1 dollar per hour, may I ask (without trying to incite things) why you would not just buy a ChatGPT Plus subscription or other 20 dollar subscriptions? Do you like the privacy?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49959379">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49959379" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bad_haircut72</span>
+        
+        <span>2026/10/05 15:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">People think claude costs $200/month, it actually costs $200/month and all your labor to train their models, improve their product, and all your best ideas and work that they will feed back into their company. Its very expensive</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49961898">People think claude costs $200/month, it actually costs $200/month and all your labor to train their models, improve their product, and all your best ideas and work that they will feed back into their company. Its very expensive</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49961898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49961898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">komatar</span>
+        
+        <span>2026/10/05 17:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You can opt out of model training with a checkbox, though I doubt most companies respect this completely. At the very least, I imagine they find loopholes to exploit.<p>But on the other hand I'm giving them my best and worst ideas and the value I get in return outweighs what I'm contributing to them. I also don't have the problems of initial HW cost and maintenance.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49962374">You can opt out of model training with a checkbox, though I doubt most companies respect this completely. At the very least, I imagine they find loopholes to exploit.<p>But on the other hand I'm giving them my best and worst ideas and the value I get in return outweighs what I'm contributing to them. I also don't have the problems of initial HW cost and maintenance.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49962374">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49962374" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mixermachine</span>
+        
+        <span>2026/10/05 21:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yer I also use service with zero data retention promises but it is hard to really trust them for me...
+They trained on basically all of the existing material, legal or illegal already and are starved for true human input.
+They are also in a heavy arms race were basically only a handful of companies will survive.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49964458">Yer I also use service with zero data retention promises but it is hard to really trust them for me...
+They trained on basically all of the existing material, legal or illegal already and are starved for true human input.
+They are also in a heavy arms race were basically only a handful of companies will survive.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49964458">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49964458" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
