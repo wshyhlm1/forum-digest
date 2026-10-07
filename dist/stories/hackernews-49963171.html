@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>网络搜索 API | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-07/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>网络搜索 API</h1>
+      <p class="original-title">Web Search API</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 tosh</span>
+        <span>热度 586</span>
+        <span>回复 283</span>
+        <span>2026/10/05 18:47</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=49963171" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://developers.cloudflare.com/changelog/post/2026-10-02-introducing-web-search-api/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-49963171.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Web Search API is now available in beta. Web Search API lets your AI agents and applications search the Internet and ground their responses in live information, instead of guessing URLs or relying on a model&#39;s training cutoff. At launch, you can choose between three search providers: Ceramic.ai, Exa, and Linkup. All three support Zero Data Retention for requests made through Cloudflare, and all have committed to Cloudflare&#39;s verified bot crawling standards. Web Search API runs through AI Gateway, so search requests appear in your gateway logs and are billed to your AI Gateway credits at each provider&#39;s list API price, with no additional markup. You can also bring your own provider API key. Call Web Search API with the REST API: curl https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/ai/websearch/ \ --request POST \ --header &quot;Authorization: Bearer $CLOUDFLARE_API_TOKEN&quot; \ --header &quot;Content-Type: application/json&quot; \ --data &#39;{ &quot;query&quot;: &quot;What are some fun things to do in Salt Lake City as fall approaches?&quot;, &quot;provider&quot;: &quot;ceramic&quot;, &quot;limit&quot;: 5, &quot;options&quot;: { &quot;gateway&quot;: { &quot;id&quot;: &quot;default&quot; } } }&#39; Or from a Worker with the AI binding: const response = await env.AI.websearch({ gatewayId: &quot;default&quot;, query: &quot;What are some fun things to do in Salt Lake City as fall approaches?&quot;, provider: &quot;exa&quot;, limit: 5, });</li><li>const results = await response.json(); To get started, refer to How to use Web Search API.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">simonw</span>
+        
+        <span>2026/10/05 22:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">关于搜索 API，我的首要问题始终是它们是否允许您存储和重新联合从它们获得的结果。<p>如果我正在运行代理系统，但不允许我存储响应 - 或提供“共享记录”按钮 - 这是一个非常重要的限制。</p><p>这个问题的答案不可避免地<i>深</i>埋在术语中。这是我在 Ceramic 上找到的相关部分，在他们不能做的事情列表中：</p><p>&gt; (n) 收集、聚合、存储或编译输出，包括搜索结果、相关性分数或排名，用于创建或贡献任何数据库、数据集、索引或语料库，无论此类数据库、数据集、索引或语料库是否用于与 Ceramic 竞争的目的； (o) 转售、联合或以其他方式将输出单独或作为另一产品或服务的可单独访问的组件提供给任何第三方；前提是您可以在您自己的应用程序中向授权的最终用户显示输出，只要此类输出集成到您的应用程序的功能中，与最终用户的实时查询相关，并且最终用户或第三方不能独立访问、提取或下载； (p) 保留、缓存或存储输出超出在普通实时使用过程中向您的授权最终用户显示此类输出所需的合理范围，除非适用的订单中明确允许。</p><p><a href="https://www.ceramic.ai/terms-of-service" target="_blank" rel="noopener noreferrer">https://www.ceramic.ai/terms-of-service</a></p><p>只有我一个人关心这个问题吗？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49965369">My number one question about search APIs is always if they allow you to store and resyndicate results you get from them.<p>If I'm running an agent system but I'm not allowed to store the responses - or provide a "share transcript" button - that's a pretty significant limitation.</p><p>The answer to that question is inevitably buried <i>deep</i> in the terms. Here's the relevant section I found for Ceramic, in their list of things you can't do:</p><p>&gt; (n) collect, aggregate, store, or compile Output, including search results, relevance scores, or rankings, for the purpose of creating or contributing to any database, dataset, index, or corpus, whether or not such database, dataset, index, or corpus is used for a purpose that competes with Ceramic; (o) resell, syndicate, or otherwise make Output available to any third party on a standalone basis or as a separately accessible component of another product or service; provided that you may display Output to your authorized end users within your own application so long as such Output is integrated into your application's functionality, is incident to the end user’s real-time query, and is not independently accessible, extractable, or downloadable by end users or third parties; or (p) retain, cache, or store Output beyond what is reasonably necessary to display such Output to your authorized end users in the ordinary and real-time course of use, unless expressly permitted in an applicable Order Form.</p><p><a href="https://www.ceramic.ai/terms-of-service" target="_blank" rel="noopener noreferrer">https://www.ceramic.ai/terms-of-service</a></p><p>Am I alone in caring about this?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49965369">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49965369" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">infogulch</span>
+        
+        <span>2026/10/06 00:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这部分似乎为您提供了您想要的例外：<p>&gt;前提是您可以在自己的应用程序中向授权的最终用户显示输出，只要此类输出集成到您的应用程序的功能中，并且与最终用户的实时查询有关...</p><p>但它继续：</p><p>&gt;...并且最终用户或第三方不能独立访问、提取或下载</p><p>如何防止最终用户如果可见则提取它？如果您只是将其与这样不可能满足的限制一起扔掉，为什么还要有例外呢？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49966770">It seemed like this part gives you the exception you wanted:<p>&gt; provided that you may display Output to your authorized end users within your own application so long as such Output is integrated into your application's functionality, is incident to the end user’s real-time query ...</p><p>but it continues:</p><p>&gt; ... and is not independently accessible, extractable, or downloadable by end users or third parties</p><p>How can you prevent end users from extracting it if its visible? Why even have the exception if you just throw it out with an impossible to meet restriction like this?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49966770">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49966770" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Loquebantur</span>
+        
+        <span>2026/10/06 01:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所以他们抓取网络，窃取信息填充自己的数据库，然后假装其他人“非法”地窃取回来？<p>互联网科技公司场景中的奇怪态度类似于淘金热场景。</p><p>谁是本地人？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49967624">So they crawled the web, stole the information to populate their own database and then pretend it was "illegal" for others to steal it back?<p>The weird attitude in the Internet Tech company scene is akin to Gold Rush scenarios.</p><p>Who are the native people?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49967624">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49967624" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">atmosx</span>
+        
+        <span>2026/10/06 01:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 所以他们爬行网络，窃取信息填充自己的数据库，然后假装“非法”让其他人窃取回来？<p>如今，这似乎是“作案手法”。赌注是谁能接近政府，突然强制执行不可执行的命令。为了您自己的安全。你现在不会偷车了吧？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49968170">&gt; So they crawled the web, stole the information to populate their own database and then pretend it was "illegal" for others to steal it back?<p>These days, this seems to be "modus operandi". The bet is who can get closer to the administration to suddenly enforce the un-enforce-able. For your own safety. You wouldn't steal a car now, would you?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49968170">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49968170" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Loquebantur</span>
+        
+        <span>2026/10/06 02:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">默许人为制造的“社会真理”，并自满地接受它们是“<i>作案手法</i>”意味着将自己置于你所生活的社会之外。<p>你让自己受到了你认为无法控制的社会现实的影响。但是，如果没有其他原因，您通过沉默的接受使它们得以实现。</p><p>道德和伦理判断不能留给他们首先应该约束的人。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49968286">To acquiesce to manufactured "social truths", to resign complacently to them being "<i>modus operandi</i>" means to place yourself outside of the society you live in.<p>You make yourself subject to a social reality you presume outside of your control. But you enabled them, if by nothing else, by your silent acceptance.</p><p>Moral and ethical judgements cannot be left to the very same people they are supposed to restrain in the first place.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49968286">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49968286" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nkingsy</span>
+        
+        <span>2026/10/06 04:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谁知道解决办法一直只是责骂人们感到沮丧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49970411">Who knew the fix all along was just scolding people for being the wrong kind of frustrated</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49970411">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49970411" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Loquebantur</span>
+        
+        <span>2026/10/06 08:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谁说除了你以外？<p>将“感到沮丧”视为个人责任和随之而来的行动的结束 <i>失败主义</i>。</p><p>当您之前的尝试不起作用时，请改变您的方法。当你没有的时候，你必须找到或发明一个。当你不知道如何做时，研究一下。</p><p>“因为沮丧而无所作为”，责骂那些指出你循环推理的人，除了注定失败和灭亡之外，没有任何意义。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49972446">Who said it was besides you?<p>To take "being frustrated" as an end to personal responsibility and consequent action is <i>defeatism</i>.</p><p>When your previous attempts didn't work, change your approach. When you don't have one, you must find or invent one. When you don't know how, research that.</p><p>"Doing nothing because being frustrated" and scolding people who point out your circular reasoning does nothing besides guaranteeing defeat and demise.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49972446">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49972446" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">LtWorf</span>
+        
+        <span>2026/10/06 21:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">除了您的评论之外，您还采取了哪些具体行动？我正在寻找灵感。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49978340">What concrete action besides your comments here did you take? I am looking for inspiration.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49978340">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49978340" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">debo_</span>
+        
+        <span>2026/10/06 23:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我从沃尔夫的声音中听到了这句话，在“灵感”之前停顿了很长时间。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49980044">I heard this in Worf's voice, with a long pause before "inspiration."</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49980044">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49980044" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">debo_</span>
+        
+        <span>2026/10/06 03:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>重金属吉他和弦开始</i></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49969112"><i>heavy metal guitar chords commence</i></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49969112">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49969112" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Loquebantur</span>
+        
+        <span>2026/10/06 03:36</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已标记]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49969483">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49969483">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49969483" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">debo_</span>
+        
+        <span>2026/10/06 20:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我曾好几次在临终前，甚至更糟糕的。无论我剩下的生活对我来说都是免费的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49977227">I've been on my deathbed a few times over, and worse. Whatever life I left is a freebie for me.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49977227">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49977227" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">slowpoison</span>
+        
+        <span>2026/10/06 03:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不要认为这是不合理的。他们抓取了它并以易于理解的形式提供。你不能拿走他们的副本并开始无限分发，同时向他们支付一次性阅读的费用。
+编写您的爬虫，如果您愿意的话，可以自己爬行网络......然后将其赠送！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49969201">Don't think it's unreasonable. They crawled it and made it available in an easy to digest form. You can't take their copy and start distributing it infinitely while paying them for one-time read.
+Write your crawler, and crawl the web on your own if you want... and give it away!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49969201">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49969201" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Loquebantur</span>
+        
+        <span>2026/10/06 03:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你忽视了一个事实，他们从一开始就窃取了数据，并且从未恢复其来源。这不是“合理”的。<p>他们也不会“轻松”地提供它，他们设置了各种障碍，包括你必须为赃物付款。</p><p>然后你继续，将截然不同的情况等同起来：一方面，一家价值数十亿美元的公司，能够轻松建立这样的计划。另一方面（我代表）公众，通常不是一贫如洗。</p><p>所以不，你是这里不讲道理的人。他们也是。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49969422">You glaze over the fact, they stole the data to begin with and never recuperate their sources. That's not "reasonable".<p>They don't make it available "easily" either, they place  all kinds of hurdles on it, including you having to pay for stolen goods.</p><p>You then go on, equating wildly different situations: on one hand, a multi-billion dollar company, easily able to set up such a scheme. On the other (me representing) the public, regularly anything but destitute.</p><p>So no, you're the unreasonable one here. So are they.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49969422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49969422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sroussey</span>
+        
+        <span>2026/10/06 04:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">遵守robots.txt的搜索引擎正在窃取？<p>如果有人不想在搜索引擎上建立索引，并且他们说不要建立索引，然后无论如何都被建立索引就是盗窃。</p><p>但是，“请阅读我的内容并提供给您的用户”，然后声称这样做是窃取，这似乎有点不切实际。</p><p>我缺少什么？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49969845">Search engines that obey robots.txt are stealing?<p>If someone does not want on a search engine index and they say not to index, and then get indexed anyhow is stealing.</p><p>But a “please read my content and make available to your users” then claim doing so is stealing seems a bit out there.</p><p>What am I missing?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49969845">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49969845" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">BrenBarn</span>
+        
+        <span>2026/10/06 04:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">“阅读我的内容并将其提供给您的用户”和“<i>赚钱通过</i> 阅读我的内容并将其提供给您的用户”。像这样的使用条款试图说“我们是唯一从中赚钱的人”，这就是问题所在。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49970485">There is a difference between "read my content and make it available to your users" and "<i>make money by</i> reading my content and making it available to your users".  Terms of use like this are trying to say "we are the only ones who get to make money from this", and therein lies the problem.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49970485">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49970485" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Terr_</span>
+        
+        <span>2026/10/06 13:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">稍微加深一下区别（关于日益滥用的搜索引擎）：<p>1.“你可以制作我的内容 <i>可找到的</i> 向您的用户提供服务，从广告等中收取中介费。”</p><p>2.“你可以 <i>抄袭</i> 我的内容，将其提供给您的用户，并将我几乎完全排除在用户流量之外。”</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49974512">To sharpen the distinction slightly (about increasingly abusive search-engines):<p>1. "You may make my content <i>findable</i> to your users as a service to them, taking a finder's-fee from ads etc."</p><p>2. "You may <i>plagiarize</i> my content, serving that to your users and cutting me out of the user-traffic almost entirely."</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49974512">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49974512" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">brookst</span>
+        
+        <span>2026/10/06 20:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 我们是唯一能从中赚钱的人<p>这有点讽刺，这是版权最大化主义者的立场，他们谴责聚合器和人工智能的“盗窃”行为，却没有向<i>他们</i>站在他们肩膀上的人支付一分钱。</p><p>似乎抱怨并不是试图对建立在数千年历史上的增量创意层主张独家永久权利，而是关于错误的人提出的主张。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49977737">&gt; we are the only ones who get to make money from this<p>Which, somewhat ironically, is the stance of copyright maximalists decrying “theft” be aggregators and AI while paying not a cent to the people whose shoulders <i>they</i> stand on.</p><p>It seems the complaint isn’t so much about trying to claim exclusive perpetual rights to an incremental creative layer built on millennia of history, but about the wrong people making the claim.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49977737">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49977737" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sroussey</span>
+        
+        <span>2026/10/06 08:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的，搜索引擎应该是非营利性的。但他们必须让用户从中获利。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49972543">Yes, search engine should be non-profits. But they must send users to profit from.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49972543">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49972543" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">devmor</span>
+        
+        <span>2026/10/06 05:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说得好。我确信 Cloudflare 已索引的内容子集<i>也</i>包含 Cloudflares 之类的术语，但他们很乐意忽略这些术语。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-49971438">Well said. I'm sure a subset of the content that Cloudflare has indexed <i>also</i> has terms like Cloudflares, that they happily ignored.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-49971438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=49971438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
