@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用 Rust + GPUI 写了个开源 SSH 客户端 ShellRS： Xshell 式终端 + WinSCP 式 SFTP | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-10/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>用 Rust + GPUI 写了个开源 SSH 客户端 ShellRS： Xshell 式终端 + WinSCP 式 SFTP</h1>
+      <p class="original-title">用 Rust + GPUI 写了个开源 SSH 客户端 ShellRS： Xshell 式终端 + WinSCP 式 SFTP</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 arg0</span>
+        <span>热度 56</span>
+        <span>回复 56</span>
+        <span>2026/10/10 09:46</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1247523" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1247523.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>习惯了 Xshell + WinSCP 那一套操作，换到 macOS 后一直没找到顺手的替代，于是自己撸了一个。AI 模型主要用的是 Opus 5.5 。Opus 5.5 这波感觉成本真的如宣传中说的那样整体成本比上一代降低了 40% 左右，国庆高强度 xhigh 写了一周，max 5x 套餐才用了不到 40%。</li><li>支持在堡垒机中直接调用，兼容 Xshell 和 WinSCP 调用方式，直接在堡垒机中 Xshell 和 WinSCP 路径配置中配置 ShellRS 可执行程序路径即可，还能直接让 AI Agent 直接调用排查服务器问题。</li></ul>
+      
+      <p class="reason">命中 7 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>习惯了 Xshell + WinSCP 那一套操作，换到 macOS 后一直没找到顺手的替代，于是自己撸了一个。AI 模型主要用的是 Opus 5.5 。Opus 5.5 这波感觉成本真的如宣传中说的那样整体成本比上一代降低了 40% 左右，国庆高强度 xhigh 写了一周，max 5x 套餐才用了不到 40%。</p>
+<p>支持在堡垒机中直接调用，兼容 Xshell 和 WinSCP 调用方式，直接在堡垒机中 Xshell 和 WinSCP 路径配置中配置 ShellRS 可执行程序路径即可，还能直接让 AI Agent 直接调用排查服务器问题。</p>
+<ul>
+<li>官网： <a href="https://shellrs.com" target="_blank" rel="noopener noreferrer">https://shellrs.com</a></li>
+<li>GitHub： <a href="https://github.com/since2006/shell-rs" target="_blank" rel="noopener noreferrer">https://github.com/since2006/shell-rs</a></li>
+<li>下载： <a href="https://shellrs.com/download" target="_blank" rel="noopener noreferrer">https://shellrs.com/download</a></li>
+</ul>
+<p></p>
+主要特点
+<p><strong>原生跨平台</strong>
+Rust 编写，界面用的是 Zed 编辑器的 GPU 渲染框架 GPUI ，不是 Electron 等套壳浏览器，体验速度起飞的感觉。macOS 、Windows 、Linux 都能使用。</p>
+<p><strong>Xshell 式的主机管理和终端</strong></p>
+<ul>
+<li>分组可任意嵌套，支持搜索、拖动整理</li>
+<li>多标签，标签可拖成左右 / 上下分屏，终端和 SFTP 并排看</li>
+<li>标签栏实时显示连接延迟，连上后自动识别远程系统</li>
+</ul>
+<p><strong>WinSCP 式的 SFTP</strong></p>
+<ul>
+<li>双栏 Commander 布局，沿用 WinSCP 的列和快捷键（ F5 / F2 / F7 / F8…）</li>
+<li>传输队列：传输进行中也能继续发起新的</li>
+<li>断点续传，断线自动重连</li>
+<li>内置编辑器：双击远程文件直接改，保存直接写回服务器；图片和 Markdown 可预览</li>
+</ul>
+<p></p>
+<p><strong>连接方式</strong></p>
+<ul>
+<li>多级 SSH 跳板、HTTP / SOCKS5 代理</li>
+<li>JumpServer 等堡垒机可以像调用 Xshell / WinSCP 一样调用它（将 Xshell 和 WinSCP 安装路径配置为 ShellRS 执行文件路径即可）</li>
+</ul>
+<p><strong>端口转发</strong>
+本地（-L ）、远程（-R ）、动态（-D ）三种，配置时有示意图。断线自动重连，可以设成随软件启动自动开启。</p>
+<p></p>
+<p><strong>右侧栏工具</strong>
+在当前终端的连接上直接查看系统监控、进程、systemd 服务、Docker 容器和网络连接，</p>
+<p></p>
+<p><strong>安全</strong>
+密码和私钥口令只存进系统钥匙串（ macOS 钥匙串、Windows 凭据管理器、Linux Secret Service ），本地数据库里没有任何密码。</p>
+<p><strong>让 AI Agent 用</strong>
+自带 shellrs 命令行，Claude Code 、Codex 这类 Agent 能用保存的主机执行命令、上传下载文件，不用把密码交给它们。
+还支持在堡垒机中让 agent 以 --terminal 模式直接在打开的终端中执行命令（堡垒机一般不允许连接新开通道，只能复用现有通道）</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>习惯了 Xshell + WinSCP 那一套操作，换到 macOS 后一直没找到顺手的替代，于是自己撸了一个。AI 模型主要用的是 Opus 5.5 。Opus 5.5 这波感觉成本真的如宣传中说的那样整体成本比上一代降低了 40% 左右，国庆高强度 xhigh 写了一周，max 5x 套餐才用了不到 40%。</p>
+<p>支持在堡垒机中直接调用，兼容 Xshell 和 WinSCP 调用方式，直接在堡垒机中 Xshell 和 WinSCP 路径配置中配置 ShellRS 可执行程序路径即可，还能直接让 AI Agent 直接调用排查服务器问题。</p>
+<ul>
+<li>官网： <a href="https://shellrs.com" target="_blank" rel="noopener noreferrer">https://shellrs.com</a></li>
+<li>GitHub： <a href="https://github.com/since2006/shell-rs" target="_blank" rel="noopener noreferrer">https://github.com/since2006/shell-rs</a></li>
+<li>下载： <a href="https://shellrs.com/download" target="_blank" rel="noopener noreferrer">https://shellrs.com/download</a></li>
+</ul>
+<p></p>
+主要特点
+<p><strong>原生跨平台</strong>
+Rust 编写，界面用的是 Zed 编辑器的 GPU 渲染框架 GPUI ，不是 Electron 等套壳浏览器，体验速度起飞的感觉。macOS 、Windows 、Linux 都能使用。</p>
+<p><strong>Xshell 式的主机管理和终端</strong></p>
+<ul>
+<li>分组可任意嵌套，支持搜索、拖动整理</li>
+<li>多标签，标签可拖成左右 / 上下分屏，终端和 SFTP 并排看</li>
+<li>标签栏实时显示连接延迟，连上后自动识别远程系统</li>
+</ul>
+<p><strong>WinSCP 式的 SFTP</strong></p>
+<ul>
+<li>双栏 Commander 布局，沿用 WinSCP 的列和快捷键（ F5 / F2 / F7 / F8…）</li>
+<li>传输队列：传输进行中也能继续发起新的</li>
+<li>断点续传，断线自动重连</li>
+<li>内置编辑器：双击远程文件直接改，保存直接写回服务器；图片和 Markdown 可预览</li>
+</ul>
+<p></p>
+<p><strong>连接方式</strong></p>
+<ul>
+<li>多级 SSH 跳板、HTTP / SOCKS5 代理</li>
+<li>JumpServer 等堡垒机可以像调用 Xshell / WinSCP 一样调用它（将 Xshell 和 WinSCP 安装路径配置为 ShellRS 执行文件路径即可）</li>
+</ul>
+<p><strong>端口转发</strong>
+本地（-L ）、远程（-R ）、动态（-D ）三种，配置时有示意图。断线自动重连，可以设成随软件启动自动开启。</p>
+<p></p>
+<p><strong>右侧栏工具</strong>
+在当前终端的连接上直接查看系统监控、进程、systemd 服务、Docker 容器和网络连接，</p>
+<p></p>
+<p><strong>安全</strong>
+密码和私钥口令只存进系统钥匙串（ macOS 钥匙串、Windows 凭据管理器、Linux Secret Service ），本地数据库里没有任何密码。</p>
+<p><strong>让 AI Agent 用</strong>
+自带 shellrs 命令行，Claude Code 、Codex 这类 Agent 能用保存的主机执行命令、上传下载文件，不用把密码交给它们。
+还支持在堡垒机中让 agent 以 --terminal 模式直接在打开的终端中执行命令（堡垒机一般不允许连接新开通道，只能复用现有通道）</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shakukansp</span>
+        <span>#1</span>
+        <span>2026/10/10 10:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">牛逼啊，起名字越随便越牛逼</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162402">牛逼啊，起名字越随便越牛逼</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162402">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162402" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#2</span>
+        <span>2026/10/10 10:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ai 时代真是想怎么把玩就怎么把玩啊，现在 rust+gpui 的应用也在慢慢增加</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162444">ai 时代真是想怎么把玩就怎么把玩啊，现在 rust+gpui 的应用也在慢慢增加</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162444">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162444" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">arg0</span>
+        <span>#3</span>
+        <span>2026/10/10 10:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> 感觉 GPUI Kit 现在挺成熟了，Rust 界的 shadcn/ui <a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162494">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> 感觉 GPUI Kit 现在挺成熟了，Rust 界的 shadcn/ui <a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162494">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162494" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">default996</span>
+        <span>#4</span>
+        <span>2026/10/10 10:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在 win 下本地终端只能使用 cmd.exe ？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162519">在 win 下本地终端只能使用 cmd.exe ？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162519">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162519" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">khao</span>
+        <span>#5</span>
+        <span>2026/10/10 10:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">能提个需求吗，右下角的编码可以像 Xshell 一样支持实时修改。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162604">能提个需求吗，右下角的编码可以像 Xshell 一样支持实时修改。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162604">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162604" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">IBMall</span>
+        <span>#6</span>
+        <span>2026/10/10 10:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很棒的 shell 终端，以及具备很高的可用性；<br />期待越来越强；</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162638">很棒的 shell 终端，以及具备很高的可用性；<br />期待越来越强；</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162638">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162638" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">676529483</span>
+        <span>#7</span>
+        <span>2026/10/10 10:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很强完全不卡，以前常有的都顿顿的，已 star 。<br />提个建议哈，能不能增加配置项选中文字自动复制，对于运维很管用，感谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162639">很强完全不卡，以前常有的都顿顿的，已 star 。<br />提个建议哈，能不能增加配置项选中文字自动复制，对于运维很管用，感谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162639">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162639" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">arg0</span>
+        <span>#8</span>
+        <span>2026/10/10 10:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/676529483" target="_blank" rel="noopener noreferrer">676529483</a> 是指选中的文字，点右键就自动复制吗？下次更新加一个。<a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162686">@<a href="/member/676529483" target="_blank" rel="noopener noreferrer">676529483</a> 是指选中的文字，点右键就自动复制吗？下次更新加一个。<a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162686">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162686" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlevai</span>
+        <span>#9</span>
+        <span>2026/10/10 10:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">牛逼 好用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162710">牛逼 好用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162710">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162710" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">root71370</span>
+        <span>#10</span>
+        <span>2026/10/10 10:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">全民制作人</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162720">全民制作人</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162720">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162720" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ob</span>
+        <span>#11</span>
+        <span>2026/10/10 10:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还没支持 ZModem 协议吗？建议加上</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162730">还没支持 ZModem 协议吗？建议加上</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162730">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162730" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ob</span>
+        <span>#12</span>
+        <span>2026/10/10 11:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">SFTP 本地目录不能切到 D 盘，默认只能是 C 盘</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162775">SFTP 本地目录不能切到 D 盘，默认只能是 C 盘</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162775">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162775" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ala2008</span>
+        <span>#13</span>
+        <span>2026/10/10 11:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">先 star 了，是不是只有老中才这么热衷于造轮子 <a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162847">先 star 了，是不是只有老中才这么热衷于造轮子 <a href="https://i.imgur.com/L62ZP7V.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162847">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162847" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">676529483</span>
+        <span>#14</span>
+        <span>2026/10/10 11:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/arg0" target="_blank" rel="noopener noreferrer">arg0</a> #8 不用点右键，选中文字就自动复制到剪切板了，item2 可以，我记得以前用 xshell 里好像也可以</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162881">@<a href="/member/arg0" target="_blank" rel="noopener noreferrer">arg0</a> #8 不用点右键，选中文字就自动复制到剪切板了，item2 可以，我记得以前用 xshell 里好像也可以</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162881">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162881" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mindddd</span>
+        <span>#15</span>
+        <span>2026/10/10 11:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162919">已用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlevai</span>
+        <span>#16</span>
+        <span>2026/10/10 11:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/676529483" target="_blank" rel="noopener noreferrer">676529483</a> 终端里已经可以 我刚试了可以</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162926">@<a href="/member/676529483" target="_blank" rel="noopener noreferrer">676529483</a> 终端里已经可以 我刚试了可以</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162926">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162926" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlevai</span>
+        <span>#17</span>
+        <span>2026/10/10 11:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zlevai" target="_blank" rel="noopener noreferrer">zlevai</a> 好像是仅限本地终端里</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162933">@<a href="/member/zlevai" target="_blank" rel="noopener noreferrer">zlevai</a> 好像是仅限本地终端里</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162933">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162933" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mpi2018</span>
+        <span>#18</span>
+        <span>2026/10/10 11:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/Jo4nOXy.png" target="_blank" rel="noopener noreferrer"></a>终端颜色怎么搞出来,设置里选主题没有效果</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18162959"><a href="https://i.imgur.com/Jo4nOXy.png" target="_blank" rel="noopener noreferrer"></a>终端颜色怎么搞出来,设置里选主题没有效果</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18162959">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18162959" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">PopRain</span>
+        <span>#19</span>
+        <span>2026/10/10 12:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">先 STAR 再慢慢看</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18163150">先 STAR 再慢慢看</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18163150">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18163150" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mpi2018</span>
+        <span>#20</span>
+        <span>2026/10/10 12:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/mpi2018" target="_blank" rel="noopener noreferrer">mpi2018</a> 明白了，Debain 默认就没有颜色，ll --color=auto 可以</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18163154">@<a href="/member/mpi2018" target="_blank" rel="noopener noreferrer">mpi2018</a> 明白了，Debain 默认就没有颜色，ll --color=auto 可以</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18163154">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247523#reply18163154" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

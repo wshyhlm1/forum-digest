@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分享一下我做的安卓显卡驱动管理软件 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-10/">返回日报</a>
+      <div class="source-chip">V2EX #9</div>
+      <h1>分享一下我做的安卓显卡驱动管理软件</h1>
+      <p class="original-title">分享一下我做的安卓显卡驱动管理软件</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 zficode</span>
+        <span>热度 3</span>
+        <span>回复 3</span>
+        <span>2026/10/10 20:27</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1247709" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1247709.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>如今，在安卓设备上运行 PC 游戏和各类模拟器游戏时，许多用户都会选择开源的 Turnip Vulkan 驱动，以获得更好的游戏兼容性和图形性能。</li><li>然而，Turnip 驱动的维护仓库和版本众多，不同驱动在兼容性、性能和适用场景上各有差异，普通用户往往难以判断该如何选择。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>如今，在安卓设备上运行 PC 游戏和各类模拟器游戏时，许多用户都会选择开源的 <strong>Turnip Vulkan 驱动</strong>，以获得更好的游戏兼容性和图形性能。</p>
+<p>然而，Turnip 驱动的维护仓库和版本众多，不同驱动在兼容性、性能和适用场景上各有差异，普通用户往往难以判断该如何选择。</p>
+<p><strong>我的这款工具正是为了解决这一问题而设计的。</strong></p>
+<p>它集成了高通的萝卜驱动和天玑的 PanVK 驱动下载、安装与加载功能，帮助用户更便捷地获取和使用不同版本的 Vulkan 驱动。同时，工具还支持查看设备的 Vulkan 版本及扩展信息、使用 Vulkan 驱动进行图形渲染测试，并内置 <strong>vkmark 跑分功能</strong>，方便用户直观地了解设备的图形性能。</p>
+<p>希望通过这款工具，降低安卓设备上 Vulkan 驱动的使用门槛，让用户更轻松地完成驱动选择、功能验证和性能测试。
+</p>
+<p></p>
+<p>详情页面： <a href="https://zfitness.github.io/driverscope-web/#download" target="_blank" rel="noopener noreferrer">https://zfitness.github.io/driverscope-web/#download</a>
+下载地址： <a href="https://github.com/zFitness/driverscope-web/releases/tag/v0.1.1" target="_blank" rel="noopener noreferrer">https://github.com/zFitness/driverscope-web/releases/tag/v0.1.1</a></p>
+<p>由于本项目是个人 Vulkan 练手项目，代码里面写入大量笔记，暂时没有开源</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>如今，在安卓设备上运行 PC 游戏和各类模拟器游戏时，许多用户都会选择开源的 <strong>Turnip Vulkan 驱动</strong>，以获得更好的游戏兼容性和图形性能。</p>
+<p>然而，Turnip 驱动的维护仓库和版本众多，不同驱动在兼容性、性能和适用场景上各有差异，普通用户往往难以判断该如何选择。</p>
+<p><strong>我的这款工具正是为了解决这一问题而设计的。</strong></p>
+<p>它集成了高通的萝卜驱动和天玑的 PanVK 驱动下载、安装与加载功能，帮助用户更便捷地获取和使用不同版本的 Vulkan 驱动。同时，工具还支持查看设备的 Vulkan 版本及扩展信息、使用 Vulkan 驱动进行图形渲染测试，并内置 <strong>vkmark 跑分功能</strong>，方便用户直观地了解设备的图形性能。</p>
+<p>希望通过这款工具，降低安卓设备上 Vulkan 驱动的使用门槛，让用户更轻松地完成驱动选择、功能验证和性能测试。
+</p>
+<p></p>
+<p>详情页面： <a href="https://zfitness.github.io/driverscope-web/#download" target="_blank" rel="noopener noreferrer">https://zfitness.github.io/driverscope-web/#download</a>
+下载地址： <a href="https://github.com/zFitness/driverscope-web/releases/tag/v0.1.1" target="_blank" rel="noopener noreferrer">https://github.com/zFitness/driverscope-web/releases/tag/v0.1.1</a></p>
+<p>由于本项目是个人 Vulkan 练手项目，代码里面写入大量笔记，暂时没有开源</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">3</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zficode</span>
+        <span>#1</span>
+        <span>2026/10/10 20:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">求一个 start⭐</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18165039">求一个 start⭐</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18165039">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247709#reply18165039" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">holoto</span>
+        <span>#2</span>
+        <span>2026/10/10 22:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">非常不错的实用工具；👍 给个小建议 驱动下载好像是 github 源的 可以设置 <a href="https://gh-proxy.com/" target="_blank" rel="noopener noreferrer">https://gh-proxy.com/</a> 代理下载 感觉速度会更快</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18165231">非常不错的实用工具；👍 给个小建议 驱动下载好像是 github 源的 可以设置 <a href="https://gh-proxy.com/" target="_blank" rel="noopener noreferrer">https://gh-proxy.com/</a> 代理下载 感觉速度会更快</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18165231">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247709#reply18165231" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">holoto</span>
+        <span>#3</span>
+        <span>2026/10/10 22:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/holoto" target="_blank" rel="noopener noreferrer">holoto</a> #2 我的问题 原来软件默认有这个选项 自己勾选就好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18165243">@<a href="/member/holoto" target="_blank" rel="noopener noreferrer">holoto</a> #2 我的问题 原来软件默认有这个选项 自己勾选就好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18165243">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247709#reply18165243" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
