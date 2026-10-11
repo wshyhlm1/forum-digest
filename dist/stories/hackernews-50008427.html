@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Whistle: Speech to Text in 16.9 MB | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-11/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Whistle: Speech to Text in 16.9 MB</h1>
+      <p class="original-title">Whistle: Speech to Text in 16.9 MB</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 gmays</span>
+        <span>热度 950</span>
+        <span>回复 182</span>
+        <span>2026/10/09 00:59</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50008427" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://cactuscompute.com/blog/whistle" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50008427.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Back to blogModelsResearchAn open speech recognition model that runs on the same CPU engine as Needle. It transcribes seven languages, reaches the first token in 11 ms, and loads beside Needle so one binary turns a clip straight into tool calls.JMJakub MrozHNHenry Ndubuaku|October 2, 2026|6 min readToday we release Whistle, a speech recognition model for mobiles, wearables, robots, smart home, automotive and microcontrollers. It is one 16.9 MB file, runs on the CPU with no dependencies, and loads into the same C++ engine as Needle, from the same container and the same quantisation. Whistle sandboxSpeak, and Whistle transcribes it on your device16.9 MB · runs in this tabLanguageKeywordsPress the mic and say something.Up to 30 seconds in English, German, French, Spanish, Italian, Dutch or Polish. The first press downloads the 16.9 MB model, and audio never leaves your device. Whistle does three jobs, all of them on the device:</li><li>Transcription. 16 kHz mono audio, up to 30 seconds in one pass, in English, German, French, Spanish, Italian, Dutch and Polish. The language is detected unless you name it. Word timestamps. Every word with its start, end and probability, aligned from the decoder&#39;s attention. Speech embedding. The encoder output, one row per 80 ms frame, without decoding a transcript.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">skolos</span>
+        
+        <span>2026/10/09 04:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Interesting that this is here. I used whistle (and bunch of other things) to take ownership of my echo show. It now doesn't dial to Amazon at all - it does all processing locally with its own CPU and connects to my homeassistant for home automation. My initial setup involved qwen asr (1.7b model) running on rtx 5080. Compared to that, whistle was really bad (out of 170 messages, qwen recognized correctly 168, whistle - 70), but I adjusted whistle to work like jev - instead of free form transcription it recognizes only select set of templates (I trained tiny network with 10,000 generated utterances to translate whistle final state to probabilities within templates). The precision went up to 164/170 - almost matching qwen. By the way - I'm speaking with heavy accent.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50011633">Interesting that this is here. I used whistle (and bunch of other things) to take ownership of my echo show. It now doesn't dial to Amazon at all - it does all processing locally with its own CPU and connects to my homeassistant for home automation. My initial setup involved qwen asr (1.7b model) running on rtx 5080. Compared to that, whistle was really bad (out of 170 messages, qwen recognized correctly 168, whistle - 70), but I adjusted whistle to work like jev - instead of free form transcription it recognizes only select set of templates (I trained tiny network with 10,000 generated utterances to translate whistle final state to probabilities within templates). The precision went up to 164/170 - almost matching qwen. By the way - I'm speaking with heavy accent.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50011633">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50011633" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">mooman219</span>
+        
+        <span>2026/10/09 05:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This feels like we're going back to the past again with CMU's Sphinx4 in Java. It worked way better than I would ever have expected it to for being more than a decade old. It relied on the user defining a grammar of valid words and different flows through a standard format (Java Speech API Grammar Format). I wonder if we'll approach that again for these models just like how MCPs act like WSDLs in spirit. Great results getting whistle working so well for you!<p></p><pre><code>  #JSGF V1.0;
+  grammar commands;
+
+  public &lt;action&gt; = open | close | delete ;
+  public &lt;object&gt; = file | window | application ;
+  public &lt;command&gt; = &lt;action&gt; [the] &lt;object&gt;;</code></pre></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50012981">This feels like we're going back to the past again with CMU's Sphinx4 in Java. It worked way better than I would ever have expected it to for being more than a decade old. It relied on the user defining a grammar of valid words and different flows through a standard format (Java Speech API Grammar Format). I wonder if we'll approach that again for these models just like how MCPs act like WSDLs in spirit. Great results getting whistle working so well for you!<p></p><pre><code>  #JSGF V1.0;
+  grammar commands;
+
+  public &lt;action&gt; = open | close | delete ;
+  public &lt;object&gt; = file | window | application ;
+  public &lt;command&gt; = &lt;action&gt; [the] &lt;object&gt;;</code></pre></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50012981">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50012981" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">skolos</span>
+        
+        <span>2026/10/09 06:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Just ran some tests on my phrases:<p>- my whistle setup (tested can run on echo show with &lt;1s response): 206 correct out of 208</p><p>These were not tested on echo show yet - on my pc for now:</p><p>- Vosk small, phrase grammar: 184/208</p><p>- Speech-to-Phrase 1.4.3 (Kaldi): 118/208</p><p>- suggested sphinx: 63/208 and on some examples took 13s on i7 14700k pc</p><p>looks like my customized whistle works better for me than these alternatives. But more testing wouldn't hurt.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50013475">Just ran some tests on my phrases:<p>- my whistle setup (tested can run on echo show with &lt;1s response): 206 correct out of 208</p><p>These were not tested on echo show yet - on my pc for now:</p><p>- Vosk small, phrase grammar: 184/208</p><p>- Speech-to-Phrase 1.4.3 (Kaldi): 118/208</p><p>- suggested sphinx: 63/208 and on some examples took 13s on i7 14700k pc</p><p>looks like my customized whistle works better for me than these alternatives. But more testing wouldn't hurt.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50013475">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50013475" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ianjbutler</span>
+        
+        <span>2026/10/09 08:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not op but I think maybe the connection was more grammar vs your “select set of templates”.. observation being that structure beats no structure regardless of the base tech, and that completely structure-free interactions are generally not what we want anyway</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50014141">Not op but I think maybe the connection was more grammar vs your “select set of templates”.. observation being that structure beats no structure regardless of the base tech, and that completely structure-free interactions are generally not what we want anyway</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50014141">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50014141" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HenryNdubuaku</span>
+        
+        <span>2026/10/10 13:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">thanks for sharing!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50029776">thanks for sharing!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50029776">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50029776" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Multicomp</span>
+        
+        <span>2026/10/09 08:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">WSDL - now that's a name I've not heard in a very long time!<p>XML Web Services were awesome, but the SOAP and XML (where the hard parts that should have been given some batteries included defaults) I think was too much of a boat anchor to overcome.</p><p>And then the ruby/rails wave came and made 'rest' JSON the Silicon Valley hearthrob, and WSDLs were out like yesterdays trash.</p><p>Are they still used in businesses IRL? Yes! I worked for one that has probably (probably) moved off of them by now, but as recently as 2023 there were still some bank-facing power with SOAP RPC .asmx endpoint servers.</p><p>I follow hypermedia.systems and htmx/datastar/alpine.js because I'm still trying to get back that powerful _web_ tech advancement rather than squeezing everything into the javascript client side workaround. Typescript is great, a good poor man's F# and leagues ahead of ES3 (which I dabbled in / torture LLMs with so my old retrocomputers can still do web things), but its still bringing along so much baggage that could be lighter weight for older devices AND fits the tech utopianist promise of the original web (which is half of why I play with computer stuff).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50014640">WSDL - now that's a name I've not heard in a very long time!<p>XML Web Services were awesome, but the SOAP and XML (where the hard parts that should have been given some batteries included defaults) I think was too much of a boat anchor to overcome.</p><p>And then the ruby/rails wave came and made 'rest' JSON the Silicon Valley hearthrob, and WSDLs were out like yesterdays trash.</p><p>Are they still used in businesses IRL? Yes! I worked for one that has probably (probably) moved off of them by now, but as recently as 2023 there were still some bank-facing power with SOAP RPC .asmx endpoint servers.</p><p>I follow hypermedia.systems and htmx/datastar/alpine.js because I'm still trying to get back that powerful _web_ tech advancement rather than squeezing everything into the javascript client side workaround. Typescript is great, a good poor man's F# and leagues ahead of ES3 (which I dabbled in / torture LLMs with so my old retrocomputers can still do web things), but its still bringing along so much baggage that could be lighter weight for older devices AND fits the tech utopianist promise of the original web (which is half of why I play with computer stuff).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50014640">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50014640" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/10/09 13:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Poland runs on WSDL, SOAP, XML Schema, XSLT, XML Forms, all of it.<p>By law, every single government form you're able to file is supposed to have an XML Schema available in a centralized registry. This regulation is widely ignored in practice, particularly by local / municipal governments.</p><p>This used to be more important in the past, as such a form could automatically / semi-automatically get an entry in the EPUAP form catalog and be made electronically fillable (EPUAP being the now-deprecated centralized government bureaucracy portal basically). As far as I understand, the way that worked was through XSLT and XML Forms. There was some weirdness about each document having a fillable / form view and a preview, I think XML Forms was somehow used to generate the XHTML form, while the XSLT sheet could only generate an XHTML preview of a complete, filled-in version. There were also some custom annotations for auto-fill and such, that was partly done by most documents relying on standardized schemas for entities like "person", "address" or "company".</p><p>Since we moved to E-Deliveries and lost a central place for these forms to live in, this is (AFAIK) a bit less important and less common, but internally, things are still XML. If you're filing something like an ID renewal application, even through a newer, more user-friendly frontend, it's still just XML underneath. If you sign something through podpis.gov.pl (the standardized e-signature solution for government paperwork), you can even download that underlying document, both signed and unsigned, and see what that XML is. The pre-signing document preview generated by that site still comes from the XSLT I believe. The signatures themselves are, unsurprisingly, also done via the XML signatures spec.</p><p>Incidentally, the European E-Delivery system itself also relies on XML, WSDL and Soap pretty heavily. For those unfamiliar and/or not in Europe, it's basically "email but for the government", with all the guarantees and legal obligations of physical mail, cryptographically-attested confirmation of receipt, proper identity verification and assurance, cross-provider address portability, deployed to a lesser or greater extend in many EU countries and set to replace physical mail.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50016329">Poland runs on WSDL, SOAP, XML Schema, XSLT, XML Forms, all of it.<p>By law, every single government form you're able to file is supposed to have an XML Schema available in a centralized registry. This regulation is widely ignored in practice, particularly by local / municipal governments.</p><p>This used to be more important in the past, as such a form could automatically / semi-automatically get an entry in the EPUAP form catalog and be made electronically fillable (EPUAP being the now-deprecated centralized government bureaucracy portal basically). As far as I understand, the way that worked was through XSLT and XML Forms. There was some weirdness about each document having a fillable / form view and a preview, I think XML Forms was somehow used to generate the XHTML form, while the XSLT sheet could only generate an XHTML preview of a complete, filled-in version. There were also some custom annotations for auto-fill and such, that was partly done by most documents relying on standardized schemas for entities like "person", "address" or "company".</p><p>Since we moved to E-Deliveries and lost a central place for these forms to live in, this is (AFAIK) a bit less important and less common, but internally, things are still XML. If you're filing something like an ID renewal application, even through a newer, more user-friendly frontend, it's still just XML underneath. If you sign something through podpis.gov.pl (the standardized e-signature solution for government paperwork), you can even download that underlying document, both signed and unsigned, and see what that XML is. The pre-signing document preview generated by that site still comes from the XSLT I believe. The signatures themselves are, unsurprisingly, also done via the XML signatures spec.</p><p>Incidentally, the European E-Delivery system itself also relies on XML, WSDL and Soap pretty heavily. For those unfamiliar and/or not in Europe, it's basically "email but for the government", with all the guarantees and legal obligations of physical mail, cryptographically-attested confirmation of receipt, proper identity verification and assurance, cross-provider address portability, deployed to a lesser or greater extend in many EU countries and set to replace physical mail.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50016329">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50016329" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">stronglikedan</span>
+        
+        <span>2026/10/09 05:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; By the way - I'm speaking with heavy accent.<p>I chuckled at this because my inner voice had an accent as I was reading your comment, due to your writing style.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50012237">&gt; By the way - I'm speaking with heavy accent.<p>I chuckled at this because my inner voice had an accent as I was reading your comment, due to your writing style.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50012237">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50012237" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">yuchi</span>
+        
+        <span>2026/10/09 05:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sorry, curious non-native speaker here. Which accent? And which telling patterns made you think of it?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50012409">Sorry, curious non-native speaker here. Which accent? And which telling patterns made you think of it?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50012409">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50012409" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Nition</span>
+        
+        <span>2026/10/09 05:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not the person you're responding to, but as soon as I read stuff like "I trained tiny network" I tend to imagine Russian. It's the missing "a". Same thing happens in "I'm speaking with heavy accent".</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50012546">Not the person you're responding to, but as soon as I read stuff like "I trained tiny network" I tend to imagine Russian. It's the missing "a". Same thing happens in "I'm speaking with heavy accent".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50012546">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50012546" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">meredithbloom</span>
+        
+        <span>2026/10/09 13:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not a native speaker but my inner voice also switched to Russian accent very quickly!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50016277">I'm not a native speaker but my inner voice also switched to Russian accent very quickly!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50016277">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50016277" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Zacharias030</span>
+        
+        <span>2026/10/09 05:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Missing articles in English is the usual give away for someone with a slavic native language such as Russian.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50012571">Missing articles in English is the usual give away for someone with a slavic native language such as Russian.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50012571">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50012571" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ruszki</span>
+        
+        <span>2026/10/09 20:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm native Hungarian speaker, and the giveaway is the exact opposite: more definitive articles than it should be. We use that way more often in Hungarian than in English, and we are really bad with it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50019497">I'm native Hungarian speaker, and the giveaway is the exact opposite: more definitive articles than it should be. We use that way more often in Hungarian than in English, and we are really bad with it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50019497">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50019497" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">fg137</span>
+        
+        <span>2026/10/09 21:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Missed opportunity of intentionally introducing a few extra in this comment</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50019953">Missed opportunity of intentionally introducing a few extra in this comment</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50019953">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50019953" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ASalazarMX</span>
+        
+        <span>2026/10/09 05:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Excuse me, could you write slower? I couldn't understand you.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50012829">Excuse me, could you write slower? I couldn't understand you.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50012829">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50012829" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">cco</span>
+        
+        <span>2026/10/09 13:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I found parakeet to be very good and pretty darn fast, ~20-50ms, accuracy around 9/10 whenever I've run tests. In practice the error rate is not too big of an issue because the output is fed into GLM 5.3 so it'll figure it out if it sees "heather" instead of "weather".<p>Much larger though, I think I went full precision and its around 2GB.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50016291">I found parakeet to be very good and pretty darn fast, ~20-50ms, accuracy around 9/10 whenever I've run tests. In practice the error rate is not too big of an issue because the output is fed into GLM 5.3 so it'll figure it out if it sees "heather" instead of "weather".<p>Much larger though, I think I went full precision and its around 2GB.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50016291">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50016291" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">gekoxyz</span>
+        
+        <span>2026/10/09 21:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The good thing with most NNs is that you can go with fp32 almost always (I put almost because I'm not 100% sure that this covers all the cases) for almost 0 performance degradation.
+For Parakeet I'm 100% sure because I used it yesterday and it was using just 1GB.<p>Why do you use GLM 5.3 tho? Unless you have an instance running "free" 24/7 you could use a local Gemma model. It should be good enough, no? Or maybe with openrouter it's cheap enough for such simple requests to be considered free?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50019924">The good thing with most NNs is that you can go with fp32 almost always (I put almost because I'm not 100% sure that this covers all the cases) for almost 0 performance degradation.
+For Parakeet I'm 100% sure because I used it yesterday and it was using just 1GB.<p>Why do you use GLM 5.3 tho? Unless you have an instance running "free" 24/7 you could use a local Gemma model. It should be good enough, no? Or maybe with openrouter it's cheap enough for such simple requests to be considered free?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50019924">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50019924" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">cco</span>
+        
+        <span>2026/10/10 00:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah maybe I'll play around with different precision, I did see improvement when I went from fp4 to full fidelity though.<p>This is my setup for Home Assistant voice, parakeet for STT, GLM 5.3 to generate responses, and Kokoro for TTS. I use local routing for simple commands like turn on the lights, but if I want to ask questions or something, it gets routed to GLM 5.3. It is basically free, half a cent per turn maybe, so in a month I may spend a dollar? Not even usually.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50022665">Yeah maybe I'll play around with different precision, I did see improvement when I went from fp4 to full fidelity though.<p>This is my setup for Home Assistant voice, parakeet for STT, GLM 5.3 to generate responses, and Kokoro for TTS. I use local routing for simple commands like turn on the lights, but if I want to ask questions or something, it gets routed to GLM 5.3. It is basically free, half a cent per turn maybe, so in a month I may spend a dollar? Not even usually.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50022665">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50022665" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">catlifeonmars</span>
+        
+        <span>2026/10/09 10:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">How did you load your own programs on the show? I own an unreasonable number of old echo devices (a couple shows too) that are sitting in a box. This sounds like the perfect use for them!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50015095">How did you load your own programs on the show? I own an unreasonable number of old echo devices (a couple shows too) that are sitting in a box. This sounds like the perfect use for them!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50015095">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50015095" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">skolos</span>
+        
+        <span>2026/10/09 16:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Here's how to root echo show 8 1st gen: <a href="https://xdaforums.com/t/unlock-root-twrp-unbrick-amazon-echo-show-8-1st-gen-2019-crown.4766687/" target="_blank" rel="noopener noreferrer">https://xdaforums.com/t/unlock-root-twrp-unbrick-amazon-echo...</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50017866">Here's how to root echo show 8 1st gen: <a href="https://xdaforums.com/t/unlock-root-twrp-unbrick-amazon-echo-show-8-1st-gen-2019-crown.4766687/" target="_blank" rel="noopener noreferrer">https://xdaforums.com/t/unlock-root-twrp-unbrick-amazon-echo...</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50017866">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50017866" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

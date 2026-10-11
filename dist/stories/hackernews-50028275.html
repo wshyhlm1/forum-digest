@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REA Reverse – Engineer Anything | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-11/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>REA Reverse – Engineer Anything</h1>
+      <p class="original-title">REA Reverse – Engineer Anything</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 modinfo</span>
+        <span>热度 753</span>
+        <span>回复 323</span>
+        <span>2026/10/10 08:37</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50028275" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://rea.tools/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50028275.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Reverse engineering, with your coding agent Find out howsoftware works. REA gives your agent the tools to inspect a program and explain what it does. Already know RE? Skip to analysis guides → Want to go deeper? Read the Blog → Set up REA Copy this into your coding agent: Install REA and connect it to this coding agent using npx rea-agents@latest setup. Show me the setup plan for approval, then verify the installation. Or run this in your terminal: npx rea-agents@latest setup Approve the setup plan, then restart your agent. First time, or missing Node.js or a coding agent? Follow the step-by-step setup guide →</li><li>What is reverse engineering? Finding out how software works by examining the program itself. The goal: understand a feature well enough to explain it, change it or rebuild it. One question: why does Calculator give 220 for 200 + 10%? Before REA · You investigate it yourself 0x180124945: MOV EAX, dword ptr [R13 + 0x18] 0x180124949: CMP EAX, 0x5c 0x18012494c: JZ 0x180124aba 0x180124952: CMP EAX, 0x5b 0x180124955: JZ 0x180124aba 0x18012495b: MOV EDX, 0x64 0x180124960: LEA RCX, [RSP + 0x160] 0x180124968: CALL 0x180122650 0x18012496e: LEA RDX, [R13 + 0x160] 0x180124975: LEA RCX, [RSP + 0x78] 0x18012497a: CALL 0x180109720 0x18012497f: MOV RSI, RAX 0x180124982: MOV qword ptr [RSP + 0x28], RAX 0x180124987: LEA RDX, [RSP + 0x160] 0x18012498f: MOV RCX, RAX 0x180124992: CALL 0x180123190 ; … value-copy instructions omitted … 0x180124a14: MOV RDX, RDI 0x180124a17: LEA RCX, [RSP + 0xf8] 0x180124a1f: CALL 0x180109720 0x180124a24: LEA R8, [RSP + 0x30] 0x180124a29: MOV RDX, RAX 0x180124a2c: LEA RCX, [RSP + 0xb8] 0x180124a34: CALL 0x180123c10 You decode the instructions, follow the calls and reconstruct the calculation. With REA · You ask your agent One prompt. Ask your agent in plain English. Use REA to inspect Windows Calculator. Why does 200 + 10% give 220? Example answer · based on the findings After +, the % button takes a percentage of the first number. 10% of 200 = 20200 + 20 = 220 REA supplies The handler’s instructions, decompiled code and calls. Your agent explains Which branch applies, what it calculates and how to rebuild it. Selected assembly from the installed Calculator DLL. The thoughts and reply illustrate the findings. Continue with the Calculator example ↓</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">InvisibleUp</span>
+        
+        <span>2026/10/10 12:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Glancing at the Touhou 4 decomp[1], it's a lot better quality than a lot of AI decomps I've seen. It's matching, the variables are named sensibly, comments are sparse and comprehensible, and there's not much in the way of unaddressed Ghidra jank. And only in a month! My main complaint is that the file structuring seems more optimized for AI use than for mirroring the original intent of the devs. (Compare to this human-made Touhou 6 decomp.[2])<p>I know the retro game modding/decomp scene is already getting hit with a flood of low-effort ports.[3] Now they're going to be hit with a flood of half-decent decomps effortlessly generated by anyone with a $200/mo AI subscription, which become half-decent PC ports, which get modding support grafted on. It kinda just... totally eliminates that as a hobby entirely. I know people are going to be upset about this. And it's not even like with the AI art, where the pro and anti-AI camps live in their own camps. Solving the same puzzle twice just feels discouraging. Very similar to the problem academics are having with AI math/physics proofs.</p><p>I know a large reason people hate AI is because it's largely seen as tearing apart hobbyist/professional communities, eliminating reasons to collaborate with others and form relationships, and replacing it with an individualized dependence on a commercial product. It follows the same trend the tech industry took social media, from a method of connection to a tool of propaganda and paranoia and "@gork is this true?" This project, I think, is one of the most clear examples of that.</p><p>[1] <a href="https://github.com/N0zoM1z0/th04" target="_blank" rel="noopener noreferrer">https://github.com/N0zoM1z0/th04</a>
+[2] <a href="https://github.com/GensokyoClub/th06" target="_blank" rel="noopener noreferrer">https://github.com/GensokyoClub/th06</a>
+[3] <a href="https://www.pcgamer.com/gaming-industry/pc-ports-of-old-console-games-are-the-new-ai-vibe-coding-battleground/" target="_blank" rel="noopener noreferrer">https://www.pcgamer.com/gaming-industry/pc-ports-of-old-cons...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50029703">Glancing at the Touhou 4 decomp[1], it's a lot better quality than a lot of AI decomps I've seen. It's matching, the variables are named sensibly, comments are sparse and comprehensible, and there's not much in the way of unaddressed Ghidra jank. And only in a month! My main complaint is that the file structuring seems more optimized for AI use than for mirroring the original intent of the devs. (Compare to this human-made Touhou 6 decomp.[2])<p>I know the retro game modding/decomp scene is already getting hit with a flood of low-effort ports.[3] Now they're going to be hit with a flood of half-decent decomps effortlessly generated by anyone with a $200/mo AI subscription, which become half-decent PC ports, which get modding support grafted on. It kinda just... totally eliminates that as a hobby entirely. I know people are going to be upset about this. And it's not even like with the AI art, where the pro and anti-AI camps live in their own camps. Solving the same puzzle twice just feels discouraging. Very similar to the problem academics are having with AI math/physics proofs.</p><p>I know a large reason people hate AI is because it's largely seen as tearing apart hobbyist/professional communities, eliminating reasons to collaborate with others and form relationships, and replacing it with an individualized dependence on a commercial product. It follows the same trend the tech industry took social media, from a method of connection to a tool of propaganda and paranoia and "@gork is this true?" This project, I think, is one of the most clear examples of that.</p><p>[1] <a href="https://github.com/N0zoM1z0/th04" target="_blank" rel="noopener noreferrer">https://github.com/N0zoM1z0/th04</a>
+[2] <a href="https://github.com/GensokyoClub/th06" target="_blank" rel="noopener noreferrer">https://github.com/GensokyoClub/th06</a>
+[3] <a href="https://www.pcgamer.com/gaming-industry/pc-ports-of-old-console-games-are-the-new-ai-vibe-coding-battleground/" target="_blank" rel="noopener noreferrer">https://www.pcgamer.com/gaming-industry/pc-ports-of-old-cons...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50029703">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50029703" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">mjr00</span>
+        
+        <span>2026/10/10 14:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Now they're going to be hit with a flood of half-decent decomps effortlessly generated by anyone with a $200/mo AI subscription, which become half-decent PC ports, which get modding support grafted on. It kinda just... totally eliminates that as a hobby entirely.<p>It really depends on your perspective of what the point of the hobby is. Were decomps/recomps a hobby because people wanted to make sure their old games could run on modern hardware and be extended with mods etc., or were they a hobby because people enjoyed the actual process of using Ghidra and reverse engineering by hand, and the decompiled game was just a side effect?</p><p>Personally I think it's awesome that PC98 Touhou games are getting recomps. Being able to play the series natively on modern hardware, and all hardware for the foreseeable future, is great and preserves the legacy of the series. I understand that for anyone who enjoys the actual act of reverse engineering it feels like cheating, though.</p><p>I think people will get over it. Music is a good example. Drum VSTs and piano VSTs are going to sound way better than you unless you're a 99th percentile musician playing on a 99th percentile physical instrument. But people still play the piano and drums, because it's fun. Same idea; the existence of AI doesn't stop people who love the act of reverse engineering from doing it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50030093">&gt; Now they're going to be hit with a flood of half-decent decomps effortlessly generated by anyone with a $200/mo AI subscription, which become half-decent PC ports, which get modding support grafted on. It kinda just... totally eliminates that as a hobby entirely.<p>It really depends on your perspective of what the point of the hobby is. Were decomps/recomps a hobby because people wanted to make sure their old games could run on modern hardware and be extended with mods etc., or were they a hobby because people enjoyed the actual process of using Ghidra and reverse engineering by hand, and the decompiled game was just a side effect?</p><p>Personally I think it's awesome that PC98 Touhou games are getting recomps. Being able to play the series natively on modern hardware, and all hardware for the foreseeable future, is great and preserves the legacy of the series. I understand that for anyone who enjoys the actual act of reverse engineering it feels like cheating, though.</p><p>I think people will get over it. Music is a good example. Drum VSTs and piano VSTs are going to sound way better than you unless you're a 99th percentile musician playing on a 99th percentile physical instrument. But people still play the piano and drums, because it's fun. Same idea; the existence of AI doesn't stop people who love the act of reverse engineering from doing it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50030093">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50030093" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">cassonmars</span>
+        
+        <span>2026/10/10 14:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; It really depends on your perspective of what the point of the hobby is. Were decomps/recomps a hobby because people wanted to make sure their old games could run on modern hardware and be extended with mods etc., or were they a hobby because people enjoyed the actual process of using Ghidra and reverse engineering by hand, and the decompiled game was just a side effect?<p>I think your question would make sense if these were the only two reasons. Someone who just wants to make sure their old games can run would see these tools as a good thing. People who just enjoy reverse engineering by hand wouldn't care this exists, or maybe even, a helpful tutor.</p><p>So perhaps then, the sentiment being as negative as it is, is revealing something about the hobby: that many participants, considered the metagame of being the first to do it, to be "smart enough" to have figured it out, the "street cred" if you were, is what they are lamenting, but they just either lack the words, or aren't being honest with themselves.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50030327">&gt; It really depends on your perspective of what the point of the hobby is. Were decomps/recomps a hobby because people wanted to make sure their old games could run on modern hardware and be extended with mods etc., or were they a hobby because people enjoyed the actual process of using Ghidra and reverse engineering by hand, and the decompiled game was just a side effect?<p>I think your question would make sense if these were the only two reasons. Someone who just wants to make sure their old games can run would see these tools as a good thing. People who just enjoy reverse engineering by hand wouldn't care this exists, or maybe even, a helpful tutor.</p><p>So perhaps then, the sentiment being as negative as it is, is revealing something about the hobby: that many participants, considered the metagame of being the first to do it, to be "smart enough" to have figured it out, the "street cred" if you were, is what they are lamenting, but they just either lack the words, or aren't being honest with themselves.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50030327">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50030327" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">alberto-m</span>
+        
+        <span>2026/10/10 17:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>So perhaps then, the sentiment being as negative as it is, is revealing something about the hobby: that many participants, considered the metagame of being the first to do it, to be "smart enough" to have figured it out, the "street cred"</i><p>This is a very ingenerous interpretation.</p><p>I am a hobby hiker. My mountain hikes are so easy that basically anybody could do them: no street cred involved, it’s not even worth to speak about them. But it is important to me that most goals are only reachable by walking and putting in the effort: if a company offered a 20$/mo service that brings subscribers to the endpoint, carried in a luxury litter by robotized carriers, I would feel that my hobby has been devoided of sense.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50031173">&gt; <i>So perhaps then, the sentiment being as negative as it is, is revealing something about the hobby: that many participants, considered the metagame of being the first to do it, to be "smart enough" to have figured it out, the "street cred"</i><p>This is a very ingenerous interpretation.</p><p>I am a hobby hiker. My mountain hikes are so easy that basically anybody could do them: no street cred involved, it’s not even worth to speak about them. But it is important to me that most goals are only reachable by walking and putting in the effort: if a company offered a 20$/mo service that brings subscribers to the endpoint, carried in a luxury litter by robotized carriers, I would feel that my hobby has been devoided of sense.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50031173">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50031173" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">selestify</span>
+        
+        <span>2026/10/10 21:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; if a company offered a 20$/mo service that brings subscribers to the endpoint, carried in a luxury litter by robotized carriers, I would feel that my hobby has been devoided of sense.<p>As someone else who hikes: why? I do not understand. Do you not enjoy the hobby of hiking for the sake of hiking?</p><p>The views will be just as beautiful, the air just as fresh, and the feeling of moving my legs just as energizing, regardless of how others may decide to get to the destination themselves. Why would the experience of others have any impact on my own experience of a trail?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50032700">&gt; if a company offered a 20$/mo service that brings subscribers to the endpoint, carried in a luxury litter by robotized carriers, I would feel that my hobby has been devoided of sense.<p>As someone else who hikes: why? I do not understand. Do you not enjoy the hobby of hiking for the sake of hiking?</p><p>The views will be just as beautiful, the air just as fresh, and the feeling of moving my legs just as energizing, regardless of how others may decide to get to the destination themselves. Why would the experience of others have any impact on my own experience of a trail?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50032700">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50032700" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nkrisc</span>
+        
+        <span>2026/10/10 21:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Might be stretching the analogy too far, but look what happens to remote places that become easily accessible. They become commodified, crowded, and polluted.<p>There is something about a place requiring effort to visit that makes it special, and it loses that quality when it can be trivially accessed. The air isn’t quite as fresh when there’s a parking lot there.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50032765">Might be stretching the analogy too far, but look what happens to remote places that become easily accessible. They become commodified, crowded, and polluted.<p>There is something about a place requiring effort to visit that makes it special, and it loses that quality when it can be trivially accessed. The air isn’t quite as fresh when there’s a parking lot there.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50032765">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50032765" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">k__o</span>
+        
+        <span>2026/10/10 22:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">yes, gatekeeping has much more merit than given credit for. ive seen many communities, ideas, companies, online and off that have been ruined by their growth past a certain point. ive wondered if it's a "when everyone's special no one is" thing but maybe it's just a primal human community thing. idk</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50033550">yes, gatekeeping has much more merit than given credit for. ive seen many communities, ideas, companies, online and off that have been ruined by their growth past a certain point. ive wondered if it's a "when everyone's special no one is" thing but maybe it's just a primal human community thing. idk</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50033550">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50033550" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jonhohle</span>
+        
+        <span>2026/10/11 08:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think it’s purely a community size issue. When a community is small, everyone’s an owner. Dealing with bad actors is straightforward. When it grows into the hundreds or thousands the scale means you can’t know everyone anymore, you need hall monitors, need to be more guarded and intentional about how you communicate.<p>It’s not bad or wrong, just different. When the changes forced by a group who didn’t build it, it’s frustrating.</p><p>“Hey, here’s this thing you love doing, but now a computer does it and you don’t have to any more. See, same!” Thanks for allowing me to not do the thing I like to do?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50038352">I think it’s purely a community size issue. When a community is small, everyone’s an owner. Dealing with bad actors is straightforward. When it grows into the hundreds or thousands the scale means you can’t know everyone anymore, you need hall monitors, need to be more guarded and intentional about how you communicate.<p>It’s not bad or wrong, just different. When the changes forced by a group who didn’t build it, it’s frustrating.</p><p>“Hey, here’s this thing you love doing, but now a computer does it and you don’t have to any more. See, same!” Thanks for allowing me to not do the thing I like to do?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50038352">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50038352" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/10/11 18:02</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50041501"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50041501">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50041501" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Peaches4Rent</span>
+        
+        <span>2026/10/10 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think this is spot on. It's the journey, but its also the destination.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50033568">I think this is spot on. It's the journey, but its also the destination.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50033568">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50033568" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">plorkyeran</span>
+        
+        <span>2026/10/11 00:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There is indeed something special about getting to the top of a mountain and knowing that anyone you encounter there went through the same thing you did to get there.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50034540">There is indeed something special about getting to the top of a mountain and knowing that anyone you encounter there went through the same thing you did to get there.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50034540">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50034540" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">czbc</span>
+        
+        <span>2026/10/10 22:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">"I hope things will stay the same when other people come in but I'm acknowledging they will not"<p>Rather its the impact of others on, not their experience of, a space that would impact my own experience, for better or worse.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50033556">"I hope things will stay the same when other people come in but I'm acknowledging they will not"<p>Rather its the impact of others on, not their experience of, a space that would impact my own experience, for better or worse.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50033556">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50033556" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">verandaguy</span>
+        
+        <span>2026/10/10 19:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks for framing this in a way that I've struggled to phrase.<p>At every turn it seems like a lot of intellectual pursuits are just being voided by this technology.</p><p>I've heard the "one level up" argument in software with the supposition being that the work's still there, it's just becoming more abstract... but even in software, this doesn't really track.</p><p>The injection of this technology into not just intellectual but artistic pursuits (since there are now commercial AI image and music generators) should be a red alert.</p><p>What is there to live for once everything you once loved to do has been optimized for maximum revenue? Where every time you do something for fun, someone will come out of the woodwork when you show it off to either tell you AI could've done it quicker, or that they made an AI version with a flashier UI or something?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50031793">Thanks for framing this in a way that I've struggled to phrase.<p>At every turn it seems like a lot of intellectual pursuits are just being voided by this technology.</p><p>I've heard the "one level up" argument in software with the supposition being that the work's still there, it's just becoming more abstract... but even in software, this doesn't really track.</p><p>The injection of this technology into not just intellectual but artistic pursuits (since there are now commercial AI image and music generators) should be a red alert.</p><p>What is there to live for once everything you once loved to do has been optimized for maximum revenue? Where every time you do something for fun, someone will come out of the woodwork when you show it off to either tell you AI could've done it quicker, or that they made an AI version with a flashier UI or something?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50031793">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50031793" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">brandonmenc</span>
+        
+        <span>2026/10/10 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; At every turn it seems like a lot of intellectual pursuits are just being voided by this technology.<p>If the goal was to show off your accomplishments on social media, sure.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50033573">&gt; At every turn it seems like a lot of intellectual pursuits are just being voided by this technology.<p>If the goal was to show off your accomplishments on social media, sure.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50033573">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50033573" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ninjagoo</span>
+        
+        <span>2026/10/10 19:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; What is there to live for once everything you once loved to do has been optimized for maximum revenue?<p>if it brings you joy, what does it matter how someone else does it?</p><p>If you run for fun, what does it matter that someone else does it faster, or in a paid exhibition optimized for max revenue?</p><p>Do it because it brings <i>you</i> joy, there is no external dependency.</p><p>&gt; Where every time you do something for fun, someone will come out of the woodwork when you show it off</p><p>See, this is where things get tricky, either the activity brings you joy, and/or the sharing of it brings you joy, and/or the showing off of it brings you joy.</p><p>For the first two, it is irrelevant what someone else has to say or do about it; ignore the noise. For showing off, yes, some activities are no longer worthy, so change is needed to find those that are.</p><p>Hopefully for a hobby, or for anything that you love to do, showing off is not a major criterion for why you do it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50031989">&gt; What is there to live for once everything you once loved to do has been optimized for maximum revenue?<p>if it brings you joy, what does it matter how someone else does it?</p><p>If you run for fun, what does it matter that someone else does it faster, or in a paid exhibition optimized for max revenue?</p><p>Do it because it brings <i>you</i> joy, there is no external dependency.</p><p>&gt; Where every time you do something for fun, someone will come out of the woodwork when you show it off</p><p>See, this is where things get tricky, either the activity brings you joy, and/or the sharing of it brings you joy, and/or the showing off of it brings you joy.</p><p>For the first two, it is irrelevant what someone else has to say or do about it; ignore the noise. For showing off, yes, some activities are no longer worthy, so change is needed to find those that are.</p><p>Hopefully for a hobby, or for anything that you love to do, showing off is not a major criterion for why you do it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50031989">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50031989" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">verandaguy</span>
+        
+        <span>2026/10/10 20:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Showing off <i>can</i> be the point. If I did something tricky and creative and got an interesting (possibly even useful!) result, why shouldn't I be proud enough of that to have a "hey, look at this cool shit I did/made" moment?<p>That aside, I've been lucky enough in my career to work alongside, mostly, people who have a personal interest in using software as a tool, and knowing their toolchains very well, be that a language, a command line, a system architecture, you name it. If you found something cool to do with a tool, you'd share it to disseminate the knowledge. That culture is very quickly dying off, I feel, because LLM-driven work encourages siloing to a degree I don't think gets discussed enough.</p><p>Lastly, using LLMs to write code is its own type of exhausting. I thought I could keep up my hobby by mentally checking out of work and working on projects by hand in my free time, but babysitting the LLM, reviewing the massive corpora of code and documentation it puts out (including those put out by colleagues), and the <i>insane</i> volume of context switches this technology encourages in the workplace makes me want to stay the hell away from computers alltogether if I can help it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50032372">Showing off <i>can</i> be the point. If I did something tricky and creative and got an interesting (possibly even useful!) result, why shouldn't I be proud enough of that to have a "hey, look at this cool shit I did/made" moment?<p>That aside, I've been lucky enough in my career to work alongside, mostly, people who have a personal interest in using software as a tool, and knowing their toolchains very well, be that a language, a command line, a system architecture, you name it. If you found something cool to do with a tool, you'd share it to disseminate the knowledge. That culture is very quickly dying off, I feel, because LLM-driven work encourages siloing to a degree I don't think gets discussed enough.</p><p>Lastly, using LLMs to write code is its own type of exhausting. I thought I could keep up my hobby by mentally checking out of work and working on projects by hand in my free time, but babysitting the LLM, reviewing the massive corpora of code and documentation it puts out (including those put out by colleagues), and the <i>insane</i> volume of context switches this technology encourages in the workplace makes me want to stay the hell away from computers alltogether if I can help it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50032372">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50032372" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">TeMPOraL</span>
+        
+        <span>2026/10/11 02:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>If you run for fun, what does it matter that someone else does it faster, or in a paid exhibition optimized for max revenue?</i><p>This example is actually very clarifying - perhaps <i>almost no one actually runs for fun</i>?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50035433">&gt; <i>If you run for fun, what does it matter that someone else does it faster, or in a paid exhibition optimized for max revenue?</i><p>This example is actually very clarifying - perhaps <i>almost no one actually runs for fun</i>?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50035433">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50035433" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tough</span>
+        
+        <span>2026/10/11 05:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">if you run to be healthier, how does someone doing so faster affect your health</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50037574">if you run to be healthier, how does someone doing so faster affect your health</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50037574">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50037574" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">alberto-m</span>
+        
+        <span>2026/10/10 20:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">We are not robots and telling people how they should feel and how their mood should not be influenced by this or that is akin to saying to depressed people to just stop being depressed. The divide-and-conquer method you appear to be using is worthless for human psychology.<p>The cases of a niche culture destroyed by dilution are so common that there are essays around it (e.g. <i>Geeks, MOPs, and sociopaths in subculture evolution</i>), so it seems to be a very normal and human thing to happen. Blaming the individual members for failing to feel differently is not going to fix that.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50032146">We are not robots and telling people how they should feel and how their mood should not be influenced by this or that is akin to saying to depressed people to just stop being depressed. The divide-and-conquer method you appear to be using is worthless for human psychology.<p>The cases of a niche culture destroyed by dilution are so common that there are essays around it (e.g. <i>Geeks, MOPs, and sociopaths in subculture evolution</i>), so it seems to be a very normal and human thing to happen. Blaming the individual members for failing to feel differently is not going to fix that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50032146">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50032146" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ninjagoo</span>
+        
+        <span>2026/10/11 08:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; We are not robots and telling people how they should feel and how their mood should not be influenced by this or that is akin to saying to depressed people to just stop being depressed. The divide-and-conquer method you appear to be using is worthless for human psychology.<p>I have some bad news for you -- all major religions are predicated on telling people exactly how to feel. Last I checked, these religions are <i>very</i> popular.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50038444">&gt; We are not robots and telling people how they should feel and how their mood should not be influenced by this or that is akin to saying to depressed people to just stop being depressed. The divide-and-conquer method you appear to be using is worthless for human psychology.<p>I have some bad news for you -- all major religions are predicated on telling people exactly how to feel. Last I checked, these religions are <i>very</i> popular.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50038444">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50038444" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

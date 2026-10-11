@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[开源] 好看，更好用的音乐播放器 NonsPlayer | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-11/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>[开源] 好看，更好用的音乐播放器 NonsPlayer</h1>
+      <p class="original-title">[开源] 好看，更好用的音乐播放器 NonsPlayer</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 Miaoyww</span>
+        <span>热度 32</span>
+        <span>回复 32</span>
+        <span>2026/10/11 16:05</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1247825" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1247825.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>时隔 3 年，Nons 终于做完了！从 WPF ，到 WinUi3 ，最后痛定思痛决定采用 Tauri 推倒重写……总之，NonsPlayer 终于做完了！</li><li>多音源适配器，没错，终于可以把种平台塞进去了！</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">预览
+
+
+简介
+<p>时隔 3 年，Nons 终于做完了！从 WPF ，到 WinUi3 ，最后痛定思痛决定采用 Tauri 推倒重写……总之，NonsPlayer 终于做完了！</p>
+<p>来说说特点！</p>
+<ol>
+<li>多音源适配器，没错，终于可以把种平台塞进去了！</li>
+<li>完善的插件系统。通过 WebAssembly 技术，我们可以把任何想要的东西都放进 NonsPlayer 里！</li>
+<li>比较好的用户交互设计。我从个人需求和使用习惯出发，把 NonsPlayer 设计成一个<strong>真正的日常工具</strong>，而不是一个玩具。</li>
+<li>低占用。虽然 WebView 的占用依然不可忽视，但是在后台运行时 NonsPlayer 会<strong>主动销毁 WebView 进程，整个程序占用可以达到 10-20MB</strong></li>
+</ol>
+<p>没什么特殊的花里胡哨的功能，反正就是专门用来听歌的，只要把听歌这件事做好不就够了吗！</p>
+<p>欢迎大家试用！仓库： <a href="https://github.com/Miaoyww/Nons" target="_blank" rel="noopener noreferrer">https://github.com/Miaoyww/Nons</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">预览
+
+
+简介
+<p>时隔 3 年，Nons 终于做完了！从 WPF ，到 WinUi3 ，最后痛定思痛决定采用 Tauri 推倒重写……总之，NonsPlayer 终于做完了！</p>
+<p>来说说特点！</p>
+<ol>
+<li>多音源适配器，没错，终于可以把种平台塞进去了！</li>
+<li>完善的插件系统。通过 WebAssembly 技术，我们可以把任何想要的东西都放进 NonsPlayer 里！</li>
+<li>比较好的用户交互设计。我从个人需求和使用习惯出发，把 NonsPlayer 设计成一个<strong>真正的日常工具</strong>，而不是一个玩具。</li>
+<li>低占用。虽然 WebView 的占用依然不可忽视，但是在后台运行时 NonsPlayer 会<strong>主动销毁 WebView 进程，整个程序占用可以达到 10-20MB</strong></li>
+</ol>
+<p>没什么特殊的花里胡哨的功能，反正就是专门用来听歌的，只要把听歌这件事做好不就够了吗！</p>
+<p>欢迎大家试用！仓库： <a href="https://github.com/Miaoyww/Nons" target="_blank" rel="noopener noreferrer">https://github.com/Miaoyww/Nons</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Hubs</span>
+        <span>#1</span>
+        <span>2026/10/11 16:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那么问题来了，音源哪里找</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166251">那么问题来了，音源哪里找</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166251">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166251" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CCHome</span>
+        <span>#2</span>
+        <span>2026/10/11 16:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感觉不错，支持。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166288">感觉不错，支持。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166288">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166288" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xialaoban</span>
+        <span>#3</span>
+        <span>2026/10/11 17:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">音源其实只要适配落雪和 ytb 就基本全网都有了，主要是 metadata 怎么生成.<br />有个项目可用从 spotify 获取，<a href="https://github.com/team-spotube/spotube" target="_blank" rel="noopener noreferrer">https://github.com/team-spotube/spotube</a><br /><a href="https://github.com/sonic-liberation/spotube-plugin-spotify" target="_blank" rel="noopener noreferrer">https://github.com/sonic-liberation/spotube-plugin-spotify</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166318">音源其实只要适配落雪和 ytb 就基本全网都有了，主要是 metadata 怎么生成.<br />有个项目可用从 spotify 获取，<a href="https://github.com/team-spotube/spotube" target="_blank" rel="noopener noreferrer">https://github.com/team-spotube/spotube</a><br /><a href="https://github.com/sonic-liberation/spotube-plugin-spotify" target="_blank" rel="noopener noreferrer">https://github.com/sonic-liberation/spotube-plugin-spotify</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166318">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166318" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#4</span>
+        <span>2026/10/11 19:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这 ui 一样 yesplayer ，点进主页一看果然</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166463">这 ui 一样 yesplayer ，点进主页一看果然</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166463">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166463" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">vexify</span>
+        <span>#5</span>
+        <span>2026/10/11 20:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没有安装包</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166550">没有安装包</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166550">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166550" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">woniuge</span>
+        <span>#6</span>
+        <span>2026/10/11 20:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">便携版编译出错了<br /><a href="https://github.com/Miaoyww/Nons/actions/runs/38124330116" target="_blank" rel="noopener noreferrer">https://github.com/Miaoyww/Nons/actions/runs/38124330116</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166552">便携版编译出错了<br /><a href="https://github.com/Miaoyww/Nons/actions/runs/38124330116" target="_blank" rel="noopener noreferrer">https://github.com/Miaoyww/Nons/actions/runs/38124330116</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166552">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166552" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#7</span>
+        <span>2026/10/11 21:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/woniuge" target="_blank" rel="noopener noreferrer">woniuge</a> 我去我才发现，正在修</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166712">@<a href="/member/woniuge" target="_blank" rel="noopener noreferrer">woniuge</a> 我去我才发现，正在修</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166712">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166712" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#8</span>
+        <span>2026/10/11 21:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> 是的，我很喜欢 YesPlayer 的 Ui 设计，但是要说真正使用的话，我觉得 YesPlayer 还有很多不足，所以才在 YesPlayer 的 UI 基础上进行了修改</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166716">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> 是的，我很喜欢 YesPlayer 的 Ui 设计，但是要说真正使用的话，我觉得 YesPlayer 还有很多不足，所以才在 YesPlayer 的 UI 基础上进行了修改</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166716">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166716" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#9</span>
+        <span>2026/10/11 21:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xialaoban" target="_blank" rel="noopener noreferrer">xialaoban</a> 好的，我会学习的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166717">@<a href="/member/xialaoban" target="_blank" rel="noopener noreferrer">xialaoban</a> 好的，我会学习的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166717">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166717" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#10</span>
+        <span>2026/10/11 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Hubs" target="_blank" rel="noopener noreferrer">Hubs</a> 音源主要有两个来源：一个是主流的流媒体平台，通过适配器主动调用 API ；另一个是一些 NAS 和云盘服务，这个在 3 年前的构想中就预计支持了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166718">@<a href="/member/Hubs" target="_blank" rel="noopener noreferrer">Hubs</a> 音源主要有两个来源：一个是主流的流媒体平台，通过适配器主动调用 API ；另一个是一些 NAS 和云盘服务，这个在 3 年前的构想中就预计支持了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166718">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166718" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#11</span>
+        <span>2026/10/11 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CCHome" target="_blank" rel="noopener noreferrer">CCHome</a> 谢谢~</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166719">@<a href="/member/CCHome" target="_blank" rel="noopener noreferrer">CCHome</a> 谢谢~</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166719">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166719" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#12</span>
+        <span>2026/10/11 22:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Hubs" target="_blank" rel="noopener noreferrer">Hubs</a> 另外，初期网易云音乐是随包安装的，目前不需要额外操作就能直接使用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166724">@<a href="/member/Hubs" target="_blank" rel="noopener noreferrer">Hubs</a> 另外，初期网易云音乐是随包安装的，目前不需要额外操作就能直接使用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166724">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166724" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Hubs</span>
+        <span>#13</span>
+        <span>2026/10/11 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Miaoyww" target="_blank" rel="noopener noreferrer">Miaoyww</a> #12 能用 LX 音源吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166805">@<a href="/member/Miaoyww" target="_blank" rel="noopener noreferrer">Miaoyww</a> #12 能用 LX 音源吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166805">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166805" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fuchish112</span>
+        <span>#14</span>
+        <span>2026/10/11 23:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="http://readme.md" target="_blank" rel="noopener noreferrer">readme.md</a> 里面加几张样图啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166826"><a href="http://readme.md" target="_blank" rel="noopener noreferrer">readme.md</a> 里面加几张样图啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166826">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166826" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#15</span>
+        <span>2026/10/11 23:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/fuchish112" target="_blank" rel="noopener noreferrer">fuchish112</a> 收到</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166833">@<a href="/member/fuchish112" target="_blank" rel="noopener noreferrer">fuchish112</a> 收到</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166833">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166833" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#16</span>
+        <span>2026/10/11 23:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Hubs" target="_blank" rel="noopener noreferrer">Hubs</a> 可以</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166837">@<a href="/member/Hubs" target="_blank" rel="noopener noreferrer">Hubs</a> 可以</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166837">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166837" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Miaoyww</span>
+        <span>#17</span>
+        <span>2026/10/11 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我回来研究一下落雪的音源</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166841">我回来研究一下落雪的音源</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166841">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166841" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Hubs</span>
+        <span>#18</span>
+        <span>2026/10/11 23:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Miaoyww" target="_blank" rel="noopener noreferrer">Miaoyww</a> #17 那我回头试试看，对了，播放器有深色模式吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166866">@<a href="/member/Miaoyww" target="_blank" rel="noopener noreferrer">Miaoyww</a> #17 那我回头试试看，对了，播放器有深色模式吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166866">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166866" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">woniuge</span>
+        <span>#19</span>
+        <span>2026/10/11 23:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Miaoyww" target="_blank" rel="noopener noreferrer">Miaoyww</a> #17 <br />不想登陆,如果支持落雪的音源通知一声,谢谢.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166872">@<a href="/member/Miaoyww" target="_blank" rel="noopener noreferrer">Miaoyww</a> #17 <br />不想登陆,如果支持落雪的音源通知一声,谢谢.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166872">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166872" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">canvascat</span>
+        <span>#20</span>
+        <span>2026/10/11 23:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">下一步，界面改为使用 GPUI 构建 <a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18166887">下一步，界面改为使用 GPUI 构建 <a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18166887">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1247825#reply18166887" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
