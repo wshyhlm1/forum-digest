@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>因为带孩子去医院，医生开的药，家里其实有，所以我开发了一个记录就诊和家庭药箱的 App | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-12/">返回日报</a>
+      <div class="source-chip">V2EX #9</div>
+      <h1>因为带孩子去医院，医生开的药，家里其实有，所以我开发了一个记录就诊和家庭药箱的 App</h1>
+      <p class="original-title">因为带孩子去医院，医生开的药，家里其实有，所以我开发了一个记录就诊和家庭药箱的 App</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 rowling</span>
+        <span>热度 9</span>
+        <span>回复 9</span>
+        <span>2026/10/12 23:36</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1248245" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1248245.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>我一开始的初衷是为了节省重复开药的钱，通过在 App 使用关键词检索就能知道家里有没有这类型的药物，以及在孩子生长过程中记录 ta 对于食物和药物的反应，避坑用。后面因为自己的血糖最近有点高，然后我就翻找了历年的体检报告，发现空腹血糖每年都在升高，所以我加上了健康指标追踪的功能，说白了就是通过 ORC 将医院的报告指标数据化，这样可以通过关键词找到这个数值的变动。https://picui.ogmua.cn/s1/2026/10/12/6accfd55df2be.webphttps://picui.ogmua.cn/s1/2026/10/12/6accfd55adbba.webphttps://picui.ogmua.cn/s1/2026/10/12/6accfd5605e66.webphttps://picu</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">我一开始的初衷是为了节省重复开药的钱，通过在 App 使用关键词检索就能知道家里有没有这类型的药物，以及在孩子生长过程中记录 ta 对于食物和药物的反应，避坑用。<br /><br />后面因为自己的血糖最近有点高，然后我就翻找了历年的体检报告，发现空腹血糖每年都在升高，所以我加上了健康指标追踪的功能，说白了就是通过 ORC 将医院的报告指标数据化，这样可以通过关键词找到这个数值的变动。<br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd55df2be.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd55df2be.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd55adbba.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd55adbba.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd5605e66.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd5605e66.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd56083c9.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd56083c9.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd561333c.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd561333c.webp</a><br /><br />我最近做了一次完整的糖尿病筛查，我记录到了 App 内，我才 30 出头，各位也要注意身体。<br /><br />我觉得这个 App 对于我最大的作用:<br /><br />记录孩子对于食物，药物的反应<br />记录孩子的症状<br />记录就诊时对于医生的感受(是不是没有耐心，是不是很跩,是不是爱开单子)<br />检查报告数据化(纸质的会褪色，线上的下载有期限)<br />记录孩子疫苗接种情况<br />记录孩子升高和体重的变化<br /><br />把检查报告汇总<br />把药箱的药品数据化(少买重复的药，少买同类型的药<br /><br /><br /><br /><br />送「永久会员」<br /><br />路径: 设置 -&gt; 我的 CareHealth -&gt; 复制底下那一串 -&gt; 通过“反馈问题”提交<br /><br />提交后，你有空的时候点击“我的 CareHealth”的恢复购买就行。<br /><br />或者在本帖子下发出那一串，我给你设置「永久会员」<br /><br /><a href="https://apps.apple.com/cn/app/carehealth/id6809710766" target="_blank" rel="noopener noreferrer">https://apps.apple.com/cn/app/carehealth/id6809710766</a></div>
+      <div class="post-body is-hidden" data-role="story-raw">我一开始的初衷是为了节省重复开药的钱，通过在 App 使用关键词检索就能知道家里有没有这类型的药物，以及在孩子生长过程中记录 ta 对于食物和药物的反应，避坑用。<br /><br />后面因为自己的血糖最近有点高，然后我就翻找了历年的体检报告，发现空腹血糖每年都在升高，所以我加上了健康指标追踪的功能，说白了就是通过 ORC 将医院的报告指标数据化，这样可以通过关键词找到这个数值的变动。<br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd55df2be.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd55df2be.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd55adbba.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd55adbba.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd5605e66.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd5605e66.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd56083c9.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd56083c9.webp</a><br /><br /><a href="https://picui.ogmua.cn/s1/2026/10/12/6accfd561333c.webp" target="_blank" rel="noopener noreferrer">https://picui.ogmua.cn/s1/2026/10/12/6accfd561333c.webp</a><br /><br />我最近做了一次完整的糖尿病筛查，我记录到了 App 内，我才 30 出头，各位也要注意身体。<br /><br />我觉得这个 App 对于我最大的作用:<br /><br />记录孩子对于食物，药物的反应<br />记录孩子的症状<br />记录就诊时对于医生的感受(是不是没有耐心，是不是很跩,是不是爱开单子)<br />检查报告数据化(纸质的会褪色，线上的下载有期限)<br />记录孩子疫苗接种情况<br />记录孩子升高和体重的变化<br /><br />把检查报告汇总<br />把药箱的药品数据化(少买重复的药，少买同类型的药<br /><br /><br /><br /><br />送「永久会员」<br /><br />路径: 设置 -&gt; 我的 CareHealth -&gt; 复制底下那一串 -&gt; 通过“反馈问题”提交<br /><br />提交后，你有空的时候点击“我的 CareHealth”的恢复购买就行。<br /><br />或者在本帖子下发出那一串，我给你设置「永久会员」<br /><br /><a href="https://apps.apple.com/cn/app/carehealth/id6809710766" target="_blank" rel="noopener noreferrer">https://apps.apple.com/cn/app/carehealth/id6809710766</a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">9</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CNN</span>
+        <span>#1</span>
+        <span>2026/10/12 23:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谢谢 RUFCMDNDN0MtNDIzNS00RDNCLUJCNzgtQjIwQ0Q1MzhCRTVD</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172065">谢谢 RUFCMDNDN0MtNDIzNS00RDNCLUJCNzgtQjIwQ0Q1MzhCRTVD</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172065">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172065" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#2</span>
+        <span>2026/10/13 00:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">外区求一个：bmllcmlza3lAZ21haWwuY29t</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172086">外区求一个：bmllcmlza3lAZ21haWwuY29t</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172086">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172086" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rowling</span>
+        <span>#3</span>
+        <span>2026/10/13 00:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CNN" target="_blank" rel="noopener noreferrer">CNN</a> 哥 你这我没理解，比如我的是"F5A93D18-004E-4082-8B9D-ADBC38D6444A"</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172095">@<a href="/member/CNN" target="_blank" rel="noopener noreferrer">CNN</a> 哥 你这我没理解，比如我的是"F5A93D18-004E-4082-8B9D-ADBC38D6444A"</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172095">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172095" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rowling</span>
+        <span>#4</span>
+        <span>2026/10/13 00:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CNN" target="_blank" rel="noopener noreferrer">CNN</a> 哦了。设置 -&gt; 我的 CareHealth -&gt; 恢复购买</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172101">@<a href="/member/CNN" target="_blank" rel="noopener noreferrer">CNN</a> 哦了。设置 -&gt; 我的 CareHealth -&gt; 恢复购买</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172101">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172101" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SoloBaby</span>
+        <span>#5</span>
+        <span>2026/10/13 00:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">787C56A4-258E-48C4-BD2F-8B7A02F04587<br />感谢 op</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172104">787C56A4-258E-48C4-BD2F-8B7A02F04587<br />感谢 op</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172104">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172104" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rowling</span>
+        <span>#6</span>
+        <span>2026/10/13 00:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/SoloBaby" target="_blank" rel="noopener noreferrer">SoloBaby</a> 哦了。劳烦通过 "设置" -&gt; "我的 CareHealth" -&gt; "恢复购买" 获取「永久会员」</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172108">@<a href="/member/SoloBaby" target="_blank" rel="noopener noreferrer">SoloBaby</a> 哦了。劳烦通过 "设置" -&gt; "我的 CareHealth" -&gt; "恢复购买" 获取「永久会员」</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172108">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172108" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CNCN666</span>
+        <span>#7</span>
+        <span>2026/10/13 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">反馈表单那里的第一项必选，但是无选项可选，造成无法提交。请修复。<br /><br />另外港区也上一下架。搜不到。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172112">反馈表单那里的第一项必选，但是无选项可选，造成无法提交。请修复。<br /><br />另外港区也上一下架。搜不到。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172112">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172112" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rowling</span>
+        <span>#8</span>
+        <span>2026/10/13 00:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CNCN666" target="_blank" rel="noopener noreferrer">CNCN666</a> 感谢反馈，“反馈问题”已经修复了，可以正常提交了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172128">@<a href="/member/CNCN666" target="_blank" rel="noopener noreferrer">CNCN666</a> 感谢反馈，“反馈问题”已经修复了，可以正常提交了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172128">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172128" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">rowling</span>
+        <span>#9</span>
+        <span>2026/10/13 00:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/CNCN666" target="_blank" rel="noopener noreferrer">CNCN666</a> 目前是全球上架的，大概是在香港关键词排名太低，所以还找不到</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18172131">@<a href="/member/CNCN666" target="_blank" rel="noopener noreferrer">CNCN666</a> 目前是全球上架的，大概是在香港关键词排名太低，所以还找不到</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18172131">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248245#reply18172131" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
