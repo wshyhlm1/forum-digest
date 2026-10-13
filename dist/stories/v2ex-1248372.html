@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2026 年了，还有老架构坚持 MySQL 单表数据不能超过 2000 万行 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-13/">返回日报</a>
+      <div class="source-chip">V2EX #9</div>
+      <h1>2026 年了，还有老架构坚持 MySQL 单表数据不能超过 2000 万行</h1>
+      <p class="original-title">2026 年了，还有老架构坚持 MySQL 单表数据不能超过 2000 万行</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 summertimesad</span>
+        <span>热度 62</span>
+        <span>回复 62</span>
+        <span>2026/10/13 14:05</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1248372" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1248372.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>问他为什么，张口闭口就是：“单表过 2000 万，B+ 树就从 3 层变成 4 层了，多一层就多一次磁盘 I/O ，多的我不想说了 你自己问 AI”我寻思现在生产环境服务器 256G 内存，给 Buffer Pool 分 200G 。Buffer Pool 看着 200G 空间表示：“我管你这那的，非叶子节点全都给我常驻内存！多出来的一层不过是几十纳秒的内存二分查找，哪来的这么多废话”业务场景如果是因为备份恢复 SLA 扛不住、在线 DDL 风险大、或者热数据 Working Set 超出内存导致离散回表击穿，那该分分、该归档归档，这叫架构治理；但如果不看硬件规格和查询场景，纯拿“B+ 树长到 4 层就会性能崩塌”当圣经到处念咒，AI 的回复直接输出本帖</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">问他为什么，张口闭口就是：“单表过 2000 万，B+ 树就从 3 层变成 4 层了，多一层就多一次磁盘 I/O ，多的我不想说了 你自己问 AI”<br /><br />我寻思现在生产环境服务器 256G 内存，给 Buffer Pool 分 200G 。<br /><br />Buffer Pool 看着 200G 空间表示：“我管你这那的，非叶子节点全都给我常驻内存！多出来的一层不过是几十纳秒的内存二分查找，哪来的这么多废话”<br /><br />业务场景如果是因为备份恢复 SLA 扛不住、在线 DDL 风险大、或者热数据 Working Set 超出内存导致离散回表击穿，那该分分、该归档归档，这叫架构治理；<br />但如果不看硬件规格和查询场景，纯拿“B+ 树长到 4 层就会性能崩塌”当圣经到处念咒，AI 的回复直接输出本帖</div>
+      <div class="post-body is-hidden" data-role="story-raw">问他为什么，张口闭口就是：“单表过 2000 万，B+ 树就从 3 层变成 4 层了，多一层就多一次磁盘 I/O ，多的我不想说了 你自己问 AI”<br /><br />我寻思现在生产环境服务器 256G 内存，给 Buffer Pool 分 200G 。<br /><br />Buffer Pool 看着 200G 空间表示：“我管你这那的，非叶子节点全都给我常驻内存！多出来的一层不过是几十纳秒的内存二分查找，哪来的这么多废话”<br /><br />业务场景如果是因为备份恢复 SLA 扛不住、在线 DDL 风险大、或者热数据 Working Set 超出内存导致离散回表击穿，那该分分、该归档归档，这叫架构治理；<br />但如果不看硬件规格和查询场景，纯拿“B+ 树长到 4 层就会性能崩塌”当圣经到处念咒，AI 的回复直接输出本帖</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">liaohongxing</span>
+        <span>#1</span>
+        <span>2026/10/13 14:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">256G 内存不现实，大部分就部署在阿里云这类云平台，你看下 256G 内存多少钱？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174516">256G 内存不现实，大部分就部署在阿里云这类云平台，你看下 256G 内存多少钱？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174516">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174516" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">OctopusGO</span>
+        <span>#2</span>
+        <span>2026/10/13 14:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">是的 我们的高配数据库 单表已经 200G 了 一点问题没有 大概五六亿的数据</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174522">是的 我们的高配数据库 单表已经 200G 了 一点问题没有 大概五六亿的数据</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174522">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174522" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bbao</span>
+        <span>#3</span>
+        <span>2026/10/13 14:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">服务器 256G 内存，你花钱买么？哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174537">服务器 256G 内存，你花钱买么？哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174537">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174537" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JeffWalker</span>
+        <span>#4</span>
+        <span>2026/10/13 14:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有人知道 256g 的内存要多少钱吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174547">有人知道 256g 的内存要多少钱吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174547">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174547" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wudaye</span>
+        <span>#5</span>
+        <span>2026/10/13 14:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bbao" target="_blank" rel="noopener noreferrer">bbao</a> 去年涨价前 256G 服务器内存也没多少钱</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174560">@<a href="/member/bbao" target="_blank" rel="noopener noreferrer">bbao</a> 去年涨价前 256G 服务器内存也没多少钱</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174560">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174560" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">seedhk</span>
+        <span>#6</span>
+        <span>2026/10/13 14:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">阿里云上，对大公司来说 256g 没什么。对小公司来说，从 2g 升到 8g 都要思考一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174597">阿里云上，对大公司来说 256g 没什么。对小公司来说，从 2g 升到 8g 都要思考一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174597">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174597" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bbao</span>
+        <span>#7</span>
+        <span>2026/10/13 14:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/wudaye" target="_blank" rel="noopener noreferrer">wudaye</a> 贵司目前服务器以及 mysql 的配置是怎样的？刚查询阿里云最高 ecs104G ； mysql 高可用型号最高 128G （单价 12.8W/月）；其他型号没有超过 64G 的；<br /><br />所以你们的 256G 内存是怎么来的？没多少钱是多少钱？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174634">@<a href="/member/wudaye" target="_blank" rel="noopener noreferrer">wudaye</a> 贵司目前服务器以及 mysql 的配置是怎样的？刚查询阿里云最高 ecs104G ； mysql 高可用型号最高 128G （单价 12.8W/月）；其他型号没有超过 64G 的；<br /><br />所以你们的 256G 内存是怎么来的？没多少钱是多少钱？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174634">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174634" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ntdll</span>
+        <span>#8</span>
+        <span>2026/10/13 14:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/seedhk" target="_blank" rel="noopener noreferrer">seedhk</a> &gt;&gt; 从 2g 升到 8g 都要思考一下<br /><br />这可能是真的有点小了，家庭作坊，出来做生意也不至于差一个月这几百块钱的差价。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174656">@<a href="/member/seedhk" target="_blank" rel="noopener noreferrer">seedhk</a> &gt;&gt; 从 2g 升到 8g 都要思考一下<br /><br />这可能是真的有点小了，家庭作坊，出来做生意也不至于差一个月这几百块钱的差价。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174656">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174656" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">526457385</span>
+        <span>#9</span>
+        <span>2026/10/13 14:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你给他整一个超过 2000w 的表并且没有什么问题的 甩过去就行了，其他废话不要多说</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174704">你给他整一个超过 2000w 的表并且没有什么问题的 甩过去就行了，其他废话不要多说</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174704">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174704" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tutusolo</span>
+        <span>#10</span>
+        <span>2026/10/13 15:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你要不要先想想你在说什么，256g 内存的服务器去解决 mysql 单表 2000 万的问题，你可真是人才。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174808">你要不要先想想你在说什么，256g 内存的服务器去解决 mysql 单表 2000 万的问题，你可真是人才。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174808">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174808" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gfreezy</span>
+        <span>#11</span>
+        <span>2026/10/13 15:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一般云厂商都有物理机的，1T 内存都有</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174821">一般云厂商都有物理机的，1T 内存都有</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174821">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174821" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nunterr</span>
+        <span>#12</span>
+        <span>2026/10/13 15:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们公司的一个订单表单表数据已经快 2 亿了，还改不了😂，就这样持续增加中，系统还很稳定</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174831">我们公司的一个订单表单表数据已经快 2 亿了，还改不了😂，就这样持续增加中，系统还很稳定</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174831">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174831" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">azkaban</span>
+        <span>#13</span>
+        <span>2026/10/13 15:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你用这个钱用啥都行啊，直接云厂商的商用数据库，全进内存都行</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174884">你用这个钱用啥都行啊，直接云厂商的商用数据库，全进内存都行</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174884">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174884" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">maocat</span>
+        <span>#14</span>
+        <span>2026/10/13 15:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你想尽办法优化的 SQL 不如给服务器的磁盘换成 SSD</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174934">你想尽办法优化的 SQL 不如给服务器的磁盘换成 SSD</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174934">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174934" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JYii</span>
+        <span>#15</span>
+        <span>2026/10/13 15:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ntdll" target="_blank" rel="noopener noreferrer">ntdll</a> #8 集团利润高的时候，你想升级什么都是一路畅通。这两年再提 OA ，部门领导就给退回了，理由是经费不足</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174967">@<a href="/member/ntdll" target="_blank" rel="noopener noreferrer">ntdll</a> #8 集团利润高的时候，你想升级什么都是一路畅通。这两年再提 OA ，部门领导就给退回了，理由是经费不足</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174967">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174967" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fionasit007</span>
+        <span>#16</span>
+        <span>2026/10/13 15:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ntdll" target="_blank" rel="noopener noreferrer">ntdll</a> #8 我们公司产品日活百万，但是服务器数据库大多数都是 1h1g 的，少数撑死 8h8g ，不过我们产品主要是客户端功能居多，服务器交互少，很多服务我们都是 1h1g 起步不够在加</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174982">@<a href="/member/ntdll" target="_blank" rel="noopener noreferrer">ntdll</a> #8 我们公司产品日活百万，但是服务器数据库大多数都是 1h1g 的，少数撑死 8h8g ，不过我们产品主要是客户端功能居多，服务器交互少，很多服务我们都是 1h1g 起步不够在加</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174982">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18174982" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">adoal</span>
+        <span>#17</span>
+        <span>2026/10/13 15:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">OP 有一种经济上行期的美感</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18175000">OP 有一种经济上行期的美感</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18175000">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18175000" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">winnerczwx</span>
+        <span>#18</span>
+        <span>2026/10/13 15:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/JYii" target="_blank" rel="noopener noreferrer">JYii</a> 一个月几百块钱经费都不足可以直接申请破产了吧, 2g 升 8g 一个月可能都用不到几百块</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18175020">@<a href="/member/JYii" target="_blank" rel="noopener noreferrer">JYii</a> 一个月几百块钱经费都不足可以直接申请破产了吧, 2g 升 8g 一个月可能都用不到几百块</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18175020">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18175020" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">refear99</span>
+        <span>#19</span>
+        <span>2026/10/13 15:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">阿里云 polarDB 和类似产品，单表 20 亿都不是问题</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18175032">阿里云 polarDB 和类似产品，单表 20 亿都不是问题</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18175032">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18175032" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cslive</span>
+        <span>#20</span>
+        <span>2026/10/13 15:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现在都是集群，没有单机了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18175068">现在都是集群，没有单机了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18175068">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248372#reply18175068" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

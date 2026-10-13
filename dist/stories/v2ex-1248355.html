@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用 Rust 重写一切，这次是 navicat | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-13/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>用 Rust 重写一切，这次是 navicat</h1>
+      <p class="original-title">用 Rust 重写一切，这次是 navicat</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 yisier</span>
+        <span>热度 109</span>
+        <span>回复 109</span>
+        <span>2026/10/13 13:12</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1248355" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1248355.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>公司前阵子收到了律师函，于是通知全员删除 navicat ，个人版也不行，要求用开源的 DBeaver ，由于常年习惯了 navicat 的布局和操作习惯，实在适应不了其他工具，都 AI 时代了，索性自己撸一个吧。</li><li>Rust + GPUI ，gpui-kit 组件库 , shadcn 风格。无 WebView ，全部 UI 都用 Rust 写</li></ul>
+      
+      <p class="reason">命中 6 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">背景
+<p>公司前阵子收到了律师函，于是通知全员删除 navicat ，个人版也不行，要求用开源的 DBeaver ，由于常年习惯了 navicat 的布局和操作习惯，实在适应不了其他工具，都 AI 时代了，索性自己撸一个吧。</p>
+技术栈 &amp; 进度
+<p>Rust + GPUI ，gpui-kit 组件库 , shadcn 风格。无 WebView ，全部 UI 都用 Rust 写</p>
+<p>适配了 ODBC 驱动，理论上只要有 ODBC 驱动，都能连接</p>
+
+
+
+数据库
+状态
+
+
+
+
+MySQL / MariaDB
+✅
+
+
+SQLite
+✅
+
+
+SQL Server
+✅
+
+
+PostgreSQL
+✅
+
+
+Oracle
+✅
+
+
+DB2, Redis, ...
+接入中
+
+截图
+<p>
+
+
+</p>
+结尾
+<p>github：<a href="https://github.com/yisier/rustgrid" target="_blank" rel="noopener noreferrer">https://github.com/yisier/rustgrid</a></p>
+<p>常用功能基本上 “可以用了”，像是 用户/角色/权限/模型/图表/自动运行 这些的功能，navicat 还是太权威了，每家数据库的操作体系都不一样，还有很多坑要踩。</p>
+<p>AI 时代传统软件公司的天真的塌了，放在两年前都完全不敢想象，我一个从来没接触过 Rust 的人，不到一个月居然可以做出这么多功能。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">背景
+<p>公司前阵子收到了律师函，于是通知全员删除 navicat ，个人版也不行，要求用开源的 DBeaver ，由于常年习惯了 navicat 的布局和操作习惯，实在适应不了其他工具，都 AI 时代了，索性自己撸一个吧。</p>
+技术栈 &amp; 进度
+<p>Rust + GPUI ，gpui-kit 组件库 , shadcn 风格。无 WebView ，全部 UI 都用 Rust 写</p>
+<p>适配了 ODBC 驱动，理论上只要有 ODBC 驱动，都能连接</p>
+
+
+
+数据库
+状态
+
+
+
+
+MySQL / MariaDB
+✅
+
+
+SQLite
+✅
+
+
+SQL Server
+✅
+
+
+PostgreSQL
+✅
+
+
+Oracle
+✅
+
+
+DB2, Redis, ...
+接入中
+
+截图
+<p>
+
+
+</p>
+结尾
+<p>github：<a href="https://github.com/yisier/rustgrid" target="_blank" rel="noopener noreferrer">https://github.com/yisier/rustgrid</a></p>
+<p>常用功能基本上 “可以用了”，像是 用户/角色/权限/模型/图表/自动运行 这些的功能，navicat 还是太权威了，每家数据库的操作体系都不一样，还有很多坑要踩。</p>
+<p>AI 时代传统软件公司的天真的塌了，放在两年前都完全不敢想象，我一个从来没接触过 Rust 的人，不到一个月居然可以做出这么多功能。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lllllliiii</span>
+        <span>#1</span>
+        <span>2026/10/13 13:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://github.com/t8y2/dbx" target="_blank" rel="noopener noreferrer">https://github.com/t8y2/dbx</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174220"><a href="https://github.com/t8y2/dbx" target="_blank" rel="noopener noreferrer">https://github.com/t8y2/dbx</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174220">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174220" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">doraemonki</span>
+        <span>#2</span>
+        <span>2026/10/13 13:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看见 gpui 立马支持一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174229">看见 gpui 立马支持一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174229">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174229" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">LoveXJP</span>
+        <span>#3</span>
+        <span>2026/10/13 13:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你这是直接把 UI 都抄了吗，shadcn 风格没有这么丑啊😂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174230">你这是直接把 UI 都抄了吗，shadcn 风格没有这么丑啊😂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174230">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174230" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yisier</span>
+        <span>#4</span>
+        <span>2026/10/13 13:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/LoveXJP" target="_blank" rel="noopener noreferrer">LoveXJP</a> 丑是丑了点，布局和交互方式没有学习成本了。ui 可以慢慢调嘛</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174236">@<a href="/member/LoveXJP" target="_blank" rel="noopener noreferrer">LoveXJP</a> 丑是丑了点，布局和交互方式没有学习成本了。ui 可以慢慢调嘛</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174236">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174236" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">signalas1</span>
+        <span>#5</span>
+        <span>2026/10/13 13:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">反编译出来什么边界问题都能解决</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174239">反编译出来什么边界问题都能解决</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174239">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174239" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lolo1</span>
+        <span>#6</span>
+        <span>2026/10/13 13:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以可以，非常强</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174248">可以可以，非常强</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174248">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174248" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">awesomePower</span>
+        <span>#7</span>
+        <span>2026/10/13 13:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">厉害，支持下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174249">厉害，支持下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174249">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174249" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">novaline</span>
+        <span>#8</span>
+        <span>2026/10/13 13:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">逆向一切</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174266">逆向一切</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174266">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174266" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">vone</span>
+        <span>#9</span>
+        <span>2026/10/13 13:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">哥，你真硬。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174285">哥，你真硬。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174285">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174285" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">GaGaGood</span>
+        <span>#10</span>
+        <span>2026/10/13 13:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">牛逼，支持一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174316">牛逼，支持一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174316">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174316" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yisier</span>
+        <span>#11</span>
+        <span>2026/10/13 13:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/signalas1" target="_blank" rel="noopener noreferrer">signalas1</a> 商业软件，反编译要吃官司吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174317">@<a href="/member/signalas1" target="_blank" rel="noopener noreferrer">signalas1</a> 商业软件，反编译要吃官司吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174317">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174317" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SilencerL</span>
+        <span>#12</span>
+        <span>2026/10/13 13:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/Ih6m5Bq.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174343"><a href="https://i.imgur.com/Ih6m5Bq.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174343">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174343" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ganxj</span>
+        <span>#13</span>
+        <span>2026/10/13 13:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我们公司也收到了 navicat 的律师函，但是没有收到 jetbrains 的呀，datagrip 用习惯了之后也是很香的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174357">我们公司也收到了 navicat 的律师函，但是没有收到 jetbrains 的呀，datagrip 用习惯了之后也是很香的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174357">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174357" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tangping</span>
+        <span>#14</span>
+        <span>2026/10/13 13:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以把 navicat 导出的链接  导入进去吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174360">可以把 navicat 导出的链接  导入进去吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174360">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174360" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jaylengao</span>
+        <span>#15</span>
+        <span>2026/10/13 13:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持了，现在用 dbx ，内存占用有点大了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174370">支持了，现在用 dbx ，内存占用有点大了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174370">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174370" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">humanity</span>
+        <span>#16</span>
+        <span>2026/10/13 13:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">dbx 也可以，就是交互需要学习成本</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174386">dbx 也可以，就是交互需要学习成本</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174386">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174386" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">413420</span>
+        <span>#17</span>
+        <span>2026/10/13 13:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个必须支持</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174387">这个必须支持</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174387">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174387" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chenluo0429</span>
+        <span>#18</span>
+        <span>2026/10/13 13:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">厉害厉害<br />按照最近很火的那些 rust 重写的项目，还可以叫 datacraft 或者 dbcraft</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174391">厉害厉害<br />按照最近很火的那些 rust 重写的项目，还可以叫 datacraft 或者 dbcraft</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174391">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174391" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">MASAILA</span>
+        <span>#19</span>
+        <span>2026/10/13 14:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">叫 navicraft 吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174407">叫 navicraft 吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174407">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174407" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yisier</span>
+        <span>#20</span>
+        <span>2026/10/13 14:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tangping" target="_blank" rel="noopener noreferrer">tangping</a> 当然可以，已经排上日程了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18174418">@<a href="/member/tangping" target="_blank" rel="noopener noreferrer">tangping</a> 当然可以，已经排上日程了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18174418">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1248355#reply18174418" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
