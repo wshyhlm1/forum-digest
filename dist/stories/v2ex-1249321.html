@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了个网页电台：随机一站，听听世界上 3.5 万个电台此刻在播什么 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-16/">返回日报</a>
+      <div class="source-chip">V2EX #4</div>
+      <h1>做了个网页电台：随机一站，听听世界上 3.5 万个电台此刻在播什么</h1>
+      <p class="original-title">做了个网页电台：随机一站，听听世界上 3.5 万个电台此刻在播什么</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 ddter</span>
+        <span>热度 168</span>
+        <span>回复 168</span>
+        <span>2026/10/16 12:28</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1249321" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1249321.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>上班路上喜欢听广播，但经常听到一半就到公司了；平时干活的时候也想听点新鲜的，不想翻来覆去总是歌单里那几首；偶尔听到一首好听的，还得赶紧翻出音乐 App 去识别是什么歌。</li><li>所以就做了这么个小玩意：打开网页按一下，随机掉进世界上某个城市的电台，听听那里此刻在播什么。</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>上班路上喜欢听广播，但经常听到一半就到公司了；平时干活的时候也想听点新鲜的，不想翻来覆去总是歌单里那几首；偶尔听到一首好听的，还得赶紧翻出音乐 App 去识别是什么歌。</p>
+<p>所以就做了这么个小玩意：打开网页按一下，随机掉进世界上某个城市的电台，听听那里此刻在播什么。</p>
+能做什么
+<ul>
+<li><strong>路上没听完</strong>：每个台都有分享链接，到公司在电脑上打开接着听；同一个浏览器下次打开，会停在上次听的台</li>
+<li><strong>想听点新鲜的</strong>：按「下一站」随机换台，连续翻台时会提前缓冲后面几台，基本是秒切；可以只听高码率（≥128 / 192 / 320 kbps ），也可以在设置里只留想听的语言</li>
+<li><strong>听到好歌</strong>：能读到曲名的台，直接显示在播什么歌；读不到的点「识别这首歌」就行；曲名旁边点 ♡ 收藏，顺手跳到网易云、QQ 音乐、Spotify 去搜</li>
+<li>能读到曲名的台还可以开跟唱歌词</li>
+<li>星图按流派把电台铺开，可以拖着逛；也有地球视图</li>
+<li>一条线路不通会自动换下一条</li>
+<li>没有账号，没有广告，收藏只存在你的浏览器里</li>
+</ul>
+技术
+<p>前端 React + three.js （星图是几万个粒子），后端 Node + SQLite ，电台目录来自社区维护的 Radio Browser ，每周自动刷新、探测哪些台能播。</p>
+已知问题
+<ul>
+<li>部分海外电台在国内网络下可能连不上或比较慢</li>
+<li>iPhone 上的秒切效果还没实测</li>
+</ul>
+<p>地址： <a href="https://roamdial.com" target="_blank" rel="noopener noreferrer">https://roamdial.com</a> （手机、电脑浏览器直接打开，不用装 App ）</p>
+<p>欢迎试试，坏掉的台、标错的地点、想法都可以回帖，或者发邮件到 <a href="mailto:hello@roamdial.com" target="_blank" rel="noopener noreferrer">hello@roamdial.com</a></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>上班路上喜欢听广播，但经常听到一半就到公司了；平时干活的时候也想听点新鲜的，不想翻来覆去总是歌单里那几首；偶尔听到一首好听的，还得赶紧翻出音乐 App 去识别是什么歌。</p>
+<p>所以就做了这么个小玩意：打开网页按一下，随机掉进世界上某个城市的电台，听听那里此刻在播什么。</p>
+能做什么
+<ul>
+<li><strong>路上没听完</strong>：每个台都有分享链接，到公司在电脑上打开接着听；同一个浏览器下次打开，会停在上次听的台</li>
+<li><strong>想听点新鲜的</strong>：按「下一站」随机换台，连续翻台时会提前缓冲后面几台，基本是秒切；可以只听高码率（≥128 / 192 / 320 kbps ），也可以在设置里只留想听的语言</li>
+<li><strong>听到好歌</strong>：能读到曲名的台，直接显示在播什么歌；读不到的点「识别这首歌」就行；曲名旁边点 ♡ 收藏，顺手跳到网易云、QQ 音乐、Spotify 去搜</li>
+<li>能读到曲名的台还可以开跟唱歌词</li>
+<li>星图按流派把电台铺开，可以拖着逛；也有地球视图</li>
+<li>一条线路不通会自动换下一条</li>
+<li>没有账号，没有广告，收藏只存在你的浏览器里</li>
+</ul>
+技术
+<p>前端 React + three.js （星图是几万个粒子），后端 Node + SQLite ，电台目录来自社区维护的 Radio Browser ，每周自动刷新、探测哪些台能播。</p>
+已知问题
+<ul>
+<li>部分海外电台在国内网络下可能连不上或比较慢</li>
+<li>iPhone 上的秒切效果还没实测</li>
+</ul>
+<p>地址： <a href="https://roamdial.com" target="_blank" rel="noopener noreferrer">https://roamdial.com</a> （手机、电脑浏览器直接打开，不用装 App ）</p>
+<p>欢迎试试，坏掉的台、标错的地点、想法都可以回帖，或者发邮件到 <a href="mailto:hello@roamdial.com" target="_blank" rel="noopener noreferrer">hello@roamdial.com</a></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">vcfger</span>
+        <span>#1</span>
+        <span>2026/10/16 12:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">着实不错诶，有计划考虑把它做成一个 APP 么</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188334">着实不错诶，有计划考虑把它做成一个 APP 么</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188334">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188334" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">charlie21</span>
+        <span>#2</span>
+        <span>2026/10/16 12:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">优美 实用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188341">优美 实用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188341">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188341" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hanxiV2EX</span>
+        <span>#3</span>
+        <span>2026/10/16 12:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">挺好看的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188344">挺好看的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188344">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188344" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">winneter</span>
+        <span>#4</span>
+        <span>2026/10/16 12:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">太优雅了，收藏！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188380">太优雅了，收藏！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188380">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188380" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jacketma</span>
+        <span>#5</span>
+        <span>2026/10/16 12:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">效果不错👍就是选台方式太酷炫了，能出个朴素版的嘛😂<br />能不能按频道“类型/区域”这两个维度分一下类，方便换台哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188385">效果不错👍就是选台方式太酷炫了，能出个朴素版的嘛😂<br />能不能按频道“类型/区域”这两个维度分一下类，方便换台哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188385">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188385" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Jammmm</span>
+        <span>#6</span>
+        <span>2026/10/16 13:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好用！如果有 APP 能支持 CarPlay 就更好了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188487">好用！如果有 APP 能支持 CarPlay 就更好了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188487">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188487" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ddter</span>
+        <span>#7</span>
+        <span>2026/10/16 13:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/vcfger" target="_blank" rel="noopener noreferrer">vcfger</a> 大家需要我就动手搞。<br /><br />@<a href="/member/charlie21" target="_blank" rel="noopener noreferrer">charlie21</a> <br />@<a href="/member/hanxiV2EX" target="_blank" rel="noopener noreferrer">hanxiV2EX</a> <br />@<a href="/member/winneter" target="_blank" rel="noopener noreferrer">winneter</a> 感谢～<br /><br />@<a href="/member/jacketma" target="_blank" rel="noopener noreferrer">jacketma</a> 现在切出去过后页面都是停止渲染的占用很小，类型/区域这两个在首页底部可以选择，右上角设置也能排除。<br /><br />@<a href="/member/Jammmm" target="_blank" rel="noopener noreferrer">Jammmm</a> 我研究一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188575">@<a href="/member/vcfger" target="_blank" rel="noopener noreferrer">vcfger</a> 大家需要我就动手搞。<br /><br />@<a href="/member/charlie21" target="_blank" rel="noopener noreferrer">charlie21</a> <br />@<a href="/member/hanxiV2EX" target="_blank" rel="noopener noreferrer">hanxiV2EX</a> <br />@<a href="/member/winneter" target="_blank" rel="noopener noreferrer">winneter</a> 感谢～<br /><br />@<a href="/member/jacketma" target="_blank" rel="noopener noreferrer">jacketma</a> 现在切出去过后页面都是停止渲染的占用很小，类型/区域这两个在首页底部可以选择，右上角设置也能排除。<br /><br />@<a href="/member/Jammmm" target="_blank" rel="noopener noreferrer">Jammmm</a> 我研究一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188575">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188575" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ank580</span>
+        <span>#8</span>
+        <span>2026/10/16 13:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不错不错</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188660">不错不错</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188660">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188660" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Siefy1024</span>
+        <span>#9</span>
+        <span>2026/10/16 14:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要 App</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188731">需要 App</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188731">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188731" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wuzhihang</span>
+        <span>#10</span>
+        <span>2026/10/16 14:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">实用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188805">实用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188805">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188805" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">monmon</span>
+        <span>#11</span>
+        <span>2026/10/16 14:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">太棒了！！！终于找到了适合放在小副屏的应用<br />blob:<a href="https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8" target="_blank" rel="noopener noreferrer">https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188843">太棒了！！！终于找到了适合放在小副屏的应用<br />blob:<a href="https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8" target="_blank" rel="noopener noreferrer">https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188843">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188843" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">monmon</span>
+        <span>#12</span>
+        <span>2026/10/16 14:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8" target="_blank" rel="noopener noreferrer">https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188846"><a href="https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8" target="_blank" rel="noopener noreferrer">https://imgur.com/4eb18155-a58d-45c2-993d-3a996782bac8</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188846">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188846" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">monmon</span>
+        <span>#13</span>
+        <span>2026/10/16 14:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/NO4M3QU.jpeg" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188848"><a href="https://i.imgur.com/NO4M3QU.jpeg" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188848">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188848" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">icount</span>
+        <span>#14</span>
+        <span>2026/10/16 14:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188890">好用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188890">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188890" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gzzjym</span>
+        <span>#15</span>
+        <span>2026/10/16 14:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/monmon" target="_blank" rel="noopener noreferrer">monmon</a>  这个副屏是定制的吗，还是买的（有链接吗）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188895">@<a href="/member/monmon" target="_blank" rel="noopener noreferrer">monmon</a>  这个副屏是定制的吗，还是买的（有链接吗）</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188895">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188895" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wshhfy</span>
+        <span>#16</span>
+        <span>2026/10/16 14:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">帅！终于有新鲜的播放列表了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188921">帅！终于有新鲜的播放列表了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188921">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188921" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xiaoxiaoyunlu</span>
+        <span>#17</span>
+        <span>2026/10/16 14:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不错啊，正在享受中，感觉不用 app 更好，其实很多人不喜欢装 app 的，网址一开 随时收听</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188935">不错啊，正在享受中，感觉不用 app 更好，其实很多人不喜欢装 app 的，网址一开 随时收听</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188935">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188935" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">spacebound</span>
+        <span>#18</span>
+        <span>2026/10/16 14:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有点酷炫啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188939">有点酷炫啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188939">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188939" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">monmon</span>
+        <span>#19</span>
+        <span>2026/10/16 14:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/gzzjym" target="_blank" rel="noopener noreferrer">gzzjym</a> 闲鱼搜 ipad 副屏</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18188948">@<a href="/member/gzzjym" target="_blank" rel="noopener noreferrer">gzzjym</a> 闲鱼搜 ipad 副屏</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18188948">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18188948" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">uid2023</span>
+        <span>#20</span>
+        <span>2026/10/16 14:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">真不错！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18189063">真不错！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18189063">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249321#reply18189063" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
