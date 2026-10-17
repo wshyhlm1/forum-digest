@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code 团队如何进行代码审查 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-17/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Claude Code 团队如何进行代码审查</h1>
+      <p class="original-title">How the Claude Code team does code review</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 pretext</span>
+        <span>热度 364</span>
+        <span>回复 333</span>
+        <span>2026/10/17 03:04</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50122951" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://claude.dev/blog/solving-code-review-at-anthropic/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50122951.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <p class="muted">暂无摘要</p>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">avinoth</span>
+        
+        <span>2026/10/17 09:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这就像 Google 的基础设施博客之一。谷歌规模的东西只与他们相关并且适合他们。我们从较小的工程团队那里吸取了很多惨痛的教训，他们遵循的过程是“谷歌就是这样做的”。<p>同样，Anthropic 也有能力做到这一点，因为他们拥有几乎无限的代币和实验室来训练针对其特定用例的模型。我们其他人需要代码理解，以免我们变得依赖于持续供应代币（这是这些实验室非常希望实现的状态）</p><p>因此，除非您在实验室工作，或者在公司的整个生命周期内保证拥有无限的代币，否则继续阅读代码而不是让每个工程师 30k PR 成为常态，对公司和您都有好处。</p><p>文章的摘录表明了我的观点</p><p>&gt;团队成员的头脑中保留着 Claude Code 的完整心理模型，我们认为任何人都不需要这样做。当有人想要理解代码库的一部分时，他们会要求 Claude 为该部分编写一个解释器。它需要几分钟的时间并反映当前的代码。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50127080">This is like one of Google’s infrastructure blog. Google scale things are only relevant and appropriate for them. We had lots of bitter lessons from smaller engineering teams following the process with the justification that “this is how Google does it”.<p>Similarly, Anthropic can afford to do this because they have virtually unlimited tokens and labs to train models for their specific usecase. The rest of us need code comprehension lest we become dependent on continuous supply of tokens (which is a state these labs badly want to achieve)</p><p>So, unless you work at a lab, or have unlimited tokens guaranteed through the life of your company, it would do both the company and you good to continue to read the code and not let these 30k PRs per engineer be the norm.</p><p>An excerpt from the article makes my point</p><p>&gt; Nobody on the team keeps a complete mental model of Claude Code in their head, and we don't think anyone needs to. When someone wants to understand a part of the codebase, they ask Claude to write an explainer for exactly that slice. It takes minutes and reflects the code as it is today.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50127080">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50127080" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">thatsabadlook</span>
+        
+        <span>2026/10/17 09:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">即便如此，我们真的有证据表明他们所做的事情对他们来说是合理的或实用的吗？他们的正常运行时间接近 3 个 9，泄露的克劳德代码看起来像汤，大量的安全问题，他们无法构建沙箱来拯救他们的公司，最后我听说，如果不调整任意事情的数字，他们甚至无法盈利。<p>我认为我很擅长听取不赚钱的公司的建议。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50127108">Even then do we really have evidence that what they are doing is reasonable or practical for them at all? They are edging on like 3 9s uptime, what leaked of Claude code looked like soup, tons of security issues, they can't build a sandbox to save their company, and last I heard they aren't even profitable without adjusting their numbers for arbitrary things.<p>Think I'm good on taking advice from companies that aren't making money.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50127108">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50127108" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">avinoth</span>
+        
+        <span>2026/10/17 09:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">正是如此。他们不断地重复着这样的故事：软件工程就应该是这样的。始终依赖代币。不用担心正常运行时间或错误 - 代理可以解决它，不用担心安全性 - 代理可以解决它，不用担心代码理解 - 代理将永远为您服务。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50127134">Exactly. What they’re doing, repeatedly, is setting a narrative that this is how software engineering should be. Always be reliant on tokens. Don’t worry about uptime or errors - agents can address it, don’t worry about security - agents can address it, don’t worry about code comprehension - agents will always be there for you.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50127134">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50127134" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oblio</span>
+        
+        <span>2026/10/17 21:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 代理商将永远为您服务。<p>2000 年左右，罗马尼亚的一家投资基金 (FNI) 投放了一些超级著名的广告，上面写着“FNI is Watch”（FNI 正在注视）。</p><p>6 个月后，他们破产了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50131230">&gt; agents will always be there for you.<p>In Romania an investment fund (FNI) around 2000 ran some super famous ads saying "FNI is watching" (FNI is keeping watch).</p><p>6 months later they went bankrupt.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50131230">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50131230" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">samuell</span>
+        
+        <span>2026/10/17 17:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">成功了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50129364">Nailed it</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50129364">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50129364" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ban_this_man</span>
+        
+        <span>2026/10/17 19:19</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[已死]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130073">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130073">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130073" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">panarky</span>
+        
+        <span>2026/10/17 20:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果他们的现金流为正，75% 的计算用于研究和培训，那么您认为当他们转向 50-50 训练推理时，现金流会发生什么？<p>因为“调整前沿”更多的是打开印钞机开关，而不是安全。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130338">If they're cash-flow positive with 75% of compute going to research and training, what do you think will happen to cash flow when they shift to 50-50 training-inference?<p>Because "pacing the frontier" is more about flipping on the money printer switch than it is about safety.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130338">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130338" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">thr0w</span>
+        
+        <span>2026/10/17 19:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; 他们要求克劳德为那个切片写一个解释器<p>如果他们的克劳德和我们的克劳德一样，那么这是一个笑话。克劳德的写作风格令人心智麻木。需要不断地推动它才能用易于理解的英语解释事物。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130273">&gt; they ask Claude to write an explainer for exactly that slice<p>If their Claude is the same as our Claude, then this is a joke. Claude’s writing style is insidiously mind numbing. It takes constant pushing to get it to explain things in digestible English.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130273">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130273" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bulbar</span>
+        
+        <span>2026/10/18 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它还混合了重要和不重要的信息。它倾向于认为提交/错误修复很重要，并且很乐意将其与功能的重要属性一起列出。<p>至少 Opus 5.5 做到了这一点。不过，它的写作比其他模型要好。我让其他模型用难以理解的语言解释了一些东西，技术上是正确的，但实际上并不是什么内容。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50132431">It also mixes important with unimportant information. It tends to think that a commit/bugfix is important and will happily list it together with important properties of the feature.<p>At least Opus 5.5 does that. Its writing is better than that if other models, though. I had other models explain stuff in an undigestable language, technically correct, but practically not what anything is about.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50132431">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50132431" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">engine_y</span>
+        
+        <span>2026/10/17 20:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">它就像试图用评论中的诗歌来打动你： 
+“该函数的作用是，它做得很好，而且只执行一次”</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130671">It's like it's trying to impress you with poetry in comment: 
+"What the function does, it does well, and only just once"</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130671">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130671" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">froggy</span>
+        
+        <span>2026/10/17 23:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">尝试让它解释“ISO 普通语言标准”中的某些内容。昨天这对我来说发生了巨大的变化。语言将从密集的大段落变为措辞简单的2-3句段落。不过我使用的是 gpt。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50131773">Try having it explain something in “ISO Plain Language standard”. It made an enormous difference for me yesterday. The language will change from dense large paragraphs to simply-worded 2-3 sentence paragraphs. I was using gpt though.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50131773">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50131773" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">meheleventyone</span>
+        
+        <span>2026/10/18 00:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在我看来，即使让它写得不那么迟钝的英语也是不够的。以易于理解的方式构建文档似乎存在真正的问题。此外，它也是一个真正的恶魔，会将其上下文作为隐式假设泄露到文档中。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50132418">Even getting it to write less obtuse English isn't enough IMO. It seems to have real issues with structuring documentation in a way that makes it easy to follow. Also it's a real demon for leaking its context as implicit assumptions into documentation.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50132418">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50132418" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">panarky</span>
+        
+        <span>2026/10/17 19:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">v5.5 消除了早期版本中许多难以理解的散文。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130313">v5.5 eliminated much of the impenetrable prose of earlier versions.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130313">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130313" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">thr0w</span>
+        
+        <span>2026/10/17 23:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; v5.5<p>当 5.5 用一堵文字墙回应并且你陷入第一个乏味的句子时，你是否仍然感到精神上的摩擦？前几天我什至让它生成了一个语法无效的英语句子。还是很糟糕。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50131933">&gt; v5.5<p>You don't still feel that mental friction when 5.5 responds with a wall of text and you drop into that first tedious sentence? I even had it generate a syntactically invalid English sentence the other day. It's still pretty bad.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50131933">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50131933" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wowoc</span>
+        
+        <span>2026/10/17 22:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">根据我的经验，它比 OAI 的模型更好，但仍然较差</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50131678">It’s better, but still worse than OAI’s models in my experience</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50131678">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50131678" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mbel</span>
+        
+        <span>2026/10/17 21:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">或者我们只是习惯了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130827">Or we’re just getting used to it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130827">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130827" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Starlevel004</span>
+        
+        <span>2026/10/17 21:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在克劳德工作的人似乎用克劳德语说话，所以我怀疑他们在乎。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130868">The people who work at Claude seem to talk in claudlish, so I doubt they care.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130868">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130868" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mrits</span>
+        
+        <span>2026/10/17 21:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果我们作为工程师不使用类似的术语来描述过去几十年里任何不是我们自己编写的代码，也许人们会认真对待它。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130768">If we as engineers didn't use similar terminology to describe any code not written by ourselves for the last few decades perhaps people would take it seriously.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130768">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130768" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Tanjreeve</span>
+        
+        <span>2026/10/17 21:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">克劳德接受过工程 wittering 培训。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50130892">Claude was trained on engineering wittering.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50130892">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50130892" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oblio</span>
+        
+        <span>2026/10/17 21:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">相当肯定所有法学硕士都接受过广告、销售和营销文案方面的培训，因为互联网上的此类内容可能多出 1000 倍。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50131197">Fairly sure all LLMs were trained on ads and sales and marketing copy as there's probably 1000 times more of that on the internet.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50131197">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50131197" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
