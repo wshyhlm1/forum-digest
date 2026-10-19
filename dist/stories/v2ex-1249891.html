@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[送激活码] 我做了一个跟随 Finder 窗口的路径工具 FinderNav，送 80 个激活码 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-19/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>[送激活码] 我做了一个跟随 Finder 窗口的路径工具 FinderNav，送 80 个激活码</h1>
+      <p class="original-title">[送激活码] 我做了一个跟随 Finder 窗口的路径工具 FinderNav，送 80 个激活码</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 shuxiaoshengss</span>
+        <span>热度 106</span>
+        <span>回复 106</span>
+        <span>2026/10/19 10:07</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1249891" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1249891.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>🎉 FinderNav for macOS 开启首轮公开测试！</li><li>大家好，我是 FinderNav 的开发者。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>🎉 FinderNav for macOS 开启首轮公开测试！</p>
+<p>大家好，我是 FinderNav 的开发者。</p>
+<p>在深层目录里切换祖先目录、返回刚才访问的位置、复制文件路径或在终端中打开当前目录时，Finder 的这些入口比较分散。</p>
+<p>所以我做了 <strong>FinderNav</strong> —— 一款原生的 macOS Finder 增强工具。</p>
+<p>它不会替代 Finder ，也不会修改 Finder 本身，而是跟随当前 Finder 窗口，在底部增加一条轻量的悬浮导航栏，把路径导航和常用文件操作集中在随手可及的位置。</p>
+<p>Finder 自带的路径栏主要用于展示和跳转； FinderNav 在此基础上加入了收藏、最近访问、Quick Access 、路径复制、终端打开和文件操作，并会跟随当前 Finder 窗口。</p>
+<p></p>
+路径面包屑导航
+<p>FinderNav 会显示当前 Finder 窗口所在的完整路径。点击任意一级目录，就能直接跳转，不再需要一层层返回。</p>
+收藏与最近访问
+<p>常用文件夹可以直接收藏；刚刚访问过的路径也会自动记录，方便快速回到之前的位置。</p>
+<p>收藏、历史和设置保存在本机，不会建立云端文件索引。</p>
+Quick Access 快速访问
+<p>可以设置多个常用路径，并从 Finder 窗口中快速打开。项目目录、素材目录、下载文件夹，都可以少点很多次。</p>
+目录和文件快速操作
+<p>在当前 Finder 场景里，可以快速完成：</p>
+<ul>
+<li>复制当前目录或选中文件的路径</li>
+<li>复制可在 Finder 中粘贴的文件对象</li>
+<li>在终端中打开当前目录</li>
+<li>在当前或新的 Finder 窗口中打开文件夹</li>
+<li>在 Finder 中定位并选中文件</li>
+</ul>
+跟随 Finder ，不占用 Dock
+<p>FinderNav 会跟随当前最前方的 Finder 窗口；切换窗口、标签页或显示器时，导航栏也会随之更新。</p>
+<p>它不会长期占用 Dock ，也不会额外放一个主窗口挡在桌面上。需要的时候出现，不使用 Finder 时自动隐藏。</p>
+原生 macOS 体验
+<p>FinderNav 使用 SwiftUI + AppKit 开发，适配浅色和深色模式，并尽量保持和 macOS 一致的交互、菜单与视觉体验。</p>
+<p>当前版本支持：</p>
+<ul>
+<li>macOS 13 Ventura 及以上</li>
+<li>Apple Silicon （ M1 / M2 / M3 / M4 系列）</li>
+</ul>
+关于权限和隐私
+<p>为了识别当前 Finder 窗口、读取所在路径并让导航栏跟随窗口，FinderNav 需要：</p>
+<ul>
+<li><strong>自动化权限</strong>：用于读取 Finder 当前目录和选中项，并执行目录跳转</li>
+<li><strong>辅助功能权限</strong>：识别 Finder 窗口的位置和尺寸</li>
+</ul>
+<p>这些权限只用于完成 Finder 导航与窗口跟随。核心文件操作在 Mac 本机完成，FinderNav 不会上传文件内容，也不会创建云端文件索引。</p>
+官网与下载
+<p><strong>官网：</strong> <a href="https://findernav.kitlane.cloud" target="_blank" rel="noopener noreferrer">https://findernav.kitlane.cloud</a></p>
+<p>FinderNav 提供免费试用，满意后再决定是否购买。采用一次买断授权，不订阅。</p>
+上线活动
+<p>为了感谢 V 友们的支持，准备送出 <strong>50 枚 FinderNav 个人版终身激活码</strong>。</p>
+<p>参与方式：</p>
+<ol>
+<li>
+<p>在本帖回复任意内容即可参与</p>
+</li>
+<li>
+<p>发送 V 站 ID 到 <a href="mailto:support@kitlane.cloud" target="_blank" rel="noopener noreferrer">support@kitlane.cloud</a>参与活动</p>
+</li>
+</ol>
+<ul>
+<li>
+<p>说明：随机抽奖，每个人都有机会，不论先后。</p>
+</li>
+<li>
+<p>时效：<strong>2026 年 10 月 25 日 24:00</strong>前有效。</p>
+</li>
+</ul>
+<p>另外招募 <strong>30 位首批体验用户</strong>。如果愿意详细反馈问题，可以在回复中附上 macOS 版本和 Mac 型号；该名额与上面的 50 个抽奖名额独立。</p>
+<p>这是 FinderNav 的第一个内测版本，肯定还有可以继续打磨的地方。功能建议、交互意见、兼容性问题，甚至觉得哪里不好用，都欢迎直接告诉我。</p>
+<p>谢谢大家愿意体验 ❤️</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>🎉 FinderNav for macOS 开启首轮公开测试！</p>
+<p>大家好，我是 FinderNav 的开发者。</p>
+<p>在深层目录里切换祖先目录、返回刚才访问的位置、复制文件路径或在终端中打开当前目录时，Finder 的这些入口比较分散。</p>
+<p>所以我做了 <strong>FinderNav</strong> —— 一款原生的 macOS Finder 增强工具。</p>
+<p>它不会替代 Finder ，也不会修改 Finder 本身，而是跟随当前 Finder 窗口，在底部增加一条轻量的悬浮导航栏，把路径导航和常用文件操作集中在随手可及的位置。</p>
+<p>Finder 自带的路径栏主要用于展示和跳转； FinderNav 在此基础上加入了收藏、最近访问、Quick Access 、路径复制、终端打开和文件操作，并会跟随当前 Finder 窗口。</p>
+<p></p>
+路径面包屑导航
+<p>FinderNav 会显示当前 Finder 窗口所在的完整路径。点击任意一级目录，就能直接跳转，不再需要一层层返回。</p>
+收藏与最近访问
+<p>常用文件夹可以直接收藏；刚刚访问过的路径也会自动记录，方便快速回到之前的位置。</p>
+<p>收藏、历史和设置保存在本机，不会建立云端文件索引。</p>
+Quick Access 快速访问
+<p>可以设置多个常用路径，并从 Finder 窗口中快速打开。项目目录、素材目录、下载文件夹，都可以少点很多次。</p>
+目录和文件快速操作
+<p>在当前 Finder 场景里，可以快速完成：</p>
+<ul>
+<li>复制当前目录或选中文件的路径</li>
+<li>复制可在 Finder 中粘贴的文件对象</li>
+<li>在终端中打开当前目录</li>
+<li>在当前或新的 Finder 窗口中打开文件夹</li>
+<li>在 Finder 中定位并选中文件</li>
+</ul>
+跟随 Finder ，不占用 Dock
+<p>FinderNav 会跟随当前最前方的 Finder 窗口；切换窗口、标签页或显示器时，导航栏也会随之更新。</p>
+<p>它不会长期占用 Dock ，也不会额外放一个主窗口挡在桌面上。需要的时候出现，不使用 Finder 时自动隐藏。</p>
+原生 macOS 体验
+<p>FinderNav 使用 SwiftUI + AppKit 开发，适配浅色和深色模式，并尽量保持和 macOS 一致的交互、菜单与视觉体验。</p>
+<p>当前版本支持：</p>
+<ul>
+<li>macOS 13 Ventura 及以上</li>
+<li>Apple Silicon （ M1 / M2 / M3 / M4 系列）</li>
+</ul>
+关于权限和隐私
+<p>为了识别当前 Finder 窗口、读取所在路径并让导航栏跟随窗口，FinderNav 需要：</p>
+<ul>
+<li><strong>自动化权限</strong>：用于读取 Finder 当前目录和选中项，并执行目录跳转</li>
+<li><strong>辅助功能权限</strong>：识别 Finder 窗口的位置和尺寸</li>
+</ul>
+<p>这些权限只用于完成 Finder 导航与窗口跟随。核心文件操作在 Mac 本机完成，FinderNav 不会上传文件内容，也不会创建云端文件索引。</p>
+官网与下载
+<p><strong>官网：</strong> <a href="https://findernav.kitlane.cloud" target="_blank" rel="noopener noreferrer">https://findernav.kitlane.cloud</a></p>
+<p>FinderNav 提供免费试用，满意后再决定是否购买。采用一次买断授权，不订阅。</p>
+上线活动
+<p>为了感谢 V 友们的支持，准备送出 <strong>50 枚 FinderNav 个人版终身激活码</strong>。</p>
+<p>参与方式：</p>
+<ol>
+<li>
+<p>在本帖回复任意内容即可参与</p>
+</li>
+<li>
+<p>发送 V 站 ID 到 <a href="mailto:support@kitlane.cloud" target="_blank" rel="noopener noreferrer">support@kitlane.cloud</a>参与活动</p>
+</li>
+</ol>
+<ul>
+<li>
+<p>说明：随机抽奖，每个人都有机会，不论先后。</p>
+</li>
+<li>
+<p>时效：<strong>2026 年 10 月 25 日 24:00</strong>前有效。</p>
+</li>
+</ul>
+<p>另外招募 <strong>30 位首批体验用户</strong>。如果愿意详细反馈问题，可以在回复中附上 macOS 版本和 Mac 型号；该名额与上面的 50 个抽奖名额独立。</p>
+<p>这是 FinderNav 的第一个内测版本，肯定还有可以继续打磨的地方。功能建议、交互意见、兼容性问题，甚至觉得哪里不好用，都欢迎直接告诉我。</p>
+<p>谢谢大家愿意体验 ❤️</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yyluxe</span>
+        <span>#1</span>
+        <span>2026/10/19 10:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">让我来试试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195385">让我来试试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195385">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195385" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">followadc</span>
+        <span>#2</span>
+        <span>2026/10/19 10:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">m4 max 申请出战</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195398">m4 max 申请出战</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195398">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195398" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v9912ex</span>
+        <span>#3</span>
+        <span>2026/10/19 10:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与内测体验 macOS26.6 mac mini m4 感谢楼主</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195405">参与内测体验 macOS26.6 mac mini m4 感谢楼主</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195405">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195405" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BenjaminLin</span>
+        <span>#4</span>
+        <span>2026/10/19 10:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与一下，感谢大佬！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195419">参与一下，感谢大佬！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195419">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195419" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sun522198558</span>
+        <span>#5</span>
+        <span>2026/10/19 10:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">试试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195422">试试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tuot</span>
+        <span>#6</span>
+        <span>2026/10/19 10:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">MacOS27 ProM4 可内测试试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195427">MacOS27 ProM4 可内测试试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195427">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195427" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">itart</span>
+        <span>#7</span>
+        <span>2026/10/19 10:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195429">参与一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195429">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195429" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sunchaoylq</span>
+        <span>#8</span>
+        <span>2026/10/19 10:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195440">参与一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">itart</span>
+        <span>#9</span>
+        <span>2026/10/19 10:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/itart" target="_blank" rel="noopener noreferrer">itart</a> #7 <br /><br />macmini ，mac os 27 版本</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195442">@<a href="/member/itart" target="_blank" rel="noopener noreferrer">itart</a> #7 <br /><br />macmini ，mac os 27 版本</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195442">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195442" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">callmecaiyuyu</span>
+        <span>#10</span>
+        <span>2026/10/19 10:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/1LY7dRa.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/PkHOZrm.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/JKypjQX.png" target="_blank" rel="noopener noreferrer"></a><br />这个栏有点漂移哦</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195446"><a href="https://i.imgur.com/1LY7dRa.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/PkHOZrm.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/JKypjQX.png" target="_blank" rel="noopener noreferrer"></a><br />这个栏有点漂移哦</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195446">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195446" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nuys</span>
+        <span>#11</span>
+        <span>2026/10/19 10:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195451">参与一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195451">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195451" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">initObject</span>
+        <span>#12</span>
+        <span>2026/10/19 10:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195455">参与一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195455">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195455" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shuxiaoshengss</span>
+        <span>#13</span>
+        <span>2026/10/19 10:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/callmecaiyuyu" target="_blank" rel="noopener noreferrer">callmecaiyuyu</a> 这个是轮训的，快速拖动确实有点飘，我们已经在找解决方案啦</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195469">@<a href="/member/callmecaiyuyu" target="_blank" rel="noopener noreferrer">callmecaiyuyu</a> 这个是轮训的，快速拖动确实有点飘，我们已经在找解决方案啦</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195469">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195469" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">error</span>
+        <span>#14</span>
+        <span>2026/10/19 10:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">macOS 13 Ventura</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195474">macOS 13 Ventura</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195474">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195474" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mashaobo621</span>
+        <span>#15</span>
+        <span>2026/10/19 10:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与一下，感谢大佬！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195522">参与一下，感谢大佬！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195522">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195522" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#16</span>
+        <span>2026/10/19 10:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我来尝尝</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195529">我来尝尝</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195529">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195529" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">daorougunzzz</span>
+        <span>#17</span>
+        <span>2026/10/19 10:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感觉很实用啊 求翻牌</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195593">感觉很实用啊 求翻牌</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195593">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195593" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">peasant</span>
+        <span>#18</span>
+        <span>2026/10/19 10:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">路径面包屑导航：option+command+p<br /><br />收藏与最近访问：常用的直接拖到左边个人收藏固定达到快速访问的目的，最近使用原生就有，想去目录右键点在上层文件夹中显示<br /><br />复制当前目录或选中文件的路径：option+command+c<br /><br />在终端中打开当前目录：右键点击服务-新建位于文件夹位置的终端<br /><br />在当前或新的 Finder 窗口中打开文件夹：按住 command 双击文件夹默认在新标签打开，可以修改设置来实现在新窗口打开<br /><br />这么一看没剩下多少原生没有的功能了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195614">路径面包屑导航：option+command+p<br /><br />收藏与最近访问：常用的直接拖到左边个人收藏固定达到快速访问的目的，最近使用原生就有，想去目录右键点在上层文件夹中显示<br /><br />复制当前目录或选中文件的路径：option+command+c<br /><br />在终端中打开当前目录：右键点击服务-新建位于文件夹位置的终端<br /><br />在当前或新的 Finder 窗口中打开文件夹：按住 command 双击文件夹默认在新标签打开，可以修改设置来实现在新窗口打开<br /><br />这么一看没剩下多少原生没有的功能了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195614">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195614" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shuxiaoshengss</span>
+        <span>#19</span>
+        <span>2026/10/19 10:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/peasant" target="_blank" rel="noopener noreferrer">peasant</a> 嗯嗯，感谢你这么认真地整理和分享！你提到的这些原生快捷键和操作确实都能实现相应功能，也很实用。<br /><br />不过从我们的观察来看，很多用户其实并不知道这些快捷操作，或者很难记住并在不同入口之间切换。FinderNav 的价值并不是说这些能力原生完全没有，而是把路径导航、收藏与最近访问、复制路径、终端打开等高频操作集中到一个直观、随手可用的入口中，降低发现和记忆成本。<br />当然，你的反馈也很有价值：如果只是熟练使用 Finder 原生功能的用户，部分能力确实会显得重叠。我们也会继续思考和补充更多原生体验覆盖不到、能够真正提高效率的功能。再次感谢你的体验和建议！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195639">@<a href="/member/peasant" target="_blank" rel="noopener noreferrer">peasant</a> 嗯嗯，感谢你这么认真地整理和分享！你提到的这些原生快捷键和操作确实都能实现相应功能，也很实用。<br /><br />不过从我们的观察来看，很多用户其实并不知道这些快捷操作，或者很难记住并在不同入口之间切换。FinderNav 的价值并不是说这些能力原生完全没有，而是把路径导航、收藏与最近访问、复制路径、终端打开等高频操作集中到一个直观、随手可用的入口中，降低发现和记忆成本。<br />当然，你的反馈也很有价值：如果只是熟练使用 Finder 原生功能的用户，部分能力确实会显得重叠。我们也会继续思考和补充更多原生体验覆盖不到、能够真正提高效率的功能。再次感谢你的体验和建议！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195639">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195639" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xQhaha</span>
+        <span>#20</span>
+        <span>2026/10/19 10:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">参与下 还有名额吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18195641">参与下 还有名额吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18195641">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1249891#reply18195641" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
