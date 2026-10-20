@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我给路由器写了一个 800 KB 的代理客户端 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-20/">返回日报</a>
+      <div class="source-chip">V2EX #4</div>
+      <h1>我给路由器写了一个 800 KB 的代理客户端</h1>
+      <p class="original-title">我给路由器写了一个 800 KB 的代理客户端</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 yunnysunny</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/10/20 23:00</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1250456" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1250456.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>家里那台小米 AC2100 ，刷了 ImmortalWrt ，安稳地当了几年的上网工具。一开始我是想让其运行 xray 工具的，因为我的服务器上的代理工具使用的 VLESS 协议，使用 xray 是目前流行的解决方案。但是我将其安装上之后，路由器直接卡死了，我一开始以为是 xray 本身有问题，于是又试了一圈其他的 VLESS 协议的程序，无一例外全部卡死，而且卡死后路由器必须得重启才能使用。</li><li>当时查了一下，如果想使用代理软件的话，目前资源最低的就是 trojan 协议，于是我把 go-trojan 安装到路由器中，果然能正常运行了。我以为这就是完美方案了，没有想到这只是趟坑的序幕，接下来几天，我发现会时不时的上不了网，一开始我还以为是运营商的问题，没有在意，然后出的问题多了，我就忍不了了，开始把怀疑对象转到了我的路由器身上。</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">开端
+<p>家里那台小米 AC2100 ，刷了 ImmortalWrt ，安稳地当了几年的上网工具。一开始我是想让其运行 xray 工具的，因为我的服务器上的代理工具使用的 VLESS 协议，使用 xray 是目前流行的解决方案。但是我将其安装上之后，路由器直接卡死了，我一开始以为是 xray 本身有问题，于是又试了一圈其他的 VLESS 协议的程序，无一例外全部卡死，而且卡死后路由器必须得重启才能使用。</p>
+<p>当时查了一下，如果想使用代理软件的话，目前资源最低的就是 trojan 协议，于是我把 go-trojan 安装到路由器中，果然能正常运行了。我以为这就是完美方案了，没有想到这只是趟坑的序幕，接下来几天，我发现会时不时的上不了网，一开始我还以为是运营商的问题，没有在意，然后出的问题多了，我就忍不了了，开始把怀疑对象转到了我的路由器身上。</p>
+<p>我首先 ping 了一下路由器网关，果然 ping 值不对劲，看来是路由器负载过高了，但是要找到问题，必须得确定是哪个进程导致的。于是我直接 SSH 进入路由器后台，使用 top 命令就盯着它看。当时 ai 也没有这么智能，只能人工来观测。</p>
+<p>经过我的不懈努力，终于抓住了一个 CPU 飙升的瞬间。</p>
+<p></p>
+<p>通过图片，貌似是系统的网络卡住了，cpu 的 io 比较高，同时 sys 也比较高。trojan-go 虽然也占用 CPU ，但是不像是主因，然后我就丈二的金刚摸不着头脑了。又过了几天实在忍无可忍了，想到这些天也就增加了一个 trojan-go ，干脆死马当活马医，先把它下掉。没有想到拿掉它后，路由器不卡了！</p>
+<p>又过了些天，我还是不死心，一定要将我花 40 元大洋买的路由器利用上，在网上又查了一下，找了一篇关于 golang 在 mips 设备上的兼容性的 github issue 描述 <a href="https://github.com/golang/go/issues/39174" target="_blank" rel="noopener noreferrer">Abnormal memory usage on MIPS platform with GOMIPS=softfloat · Issue #39174 · golang/go</a> 。原来 golang GC 时也需要耗费一定的资源，但是 mips 硬件资源低，会导致系统 CPU 使用量飙升。看样子跟我的症状比较吻合，于是按照 issue 中的解决思路，使用 <code>ulimit -v 32768</code> 命令限制 golang 虚拟内存大小，不让它 GC 大块的内存。同时设置环境变量 <code>GOMAXPROCS=2</code> ，约束其 CPU 使用的核心数上限。</p>
+<p>经过上述一番操作后，没有想到之前路由器的 CPU 飙升的问题就得以解决了！</p>
+升级
+<p>虽然我的路由看上去已经是完美的方案了，但是它毕竟是 trojan 协议，手里面的 VLESS 协议的服务它是用不上的。现在已经进入了氛围编程阶段，以前耗费大量时间才能完成的事情，现在可能一两天就能搞定了。我何不使用氛围编程复刻一个轻量的 VLESS 协议的客户端呢？说干就干，反正不是我干。</p>
+<p>我想要的东西其实很窄。协议只要 REALITY 加 VLESS 加 Vision ，这是我服务端已经在用的。入口只要 SOCKS5 和透明 REDIRECT 。内存要在启动的时候就定死，之后不涨，宁可拒绝连接也不要去申请新内存。单线程，一个 epoll 循环就够，反正只有一个核。</p>
+<p><strong>用 Zig 写</strong></p>
+<p>Zig 对于嵌入式来说是一门完美的语言，没有 runtime 、没有 GC ，打出来的包个头小，启动后占用内存低。而且其对于低端 mips 设备的支持完整，编程语言的安全性也比 C 要强很多。总之是解决当前场景的最优方案。</p>
+<p>我给它起名 zray ，然后就开始写了。</p>
+<p>由于是氛围编程，这里就不透露技术细节了。但是有一点需要注意由于牵扯到网络加密相关的技术，如果你直接使用 Claude Code 工具化，它会拒绝编写代码，认为你是在做有风险的事情，你通过修改提示词并不能瞒过他，所以这种事情还是要交给第三方 Agent 来做。</p>
+<p>写完后，交叉编译出来版本，让 Agent 直接 ssh 到路由器上测试即可。</p>
+<p>最终成功还是喜人的，编译出来的文件只有 800KB ，是 trojan-go （ 13MB ）的十六分之一，比起 34MB 的 xray 更是小了将近两个数量级。运行起来的话，虚拟内存只有 7MB ，比起 18 MB 的 trojan-go 来说也只有其一半不到。关键是我要求其使用连接池和上游服务进行通信，总体内存是可控的。</p>
+<p></p>
+<p></p>
+<p><strong>测一下速</strong></p>
+<p>速度也不拖后腿。在路由器上经隧道拉 50 MB 文件，HTTPS 流量能跑到 9 到 10 MB/s ，zray 只占一个核的 17% 左右；而同一个文件不走隧道直接从 WAN 下载反而只有 1.4 MB/s ，慢的是运营商的国际出口。HTTP 流量就差远了，被 CPU 卡在 1.5 MB/s 。同一条隧道，为什么差这么多？这要从 Vision 的设计说起。</p>
+<p>zray 和服务器之间是一条 TLS 1.3 连接，可以叫它"外层 TLS"。默认情况下，客户端发出的每个字节都要经这层 AES-GCM 加密后才进隧道，服务器解密后再转发。桌面和手机的 CPU 都有专门的 AES 指令，一条指令完成一轮运算，加密 1 GB 数据不费什么力气；可 MT7621 这颗 MIPS 核没有这种指令，只能用普通整数运算一步步"软算"，实测这颗核的极限就是 1.5 MB/s 左右，此时 zray 一个线程被占到 98%。</p>
+<p>Vision 的办法是避开二次加密。你访问的是 HTTPS 网站时，数据本身已经是浏览器和网站之间的 TLS 加密流了，再套一层外层 TLS 等于在加密密文，纯属浪费。所以 Vision 只让 TLS 握手那几个包走外层 TLS ，等它识别到内层握手完成、后面全是加密后的应用数据，就通知服务器切到"直拷"，之后的数据原样复制进隧道，不再经过 AES-GCM 。这时 zray 只是在两个 socket 之间搬运字节，CPU 占用 17%，速度完全由链路决定。</p>
+<p>而明文 HTTP 没有这个待遇。它本身没有加密，要是也直拷进隧道，等于把明文直接暴露在公网上，协议不允许这么做。所以 HTTP 流量必须一直留在外层 TLS 里，每个字节都要软算 AES-GCM ，速度就被 CPU 钉死。好在实际上网时绝大多数流量都是 HTTPS ，影响不大，但它解释了为什么 Vision 这种"握手后直拷"的设计在低端设备上格外有意义。</p>
+<p>这里还踩了一个坑：刚部署完实测只有 1 MB/s ，查了半天 zray 的代码一无所获，抓包才发现是路由器内核给 TCP 接收缓冲设的默认上限只有 930 KB （ 128 MB 内存的机器就这么算的），再乘上 190 ms 的 RTT ，单条流的理论上限就是 1 MB/s 左右。在 <code>/etc/sysctl.d/</code> 里把 <code>net.ipv4.tcp_rmem</code> 的上限调到 4 MB ，速度直接翻了几倍。跟程序没关系，但这种坑不踩一次是不会知道的。</p>
+<p></p>
+<blockquote>
+<p>代码放在 GitHub ，<a href="https://github.com/yunnysunny/zray" target="_blank" rel="noopener noreferrer">yunnysunny/zray</a>，MIT 协议。README 有中文版。预编译的二进制覆盖 mipsel 、mips 、aarch64 、armv7 、x86_64 ，都是静态 musl ，scp 到路由器就能跑。</p>
+</blockquote>
+<p>如果你家里也有一台老路由器，CPU 也跟我的小米 AC2100 一样是联发科 7621 ，不要扔，它还能发挥余热。</p>
+<blockquote>
+<p>像小米路由器 3G / 4A 千兆版、红米 AC2100 、新路由 3 （ Newifi D2 ）、斐讯 K2P 、网件 R6220 都是联发科 7621 的。</p>
+</blockquote>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">开端
+<p>家里那台小米 AC2100 ，刷了 ImmortalWrt ，安稳地当了几年的上网工具。一开始我是想让其运行 xray 工具的，因为我的服务器上的代理工具使用的 VLESS 协议，使用 xray 是目前流行的解决方案。但是我将其安装上之后，路由器直接卡死了，我一开始以为是 xray 本身有问题，于是又试了一圈其他的 VLESS 协议的程序，无一例外全部卡死，而且卡死后路由器必须得重启才能使用。</p>
+<p>当时查了一下，如果想使用代理软件的话，目前资源最低的就是 trojan 协议，于是我把 go-trojan 安装到路由器中，果然能正常运行了。我以为这就是完美方案了，没有想到这只是趟坑的序幕，接下来几天，我发现会时不时的上不了网，一开始我还以为是运营商的问题，没有在意，然后出的问题多了，我就忍不了了，开始把怀疑对象转到了我的路由器身上。</p>
+<p>我首先 ping 了一下路由器网关，果然 ping 值不对劲，看来是路由器负载过高了，但是要找到问题，必须得确定是哪个进程导致的。于是我直接 SSH 进入路由器后台，使用 top 命令就盯着它看。当时 ai 也没有这么智能，只能人工来观测。</p>
+<p>经过我的不懈努力，终于抓住了一个 CPU 飙升的瞬间。</p>
+<p></p>
+<p>通过图片，貌似是系统的网络卡住了，cpu 的 io 比较高，同时 sys 也比较高。trojan-go 虽然也占用 CPU ，但是不像是主因，然后我就丈二的金刚摸不着头脑了。又过了几天实在忍无可忍了，想到这些天也就增加了一个 trojan-go ，干脆死马当活马医，先把它下掉。没有想到拿掉它后，路由器不卡了！</p>
+<p>又过了些天，我还是不死心，一定要将我花 40 元大洋买的路由器利用上，在网上又查了一下，找了一篇关于 golang 在 mips 设备上的兼容性的 github issue 描述 <a href="https://github.com/golang/go/issues/39174" target="_blank" rel="noopener noreferrer">Abnormal memory usage on MIPS platform with GOMIPS=softfloat · Issue #39174 · golang/go</a> 。原来 golang GC 时也需要耗费一定的资源，但是 mips 硬件资源低，会导致系统 CPU 使用量飙升。看样子跟我的症状比较吻合，于是按照 issue 中的解决思路，使用 <code>ulimit -v 32768</code> 命令限制 golang 虚拟内存大小，不让它 GC 大块的内存。同时设置环境变量 <code>GOMAXPROCS=2</code> ，约束其 CPU 使用的核心数上限。</p>
+<p>经过上述一番操作后，没有想到之前路由器的 CPU 飙升的问题就得以解决了！</p>
+升级
+<p>虽然我的路由看上去已经是完美的方案了，但是它毕竟是 trojan 协议，手里面的 VLESS 协议的服务它是用不上的。现在已经进入了氛围编程阶段，以前耗费大量时间才能完成的事情，现在可能一两天就能搞定了。我何不使用氛围编程复刻一个轻量的 VLESS 协议的客户端呢？说干就干，反正不是我干。</p>
+<p>我想要的东西其实很窄。协议只要 REALITY 加 VLESS 加 Vision ，这是我服务端已经在用的。入口只要 SOCKS5 和透明 REDIRECT 。内存要在启动的时候就定死，之后不涨，宁可拒绝连接也不要去申请新内存。单线程，一个 epoll 循环就够，反正只有一个核。</p>
+<p><strong>用 Zig 写</strong></p>
+<p>Zig 对于嵌入式来说是一门完美的语言，没有 runtime 、没有 GC ，打出来的包个头小，启动后占用内存低。而且其对于低端 mips 设备的支持完整，编程语言的安全性也比 C 要强很多。总之是解决当前场景的最优方案。</p>
+<p>我给它起名 zray ，然后就开始写了。</p>
+<p>由于是氛围编程，这里就不透露技术细节了。但是有一点需要注意由于牵扯到网络加密相关的技术，如果你直接使用 Claude Code 工具化，它会拒绝编写代码，认为你是在做有风险的事情，你通过修改提示词并不能瞒过他，所以这种事情还是要交给第三方 Agent 来做。</p>
+<p>写完后，交叉编译出来版本，让 Agent 直接 ssh 到路由器上测试即可。</p>
+<p>最终成功还是喜人的，编译出来的文件只有 800KB ，是 trojan-go （ 13MB ）的十六分之一，比起 34MB 的 xray 更是小了将近两个数量级。运行起来的话，虚拟内存只有 7MB ，比起 18 MB 的 trojan-go 来说也只有其一半不到。关键是我要求其使用连接池和上游服务进行通信，总体内存是可控的。</p>
+<p></p>
+<p></p>
+<p><strong>测一下速</strong></p>
+<p>速度也不拖后腿。在路由器上经隧道拉 50 MB 文件，HTTPS 流量能跑到 9 到 10 MB/s ，zray 只占一个核的 17% 左右；而同一个文件不走隧道直接从 WAN 下载反而只有 1.4 MB/s ，慢的是运营商的国际出口。HTTP 流量就差远了，被 CPU 卡在 1.5 MB/s 。同一条隧道，为什么差这么多？这要从 Vision 的设计说起。</p>
+<p>zray 和服务器之间是一条 TLS 1.3 连接，可以叫它"外层 TLS"。默认情况下，客户端发出的每个字节都要经这层 AES-GCM 加密后才进隧道，服务器解密后再转发。桌面和手机的 CPU 都有专门的 AES 指令，一条指令完成一轮运算，加密 1 GB 数据不费什么力气；可 MT7621 这颗 MIPS 核没有这种指令，只能用普通整数运算一步步"软算"，实测这颗核的极限就是 1.5 MB/s 左右，此时 zray 一个线程被占到 98%。</p>
+<p>Vision 的办法是避开二次加密。你访问的是 HTTPS 网站时，数据本身已经是浏览器和网站之间的 TLS 加密流了，再套一层外层 TLS 等于在加密密文，纯属浪费。所以 Vision 只让 TLS 握手那几个包走外层 TLS ，等它识别到内层握手完成、后面全是加密后的应用数据，就通知服务器切到"直拷"，之后的数据原样复制进隧道，不再经过 AES-GCM 。这时 zray 只是在两个 socket 之间搬运字节，CPU 占用 17%，速度完全由链路决定。</p>
+<p>而明文 HTTP 没有这个待遇。它本身没有加密，要是也直拷进隧道，等于把明文直接暴露在公网上，协议不允许这么做。所以 HTTP 流量必须一直留在外层 TLS 里，每个字节都要软算 AES-GCM ，速度就被 CPU 钉死。好在实际上网时绝大多数流量都是 HTTPS ，影响不大，但它解释了为什么 Vision 这种"握手后直拷"的设计在低端设备上格外有意义。</p>
+<p>这里还踩了一个坑：刚部署完实测只有 1 MB/s ，查了半天 zray 的代码一无所获，抓包才发现是路由器内核给 TCP 接收缓冲设的默认上限只有 930 KB （ 128 MB 内存的机器就这么算的），再乘上 190 ms 的 RTT ，单条流的理论上限就是 1 MB/s 左右。在 <code>/etc/sysctl.d/</code> 里把 <code>net.ipv4.tcp_rmem</code> 的上限调到 4 MB ，速度直接翻了几倍。跟程序没关系，但这种坑不踩一次是不会知道的。</p>
+<p></p>
+<blockquote>
+<p>代码放在 GitHub ，<a href="https://github.com/yunnysunny/zray" target="_blank" rel="noopener noreferrer">yunnysunny/zray</a>，MIT 协议。README 有中文版。预编译的二进制覆盖 mipsel 、mips 、aarch64 、armv7 、x86_64 ，都是静态 musl ，scp 到路由器就能跑。</p>
+</blockquote>
+<p>如果你家里也有一台老路由器，CPU 也跟我的小米 AC2100 一样是联发科 7621 ，不要扔，它还能发挥余热。</p>
+<blockquote>
+<p>像小米路由器 3G / 4A 千兆版、红米 AC2100 、新路由 3 （ Newifi D2 ）、斐讯 K2P 、网件 R6220 都是联发科 7621 的。</p>
+</blockquote>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">5</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">V2Try</span>
+        <span>#1</span>
+        <span>2026/10/20 23:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">厉害啊，知其然也知其所以然</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203111">厉害啊，知其然也知其所以然</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203111">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250456#reply18203111" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">firefox12</span>
+        <span>#2</span>
+        <span>2026/10/20 23:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">理解下 你这个是写个 socks5 的代理背后走 vless 协议是吧。 还是说做了一个路由器，抓到包 做 nat 转成 tcp 流 再转成 vless 出去？ 我自己在本地 pc 上写了个 sock5 + aes-gcm 因为是 pc 性能根本无所谓， 问题还是 tcp 流会断开上面 ，udp 根本没办法大规模走流量。一个端口 5 个包，然后就不行了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203125">理解下 你这个是写个 socks5 的代理背后走 vless 协议是吧。 还是说做了一个路由器，抓到包 做 nat 转成 tcp 流 再转成 vless 出去？ 我自己在本地 pc 上写了个 sock5 + aes-gcm 因为是 pc 性能根本无所谓， 问题还是 tcp 流会断开上面 ，udp 根本没办法大规模走流量。一个端口 5 个包，然后就不行了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203125">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250456#reply18203125" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xiaoxiannv</span>
+        <span>#3</span>
+        <span>2026/10/20 23:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">研究价值有，工程价值需要实测。现在 7981 也就百元，7986 也没贵到哪里去就是了。是我的话，老机器我会海鲜市场卖了，买新的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203140">研究价值有，工程价值需要实测。现在 7981 也就百元，7986 也没贵到哪里去就是了。是我的话，老机器我会海鲜市场卖了，买新的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203140">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250456#reply18203140" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lnbiuc</span>
+        <span>#4</span>
+        <span>2026/10/20 23:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">zig 没有 utls 咋模拟客户端指纹呢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203166">zig 没有 utls 咋模拟客户端指纹呢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203166">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250456#reply18203166" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sola97</span>
+        <span>#5</span>
+        <span>2026/10/21 00:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">巧了，我最近也在给 TP-Link 的一个 AC 增加透明代理的功能，TL-5005P-AC ，让 AI 干很容易就拿到了 root</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203218">巧了，我最近也在给 TP-Link 的一个 AC 增加透明代理的功能，TL-5005P-AC ，让 AI 干很容易就拿到了 root</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203218">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250456#reply18203218" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

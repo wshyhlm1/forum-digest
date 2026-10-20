@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EdgeEver：全端开源知识库，支持 Cloudflare / Docker 自托管，原生打通 MCP 与 ACP 联动 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-20/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>EdgeEver：全端开源知识库，支持 Cloudflare / Docker 自托管，原生打通 MCP 与 ACP 联动</h1>
+      <p class="original-title">EdgeEver：全端开源知识库，支持 Cloudflare / Docker 自托管，原生打通 MCP 与 ACP 联动</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 mayinshi</span>
+        <span>热度 3</span>
+        <span>回复 3</span>
+        <span>2026/10/20 21:35</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1250433" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1250433.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>前情提要：之前在 V2EX 第一次发帖分享 EdgeEver 时（原帖在此），项目才刚刚起步，只有几十个 Star ，当时很多功能和架构都还在探索阶段。</li><li>这段时间里，认真吸收了上个帖子里很多 V 友的宝贵建议（比如大家关心的 Docker 自建支持、原生客户端体验等），结合自己的重度使用痛点，我把全平台客户端（ macOS / Windows / Linux / iOS / Android ）、Cloudflare 零成本部署底座、Docker 容器化以及最新的 MCP/ACP 本地 Agent 协同协议全部打磨落地了。</li></ul>
+      
+      <p class="reason">命中 8 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>各位 V 友大家好！</p>
+<p>前情提要：之前在 V2EX 第一次发帖分享 EdgeEver 时（<a href="https://www.v2ex.com/t/1225143" target="_blank" rel="noopener noreferrer">原帖在此</a>），项目才刚刚起步，只有几十个 Star ，当时很多功能和架构都还在探索阶段。</p>
+<p>这段时间里，认真吸收了上个帖子里很多 V 友的宝贵建议（比如大家关心的 Docker 自建支持、原生客户端体验等），结合自己的重度使用痛点，我把全平台客户端（ macOS / Windows / Linux / iOS / Android ）、Cloudflare 零成本部署底座、Docker 容器化以及最新的 MCP/ACP 本地 Agent 协同协议全部打磨落地了。</p>
+<p>如今 EdgeEver 在 GitHub 上收获了 <strong>2.3k+ Star</strong> 与 <strong>1.2k+ Fork</strong>（大量用户正通过 Fork 稳定自用）。今天特地带着全新的全平台生态与架构，再次来向各位 V 友交作业！</p>
+<ul>
+<li>项目仓库： <a href="https://github.com/tianma-if/edgeever" target="_blank" rel="noopener noreferrer">https://github.com/tianma-if/edgeever</a></li>
+<li>在线体验： <a href="https://demo.edgeever.org" target="_blank" rel="noopener noreferrer">https://demo.edgeever.org</a> （免登录测试环境，每日定时重置）</li>
+</ul>
+<p></p>
+
+为什么坚持把这个轮子做大？
+<p>这几年折腾笔记工具，相信很多同学和我有一样的体会：</p>
+<ul>
+<li><strong>传统商业云笔记</strong>：功能越堆越重，私有格式与高昂订阅费，越来越难融入私有自托管与现代 AI 工具链；</li>
+<li><strong>Obsidian</strong>：纯本地平铺文件在小体量时极好，但笔记突破上万条或图片附件增多后，冷启动和全库检索容易出现迟滞，多端同步配置门槛较高且容易产生孤立文件；</li>
+<li><strong>Notion / 思源</strong>：块级（ Block ）排版自由度高，但在随手记录和连续性大段文字写作时，心智负担较重；</li>
+<li><strong>Memos / Flomo</strong>：碎片化卡片极佳，但缺少体系化归档的深层目录树与大篇幅排版。</li>
+</ul>
+<p>我个人的核心诉求其实很直接：<strong>经典高效的三栏工作流（目录-列表-编辑器） + 毫秒级无感多端同步 + 数据完全掌控在自己手里 + 原生拥抱现代 AI Agent 协议</strong>。</p>
+
+核心架构与技术底座
+1. 双轨极简自托管架构（ Cloudflare / Docker ）
+<ul>
+<li><strong>Cloudflare Serverless （零服务器费用）</strong>：基于 Cloudflare Worker + D1 (SQLite) + R2 构建，整套系统完全跑在 Cloudflare 免费配额内（可支撑约 15 万条短笔记与 5 万张图片），终身免买 VPS ；</li>
+<li><strong>Docker 容器化</strong>：VPS/NAS 用户通过单行脚本直接拉起，SQLite 本地存储 + 本地/S3 附件，资源占用极小，支持 amd64 / arm64 。</li>
+</ul>
+2. 全平台客户端齐备
+<ul>
+<li><strong>桌面端</strong>：macOS (Apple Silicon / Intel 原生支持)、Windows 、Linux (AppImage)；</li>
+<li><strong>移动端</strong>：iOS （已上架 App Store ）、Android （ Google Play 已上架，并提供独立 APK 下载）；</li>
+<li><strong>浏览器扩展</strong>：Chrome / Edge / Firefox 扩展商店均已上架 Web Clipper ，支持划选与 20+ 平台结构化剪藏。</li>
+</ul>
+3. AI 原生双协议支持（ MCP + ACP ）
+<ul>
+<li><strong>原生 MCP 协议支持</strong>：内置标准 MCP 服务端，Claude Desktop 、Cursor 、Codex 等外部 Agent 可以被安全授权直接检索与读写笔记；</li>
+<li><strong>桌面端 ACP 深度互联</strong>：桌面端原生打通 Agent Client Protocol ，可直接驱动本机运行的 AI Agent （已适配 Google Antigravity 、OpenAI Codex 、Claude Code 、DeepSeek Harness 等），在侧边栏实现伴随式对话与长文推理；</li>
+<li><strong>BYOK 隐私直连</strong>：自带 API Key ，客户端优先直连模型服务商，不经过中间层转手。</li>
+</ul>
+
+核心实操案例与工作流
+1. 经典三栏工作区与沉浸排版
+<p>支持侧边栏自由拖拽调宽或折叠；编辑区支持富文本所见即所得与 Markdown 原生语法混写，万条笔记常驻依然秒开流畅：</p>
+<p></p>
+2. 桌面端 ACP 本地 Agent 伴随式协同
+<p>在桌面端设置中心连接本机运行的各类 AI Agent ，在笔记右侧栏伴随交互，直接基于你的本地知识库执行推理与辅助创作：</p>
+<p></p>
+3. 手机微信聊天记录一键归档
+<p>微信多选记录点击「合并转发 → 转发到其他应用 → EdgeEver 」，自动转为结构化笔记。发言人、时间轴、表情与文档附件（<code>.xlsx</code>、<code>.pdf</code>、音视频等直接转为附件）：</p>
+<p></p>
+4. 对话直接生成思维导图、流程图与架构图
+<p>右侧 AI 对话输入自然语言直接原地创建可交互、可拖拽编辑的思维导图与系统拓扑图，无需外部绘图工具：</p>
+<p></p>
+5. 多维表格与在线免登录收集表单
+<p>AI 一句话建表（自动推断标签、日期等字段并填充示例数据）；表头点击「表单收集」，一键生成对外公开填报链接，外部提交实时写入表格：</p>
+<p></p>
+6. 复制笔记至微信公众号排版
+<p>一键「复制到公众号/博客」（自带内联 CSS ），直接粘进公众号后台，表格、代码块与排版样式完整保留，告别排版工具：</p>
+<p></p>
+7. 导出多主题长图与 macOS 窗口代码卡片
+<p>支持导出高分辨率长图，内置 8 款卡片风格，包含程序员专属的 macOS 窗口等宽代码卡片：</p>
+<p></p>
+
+部署与使用
+<ul>
+<li><strong>GitHub 仓库</strong>： <a href="https://github.com/tianma-if/edgeever" target="_blank" rel="noopener noreferrer">https://github.com/tianma-if/edgeever</a></li>
+<li>
+<strong>部署方式</strong>：<ul>
+<li>Cloudflare：支持直接将 README 里的提示词发给 AI Agent 自动在线完成部署；</li>
+<li>Docker：<code>curl -fsSL <a href="https://edgeever.org/install.sh" target="_blank" rel="noopener noreferrer">https://edgeever.org/install.sh</a> | bash</code></li>
+</ul>
+</li>
+<li><strong>完整 18 个实操场景图解</strong>： <a href="https://github.com/tianma-if/edgeever/blob/main/docs/best-practices.zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/tianma-if/edgeever/blob/main/docs/best-practices.zh-CN.md</a></li>
+</ul>
+
+<p>项目目前仍在持续高频迭代中。欢迎各位 V 友试用体验，随时提出挑剔的架构与交互建议，也欢迎提 Issue 或 PR ！如果 EdgeEver 契合你的需求，欢迎在 GitHub 点个 Star 鼓励一下。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>各位 V 友大家好！</p>
+<p>前情提要：之前在 V2EX 第一次发帖分享 EdgeEver 时（<a href="https://www.v2ex.com/t/1225143" target="_blank" rel="noopener noreferrer">原帖在此</a>），项目才刚刚起步，只有几十个 Star ，当时很多功能和架构都还在探索阶段。</p>
+<p>这段时间里，认真吸收了上个帖子里很多 V 友的宝贵建议（比如大家关心的 Docker 自建支持、原生客户端体验等），结合自己的重度使用痛点，我把全平台客户端（ macOS / Windows / Linux / iOS / Android ）、Cloudflare 零成本部署底座、Docker 容器化以及最新的 MCP/ACP 本地 Agent 协同协议全部打磨落地了。</p>
+<p>如今 EdgeEver 在 GitHub 上收获了 <strong>2.3k+ Star</strong> 与 <strong>1.2k+ Fork</strong>（大量用户正通过 Fork 稳定自用）。今天特地带着全新的全平台生态与架构，再次来向各位 V 友交作业！</p>
+<ul>
+<li>项目仓库： <a href="https://github.com/tianma-if/edgeever" target="_blank" rel="noopener noreferrer">https://github.com/tianma-if/edgeever</a></li>
+<li>在线体验： <a href="https://demo.edgeever.org" target="_blank" rel="noopener noreferrer">https://demo.edgeever.org</a> （免登录测试环境，每日定时重置）</li>
+</ul>
+<p></p>
+
+为什么坚持把这个轮子做大？
+<p>这几年折腾笔记工具，相信很多同学和我有一样的体会：</p>
+<ul>
+<li><strong>传统商业云笔记</strong>：功能越堆越重，私有格式与高昂订阅费，越来越难融入私有自托管与现代 AI 工具链；</li>
+<li><strong>Obsidian</strong>：纯本地平铺文件在小体量时极好，但笔记突破上万条或图片附件增多后，冷启动和全库检索容易出现迟滞，多端同步配置门槛较高且容易产生孤立文件；</li>
+<li><strong>Notion / 思源</strong>：块级（ Block ）排版自由度高，但在随手记录和连续性大段文字写作时，心智负担较重；</li>
+<li><strong>Memos / Flomo</strong>：碎片化卡片极佳，但缺少体系化归档的深层目录树与大篇幅排版。</li>
+</ul>
+<p>我个人的核心诉求其实很直接：<strong>经典高效的三栏工作流（目录-列表-编辑器） + 毫秒级无感多端同步 + 数据完全掌控在自己手里 + 原生拥抱现代 AI Agent 协议</strong>。</p>
+
+核心架构与技术底座
+1. 双轨极简自托管架构（ Cloudflare / Docker ）
+<ul>
+<li><strong>Cloudflare Serverless （零服务器费用）</strong>：基于 Cloudflare Worker + D1 (SQLite) + R2 构建，整套系统完全跑在 Cloudflare 免费配额内（可支撑约 15 万条短笔记与 5 万张图片），终身免买 VPS ；</li>
+<li><strong>Docker 容器化</strong>：VPS/NAS 用户通过单行脚本直接拉起，SQLite 本地存储 + 本地/S3 附件，资源占用极小，支持 amd64 / arm64 。</li>
+</ul>
+2. 全平台客户端齐备
+<ul>
+<li><strong>桌面端</strong>：macOS (Apple Silicon / Intel 原生支持)、Windows 、Linux (AppImage)；</li>
+<li><strong>移动端</strong>：iOS （已上架 App Store ）、Android （ Google Play 已上架，并提供独立 APK 下载）；</li>
+<li><strong>浏览器扩展</strong>：Chrome / Edge / Firefox 扩展商店均已上架 Web Clipper ，支持划选与 20+ 平台结构化剪藏。</li>
+</ul>
+3. AI 原生双协议支持（ MCP + ACP ）
+<ul>
+<li><strong>原生 MCP 协议支持</strong>：内置标准 MCP 服务端，Claude Desktop 、Cursor 、Codex 等外部 Agent 可以被安全授权直接检索与读写笔记；</li>
+<li><strong>桌面端 ACP 深度互联</strong>：桌面端原生打通 Agent Client Protocol ，可直接驱动本机运行的 AI Agent （已适配 Google Antigravity 、OpenAI Codex 、Claude Code 、DeepSeek Harness 等），在侧边栏实现伴随式对话与长文推理；</li>
+<li><strong>BYOK 隐私直连</strong>：自带 API Key ，客户端优先直连模型服务商，不经过中间层转手。</li>
+</ul>
+
+核心实操案例与工作流
+1. 经典三栏工作区与沉浸排版
+<p>支持侧边栏自由拖拽调宽或折叠；编辑区支持富文本所见即所得与 Markdown 原生语法混写，万条笔记常驻依然秒开流畅：</p>
+<p></p>
+2. 桌面端 ACP 本地 Agent 伴随式协同
+<p>在桌面端设置中心连接本机运行的各类 AI Agent ，在笔记右侧栏伴随交互，直接基于你的本地知识库执行推理与辅助创作：</p>
+<p></p>
+3. 手机微信聊天记录一键归档
+<p>微信多选记录点击「合并转发 → 转发到其他应用 → EdgeEver 」，自动转为结构化笔记。发言人、时间轴、表情与文档附件（<code>.xlsx</code>、<code>.pdf</code>、音视频等直接转为附件）：</p>
+<p></p>
+4. 对话直接生成思维导图、流程图与架构图
+<p>右侧 AI 对话输入自然语言直接原地创建可交互、可拖拽编辑的思维导图与系统拓扑图，无需外部绘图工具：</p>
+<p></p>
+5. 多维表格与在线免登录收集表单
+<p>AI 一句话建表（自动推断标签、日期等字段并填充示例数据）；表头点击「表单收集」，一键生成对外公开填报链接，外部提交实时写入表格：</p>
+<p></p>
+6. 复制笔记至微信公众号排版
+<p>一键「复制到公众号/博客」（自带内联 CSS ），直接粘进公众号后台，表格、代码块与排版样式完整保留，告别排版工具：</p>
+<p></p>
+7. 导出多主题长图与 macOS 窗口代码卡片
+<p>支持导出高分辨率长图，内置 8 款卡片风格，包含程序员专属的 macOS 窗口等宽代码卡片：</p>
+<p></p>
+
+部署与使用
+<ul>
+<li><strong>GitHub 仓库</strong>： <a href="https://github.com/tianma-if/edgeever" target="_blank" rel="noopener noreferrer">https://github.com/tianma-if/edgeever</a></li>
+<li>
+<strong>部署方式</strong>：<ul>
+<li>Cloudflare：支持直接将 README 里的提示词发给 AI Agent 自动在线完成部署；</li>
+<li>Docker：<code>curl -fsSL <a href="https://edgeever.org/install.sh" target="_blank" rel="noopener noreferrer">https://edgeever.org/install.sh</a> | bash</code></li>
+</ul>
+</li>
+<li><strong>完整 18 个实操场景图解</strong>： <a href="https://github.com/tianma-if/edgeever/blob/main/docs/best-practices.zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/tianma-if/edgeever/blob/main/docs/best-practices.zh-CN.md</a></li>
+</ul>
+
+<p>项目目前仍在持续高频迭代中。欢迎各位 V 友试用体验，随时提出挑剔的架构与交互建议，也欢迎提 Issue 或 PR ！如果 EdgeEver 契合你的需求，欢迎在 GitHub 点个 Star 鼓励一下。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">3</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yafoo</span>
+        <span>#1</span>
+        <span>2026/10/20 22:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">颜值不错，早点看到，我可能就不用再开发一个了。你的编辑器是自己写的吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203049">颜值不错，早点看到，我可能就不用再开发一个了。你的编辑器是自己写的吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203049">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250433#reply18203049" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#2</span>
+        <span>2026/10/20 22:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我现在是全放 notion 上了，我之前 self host 丢失过一次数据之后，心态崩了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203080">我现在是全放 notion 上了，我之前 self host 丢失过一次数据之后，心态崩了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203080">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250433#reply18203080" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mayinshi</span>
+        <span>#3</span>
+        <span>2026/10/20 22:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/yafoo" target="_blank" rel="noopener noreferrer">yafoo</a> 底层用了三方的开源组件。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203082">@<a href="/member/yafoo" target="_blank" rel="noopener noreferrer">yafoo</a> 底层用了三方的开源组件。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203082">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250433#reply18203082" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

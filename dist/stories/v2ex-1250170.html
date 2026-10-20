@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>能清理、卸载和系统维护的 Mole Windows 版终于来啦，聊聊我是怎么用 Mac 开发它的 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-20/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>能清理、卸载和系统维护的 Mole Windows 版终于来啦，聊聊我是怎么用 Mac 开发它的</h1>
+      <p class="original-title">能清理、卸载和系统维护的 Mole Windows 版终于来啦，聊聊我是怎么用 Mac 开发它的</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 tw93</span>
+        <span>热度 80</span>
+        <span>回复 80</span>
+        <span>2026/10/20 08:27</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1250170" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1250170.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>上周 Mole 的 Windows 版终于上线啦，Mac 版发布以后一直有不少小伙伴问什么时候出 Windows 版，当时给大伙的答复是等 Mac 完善以后才有空来弄，这次终于做出来了，这一次的开发挺有意思的，想和大伙随便聊聊。</li><li>https://mole.fit/zh/windows</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>上周 Mole 的 Windows 版终于上线啦，Mac 版发布以后一直有不少小伙伴问什么时候出 Windows 版，当时给大伙的答复是等 Mac 完善以后才有空来弄，这次终于做出来了，这一次的开发挺有意思的，想和大伙随便聊聊。</p>
+<p><strong><a href="https://mole.fit/zh/windows" target="_blank" rel="noopener noreferrer">https://mole.fit/zh/windows</a></strong></p>
+<p>上线之前其实已经在小范围里迭代了 20 多个版本，又经过 Mole 天使用户多天内测，大家提了非常多的建议，终于差不多可用了，非常感谢大伙帮忙。</p>
+<p></p>
+<p>为了更好的使用体验和性能，这次用的是 Windows 原生的 C# 和 WinUI 3 ，没有套 Electron ，加上 Windows 和 Mac 的系统特性、要清理的东西完全不一样，除了设计和文案，Mac 版十几万行 Swift 几乎没有可以复用的代码，来来回回差不多写了一个月，大概 7.8 万行代码和 4000 多个测试用例。</p>
+<p>开发和调试的难度也远大于熟悉的 Mac ，WinUI 的界面在 Mac 上编译不了，我的做法是代码编写和 AI 上下文都留在 Mac 这一台机器上，Mac 上装 Parallels Desktop 开一台 Windows 虚拟机做调试验证，再整一台 ThinkPad X1 让它 24 小时开着，看虚拟机里看不到的真实效果。这是我现在的工作台，中间是 Mac ，左边是 ThinkPad X1 ，几块屏上开着的都是 Mole 。</p>
+<p></p>
+<p>用 Mac 开发 Windows 软件这一个月，有几个做法我感觉还挺好用，分享给有同样需求的小伙伴：</p>
+<ul>
+<li>代码分层，清理、卸载这些核心逻辑和界面状态放在不依赖 Windows 的 .NET 工程里，调用系统接口的那一层开了 <code>EnableWindowsTargeting</code>，在 Mac 上也能编译，4000 多个测试大部分在 Mac 上就能跑，只有 WinUI 界面这一层必须去 Windows 里编译。</li>
+<li>仓库直接作为 Parallels 的共享文件夹挂到虚拟机里，Mac 上改完代码，虚拟机里直接编译运行，不用来回拷，两边的编译产物要分到不同目录，不然 <code>obj</code> 里记的绝对路径会来回打架。</li>
+<li>虚拟机用脚本来驱动，<code>prlctl exec</code> 在里面执行命令，再按控件的无障碍名字（ UI Automation ）去点按钮、截窗口，AI 不靠坐标也能准确点中，界面稍微变动也不会点偏。</li>
+<li>ThinkPad 通过 UU 远程和 ssh 连过去，真实的 x64 、高分屏缩放、电池、SmartScreen 和 Defender 这些都在它上面看，每次发版前我都会在它上面装一遍、点一遍，看看有没有问题。</li>
+<li>实在没有命令行能解决的地方，在 Claude 里通过 lcu 让它去调用 Codex 的 computer use ，有一说一 Codex 的 computer use 是真的好用，不过 UAC 弹窗它不好点，这个时候就我自己上了，哈哈。</li>
+</ul>
+<p>我平时一般是在我自己做的终端 Kaku 里面用 7 到 10 个 Tab 的 Agent 同时在跑任务，使用各种快捷键非常方便。</p>
+<p>开发 Windows 版本，花时间最多的其实是测软件，清理工具最怕删错还有用的数据和配置，然后 Windows 上每个软件的安装器和卸载器又各有各的写法，只能一款款装上去试。我按国内外工程师常用的软件列了一份名单，编辑器、IDE 、浏览器、聊天、网盘、数据库、AI 工具都有，每一款让 AI 装上、打开随便用一下，再看 Mole 的卸载、更新、残留清理和启动项认不认得它，到现在实测了 430 款，有 73 款测出了不符合预期的情况，直接当轮修掉、补上测试再重测。</p>
+<p></p>
+<p>当前功能上和 Mac 版基本一致，清理、软件卸载与更新、优化、空间分析、状态五个页面，加上托盘面板、屏幕常亮和清洁屏幕，支持 Windows 10 22H2 和 Windows 11 ，x64 和 ARM64 都有原生安装包。</p>
+<p></p>
+<p>除了桌面版，Mole 的 Windows 命令行版其实年初就开始做了，最早是一位印度开发者提的需求，还顺手给我提了 PR ，非常感谢，到现在 9 个半月发了 9 个版本，最近一个月我也在密集迭代，用法和体验基本和 Mac 的命令行版对齐了，开源免费，喜欢命令行的小伙伴可以直接去 GitHub 上用。</p>
+<p></p>
+<p>价格上为了感谢大伙一直的支持，现在是早鸟价 15.20 美元，可以用在两台电脑上，到 11 月 11 日结束，之前买过 Mole 的朋友到 12 月 31 日结账时输入 MOLEAGAIN 只要 10 美元，每个功能也都可以先免费用几次再决定。</p>
+<ul>
+<li>官网： <a href="https://mole.fit/zh/windows" target="_blank" rel="noopener noreferrer">https://mole.fit/zh/windows</a></li>
+<li>命令行版： <a href="https://github.com/tw93/Mole/tree/windows" target="_blank" rel="noopener noreferrer">https://github.com/tw93/Mole/tree/windows</a></li>
+</ul>
+<p>欢迎有 Windows 电脑的小伙伴试试，也非常欢迎给我反馈各种建议和问题！</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>上周 Mole 的 Windows 版终于上线啦，Mac 版发布以后一直有不少小伙伴问什么时候出 Windows 版，当时给大伙的答复是等 Mac 完善以后才有空来弄，这次终于做出来了，这一次的开发挺有意思的，想和大伙随便聊聊。</p>
+<p><strong><a href="https://mole.fit/zh/windows" target="_blank" rel="noopener noreferrer">https://mole.fit/zh/windows</a></strong></p>
+<p>上线之前其实已经在小范围里迭代了 20 多个版本，又经过 Mole 天使用户多天内测，大家提了非常多的建议，终于差不多可用了，非常感谢大伙帮忙。</p>
+<p></p>
+<p>为了更好的使用体验和性能，这次用的是 Windows 原生的 C# 和 WinUI 3 ，没有套 Electron ，加上 Windows 和 Mac 的系统特性、要清理的东西完全不一样，除了设计和文案，Mac 版十几万行 Swift 几乎没有可以复用的代码，来来回回差不多写了一个月，大概 7.8 万行代码和 4000 多个测试用例。</p>
+<p>开发和调试的难度也远大于熟悉的 Mac ，WinUI 的界面在 Mac 上编译不了，我的做法是代码编写和 AI 上下文都留在 Mac 这一台机器上，Mac 上装 Parallels Desktop 开一台 Windows 虚拟机做调试验证，再整一台 ThinkPad X1 让它 24 小时开着，看虚拟机里看不到的真实效果。这是我现在的工作台，中间是 Mac ，左边是 ThinkPad X1 ，几块屏上开着的都是 Mole 。</p>
+<p></p>
+<p>用 Mac 开发 Windows 软件这一个月，有几个做法我感觉还挺好用，分享给有同样需求的小伙伴：</p>
+<ul>
+<li>代码分层，清理、卸载这些核心逻辑和界面状态放在不依赖 Windows 的 .NET 工程里，调用系统接口的那一层开了 <code>EnableWindowsTargeting</code>，在 Mac 上也能编译，4000 多个测试大部分在 Mac 上就能跑，只有 WinUI 界面这一层必须去 Windows 里编译。</li>
+<li>仓库直接作为 Parallels 的共享文件夹挂到虚拟机里，Mac 上改完代码，虚拟机里直接编译运行，不用来回拷，两边的编译产物要分到不同目录，不然 <code>obj</code> 里记的绝对路径会来回打架。</li>
+<li>虚拟机用脚本来驱动，<code>prlctl exec</code> 在里面执行命令，再按控件的无障碍名字（ UI Automation ）去点按钮、截窗口，AI 不靠坐标也能准确点中，界面稍微变动也不会点偏。</li>
+<li>ThinkPad 通过 UU 远程和 ssh 连过去，真实的 x64 、高分屏缩放、电池、SmartScreen 和 Defender 这些都在它上面看，每次发版前我都会在它上面装一遍、点一遍，看看有没有问题。</li>
+<li>实在没有命令行能解决的地方，在 Claude 里通过 lcu 让它去调用 Codex 的 computer use ，有一说一 Codex 的 computer use 是真的好用，不过 UAC 弹窗它不好点，这个时候就我自己上了，哈哈。</li>
+</ul>
+<p>我平时一般是在我自己做的终端 Kaku 里面用 7 到 10 个 Tab 的 Agent 同时在跑任务，使用各种快捷键非常方便。</p>
+<p>开发 Windows 版本，花时间最多的其实是测软件，清理工具最怕删错还有用的数据和配置，然后 Windows 上每个软件的安装器和卸载器又各有各的写法，只能一款款装上去试。我按国内外工程师常用的软件列了一份名单，编辑器、IDE 、浏览器、聊天、网盘、数据库、AI 工具都有，每一款让 AI 装上、打开随便用一下，再看 Mole 的卸载、更新、残留清理和启动项认不认得它，到现在实测了 430 款，有 73 款测出了不符合预期的情况，直接当轮修掉、补上测试再重测。</p>
+<p></p>
+<p>当前功能上和 Mac 版基本一致，清理、软件卸载与更新、优化、空间分析、状态五个页面，加上托盘面板、屏幕常亮和清洁屏幕，支持 Windows 10 22H2 和 Windows 11 ，x64 和 ARM64 都有原生安装包。</p>
+<p></p>
+<p>除了桌面版，Mole 的 Windows 命令行版其实年初就开始做了，最早是一位印度开发者提的需求，还顺手给我提了 PR ，非常感谢，到现在 9 个半月发了 9 个版本，最近一个月我也在密集迭代，用法和体验基本和 Mac 的命令行版对齐了，开源免费，喜欢命令行的小伙伴可以直接去 GitHub 上用。</p>
+<p></p>
+<p>价格上为了感谢大伙一直的支持，现在是早鸟价 15.20 美元，可以用在两台电脑上，到 11 月 11 日结束，之前买过 Mole 的朋友到 12 月 31 日结账时输入 MOLEAGAIN 只要 10 美元，每个功能也都可以先免费用几次再决定。</p>
+<ul>
+<li>官网： <a href="https://mole.fit/zh/windows" target="_blank" rel="noopener noreferrer">https://mole.fit/zh/windows</a></li>
+<li>命令行版： <a href="https://github.com/tw93/Mole/tree/windows" target="_blank" rel="noopener noreferrer">https://github.com/tw93/Mole/tree/windows</a></li>
+</ul>
+<p>欢迎有 Windows 电脑的小伙伴试试，也非常欢迎给我反馈各种建议和问题！</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DanielGoal</span>
+        <span>#1</span>
+        <span>2026/10/20 08:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持了，从 mac 命令行一直就在用了，这回给 Windows 也装个</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199241">支持了，从 mac 命令行一直就在用了，这回给 Windows 也装个</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199241">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199241" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">erek</span>
+        <span>#2</span>
+        <span>2026/10/20 08:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持，不过 mac 还有没有活动价哈哈，agent 用多了，储存空间感觉回不到以前了...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199242">支持，不过 mac 还有没有活动价哈哈，agent 用多了，储存空间感觉回不到以前了...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199242">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199242" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">H7NIGHT</span>
+        <span>#3</span>
+        <span>2026/10/20 08:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持，看到就立马去尝试了一下 scoop 安装的 windows 版 mole</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199248">支持，看到就立马去尝试了一下 scoop 安装的 windows 版 mole</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199248">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199248" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#4</span>
+        <span>2026/10/20 08:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/DanielGoal" target="_blank" rel="noopener noreferrer">DanielGoal</a> 太太太感谢了，非常欢迎试试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199251">@<a href="/member/DanielGoal" target="_blank" rel="noopener noreferrer">DanielGoal</a> 太太太感谢了，非常欢迎试试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199251">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199251" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#5</span>
+        <span>2026/10/20 08:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/erek" target="_blank" rel="noopener noreferrer">erek</a> Mac 可以用 MOLE90 折扣码，最近我做了非常多的软件测试，mac 测试了 800 多款，以及新增了 AI 维护和清理，可以去看看<br />![]( <a href="https://cdn.fliggy.com/pic/EzFrOm31.png" target="_blank" rel="noopener noreferrer">https://cdn.fliggy.com/pic/EzFrOm31.png</a>)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199256">@<a href="/member/erek" target="_blank" rel="noopener noreferrer">erek</a> Mac 可以用 MOLE90 折扣码，最近我做了非常多的软件测试，mac 测试了 800 多款，以及新增了 AI 维护和清理，可以去看看<br />![]( <a href="https://cdn.fliggy.com/pic/EzFrOm31.png" target="_blank" rel="noopener noreferrer">https://cdn.fliggy.com/pic/EzFrOm31.png</a>)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199256">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199256" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#6</span>
+        <span>2026/10/20 08:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/H7NIGHT" target="_blank" rel="noopener noreferrer">H7NIGHT</a> 可以可以 去试试看</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199258">@<a href="/member/H7NIGHT" target="_blank" rel="noopener noreferrer">H7NIGHT</a> 可以可以 去试试看</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199258">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199258" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xlouis</span>
+        <span>#7</span>
+        <span>2026/10/20 08:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">支持支持, mac 版一直在用, 试试 windows 的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199260">支持支持, mac 版一直在用, 试试 windows 的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199260">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199260" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#8</span>
+        <span>2026/10/20 08:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xlouis" target="_blank" rel="noopener noreferrer">xlouis</a> 感谢感谢 可以试试看</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199262">@<a href="/member/xlouis" target="_blank" rel="noopener noreferrer">xlouis</a> 感谢感谢 可以试试看</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199262">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199262" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Rehtt</span>
+        <span>#9</span>
+        <span>2026/10/20 09:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有计划支持 linux 、wsl 吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199374">有计划支持 linux 、wsl 吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199374">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199374" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#10</span>
+        <span>2026/10/20 09:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Rehtt" target="_blank" rel="noopener noreferrer">Rehtt</a> 需要看看大伙诉求高不高</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199391">@<a href="/member/Rehtt" target="_blank" rel="noopener noreferrer">Rehtt</a> 需要看看大伙诉求高不高</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199391">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199391" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Rehtt</span>
+        <span>#11</span>
+        <span>2026/10/20 09:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">整盘扫描太慢了，而且没有取消按钮，扫描期间拉爆硬盘 io 拖慢电脑运行速度。可以考虑在 NTFS 的硬盘上读取 MFT 建立文件清单和统计大小，现在 windows 硬盘基本都默认是 NTFS</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199477">整盘扫描太慢了，而且没有取消按钮，扫描期间拉爆硬盘 io 拖慢电脑运行速度。可以考虑在 NTFS 的硬盘上读取 MFT 建立文件清单和统计大小，现在 windows 硬盘基本都默认是 NTFS</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199477">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199477" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">1ZeWon</span>
+        <span>#12</span>
+        <span>2026/10/20 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Mac 已经入正过，支持一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199489">Mac 已经入正过，支持一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199489">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199489" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">custer</span>
+        <span>#13</span>
+        <span>2026/10/20 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">mac 买了 windows 也买了支持一下，佩服，工具很好用，感谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199491">mac 买了 windows 也买了支持一下，佩服，工具很好用，感谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199491">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199491" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#14</span>
+        <span>2026/10/20 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/custer" target="_blank" rel="noopener noreferrer">custer</a> 太太太感谢了，有任何问题都可以找我</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199494">@<a href="/member/custer" target="_blank" rel="noopener noreferrer">custer</a> 太太太感谢了，有任何问题都可以找我</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199494">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199494" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#15</span>
+        <span>2026/10/20 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Rehtt" target="_blank" rel="noopener noreferrer">Rehtt</a> 可以 我来看看，感谢反馈，还有更多建议不</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199497">@<a href="/member/Rehtt" target="_blank" rel="noopener noreferrer">Rehtt</a> 可以 我来看看，感谢反馈，还有更多建议不</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199497">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199497" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#16</span>
+        <span>2026/10/20 09:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/1ZeWon" target="_blank" rel="noopener noreferrer">1ZeWon</a> 非常感谢！记得使用 MOLEAGAIN</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199504">@<a href="/member/1ZeWon" target="_blank" rel="noopener noreferrer">1ZeWon</a> 非常感谢！记得使用 MOLEAGAIN</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199504">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199504" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Kakarrot</span>
+        <span>#17</span>
+        <span>2026/10/20 09:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">mac 版很不错 不知道需不需要重新买 win 版</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199507">mac 版很不错 不知道需不需要重新买 win 版</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199507">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199507" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#18</span>
+        <span>2026/10/20 09:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Kakarrot" target="_blank" rel="noopener noreferrer">Kakarrot</a> 因为 Windows 版本的开发完全跟 Mac 不是一套 而且维护成本会比 Mac 高很多 所以这里我采用了两个商品的机制 但是你之前买过 Mac 版本 你可以使用上面那个折扣码 只需要 10 刀</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199516">@<a href="/member/Kakarrot" target="_blank" rel="noopener noreferrer">Kakarrot</a> 因为 Windows 版本的开发完全跟 Mac 不是一套 而且维护成本会比 Mac 高很多 所以这里我采用了两个商品的机制 但是你之前买过 Mac 版本 你可以使用上面那个折扣码 只需要 10 刀</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199516">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199516" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">1ZeWon</span>
+        <span>#19</span>
+        <span>2026/10/20 09:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">想问一下，之前通过数码荔枝平台购买的 Mac 版，怎么使用 MOLEAGAIN 优惠码呢，提示 valid</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199530">想问一下，之前通过数码荔枝平台购买的 Mac 版，怎么使用 MOLEAGAIN 优惠码呢，提示 valid</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199530">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199530" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tw93</span>
+        <span>#20</span>
+        <span>2026/10/20 09:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/1ZeWon" target="_blank" rel="noopener noreferrer">1ZeWon</a> 可以给 hi@mole.fit 发一个邮件，我给你补一个就好，备注 lizhi 的订单号和邮箱哦</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18199533">@<a href="/member/1ZeWon" target="_blank" rel="noopener noreferrer">1ZeWon</a> 可以给 hi@mole.fit 发一个邮件，我给你补一个就好，备注 lizhi 的订单号和邮箱哦</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18199533">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250170#reply18199533" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

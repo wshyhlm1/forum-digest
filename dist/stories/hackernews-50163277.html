@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepInfer: High-performance inference framework for DeepSeek models | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-20/">返回日报</a>
+      <div class="source-chip">Hacker News #2</div>
+      <h1>DeepInfer: High-performance inference framework for DeepSeek models</h1>
+      <p class="original-title">DeepInfer: High-performance inference framework for DeepSeek models</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ggcr</span>
+        <span>热度 1197</span>
+        <span>回复 431</span>
+        <span>2026/10/20 17:08</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50163277" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://github.com/deepseek-ai/DeepInfer" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50163277.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>DeepInfer is the high-performance inference framework that powers DeepSeek&#39;s large-scale production services. This open-source release provides offline inference with the core features needed for serving at scale. Supported models:</li><li>DeepSeek-V4.1-Flash</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">schneehertz</span>
+        
+        <span>2026/10/20 17:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A nuclear bomb<p>"Based on this framework, we have achieved high-throughput, low-latency large-scale inference services for DeepSeek V4.1 Flash. Currently, the service throughput of a single cluster is 155 trillion tokens/day, and the overall revenue is $38 per card per hour (at off-peak pricing)"</p><p>Source: <a href="https://zhuanlan.zhihu.com/p/2095560295930508953" target="_blank" rel="noopener noreferrer">https://zhuanlan.zhihu.com/p/2095560295930508953</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50163494">A nuclear bomb<p>"Based on this framework, we have achieved high-throughput, low-latency large-scale inference services for DeepSeek V4.1 Flash. Currently, the service throughput of a single cluster is 155 trillion tokens/day, and the overall revenue is $38 per card per hour (at off-peak pricing)"</p><p>Source: <a href="https://zhuanlan.zhihu.com/p/2095560295930508953" target="_blank" rel="noopener noreferrer">https://zhuanlan.zhihu.com/p/2095560295930508953</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50163494">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50163494" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">abound</span>
+        
+        <span>2026/10/20 18:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's really refreshing to put some cold hard numbers on this stuff, hopefully this quells some of the "AI is unprofitable everyone is spending a dollar to make fifty cents" arguments. Amortized cost of owning a DC full of GPUs is far less than $38/card/hr<p>Not to say it can't still be a bubble, just that there is legitimately profit to be had and perhaps some sustainable equilibrium in the future.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50163753">It's really refreshing to put some cold hard numbers on this stuff, hopefully this quells some of the "AI is unprofitable everyone is spending a dollar to make fifty cents" arguments. Amortized cost of owning a DC full of GPUs is far less than $38/card/hr<p>Not to say it can't still be a bubble, just that there is legitimately profit to be had and perhaps some sustainable equilibrium in the future.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50163753">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50163753" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Closi</span>
+        
+        <span>2026/10/20 19:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; hopefully this quells some of the "AI is unprofitable everyone is spending a dollar to make fifty cents" arguments.<p>I think everyone has known that inference is profitable overall for the major providers for a while (I'm sure not all user accounts, but in aggregate).</p><p>The major providers are unprofitable after you add in the training and research costs and other overheads.</p><p>This is why the open source models are such a threat if they become good enough - it will destroy the business model of just providing raw chat/intelligence.</p><p>Arguably that's also why a few of these providers are trying to diversify into whole-platform approaches rather than just relying on having their whole thing be a great model.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50164379">&gt; hopefully this quells some of the "AI is unprofitable everyone is spending a dollar to make fifty cents" arguments.<p>I think everyone has known that inference is profitable overall for the major providers for a while (I'm sure not all user accounts, but in aggregate).</p><p>The major providers are unprofitable after you add in the training and research costs and other overheads.</p><p>This is why the open source models are such a threat if they become good enough - it will destroy the business model of just providing raw chat/intelligence.</p><p>Arguably that's also why a few of these providers are trying to diversify into whole-platform approaches rather than just relying on having their whole thing be a great model.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50164379">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50164379" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jeremyjh</span>
+        
+        <span>2026/10/20 19:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There has always been a lot of evidence that prices are only going down. The fact that you could already get DeepSeek or GLM inference from 20+ providers on openrouter.ai was already sufficient evidence that inference was profitable and being commoditized.<p>People that want to believe something different as a coping mechanism will not be swayed by this evidence either.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50164824">There has always been a lot of evidence that prices are only going down. The fact that you could already get DeepSeek or GLM inference from 20+ providers on openrouter.ai was already sufficient evidence that inference was profitable and being commoditized.<p>People that want to believe something different as a coping mechanism will not be swayed by this evidence either.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50164824">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50164824" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jacquesm</span>
+        
+        <span>2026/10/20 19:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">AI will end up being a commodity. That's also why you already see the first rounds of protectionism under the guise of national security. Obviously they do have a point <i>but</i> that point works against them just as easily. Anybody that integrates unreviewed model output into their workflow is asking for trouble.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50164869">AI will end up being a commodity. That's also why you already see the first rounds of protectionism under the guise of national security. Obviously they do have a point <i>but</i> that point works against them just as easily. Anybody that integrates unreviewed model output into their workflow is asking for trouble.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50164869">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50164869" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">anthonypasq</span>
+        
+        <span>2026/10/20 22:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">non frontier intelligence will be a commodity. Frontier intelligence will be a high margin luxury good. this is how most markets work</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50167017">non frontier intelligence will be a commodity. Frontier intelligence will be a high margin luxury good. this is how most markets work</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50167017">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50167017" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">xbmcuser</span>
+        
+        <span>2026/10/20 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yesterday’s frontier is today’s commodity, so I don't think frontier AI is out of reach. With computing and solar energy costs continuing to drop, the current AI supply shortages are just a temporary blip. We’ll probably land right back in standard boom-and-bust cycles.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50167628">Yesterday’s frontier is today’s commodity, so I don't think frontier AI is out of reach. With computing and solar energy costs continuing to drop, the current AI supply shortages are just a temporary blip. We’ll probably land right back in standard boom-and-bust cycles.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50167628">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50167628" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Tuna-Fish</span>
+        
+        <span>2026/10/21 00:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Either frontier AI will continue to get better steadily, until it's better than people at basically everything, and very weird things start to happen, or, it plateaus and the open weights models will eventually catch up.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50169317">Either frontier AI will continue to get better steadily, until it's better than people at basically everything, and very weird things start to happen, or, it plateaus and the open weights models will eventually catch up.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50169317">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50169317" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">overfeed</span>
+        
+        <span>2026/10/21 01:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Everyone knows the path followed by every single technology mankind has ever developed - including the incredible run that was Moore's law. Sure, some will think "This time is different" - but is it?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50169747">Everyone knows the path followed by every single technology mankind has ever developed - including the incredible run that was Moore's law. Sure, some will think "This time is different" - but is it?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50169747">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50169747" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Tuna-Fish</span>
+        
+        <span>2026/10/21 03:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It doesn't need to run indefinitely. I don't think anyone sane thinks it's going to run indefinitely. It just needs to run long enough. Moore's law was what, 50 years? If AI keeps improving at the rate it currently is for 20 years, the world will be very different when that curve flattens out, in a way that makes most of our current concerns are entirely irrelevant.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171591">It doesn't need to run indefinitely. I don't think anyone sane thinks it's going to run indefinitely. It just needs to run long enough. Moore's law was what, 50 years? If AI keeps improving at the rate it currently is for 20 years, the world will be very different when that curve flattens out, in a way that makes most of our current concerns are entirely irrelevant.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171591">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171591" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jacquesm</span>
+        
+        <span>2026/10/21 03:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Those cycles have shortened considerably. Just look at the lifespan of media, integrated circuits, software, products. There have been so many big model releases just in the last three months I've lost count. We're now closer to weeks between steps.<p>Maybe if China stops releasing capable models the pace will slow down a little, but they have lots of incentives not to.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171726">Those cycles have shortened considerably. Just look at the lifespan of media, integrated circuits, software, products. There have been so many big model releases just in the last three months I've lost count. We're now closer to weeks between steps.<p>Maybe if China stops releasing capable models the pace will slow down a little, but they have lots of incentives not to.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171726">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171726" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/10/21 01:25</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50169713"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50169713">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50169713" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">InsidiousWombat</span>
+        
+        <span>2026/10/20 23:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">But it is not a constant point of "this % of people needs the frontier intelligence".<p>As thje models get better, the % of the pie gets smaller and smaller. So higher and higher cost of getting frontier model out gets divided onto smaller and smaller customer base as other models catch up</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50167539">But it is not a constant point of "this % of people needs the frontier intelligence".<p>As thje models get better, the % of the pie gets smaller and smaller. So higher and higher cost of getting frontier model out gets divided onto smaller and smaller customer base as other models catch up</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50167539">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50167539" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jacquesm</span>
+        
+        <span>2026/10/20 23:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes, this is the crunchy bit and we're already well underway on that curve. I haven't touched a frontier model in months because I can do with smaller ones without wondering/worrying when I'll get banned next because what I'm doing is dual use. Qwen was the the first time I thought oh, ok, so this is 90% of what I need. Then DS4 made that 95% and with GLM 5.3 it's somewhere between 99% and 100%. Now, I'm not trying to solve any Nobel prize winning stuff here but if that's the kind of customer that will remain I don't think the frontier model providers are going to like the next six months or so.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50167887">Yes, this is the crunchy bit and we're already well underway on that curve. I haven't touched a frontier model in months because I can do with smaller ones without wondering/worrying when I'll get banned next because what I'm doing is dual use. Qwen was the the first time I thought oh, ok, so this is 90% of what I need. Then DS4 made that 95% and with GLM 5.3 it's somewhere between 99% and 100%. Now, I'm not trying to solve any Nobel prize winning stuff here but if that's the kind of customer that will remain I don't think the frontier model providers are going to like the next six months or so.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50167887">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50167887" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">user43928</span>
+        
+        <span>2026/10/20 23:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That's the crux of the issue. You think that GLM 5.3 is all you need.<p>However, the expectations for AI are not to make your software engineering work 100% faster.</p><p>It's, for example, to build software more or less end-to-end with minimal input and feedback from you.</p><p>Then next, robotics and boosting manufacturing. Not by 10% but let's say 200%.</p><p>Such are the ambitions. Can GLM 5.3 do it?</p><p>The crucial question is whether eg. Fable 6 can, and with what lead over the competition.</p><p>Open-weight models still have not beat February's Mythos.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50168188">That's the crux of the issue. You think that GLM 5.3 is all you need.<p>However, the expectations for AI are not to make your software engineering work 100% faster.</p><p>It's, for example, to build software more or less end-to-end with minimal input and feedback from you.</p><p>Then next, robotics and boosting manufacturing. Not by 10% but let's say 200%.</p><p>Such are the ambitions. Can GLM 5.3 do it?</p><p>The crucial question is whether eg. Fable 6 can, and with what lead over the competition.</p><p>Open-weight models still have not beat February's Mythos.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50168188">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50168188" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jacquesm</span>
+        
+        <span>2026/10/20 23:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I am actually doing robotics stuff and yes, GLM 5.3 can do it.<p>As for the manual feedback: I <i>want</i> that manual feedback, but if I let it rip it will do just fine all by itself, but then I have no clue what is going on under the hood.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50168279">I am actually doing robotics stuff and yes, GLM 5.3 can do it.<p>As for the manual feedback: I <i>want</i> that manual feedback, but if I let it rip it will do just fine all by itself, but then I have no clue what is going on under the hood.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50168279">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50168279" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">user43928</span>
+        
+        <span>2026/10/21 00:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">At some point you have to let go of trying for full understanding and control, delegate to the AI, and unlock the real productivity boost.<p>I have no clue about the state of robotics.</p><p>For software, I know that Opus 5.5 can handle more than GPT 5.6 Sol. I am willing to pay for the difference rather than use the cheaper DeepSeek Flash.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50168765">At some point you have to let go of trying for full understanding and control, delegate to the AI, and unlock the real productivity boost.<p>I have no clue about the state of robotics.</p><p>For software, I know that Opus 5.5 can handle more than GPT 5.6 Sol. I am willing to pay for the difference rather than use the cheaper DeepSeek Flash.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50168765">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50168765" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">AnthonyMouse</span>
+        
+        <span>2026/10/21 00:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; At some point you have to let go of trying for full understanding and control, delegate to the AI, and unlock the real productivity boost.<p>The prerequisite here is that you can trust it not to do something that gives criminals access to your bank account or allows users to consume an unlimited amount of services it costs you money to provide for free or bankrupts you through legal liability etc.</p><p>It's basically this:</p><p>"A computer can never be held accountable, therefore a computer must never make a management decision."</p><p>Notice what this is actually saying. It's not saying that the computer can't generate a given output. It's saying that if the computer makes a mistake and you don't bother to check, you're the one who has to eat it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50169303">&gt; At some point you have to let go of trying for full understanding and control, delegate to the AI, and unlock the real productivity boost.<p>The prerequisite here is that you can trust it not to do something that gives criminals access to your bank account or allows users to consume an unlimited amount of services it costs you money to provide for free or bankrupts you through legal liability etc.</p><p>It's basically this:</p><p>"A computer can never be held accountable, therefore a computer must never make a management decision."</p><p>Notice what this is actually saying. It's not saying that the computer can't generate a given output. It's saying that if the computer makes a mistake and you don't bother to check, you're the one who has to eat it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50169303">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50169303" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jacquesm</span>
+        
+        <span>2026/10/21 00:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; "A computer can never be held accountable, therefore a computer must never make a management decision."<p>That's a great way of putting it. So far I always used 'you can outsource work but you can't outsource responsibility'.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50169331">&gt; "A computer can never be held accountable, therefore a computer must never make a management decision."<p>That's a great way of putting it. So far I always used 'you can outsource work but you can't outsource responsibility'.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50169331">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50169331" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oldmanhorton</span>
+        
+        <span>2026/10/21 03:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Nah man, no you don’t. There are very few absolutes in the world and that certainly isn’t one of them.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171118">Nah man, no you don’t. There are very few absolutes in the world and that certainly isn’t one of them.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171118">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171118" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
