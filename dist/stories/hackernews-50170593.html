@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Show HN: SimCity, but with Permits | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-21/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Show HN: SimCity, but with Permits</h1>
+      <p class="original-title">Show HN: SimCity, but with Permits</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 pcai</span>
+        <span>热度 866</span>
+        <span>回复 393</span>
+        <span>2026/10/21 02:29</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50170593" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://permit.petercai.com/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50170593.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Build the city of your dreams. Subject to approval You are the mayor. You know exactly what this city needs. Now get it past the zoning board, the neighbors, the appeals court and the next election. New game Free, because you are loved</li><li>Permit Pending is a city simulation in the spirit of the classics, with one difference: you are not a god. You are an elected mayor. Every apartment block, bus lane and factory goes through hearings, reviews, objections, lawsuits and appeals. The economy underneath is real. The neighbors are not always rational. Win the argument, or win the election. Ideally both.</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">goda90</span>
+        
+        <span>2026/10/21 03:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The various decisions/petitions that pop up can break the immersion by mentioning details that don't fit the city(petitions with signatures from &gt;250% of the town population, traffic issues at the "4-way intersection in front of the feed store" when no such place exists, or the new building causing shadows when there's nothing around it). It would be great if more text was turned into templates that pull game data for accuracy, and if the simulation were able to feed definitive descriptions of the town layout into generative AI prompts to make the text talk about scenarios reflected in the game.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171672">The various decisions/petitions that pop up can break the immersion by mentioning details that don't fit the city(petitions with signatures from &gt;250% of the town population, traffic issues at the "4-way intersection in front of the feed store" when no such place exists, or the new building causing shadows when there's nothing around it). It would be great if more text was turned into templates that pull game data for accuracy, and if the simulation were able to feed definitive descriptions of the town layout into generative AI prompts to make the text talk about scenarios reflected in the game.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171672">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171672" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">pcai</span>
+        
+        <span>2026/10/21 06:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks so much for your feedback! I originally started with a pretty diverse corpus of prewritten story arcs for diversity, and went back to retrofit them into the engine once I started customizing stories and details for the city. It looks like I missed a few spots, sorry about that!<p>And yes, I did sketch a version that is even more procedurally generated, but it’s taking longer to get right than I thought</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50173599">Thanks so much for your feedback! I originally started with a pretty diverse corpus of prewritten story arcs for diversity, and went back to retrofit them into the engine once I started customizing stories and details for the city. It looks like I missed a few spots, sorry about that!<p>And yes, I did sketch a version that is even more procedurally generated, but it’s taking longer to get right than I thought</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50173599">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50173599" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">noduerme</span>
+        
+        <span>2026/10/21 14:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm a huge fan of city builders and a politics nerd... I can't wait to try this. But I hope it really is procedural in the details too!<p>To the parent post: I have actually seen public interest groups bring petitions to a small city council with more signatures than there are residents of the city... but hopefully there's some countervailing force in this game too where local residents reject petitions that are driven by outside parties. In other words, not every signatory to a petition is a resident, and there's local resistance to regional causes. I guess this happens quite a bit more in the exurbs of major metropolitan areas.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50176964">I'm a huge fan of city builders and a politics nerd... I can't wait to try this. But I hope it really is procedural in the details too!<p>To the parent post: I have actually seen public interest groups bring petitions to a small city council with more signatures than there are residents of the city... but hopefully there's some countervailing force in this game too where local residents reject petitions that are driven by outside parties. In other words, not every signatory to a petition is a resident, and there's local resistance to regional causes. I guess this happens quite a bit more in the exurbs of major metropolitan areas.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50176964">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50176964" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">darkwater</span>
+        
+        <span>2026/10/21 23:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Usually the local petitions for city matters are spread through WhatsApp groups of friends and family of everyone directly involved, so they usually get a lot of signatures from people outside the city (valid more or less for any size of city)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50182469">Usually the local petitions for city matters are spread through WhatsApp groups of friends and family of everyone directly involved, so they usually get a lot of signatures from people outside the city (valid more or less for any size of city)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50182469">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50182469" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">rkagerer</span>
+        
+        <span>2026/10/21 15:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">First, it's awesome the developer is giving this away for free.  I love the tongue in cheek approach, and the polish and labour-of-love artifacts visible in portions of the UI and gameplay.<p>That said, after playing it for a while something just felt "off".  I like the idea of being involved in individual proposals, but there are too many immersion-breaking dialogs that come up (some of which just seem too irrelevant).  And the text in them is sometimes "off" in a fashion that feels like it was written by AI (though I'm not sure if it was).  The news articles and such in SimCity felt more hand-curated, concise and clever - thus more entertaining.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50177210">First, it's awesome the developer is giving this away for free.  I love the tongue in cheek approach, and the polish and labour-of-love artifacts visible in portions of the UI and gameplay.<p>That said, after playing it for a while something just felt "off".  I like the idea of being involved in individual proposals, but there are too many immersion-breaking dialogs that come up (some of which just seem too irrelevant).  And the text in them is sometimes "off" in a fashion that feels like it was written by AI (though I'm not sure if it was).  The news articles and such in SimCity felt more hand-curated, concise and clever - thus more entertaining.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50177210">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50177210" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">grogenaut</span>
+        
+        <span>2026/10/21 13:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">some of the things come up over and over and over... I've trained 5 people in being food service acapble for the volunteer fire pancake breakfast  and they've all moved to the county seat. I'm just a jobs program I guess.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50176370">some of the things come up over and over and over... I've trained 5 people in being food service acapble for the volunteer fire pancake breakfast  and they've all moved to the county seat. I'm just a jobs program I guess.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50176370">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50176370" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">noduerme</span>
+        
+        <span>2026/10/21 14:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Welcome to Portland.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50176970">Welcome to Portland.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50176970">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50176970" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">cucumber3732842</span>
+        
+        <span>2026/10/21 19:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;The various decisions/petitions that pop up can break the immersion by mentioning details that don't fit the city(petitions with signatures from &gt;250% of the town population, traffic issues at the "4-way intersection in front of the feed store" when no such place exists, or the new building causing shadows when there's nothing around it).<p>This is how real life works when when your proposed development doesn't fit the vision some random unaccountable bureaucrats and/or institutions you have to go through have for the vibe of the community.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50179209">&gt;The various decisions/petitions that pop up can break the immersion by mentioning details that don't fit the city(petitions with signatures from &gt;250% of the town population, traffic issues at the "4-way intersection in front of the feed store" when no such place exists, or the new building causing shadows when there's nothing around it).<p>This is how real life works when when your proposed development doesn't fit the vision some random unaccountable bureaucrats and/or institutions you have to go through have for the vibe of the community.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50179209">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50179209" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ryandrake</span>
+        
+        <span>2026/10/21 03:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Kind of like this one[1] which made the rounds on HN a few weeks ago. Looks like the social commentary from them are similar: "Real life is worse than SimCity because of rules and the public getting a say." and/or "Why can't we in real life let the mayor use the Bulldozer Tool to just wipe out any property he doesn't like and put up whatever property he likes in its place?"<p>1: <a href="https://news.ycombinator.com/item?id=50036864" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50036864</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171728">Kind of like this one[1] which made the rounds on HN a few weeks ago. Looks like the social commentary from them are similar: "Real life is worse than SimCity because of rules and the public getting a say." and/or "Why can't we in real life let the mayor use the Bulldozer Tool to just wipe out any property he doesn't like and put up whatever property he likes in its place?"<p>1: <a href="https://news.ycombinator.com/item?id=50036864" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50036864</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171728">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171728" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">joshvm</span>
+        
+        <span>2026/10/21 13:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I remember in Transport Tycoon, under certain conditions, you were no longer allowed to bulldoze willy nilly. If you wanted to put in a new bus station and were out of favour with the populace, you could try the old fashioned way: with bribes (and tree planting).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50176582">I remember in Transport Tycoon, under certain conditions, you were no longer allowed to bulldoze willy nilly. If you wanted to put in a new bus station and were out of favour with the populace, you could try the old fashioned way: with bribes (and tree planting).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50176582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50176582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yuppiepuppie</span>
+        
+        <span>2026/10/21 16:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Coming from a family owned construction firm, this is funny and sad in a way. Any how, Ive added it to the HNArcade <a href="https://hnarcade.com/games/games/permit-pending" target="_blank" rel="noopener noreferrer">https://hnarcade.com/games/games/permit-pending</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50177486">Coming from a family owned construction firm, this is funny and sad in a way. Any how, Ive added it to the HNArcade <a href="https://hnarcade.com/games/games/permit-pending" target="_blank" rel="noopener noreferrer">https://hnarcade.com/games/games/permit-pending</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50177486">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50177486" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">aidriftline</span>
+        
+        <span>2026/10/21 20:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's fun browsing the HN games compilation here</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50179919">It's fun browsing the HN games compilation here</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50179919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50179919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">blobbers</span>
+        
+        <span>2026/10/21 03:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I haven't tried the game, but this is slightly hilarious and awesome.<p>I've often wondered about this kind of thing. When I go to an airport, it seems strange to me that each one is different with some of them having elaborate train systems, or multiple runways.</p><p>The engineer in me says "surely there is an optimal solution, so why are they all so different?". Is there a simulator?</p><p>Sim City was a fantastic simulation from the stand point of a game, but I'm curious; if you build a city simulator and let it grow organically (game of life style) can you put in sufficient regulation/parameters that get you to where we are today?</p><p>And if so, is there a simulation that shows us a way to get us to a better tomorrow?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171412">I haven't tried the game, but this is slightly hilarious and awesome.<p>I've often wondered about this kind of thing. When I go to an airport, it seems strange to me that each one is different with some of them having elaborate train systems, or multiple runways.</p><p>The engineer in me says "surely there is an optimal solution, so why are they all so different?". Is there a simulator?</p><p>Sim City was a fantastic simulation from the stand point of a game, but I'm curious; if you build a city simulator and let it grow organically (game of life style) can you put in sufficient regulation/parameters that get you to where we are today?</p><p>And if so, is there a simulation that shows us a way to get us to a better tomorrow?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171412">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171412" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">buildsjets</span>
+        
+        <span>2026/10/21 04:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Every airport is different because every local geography, existing land use, and weather pattern is different.<p>Seattle has generally ether north or south winds depending on season, and the airport is located on the only buildable flat plateau for miles around, so has 3 runways all going the same direction, N/S.</p><p><a href="https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laKSEA" target="_blank" rel="noopener noreferrer">https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laK...</a></p><p>Denver built an all-new airport way outside of town where there was unlimited buildable land.  Their winds are highly variable even within one season, so they have 6 runways in a crossing configuration.</p><p><a href="https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laKDEN" target="_blank" rel="noopener noreferrer">https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laK...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171940">Every airport is different because every local geography, existing land use, and weather pattern is different.<p>Seattle has generally ether north or south winds depending on season, and the airport is located on the only buildable flat plateau for miles around, so has 3 runways all going the same direction, N/S.</p><p><a href="https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laKSEA" target="_blank" rel="noopener noreferrer">https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laK...</a></p><p>Denver built an all-new airport way outside of town where there was unlimited buildable land.  Their winds are highly variable even within one season, so they have 6 runways in a crossing configuration.</p><p><a href="https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laKDEN" target="_blank" rel="noopener noreferrer">https://wrcc-archive.dri.edu/cgi-bin/wea_windroseclim.pl?laK...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171940">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171940" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bagacrap</span>
+        
+        <span>2026/10/21 11:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Denver's airport is barely in Colorado.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50175902">Denver's airport is barely in Colorado.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50175902">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50175902" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nkrisc</span>
+        
+        <span>2026/10/21 03:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; The engineer in me says "surely there is an optimal solution, so why are they all so different?". Is there a simulator?<p>Optimistically, because each one has a different optimal solution given all the unique constraints for each airport project.</p><p>Also, airports aren't just built and then done. Often the cities around them will grow and the airports will need to expand and adapt to new constraints, sometimes many decades after they were first built.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171448">&gt; The engineer in me says "surely there is an optimal solution, so why are they all so different?". Is there a simulator?<p>Optimistically, because each one has a different optimal solution given all the unique constraints for each airport project.</p><p>Also, airports aren't just built and then done. Often the cities around them will grow and the airports will need to expand and adapt to new constraints, sometimes many decades after they were first built.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171448">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171448" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">dlcarrier</span>
+        
+        <span>2026/10/21 11:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The optimal airport has two parallel runways, 9,000 feet apart, that align with prevailing wind.  If a location has variable strong winds, another set can be built at a 90° angle.  It's possible to add more runways at 9,000 intervals, but you're usually better off building an airport somewhere else.<p>Most airports were built during or before WWII, so few are designed to most efficiently accommodate modern usage.  Maybe in the future we can better handle closer runways in low visibility, but first we'll have to figure out how to have two computers communicate directly with each other, instead of having one computer generate routes that get read out load by a human, transmitted over an analog radio, listened to by another human, then typed into another computer.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50175639">The optimal airport has two parallel runways, 9,000 feet apart, that align with prevailing wind.  If a location has variable strong winds, another set can be built at a 90° angle.  It's possible to add more runways at 9,000 intervals, but you're usually better off building an airport somewhere else.<p>Most airports were built during or before WWII, so few are designed to most efficiently accommodate modern usage.  Maybe in the future we can better handle closer runways in low visibility, but first we'll have to figure out how to have two computers communicate directly with each other, instead of having one computer generate routes that get read out load by a human, transmitted over an analog radio, listened to by another human, then typed into another computer.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50175639">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50175639" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">cjrp</span>
+        
+        <span>2026/10/21 16:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; but first we'll have to figure out how to have two computers communicate directly with each other, instead of having one computer generate routes that get read out load by a human, transmitted over an analog radio, listened to by another human, then typed into another computer.<p>Tada! <a href="https://en.wikipedia.org/wiki/Controller%E2%80%93pilot_data_link_communications" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Controller%E2%80%93pilot_data_...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50177566">&gt; but first we'll have to figure out how to have two computers communicate directly with each other, instead of having one computer generate routes that get read out load by a human, transmitted over an analog radio, listened to by another human, then typed into another computer.<p>Tada! <a href="https://en.wikipedia.org/wiki/Controller%E2%80%93pilot_data_link_communications" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Controller%E2%80%93pilot_data_...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50177566">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50177566" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">goodcanadian</span>
+        
+        <span>2026/10/21 17:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>. . . but first we'll have to figure out how to have two computers communicate directly with each other . . .</i><p><a href="https://en.wikipedia.org/wiki/Traffic_collision_avoidance_system" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Traffic_collision_avoidance_sy...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50178199"><i>. . . but first we'll have to figure out how to have two computers communicate directly with each other . . .</i><p><a href="https://en.wikipedia.org/wiki/Traffic_collision_avoidance_system" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Traffic_collision_avoidance_sy...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50178199">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50178199" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zabriel_goss</span>
+        
+        <span>2026/10/21 03:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The original EPCOT as imagined by Walt Disney was a master-planned city, with all the pleasant amenities and cleverest design you could imagine in the 1960's: Walkable areas, clean public transit, no traffic congestion, homes furnished with the latest in technology and appliances. It was his greatest ambition at the end of his life to make it a reality.<p>But it didn't happen. Namely, because of how much central control would be given to one man and/or his company to pull it off. The plan in its early iterations essentially meant that if you lived in EPCOT, you forfeited certain freedoms, such as what goes in your home, where you worked, and so on.</p><p>This game gave me a good chuckle as a Sim City fan. I'm guilty of complaining about politicians of all levels. But I don't envy their position of having to cut through the vines of competing motives and regulations. And at the same time, as a citizen, I'm not sure I would opt for the Utopian alternative.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50171290">The original EPCOT as imagined by Walt Disney was a master-planned city, with all the pleasant amenities and cleverest design you could imagine in the 1960's: Walkable areas, clean public transit, no traffic congestion, homes furnished with the latest in technology and appliances. It was his greatest ambition at the end of his life to make it a reality.<p>But it didn't happen. Namely, because of how much central control would be given to one man and/or his company to pull it off. The plan in its early iterations essentially meant that if you lived in EPCOT, you forfeited certain freedoms, such as what goes in your home, where you worked, and so on.</p><p>This game gave me a good chuckle as a Sim City fan. I'm guilty of complaining about politicians of all levels. But I don't envy their position of having to cut through the vines of competing motives and regulations. And at the same time, as a citizen, I'm not sure I would opt for the Utopian alternative.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50171290">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50171290" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

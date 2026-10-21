@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>给自建 Umami 写了原生 iOS / Android 客户端 SiteGlance：纯端侧直连、支持桌面小组件，单次买断（附兑换码） | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-21/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>给自建 Umami 写了原生 iOS / Android 客户端 SiteGlance：纯端侧直连、支持桌面小组件，单次买断（附兑换码）</h1>
+      <p class="original-title">给自建 Umami 写了原生 iOS / Android 客户端 SiteGlance：纯端侧直连、支持桌面小组件，单次买断（附兑换码）</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 xcc3641</span>
+        <span>热度 87</span>
+        <span>回复 87</span>
+        <span>2026/10/21 09:22</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1250493" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1250493.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>手里有几个小项目和博客，网站统计一直用的自建 Umami。Umami 轻量、干净、不侵犯访客隐私，但在手机上看数据一直有点别扭：</li><li>每次想瞄一眼今天来了多少访客、刚发的文章有没有人看，都得打开手机浏览器 -&gt; 翻书签或输网址 -&gt; 等网页加载（有时候登录态过期还要重新输密码和 2FA）。虽然能把网页添加到主屏幕，但没有桌面小组件，多站点来回切也不顺手。</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>手里有几个小项目和博客，网站统计一直用的自建 Umami。Umami 轻量、干净、不侵犯访客隐私，但在手机上看数据一直有点别扭：</p>
+<p>每次想瞄一眼今天来了多少访客、刚发的文章有没有人看，都得打开手机浏览器 -&gt; 翻书签或输网址 -&gt; 等网页加载（有时候登录态过期还要重新输密码和 2FA）。虽然能把网页添加到主屏幕，但没有桌面小组件，多站点来回切也不顺手。</p>
+<p>于是干脆自己动手写了 <strong>SiteGlance</strong> —— 一个专为 Umami（同时支持自建实例与 Umami Cloud）打造的 iOS / Android 原生客户端。</p>
+<p></p>
+1. 先交底隐私与连接架构（最重要）
+<p>我知道用自建 Umami 的朋友最在意数据主权，绝对不可能把自己的统计实例账号交由第三方服务器中转。所以在设计之初就把边界卡死了：</p>
+<ul>
+<li><strong>纯端侧直连（Direct Connection）</strong>：App 只是运行在你手机上的 HTTP 客户端，所有 API 请求由手机直接发往你的自建 Umami 实例（HTTPS）或官方 Umami Cloud API。<strong>中间没有任何我方后端服务器中转</strong>，我也看不到你的任何站点数据。</li>
+<li><strong>凭据本地加密存储</strong>：服务器地址、登录 Token / API Key 仅保存在系统原生的安全存储中（iOS Keychain / Android Keystore）。</li>
+<li><strong>零第三方追踪</strong>：App 内没有接入任何第三方统计或广告 Tracking SDK。</li>
+</ul>
+2. 主要做了哪些功能
+<ul>
+<li><strong>桌面小组件（Home Screen Widgets）</strong>：这是我每天用得最多的部分。不用点进 App，手机亮屏就能看到今日访客（Visitors）、浏览量（Views）和小时级趋势图。</li>
+<li><strong>多站点聚合一屏看</strong>：手里有多个域名/项目的，打开首页直接拉出各站点核心指标汇总，不用在下拉菜单里挨个切。</li>
+<li><strong>完整统计维度</strong>：支持实时在线访客（Realtime）、来源渠道、受访页面、国家/地区、设备与系统分布。</li>
+<li><strong>进阶分析</strong>：支持查看自定义事件（Events）、目标与转化漏斗（Goals &amp; Funnels），方便跟进注册或下载转化。</li>
+<li><strong>原生体验与离线 Demo</strong>：做好了深色模式适配。如果你手头暂时没配好 Umami，或者还不想绑真实账号，App 内置了一套完整的<strong>离线 Demo 数据</strong>，下载后免登录就能直接点进去试玩所有页面。</li>
+</ul>
+<p></p>
+3. 免费版与买断说明
+<p>不玩免费诱导再弹天价周订阅的套路，直接把规则摊开说：</p>
+<ul>
+<li><strong>免费版</strong>：支持绑定 1 个 Umami 实例、查看前 3 个站点、使用基础桌面小组件。只有一两个个人博客或独立项目的朋友，免费版完全够日常使用。</li>
+<li><strong>Pro 版（单次买断）</strong>：解锁无限实例与无限站点、全部尺寸桌面小组件、漏斗与高级筛选等完整功能。<strong>一次性买断，永久有效，没有任何订阅续费。</strong></li>
+</ul>
+4. 下载地址
+<ul>
+<li><strong>官网介绍</strong>： <a href="https://siteglance.yichenlab.com/zh-CN" target="_blank" rel="noopener noreferrer">https://siteglance.yichenlab.com/zh-CN</a></li>
+<li><strong>iOS (App Store)</strong>： <a href="https://apps.apple.com/app/id6813091770" target="_blank" rel="noopener noreferrer">https://apps.apple.com/app/id6813091770</a></li>
+<li><strong>Android (Google Play)</strong>： <a href="https://play.google.com/store/apps/details?id=com.hugo.siteglance" target="_blank" rel="noopener noreferrer">https://play.google.com/store/apps/details?id=com.hugo.siteglance</a></li>
+</ul>
+5. 福利与反馈征集
+<p>目前版本还在持续迭代中，如果你也在用自建 Umami 或 Umami Cloud，非常欢迎下载体验（或者直接用内置 Demo 逛逛）。有任何不顺手的地方、修 Bug 建议，或者希望加什么新维度的图表，直接在帖子里提，我都会认真看并跟进。</p>
+<p><strong>评论区送一波 Pro 永久买断兑换码：</strong></p>
+<ul>
+<li>V 站惯例防爬虫，有需要的 V 友麻烦在回复里留下你的 <strong>Base64 邮箱</strong>，并注明需要 <strong>iOS</strong> 还是 <strong>Android</strong>。</li>
+<li>我会分批把兑换码发送到各位邮箱里，先向大家道声感谢！</li>
+</ul>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>手里有几个小项目和博客，网站统计一直用的自建 Umami。Umami 轻量、干净、不侵犯访客隐私，但在手机上看数据一直有点别扭：</p>
+<p>每次想瞄一眼今天来了多少访客、刚发的文章有没有人看，都得打开手机浏览器 -&gt; 翻书签或输网址 -&gt; 等网页加载（有时候登录态过期还要重新输密码和 2FA）。虽然能把网页添加到主屏幕，但没有桌面小组件，多站点来回切也不顺手。</p>
+<p>于是干脆自己动手写了 <strong>SiteGlance</strong> —— 一个专为 Umami（同时支持自建实例与 Umami Cloud）打造的 iOS / Android 原生客户端。</p>
+<p></p>
+1. 先交底隐私与连接架构（最重要）
+<p>我知道用自建 Umami 的朋友最在意数据主权，绝对不可能把自己的统计实例账号交由第三方服务器中转。所以在设计之初就把边界卡死了：</p>
+<ul>
+<li><strong>纯端侧直连（Direct Connection）</strong>：App 只是运行在你手机上的 HTTP 客户端，所有 API 请求由手机直接发往你的自建 Umami 实例（HTTPS）或官方 Umami Cloud API。<strong>中间没有任何我方后端服务器中转</strong>，我也看不到你的任何站点数据。</li>
+<li><strong>凭据本地加密存储</strong>：服务器地址、登录 Token / API Key 仅保存在系统原生的安全存储中（iOS Keychain / Android Keystore）。</li>
+<li><strong>零第三方追踪</strong>：App 内没有接入任何第三方统计或广告 Tracking SDK。</li>
+</ul>
+2. 主要做了哪些功能
+<ul>
+<li><strong>桌面小组件（Home Screen Widgets）</strong>：这是我每天用得最多的部分。不用点进 App，手机亮屏就能看到今日访客（Visitors）、浏览量（Views）和小时级趋势图。</li>
+<li><strong>多站点聚合一屏看</strong>：手里有多个域名/项目的，打开首页直接拉出各站点核心指标汇总，不用在下拉菜单里挨个切。</li>
+<li><strong>完整统计维度</strong>：支持实时在线访客（Realtime）、来源渠道、受访页面、国家/地区、设备与系统分布。</li>
+<li><strong>进阶分析</strong>：支持查看自定义事件（Events）、目标与转化漏斗（Goals &amp; Funnels），方便跟进注册或下载转化。</li>
+<li><strong>原生体验与离线 Demo</strong>：做好了深色模式适配。如果你手头暂时没配好 Umami，或者还不想绑真实账号，App 内置了一套完整的<strong>离线 Demo 数据</strong>，下载后免登录就能直接点进去试玩所有页面。</li>
+</ul>
+<p></p>
+3. 免费版与买断说明
+<p>不玩免费诱导再弹天价周订阅的套路，直接把规则摊开说：</p>
+<ul>
+<li><strong>免费版</strong>：支持绑定 1 个 Umami 实例、查看前 3 个站点、使用基础桌面小组件。只有一两个个人博客或独立项目的朋友，免费版完全够日常使用。</li>
+<li><strong>Pro 版（单次买断）</strong>：解锁无限实例与无限站点、全部尺寸桌面小组件、漏斗与高级筛选等完整功能。<strong>一次性买断，永久有效，没有任何订阅续费。</strong></li>
+</ul>
+4. 下载地址
+<ul>
+<li><strong>官网介绍</strong>： <a href="https://siteglance.yichenlab.com/zh-CN" target="_blank" rel="noopener noreferrer">https://siteglance.yichenlab.com/zh-CN</a></li>
+<li><strong>iOS (App Store)</strong>： <a href="https://apps.apple.com/app/id6813091770" target="_blank" rel="noopener noreferrer">https://apps.apple.com/app/id6813091770</a></li>
+<li><strong>Android (Google Play)</strong>： <a href="https://play.google.com/store/apps/details?id=com.hugo.siteglance" target="_blank" rel="noopener noreferrer">https://play.google.com/store/apps/details?id=com.hugo.siteglance</a></li>
+</ul>
+5. 福利与反馈征集
+<p>目前版本还在持续迭代中，如果你也在用自建 Umami 或 Umami Cloud，非常欢迎下载体验（或者直接用内置 Demo 逛逛）。有任何不顺手的地方、修 Bug 建议，或者希望加什么新维度的图表，直接在帖子里提，我都会认真看并跟进。</p>
+<p><strong>评论区送一波 Pro 永久买断兑换码：</strong></p>
+<ul>
+<li>V 站惯例防爬虫，有需要的 V 友麻烦在回复里留下你的 <strong>Base64 邮箱</strong>，并注明需要 <strong>iOS</strong> 还是 <strong>Android</strong>。</li>
+<li>我会分批把兑换码发送到各位邮箱里，先向大家道声感谢！</li>
+</ul>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DeliMG</span>
+        <span>#1</span>
+        <span>2026/10/21 09:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Y2hlbmNoZW5AZHVjay5jb20=  ios 谢谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203649">Y2hlbmNoZW5AZHVjay5jb20=  ios 谢谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203649">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203649" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wobuchiyu</span>
+        <span>#2</span>
+        <span>2026/10/21 09:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">试一下 安卓，虽然博客每天就几十访问量 cGlhbmppYW9AZ21haWwuY29t  感谢 op</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203653">试一下 安卓，虽然博客每天就几十访问量 cGlhbmppYW9AZ21haWwuY29t  感谢 op</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203653">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203653" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Donate</span>
+        <span>#3</span>
+        <span>2026/10/21 09:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要 iOS  感谢<br />ZW5kZWQtdmlvbGV0LXNuaWZmQGR1Y2suY29t</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203660">需要 iOS  感谢<br />ZW5kZWQtdmlvbGV0LXNuaWZmQGR1Y2suY29t</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203660">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203660" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wagag</span>
+        <span>#4</span>
+        <span>2026/10/21 09:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">eHU2MDI3MTVAZ21haWwuY29t  ios 想体验一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203663">eHU2MDI3MTVAZ21haWwuY29t  ios 想体验一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203663">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203663" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">songszw</span>
+        <span>#5</span>
+        <span>2026/10/21 09:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">想要 iOS ，感谢 op 了<br />c29uZ3N6dzMxNUBsaXZlLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203691">想要 iOS ，感谢 op 了<br />c29uZ3N6dzMxNUBsaXZlLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203691">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203691" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">itart</span>
+        <span>#6</span>
+        <span>2026/10/21 09:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要 ios 平台，感谢 op<br />NzUzMDA1NTEyQHFxLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203713">需要 ios 平台，感谢 op<br />NzUzMDA1NTEyQHFxLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203713">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203713" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tuot</span>
+        <span>#7</span>
+        <span>2026/10/21 09:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">试试 ios aW9vaWNvZGVyQGdtYWlsLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203725">试试 ios aW9vaWNvZGVyQGdtYWlsLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203725">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203725" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">eocp2020</span>
+        <span>#8</span>
+        <span>2026/10/21 09:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谢谢<br />cG02NjZAcHJvdG9ubWFpbC5jb20=</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203733">谢谢<br />cG02NjZAcHJvdG9ubWFpbC5jb20=</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203733">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203733" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">NomiTang</span>
+        <span>#9</span>
+        <span>2026/10/21 09:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要 iOS 平台，感谢 op<br />Z3VhbmppMDFAZ21haWwuY29t</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203740">需要 iOS 平台，感谢 op<br />Z3VhbmppMDFAZ21haWwuY29t</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203740">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203740" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Shum1n</span>
+        <span>#10</span>
+        <span>2026/10/21 09:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">需要 iOS<br />NTQwODQyOTMwQHFxLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203760">需要 iOS<br />NTQwODQyOTMwQHFxLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203760">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203760" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#11</span>
+        <span>2026/10/21 09:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以都要吗？双持用户🤗bmllcmlza3lAZ21haWwuY29t</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203766">可以都要吗？双持用户🤗bmllcmlza3lAZ21haWwuY29t</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203766">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203766" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xcc3641</span>
+        <span>#12</span>
+        <span>2026/10/21 09:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">稍等我统一收集后给大家发啊，12 点左右，发一波，大家可以先下载配置好～</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203811">稍等我统一收集后给大家发啊，12 点左右，发一波，大家可以先下载配置好～</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203811">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203811" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SoloBaby</span>
+        <span>#13</span>
+        <span>2026/10/21 09:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">iOS 设备  感谢 op<br />OTYxNjExMzY3QHFxLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203839">iOS 设备  感谢 op<br />OTYxNjExMzY3QHFxLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203839">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203839" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">emberzhang</span>
+        <span>#14</span>
+        <span>2026/10/21 09:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ZW1iZXJ6aGFuZ0BnbWFpbC5jb20= 需要 iOS ，感谢</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203872">ZW1iZXJ6aGFuZ0BnbWFpbC5jb20= 需要 iOS ，感谢</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203872">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203872" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">goout</span>
+        <span>#15</span>
+        <span>2026/10/21 09:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">安卓设备，感谢。网站数据比较多时会卡顿吗，现在用的网页版，数据多了会卡一会<br />eHl6OTk0MjY5OEBnbWFpbC5jb20=</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203903">安卓设备，感谢。网站数据比较多时会卡顿吗，现在用的网页版，数据多了会卡一会<br />eHl6OTk0MjY5OEBnbWFpbC5jb20=</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203903">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203903" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bitkuang</span>
+        <span>#16</span>
+        <span>2026/10/21 10:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">安卓设备，感谢~<br /><br />MjI4NzI5MDY5QHFxLmNvbQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18203929">安卓设备，感谢~<br /><br />MjI4NzI5MDY5QHFxLmNvbQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18203929">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18203929" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">keyboardCat</span>
+        <span>#17</span>
+        <span>2026/10/21 10:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Android 设备，感谢 OP<br />bGlubWluZzEwMDdAZ21haWwuY29t</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18204014">Android 设备，感谢 OP<br />bGlubWluZzEwMDdAZ21haWwuY29t</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18204014">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18204014" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tutuwu</span>
+        <span>#18</span>
+        <span>2026/10/21 10:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">iOS 设备 YXppbm9hQGZveG1haWwuY29tCg==<br />感谢 OP!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18204037">iOS 设备 YXppbm9hQGZveG1haWwuY29tCg==<br />感谢 OP!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18204037">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18204037" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">K2</span>
+        <span>#19</span>
+        <span>2026/10/21 10:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">iOS plz<br />b29AaW9zei5kZQ==</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18204063">iOS plz<br />b29AaW9zei5kZQ==</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18204063">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18204063" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jianny</span>
+        <span>#20</span>
+        <span>2026/10/21 10:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">iOS amlhbm55QGxpdmUuY29t 谢谢！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18204194">iOS amlhbm55QGxpdmUuY29t 谢谢！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18204194">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1250493#reply18204194" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
