@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自己用 AI 做了个工具，解决了宽带上行限速 5M | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-22/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>自己用 AI 做了个工具，解决了宽带上行限速 5M</h1>
+      <p class="original-title">自己用 AI 做了个工具，解决了宽带上行限速 5M</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 OmoineMie</span>
+        <span>热度 13</span>
+        <span>回复 13</span>
+        <span>2026/10/22 20:17</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1251045" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1251045.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>基于 tun2socks + SSH 的隧道代理工具。</li><li>源码仓库：https://github.com/Omoinemie/sshtun</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">sshtun
+<p>基于 <strong>tun2socks + SSH</strong> 的隧道代理工具。</p>
+<blockquote>
+<p>源码仓库：<a href="https://github.com/Omoinemie/sshtun" target="_blank" rel="noopener noreferrer">https://github.com/Omoinemie/sshtun</a></p>
+</blockquote>
+<p>把远端 SSH 服务器当作出网跳板：本机建立一条 SSH 连接，用 tun2socks 在本地创建虚拟网卡，
+把指定的网段路由进去，流量经 SSH 加密后从远端发出。同时支持端口转发（<code>-L</code> / <code>-R</code>）。</p>
+<p>提供三种使用方式：<strong>命令行</strong>、<strong>Web 管理界面</strong>、<strong>Windows 图形程序</strong>。</p>
+
+特性
+<ul>
+<li>
+<strong>三种前端，同一份数据</strong><ul>
+<li><code>sshtun</code> 命令行：适合脚本与快速排查</li>
+<li><code>sshtun web</code>：内置 HTTP 服务，用浏览器管理隧道</li>
+<li><code>sshtun-gui</code>（仅 Windows ）：内嵌 WebView2 的独立窗口</li>
+</ul>
+</li>
+<li><strong>隧道配置存数据库</strong>（ SQLite ），配置文件只保留基础设置；配置与隧道分离，便于多机同步</li>
+<li><strong>TUN 模式</strong>：按网段分流，支持「走隧道」与「强制直连（ bypass ）」</li>
+<li><strong>SOCKS5 代理</strong>：每条隧道一个独立代理，监听 <code>127.0.0.1</code>，端口由内核分配</li>
+<li><strong>端口转发</strong>：本地转发（<code>-L</code>）与远程转发（<code>-R</code>）</li>
+<li><strong>凭据加密存储</strong>：SSH 密码用 AES-256-GCM 加密后入库，密钥由「编译期种子 + 本机机器码」派生</li>
+<li><strong>主机密钥校验</strong>：<code>accept-new</code>（首次自动信任）/ <code>strict</code>（必须已信任）/ <code>none</code>（不校验）</li>
+<li><strong>界面双语</strong>：Web 界面中英双语，未配置语言时跟随浏览器系统语言</li>
+<li><strong>隧道进程隔离</strong>：隧道跑在独立进程，Web 进程不持有明文凭据</li>
+<li><strong>跨实例互斥</strong>：同一时刻同一条隧道只能被一个实例占用，避免 TUN 网卡被互删</li>
+</ul>
+
+
+
+
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">sshtun
+<p>基于 <strong>tun2socks + SSH</strong> 的隧道代理工具。</p>
+<blockquote>
+<p>源码仓库：<a href="https://github.com/Omoinemie/sshtun" target="_blank" rel="noopener noreferrer">https://github.com/Omoinemie/sshtun</a></p>
+</blockquote>
+<p>把远端 SSH 服务器当作出网跳板：本机建立一条 SSH 连接，用 tun2socks 在本地创建虚拟网卡，
+把指定的网段路由进去，流量经 SSH 加密后从远端发出。同时支持端口转发（<code>-L</code> / <code>-R</code>）。</p>
+<p>提供三种使用方式：<strong>命令行</strong>、<strong>Web 管理界面</strong>、<strong>Windows 图形程序</strong>。</p>
+
+特性
+<ul>
+<li>
+<strong>三种前端，同一份数据</strong><ul>
+<li><code>sshtun</code> 命令行：适合脚本与快速排查</li>
+<li><code>sshtun web</code>：内置 HTTP 服务，用浏览器管理隧道</li>
+<li><code>sshtun-gui</code>（仅 Windows ）：内嵌 WebView2 的独立窗口</li>
+</ul>
+</li>
+<li><strong>隧道配置存数据库</strong>（ SQLite ），配置文件只保留基础设置；配置与隧道分离，便于多机同步</li>
+<li><strong>TUN 模式</strong>：按网段分流，支持「走隧道」与「强制直连（ bypass ）」</li>
+<li><strong>SOCKS5 代理</strong>：每条隧道一个独立代理，监听 <code>127.0.0.1</code>，端口由内核分配</li>
+<li><strong>端口转发</strong>：本地转发（<code>-L</code>）与远程转发（<code>-R</code>）</li>
+<li><strong>凭据加密存储</strong>：SSH 密码用 AES-256-GCM 加密后入库，密钥由「编译期种子 + 本机机器码」派生</li>
+<li><strong>主机密钥校验</strong>：<code>accept-new</code>（首次自动信任）/ <code>strict</code>（必须已信任）/ <code>none</code>（不校验）</li>
+<li><strong>界面双语</strong>：Web 界面中英双语，未配置语言时跟随浏览器系统语言</li>
+<li><strong>隧道进程隔离</strong>：隧道跑在独立进程，Web 进程不持有明文凭据</li>
+<li><strong>跨实例互斥</strong>：同一时刻同一条隧道只能被一个实例占用，避免 TUN 网卡被互删</li>
+</ul>
+
+
+
+
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">13</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ntdll</span>
+        <span>#1</span>
+        <span>2026/10/22 20:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">虽然但是，ssh 的传输性能很差，尤其是高带宽的时候，加密会极大的占用 CPU ，而且跑不满带宽，毕竟这玩意设计出来不是被用来传输大流量的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18211703">虽然但是，ssh 的传输性能很差，尤其是高带宽的时候，加密会极大的占用 CPU ，而且跑不满带宽，毕竟这玩意设计出来不是被用来传输大流量的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18211703">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18211703" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">4seasons</span>
+        <span>#2</span>
+        <span>2026/10/22 20:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你上面的 5Mbps 下载，本质就是你的 5Mbps 上行，并没有解决限速问题...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18211720">你上面的 5Mbps 下载，本质就是你的 5Mbps 上行，并没有解决限速问题...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18211720">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18211720" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cnrting</span>
+        <span>#3</span>
+        <span>2026/10/22 20:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">谁能翻译一下</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18211752">谁能翻译一下</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18211752">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18211752" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ostrichb</span>
+        <span>#4</span>
+        <span>2026/10/22 21:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">** 解決在哪？ **</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18211859">** 解決在哪？ **</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18211859">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18211859" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shoaly</span>
+        <span>#5</span>
+        <span>2026/10/22 22:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">要验证 ssh 有多慢, 可以对比一下 用 ssh 拷贝一个大文件到本地,  和拉一个 http 服务 就晓得了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18211879">要验证 ssh 有多慢, 可以对比一下 用 ssh 拷贝一个大文件到本地,  和拉一个 http 服务 就晓得了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18211879">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18211879" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jko123</span>
+        <span>#6</span>
+        <span>2026/10/22 22:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没看懂原理，用 ssh 难道就不是占用上行带宽了吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18211902">没看懂原理，用 ssh 难道就不是占用上行带宽了吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18211902">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18211902" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">wellblink</span>
+        <span>#7</span>
+        <span>2026/10/22 23:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感觉很搞笑。。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212000">感觉很搞笑。。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212000">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212000" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hronro</span>
+        <span>#8</span>
+        <span>2026/10/22 23:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">ISP 限制了你宽带的上行。但是没限制你到你 SSH 服务器的上行？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212011">ISP 限制了你宽带的上行。但是没限制你到你 SSH 服务器的上行？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212011">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212011" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mooyo</span>
+        <span>#9</span>
+        <span>2026/10/22 23:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">所以不还是 5M 吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212012">所以不还是 5M 吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212012">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212012" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">maizewei</span>
+        <span>#10</span>
+        <span>2026/10/22 23:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没理解</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212019">没理解</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212019">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212019" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Perry</span>
+        <span>#11</span>
+        <span>2026/10/22 23:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">典型的有个锤子看啥都是钉子，AI slop</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212028">典型的有个锤子看啥都是钉子，AI slop</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212028">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212028" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">OmoineMie</span>
+        <span>#12</span>
+        <span>2026/10/23 01:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jko123" target="_blank" rel="noopener noreferrer">jko123</a> 是运营商没有对 ssh 的流量限速，所以你在家里搭建一个 ssh 服务器，就可以连回去了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212091">@<a href="/member/jko123" target="_blank" rel="noopener noreferrer">jko123</a> 是运营商没有对 ssh 的流量限速，所以你在家里搭建一个 ssh 服务器，就可以连回去了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212091">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212091" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">microka</span>
+        <span>#13</span>
+        <span>2026/10/23 02:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一个人没看懂，可能是读者阅读能力的问题；大家都没看懂，那是谁的问题呢？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18212107">一个人没看懂，可能是读者阅读能力的问题；大家都没看懂，那是谁的问题呢？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18212107">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251045#reply18212107" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

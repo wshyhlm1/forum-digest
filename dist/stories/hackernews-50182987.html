@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Today&#39;s PHP security release, and how we&#39;re strengthening security | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-22/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>Today&#39;s PHP security release, and how we&#39;re strengthening security</h1>
+      <p class="original-title">Today&#39;s PHP security release, and how we&#39;re strengthening security</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ejohnso49</span>
+        <span>热度 770</span>
+        <span>回复 383</span>
+        <span>2026/10/21 23:48</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50182987" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://thephp.foundation/blog/2026/10/21/todays-php-security-release-and-how-were-strengthening-php-security/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50182987.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Earlier today, the PHP project released PHP 8.5.12, 8.4.27, 8.3.36, and 8.2.35. These releases fix two critical vulnerabilities that, under the right conditions, allow an unauthenticated attacker to execute code on servers running PHP. If you run PHP, it is imperative that you update now. The announcement on php.net contains and references technical details on the vulnerabilities, attack vectors, and instructions on how to update on which systems.</li><li>This post isn&#39;t about how to update. It&#39;s about how these vulnerabilities were found and fixed, what has changed in how PHP security is handled over the past two years, and what we need from the organizations that depend on PHP to keep PHP&#39;s security work going.</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">Related ongoing thread: <i>PHP 8.2.35</i> - <a href="https://news.ycombinator.com/item?id=50180873" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50180873</a><p>(links to more at <a href="https://news.ycombinator.com/item?id=50184935" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50184935</a>)</p></div>
+      <div class="post-body is-hidden" data-role="story-raw">Related ongoing thread: <i>PHP 8.2.35</i> - <a href="https://news.ycombinator.com/item?id=50180873" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50180873</a><p>(links to more at <a href="https://news.ycombinator.com/item?id=50184935" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50184935</a>)</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dofm</span>
+        
+        <span>2026/10/22 03:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You may never hear me say this again because I am a gruff cynic who is not sure that hanging out here is good for his psyche, but thank goodness for HN.<p>While I have been chasing around today, trying to resolve this on different servers, it turns out a three line nginx mitigation (blocking multipart uploads) I wrote in the wee small hours GMT has been quietly protecting a vulnerable machine I could not shut down (from attacks powered by every single mainstream agentic AI tool — Anthropic, OpenAI, Qwen cloud, Baidu, seemingly also AWS, Meta)</p><p>Including an hour before the PHP patch actually shipped.</p><p>So without the HN discussion I wouldn't have found enough people pointing at possible mitigations and I would have lost a server to this, and I thank everyone who pointed out that second mitigation in particular.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50186149">You may never hear me say this again because I am a gruff cynic who is not sure that hanging out here is good for his psyche, but thank goodness for HN.<p>While I have been chasing around today, trying to resolve this on different servers, it turns out a three line nginx mitigation (blocking multipart uploads) I wrote in the wee small hours GMT has been quietly protecting a vulnerable machine I could not shut down (from attacks powered by every single mainstream agentic AI tool — Anthropic, OpenAI, Qwen cloud, Baidu, seemingly also AWS, Meta)</p><p>Including an hour before the PHP patch actually shipped.</p><p>So without the HN discussion I wouldn't have found enough people pointing at possible mitigations and I would have lost a server to this, and I thank everyone who pointed out that second mitigation in particular.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50186149">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50186149" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">UomoNeroNero</span>
+        
+        <span>2026/10/22 03:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">YES!!!!<p>I absolutely loved being here today.</p><p>So many brilliant minds screaming and hating together, trying to survive the tide.</p><p>There aren’t many places like this left on the commercial internet, especially in this brave new AI-driven world.</p><p>I felt a great disturbance in the Force. But in a good way.</p><p>Together, we are strong. May the Force be with us all!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50186526">YES!!!!<p>I absolutely loved being here today.</p><p>So many brilliant minds screaming and hating together, trying to survive the tide.</p><p>There aren’t many places like this left on the commercial internet, especially in this brave new AI-driven world.</p><p>I felt a great disturbance in the Force. But in a good way.</p><p>Together, we are strong. May the Force be with us all!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50186526">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50186526" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">foxes</span>
+        
+        <span>2026/10/22 09:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Old capitalism good, current capitalism bad</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50189864">Old capitalism good, current capitalism bad</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50189864">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50189864" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tasuki</span>
+        
+        <span>2026/10/22 04:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; from attacks powered by every single mainstream agentic AI<p>Is it so bad? Have you measured the number of attacks?</p><p>&gt; So without the HN discussion I wouldn't have found enough people pointing at possible mitigations and I would have lost a server to this</p><p>I run a tiny server. I like this server a lot. I only patched an hour after the Debian package was ready and didn't think about it again. Do you mean to imply there's a real chance my little server has been compromised?</p><p>[Edit:] My server is quite public too. It hosts four SLDs and many subdomains and receives both human and bot traffic. Only one or two subdomains use PHP, but a reasonable attacker surely tries all of them.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187018">&gt; from attacks powered by every single mainstream agentic AI<p>Is it so bad? Have you measured the number of attacks?</p><p>&gt; So without the HN discussion I wouldn't have found enough people pointing at possible mitigations and I would have lost a server to this</p><p>I run a tiny server. I like this server a lot. I only patched an hour after the Debian package was ready and didn't think about it again. Do you mean to imply there's a real chance my little server has been compromised?</p><p>[Edit:] My server is quite public too. It hosts four SLDs and many subdomains and receives both human and bot traffic. Only one or two subdomains use PHP, but a reasonable attacker surely tries all of them.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187018">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187018" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dofm</span>
+        
+        <span>2026/10/22 05:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Is it so bad? Have you measured the number of attacks?<p>It is not a torrent, no. Dozens up to hundreds, rather than hundreds to thousands.</p><p>But they would very likely have succeeded, right? It's a fairly turnkey vulnerability.</p><p>&gt; I run a tiny server. I like this server a lot. I only patched an hour after the Debian package was ready and didn't think about it again. Do you mean to imply there's a real chance my little server has been compromised?</p><p>Can't say one way or another. Have a look at your log file for POST requests in quick succession for things like</p><p></p><pre><code>  /_next 
+  /_next/server
+  /app
+  /actions
+  /api
+  /dashboard
+</code></pre>
+&gt; [Edit:] My server is quite public too. It hosts four SLDs and many subdomains and receives both human and bot traffic. Only one or two subdomains use PHP, but a reasonable attacker surely tries all of them.<p>All my "obviously PHP app" domains got visited. None of my bespoke app domains (which are not obviously PHP). Though over time, the bespoke domains do get a whole bunch of boring probes for WP vulnerabilities etc., like all websites get.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187604">&gt; Is it so bad? Have you measured the number of attacks?<p>It is not a torrent, no. Dozens up to hundreds, rather than hundreds to thousands.</p><p>But they would very likely have succeeded, right? It's a fairly turnkey vulnerability.</p><p>&gt; I run a tiny server. I like this server a lot. I only patched an hour after the Debian package was ready and didn't think about it again. Do you mean to imply there's a real chance my little server has been compromised?</p><p>Can't say one way or another. Have a look at your log file for POST requests in quick succession for things like</p><p></p><pre><code>  /_next 
+  /_next/server
+  /app
+  /actions
+  /api
+  /dashboard
+</code></pre>
+&gt; [Edit:] My server is quite public too. It hosts four SLDs and many subdomains and receives both human and bot traffic. Only one or two subdomains use PHP, but a reasonable attacker surely tries all of them.<p>All my "obviously PHP app" domains got visited. None of my bespoke app domains (which are not obviously PHP). Though over time, the bespoke domains do get a whole bunch of boring probes for WP vulnerabilities etc., like all websites get.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187604">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187604" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">asddubs</span>
+        
+        <span>2026/10/22 20:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't think this is right, I got requests like that from the 17th already (and that's just as far as my logs go back). And yes, with spoofed UAs to say grokbot, claudebot, etc., but I've been getting bot traffic like that for a while. I don't think these are really agents because the same ip will switch UAs between requests.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50194550">I don't think this is right, I got requests like that from the 17th already (and that's just as far as my logs go back). And yes, with spoofed UAs to say grokbot, claudebot, etc., but I've been getting bot traffic like that for a while. I don't think these are really agents because the same ip will switch UAs between requests.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50194550">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50194550" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tokyovigilante</span>
+        
+        <span>2026/10/22 06:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks (this is a django site) -<p></p><pre><code>  35.247.197.7 - - [21/Oct/2026:16:41:11 +0000] "POST /_next/server HTTP/2.0" 404 153 "-" "Mozilla/5.0 (compatible; YouBot/1.0; +https://you.com/bot)" "-" [REDACTED] 0.002 "0.001"
+</code></pre>
+From a Google Cloud IP it seems.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50188740">Thanks (this is a django site) -<p></p><pre><code>  35.247.197.7 - - [21/Oct/2026:16:41:11 +0000] "POST /_next/server HTTP/2.0" 404 153 "-" "Mozilla/5.0 (compatible; YouBot/1.0; +https://you.com/bot)" "-" [REDACTED] 0.002 "0.001"
+</code></pre>
+From a Google Cloud IP it seems.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50188740">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50188740" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tasuki</span>
+        
+        <span>2026/10/22 05:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Have a look at your log file<p>Surely it doesn't take a very sophisticated attacker to clean up after themselves <i>at least a little bit</i>?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187812">&gt; Have a look at your log file<p>Surely it doesn't take a very sophisticated attacker to clean up after themselves <i>at least a little bit</i>?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187812">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187812" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tom1337</span>
+        
+        <span>2026/10/22 05:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Depends how your logging works. If you ingest logs to a remote server it's quite hard for an attacker to clean those up.
+Also I'd guess that most of the PHP exploits tried today weren't sophisticated but rather brute force and then either cryptomining or botnetting or something like this.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187966">Depends how your logging works. If you ingest logs to a remote server it's quite hard for an attacker to clean those up.
+Also I'd guess that most of the PHP exploits tried today weren't sophisticated but rather brute force and then either cryptomining or botnetting or something like this.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187966">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187966" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dofm</span>
+        
+        <span>2026/10/22 05:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think it doesn't, but I have to say, I have never seen an automated attack on a PHP application that has bothered to hide its traces.<p>If your attacker is someone known to you, some kind of persistent threat, then maybe they would? But most of this stuff is typically kind of worm-like; attack one box, use it to attack another, move on.</p><p>With this particular server I am in two minds about whether it is likely I have any persistent type hackers, but I must say what it looks like is automated attacks. AI script kiddies, almost. These same boxes attract all the typical PHP app probes (WP2shell etc.)</p><p>And FWIW what it actually mostly looked like was hits from some sort of cloud-based AI search API; they suddenly stopped at the same time as if someone else had pulled a plug. So maybe someone running an agentic search API decided not to be part of the probes.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187874">I think it doesn't, but I have to say, I have never seen an automated attack on a PHP application that has bothered to hide its traces.<p>If your attacker is someone known to you, some kind of persistent threat, then maybe they would? But most of this stuff is typically kind of worm-like; attack one box, use it to attack another, move on.</p><p>With this particular server I am in two minds about whether it is likely I have any persistent type hackers, but I must say what it looks like is automated attacks. AI script kiddies, almost. These same boxes attract all the typical PHP app probes (WP2shell etc.)</p><p>And FWIW what it actually mostly looked like was hits from some sort of cloud-based AI search API; they suddenly stopped at the same time as if someone else had pulled a plug. So maybe someone running an agentic search API decided not to be part of the probes.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187874">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187874" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">TaLiTr</span>
+        
+        <span>2026/10/22 06:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I have never seen an automated attack on a PHP application that has bothered to hide its traces.<p>I'd agree with that sentiment, most of those scripts are the laziest they can be.</p><p>But I can't help but wonder if there's survivor bias going on there.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50188461">&gt; I have never seen an automated attack on a PHP application that has bothered to hide its traces.<p>I'd agree with that sentiment, most of those scripts are the laziest they can be.</p><p>But I can't help but wonder if there's survivor bias going on there.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50188461">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50188461" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">codebje</span>
+        
+        <span>2026/10/22 06:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Quantity is a form of quality.<p>There's a vast number of operators who won't even look at their site when its performance craters due to a scrum of crypto miners all competing for resources. Why waste time on sophisticated attacks trying to fly under the radar of competent admins who will detect you by your egress traffic anyway?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50188854">Quantity is a form of quality.<p>There's a vast number of operators who won't even look at their site when its performance craters due to a scrum of crypto miners all competing for resources. Why waste time on sophisticated attacks trying to fly under the radar of competent admins who will detect you by your egress traffic anyway?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50188854">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50188854" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nedt</span>
+        
+        <span>2026/10/22 18:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I had a Claude session checking the hn thread every 15 minutes following links to looks for public exploits and mitigations or anything I might have missed. Anyone posting helped a lot in us feeling safer and taking all the necessary steps throughout the day. ty</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50193426">I had a Claude session checking the hn thread every 15 minutes following links to looks for public exploits and mitigations or anything I might have missed. Anyone posting helped a lot in us feeling safer and taking all the necessary steps throughout the day. ty</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50193426">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50193426" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tclancy</span>
+        
+        <span>2026/10/22 04:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Agreed. It made my ancient old man face tear pores by smiling when I saw people organizing in the comments to throw sandbags against the wall while waiting to be rescued.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187062">Agreed. It made my ancient old man face tear pores by smiling when I saw people organizing in the comments to throw sandbags against the wall while waiting to be rescued.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187062">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187062" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">antihero</span>
+        
+        <span>2026/10/22 04:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It’s scary that people haven’t been able to move uphill though.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187157">It’s scary that people haven’t been able to move uphill though.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187157">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187157" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dofm</span>
+        
+        <span>2026/10/22 05:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I mean, this isn't a things-made-in-PHP-are-bad problem.<p>It's a bit more a "certain C programming techniques are bad" problem.</p><p>This is more like log4j, heartbleed etc.</p><p>Won't be the last of these.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187675">I mean, this isn't a things-made-in-PHP-are-bad problem.<p>It's a bit more a "certain C programming techniques are bad" problem.</p><p>This is more like log4j, heartbleed etc.</p><p>Won't be the last of these.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187675">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187675" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">ljm</span>
+        
+        <span>2026/10/22 05:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">HN was my source of truth for mitigating this</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50188031">HN was my source of truth for mitigating this</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50188031">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50188031" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">eqmvii</span>
+        
+        <span>2026/10/22 05:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It was fun being here today. Validated a lot of the live frustrations and quirks and discovery.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50188200">It was fun being here today. Validated a lot of the live frustrations and quirks and discovery.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50188200">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50188200" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">antihero</span>
+        
+        <span>2026/10/22 04:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It is bizarre to me that servers are considered something to be “lost” in this day and age. They should as borderline ephemeral as us.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187147">It is bizarre to me that servers are considered something to be “lost” in this day and age. They should as borderline ephemeral as us.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187147">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187147" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dofm</span>
+        
+        <span>2026/10/22 05:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">By "lost" I mean, it might have been broken, commandeered, exfiltrated.<p>This is PHP world; it may be a share nothing architecture, but it's full of long-running VMs and very long-running apps.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50187617">By "lost" I mean, it might have been broken, commandeered, exfiltrated.<p>This is PHP world; it may be a share nothing architecture, but it's full of long-running VMs and very long-running apps.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50187617">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50187617" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
