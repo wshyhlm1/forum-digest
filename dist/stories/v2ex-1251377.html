@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了一个支持纠错的双拼输入法 Rectfly | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-23/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>做了一个支持纠错的双拼输入法 Rectfly</h1>
+      <p class="original-title">做了一个支持纠错的双拼输入法 Rectfly</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 theHaagenDazs</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/10/23 22:35</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1251377" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1251377.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>我非常喜欢 Gboard 的双拼纠错（它甚至可以盲打），但我总时不时担心它有一天会 discontinued 。我又不想用腾讯和豆包的输入法，因此我打算做一个堪比 Gboard 纠错的双拼输入法。我自己只用小鹤，因此我取名 Rectfly ，取自 Rectify + Flypy 。但在人类学和开放爱(Anthropic / OpenAI)的建议下，我还支持了自然码，智能 ABC ，和拼音加加。本输入法不支持全拼输入。它有一些功能，比如整句纠错，中英混输，导入 Rime 词库，和英文输入。整句纠错要感谢万象语法模型，Rectfly 的一些词库也来自万象。什么是万象语法模型： https://github.com/amzxyz/rime-wanxiangGboard 的英文纠错和词库做得非常好，我目前找不到一款中文</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">我非常喜欢 Gboard 的双拼纠错（它甚至可以盲打），但我总时不时担心它有一天会 discontinued 。我又不想用腾讯和豆包的输入法，因此我打算做一个堪比 Gboard 纠错的双拼输入法。<br /><br />我自己只用小鹤，因此我取名 Rectfly ，取自 Rectify + Flypy 。但在人类学和开放爱(Anthropic / OpenAI)的建议下，我还支持了自然码，智能 ABC ，和拼音加加。本输入法不支持全拼输入。<br /><br />它有一些功能，比如整句纠错，中英混输，导入 Rime 词库，和英文输入。整句纠错要感谢万象语法模型，Rectfly 的一些词库也来自万象。什么是万象语法模型： <a href="https://github.com/amzxyz/rime-wanxiang" target="_blank" rel="noopener noreferrer">https://github.com/amzxyz/rime-wanxiang</a><br /><br />Gboard 的英文纠错和词库做得非常好，我目前找不到一款中文输入法的英文输入能与它媲美。因此我也在 Rectfly 上做了和 Gboard 相似的英文输入体验。<br /><br />本输入法没有后端，也没有集成收集数据的 SDK 。无从也无意收集你的数据和隐私，所有的信息处理都在你的手机上完成。如果你愿意，欢迎加入「联邦评测」，并把结果发送给我（无论好坏），可能会提升打字准确率。什么是联邦学习： <a href="https://cloud.google.com/discover/what-is-federated-learning?hl=zh-CN" target="_blank" rel="noopener noreferrer">https://cloud.google.com/discover/what-is-federated-learning?hl=zh-CN</a><br /><br />目前只有 TestFlight： <a href="https://testflight.apple.com/join/un67VMZe" target="_blank" rel="noopener noreferrer">https://testflight.apple.com/join/un67VMZe</a> 欢迎大家体验。如需反馈，可以发邮件到 rectfly@fastmail.com 或者直接在本帖下回复。<br /><br />使用须知： <br />需要 iOS 26 及以上版本。<br />需要开启「完全访问」以使用万象语法模型和按键震动。<br />首次开启会引导你下载万象语法模型，不下载语法模型也能打字，但整句首选准确率会从约 97%掉到约 57%。（由 30 句标准双拼整句测得）<br /><br />隐私政策： <a href="https://ann61c.github.io/rectfly-site/privacy.html" target="_blank" rel="noopener noreferrer">https://ann61c.github.io/rectfly-site/privacy.html</a><br />致谢： <a href="https://ann61c.github.io/rectfly-site/attributions.html" target="_blank" rel="noopener noreferrer">https://ann61c.github.io/rectfly-site/attributions.html</a><br /><br />参考的公开论文：<br /><a href="https://aclanthology.org/2024.emnlp-industry.93/" target="_blank" rel="noopener noreferrer">https://aclanthology.org/2024.emnlp-industry.93/</a><br /><a href="https://research.google/pubs/spatial-model-personalization-in-gboard/" target="_blank" rel="noopener noreferrer">https://research.google/pubs/spatial-model-personalization-in-gboard/</a><br /><a href="https://aclanthology.org/P14-1142/" target="_blank" rel="noopener noreferrer">https://aclanthology.org/P14-1142/</a><br /><a href="https://aclanthology.org/P00-1031/" target="_blank" rel="noopener noreferrer">https://aclanthology.org/P00-1031/</a><br /><br />一些截图：<br /> <a href="https://i.imgur.com/DfKej6R.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/HCvHutR.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/bKEf0ST.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/WGDPV62.png" target="_blank" rel="noopener noreferrer"></a></div>
+      <div class="post-body is-hidden" data-role="story-raw">我非常喜欢 Gboard 的双拼纠错（它甚至可以盲打），但我总时不时担心它有一天会 discontinued 。我又不想用腾讯和豆包的输入法，因此我打算做一个堪比 Gboard 纠错的双拼输入法。<br /><br />我自己只用小鹤，因此我取名 Rectfly ，取自 Rectify + Flypy 。但在人类学和开放爱(Anthropic / OpenAI)的建议下，我还支持了自然码，智能 ABC ，和拼音加加。本输入法不支持全拼输入。<br /><br />它有一些功能，比如整句纠错，中英混输，导入 Rime 词库，和英文输入。整句纠错要感谢万象语法模型，Rectfly 的一些词库也来自万象。什么是万象语法模型： <a href="https://github.com/amzxyz/rime-wanxiang" target="_blank" rel="noopener noreferrer">https://github.com/amzxyz/rime-wanxiang</a><br /><br />Gboard 的英文纠错和词库做得非常好，我目前找不到一款中文输入法的英文输入能与它媲美。因此我也在 Rectfly 上做了和 Gboard 相似的英文输入体验。<br /><br />本输入法没有后端，也没有集成收集数据的 SDK 。无从也无意收集你的数据和隐私，所有的信息处理都在你的手机上完成。如果你愿意，欢迎加入「联邦评测」，并把结果发送给我（无论好坏），可能会提升打字准确率。什么是联邦学习： <a href="https://cloud.google.com/discover/what-is-federated-learning?hl=zh-CN" target="_blank" rel="noopener noreferrer">https://cloud.google.com/discover/what-is-federated-learning?hl=zh-CN</a><br /><br />目前只有 TestFlight： <a href="https://testflight.apple.com/join/un67VMZe" target="_blank" rel="noopener noreferrer">https://testflight.apple.com/join/un67VMZe</a> 欢迎大家体验。如需反馈，可以发邮件到 rectfly@fastmail.com 或者直接在本帖下回复。<br /><br />使用须知： <br />需要 iOS 26 及以上版本。<br />需要开启「完全访问」以使用万象语法模型和按键震动。<br />首次开启会引导你下载万象语法模型，不下载语法模型也能打字，但整句首选准确率会从约 97%掉到约 57%。（由 30 句标准双拼整句测得）<br /><br />隐私政策： <a href="https://ann61c.github.io/rectfly-site/privacy.html" target="_blank" rel="noopener noreferrer">https://ann61c.github.io/rectfly-site/privacy.html</a><br />致谢： <a href="https://ann61c.github.io/rectfly-site/attributions.html" target="_blank" rel="noopener noreferrer">https://ann61c.github.io/rectfly-site/attributions.html</a><br /><br />参考的公开论文：<br /><a href="https://aclanthology.org/2024.emnlp-industry.93/" target="_blank" rel="noopener noreferrer">https://aclanthology.org/2024.emnlp-industry.93/</a><br /><a href="https://research.google/pubs/spatial-model-personalization-in-gboard/" target="_blank" rel="noopener noreferrer">https://research.google/pubs/spatial-model-personalization-in-gboard/</a><br /><a href="https://aclanthology.org/P14-1142/" target="_blank" rel="noopener noreferrer">https://aclanthology.org/P14-1142/</a><br /><a href="https://aclanthology.org/P00-1031/" target="_blank" rel="noopener noreferrer">https://aclanthology.org/P00-1031/</a><br /><br />一些截图：<br /> <a href="https://i.imgur.com/DfKej6R.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/HCvHutR.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/bKEf0ST.png" target="_blank" rel="noopener noreferrer"></a><br /> <a href="https://i.imgur.com/WGDPV62.png" target="_blank" rel="noopener noreferrer"></a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">5</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">error</span>
+        <span>#1</span>
+        <span>2026/10/23 22:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">真不错，试了下打字很流畅。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18216131">真不错，试了下打字很流畅。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18216131">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251377#reply18216131" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#2</span>
+        <span>2026/10/23 23:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">能支持自然码不 <a href="https://i.imgur.com/NGX4avH.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18216169">能支持自然码不 <a href="https://i.imgur.com/NGX4avH.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18216169">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251377#reply18216169" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ffalex</span>
+        <span>#3</span>
+        <span>2026/10/23 23:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> #2 试了一下，不错，但是上方能不能像 gboard 一样显示常用操作栏，比如剪贴板之类</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18216181">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> #2 试了一下，不错，但是上方能不能像 gboard 一样显示常用操作栏，比如剪贴板之类</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18216181">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251377#reply18216181" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">btpuadom</span>
+        <span>#4</span>
+        <span>2026/10/23 23:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">对 希望可以增加翻译和历史粘贴板</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18216191">对 希望可以增加翻译和历史粘贴板</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18216191">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251377#reply18216191" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">theHaagenDazs</span>
+        <span>#5</span>
+        <span>2026/10/23 23:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> #3 <br />@<a href="/member/btpuadom" target="_blank" rel="noopener noreferrer">btpuadom</a> <br />好的，我做一下。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18216201">@<a href="/member/ffalex" target="_blank" rel="noopener noreferrer">ffalex</a> #3 <br />@<a href="/member/btpuadom" target="_blank" rel="noopener noreferrer">btpuadom</a> <br />好的，我做一下。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18216201">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251377#reply18216201" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
