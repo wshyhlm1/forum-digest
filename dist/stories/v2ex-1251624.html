@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>微信是怎么屏蔽 codex 的 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-25/">返回日报</a>
+      <div class="source-chip">V2EX #8</div>
+      <h1>微信是怎么屏蔽 codex 的</h1>
+      <p class="original-title">微信是怎么屏蔽 codex 的</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 garydab</span>
+        <span>热度 16</span>
+        <span>回复 16</span>
+        <span>2026/10/25 12:55</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1251624" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1251624.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>微信是怎么屏蔽 codex 的，理论上 codex 是通过图形界面操作微信的，模仿人类的吧. 现在只要我让 codex 操作微信，微信就自动退出，让我重新登录。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>微信是怎么屏蔽 codex 的，理论上 codex 是通过图形界面操作微信的，模仿人类的吧. 现在只要我让 codex 操作微信，微信就自动退出，让我重新登录。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>微信是怎么屏蔽 codex 的，理论上 codex 是通过图形界面操作微信的，模仿人类的吧. 现在只要我让 codex 操作微信，微信就自动退出，让我重新登录。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">16</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">win8en</span>
+        <span>#1</span>
+        <span>2026/10/25 13:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">让 Codex 给你分析一下，中国的 app 都爱搞这些小把戏。手机挂代理的时候，其他应用都可以正常投屏电视，但是就抖音说让我关闭代理，不关就不让用。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218431">让 Codex 给你分析一下，中国的 app 都爱搞这些小把戏。手机挂代理的时候，其他应用都可以正常投屏电视，但是就抖音说让我关闭代理，不关就不让用。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218431">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218431" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">noahhhh</span>
+        <span>#2</span>
+        <span>2026/10/25 13:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你是操作电脑吗，程序可以识别模拟点击的，投屏可能更难识别一点🤔</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218442">你是操作电脑吗，程序可以识别模拟点击的，投屏可能更难识别一点🤔</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218442">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218442" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">garydab</span>
+        <span>#3</span>
+        <span>2026/10/25 13:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/noahhhh" target="_blank" rel="noopener noreferrer">noahhhh</a> 是的，操作的 mac 电脑</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218453">@<a href="/member/noahhhh" target="_blank" rel="noopener noreferrer">noahhhh</a> 是的，操作的 mac 电脑</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218453">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218453" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">niceshell</span>
+        <span>#4</span>
+        <span>2026/10/25 13:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">之前我尝试了也有这个问题</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218464">之前我尝试了也有这个问题</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218464">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218464" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">baizheng</span>
+        <span>#5</span>
+        <span>2026/10/25 13:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">得搞个手机, 用物理外挂.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218470">得搞个手机, 用物理外挂.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218470">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218470" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">awfe</span>
+        <span>#6</span>
+        <span>2026/10/25 13:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">刚刚让 codex 实机测试了一下，他的结论是通过事件的来源进程能够发现是`Codex Computer <a href="http://Use.app" target="_blank" rel="noopener noreferrer">Use.app</a> 内的 SkyComputerUseService` 在进行操作。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218471">刚刚让 codex 实机测试了一下，他的结论是通过事件的来源进程能够发现是`Codex Computer <a href="http://Use.app" target="_blank" rel="noopener noreferrer">Use.app</a> 内的 SkyComputerUseService` 在进行操作。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218471">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218471" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">edgeedge</span>
+        <span>#7</span>
+        <span>2026/10/25 19:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/baizheng" target="_blank" rel="noopener noreferrer">baizheng</a> 是通过电脑控制手机？有啥好的方案推荐吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218817">@<a href="/member/baizheng" target="_blank" rel="noopener noreferrer">baizheng</a> 是通过电脑控制手机？有啥好的方案推荐吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218817">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218817" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">scegg</span>
+        <span>#8</span>
+        <span>2026/10/25 19:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">AI 控制微信：合法方案：RPA 。能用的方案，让 codex 开发一个能操作电脑的 app ，而不是直接用它自己的 Codex Computer Use 。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218843">AI 控制微信：合法方案：RPA 。能用的方案，让 codex 开发一个能操作电脑的 app ，而不是直接用它自己的 Codex Computer Use 。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218843">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218843" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">attker</span>
+        <span>#9</span>
+        <span>2026/10/25 20:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我把微信的权限关了就能正常使用 computer use ，例如截图权限</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218875">我把微信的权限关了就能正常使用 computer use ，例如截图权限</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218875">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218875" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">unco020511</span>
+        <span>#10</span>
+        <span>2026/10/25 21:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">用 iPhone 镜像，然后让 codex 操作 iPhone 镜像来操作微信</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218928">用 iPhone 镜像，然后让 codex 操作 iPhone 镜像来操作微信</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218928">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218928" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kenneth104</span>
+        <span>#11</span>
+        <span>2026/10/25 21:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我用 zcode 他也说看不到微信，我让他把写好的 apk 发给我而已</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18218988">我用 zcode 他也说看不到微信，我让他把写好的 apk 发给我而已</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18218988">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18218988" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CHTRCT</span>
+        <span>#12</span>
+        <span>2026/10/25 22:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你没发现你打开电脑微信的时候都要请求你获得管理员权限吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219016">你没发现你打开电脑微信的时候都要请求你获得管理员权限吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219016">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18219016" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">byte10</span>
+        <span>#13</span>
+        <span>2026/10/25 22:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">使用 ESP32 hid 这个模拟鼠标键盘，再用 AI 识别图来操作吧。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219034">使用 ESP32 hid 这个模拟鼠标键盘，再用 AI 识别图来操作吧。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219034">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18219034" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Errat1c</span>
+        <span>#14</span>
+        <span>2026/10/25 23:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">很多 APP 都有做这类风控，所以手机上的 AI 助理暂时还发挥不了太大作用</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219115">很多 APP 都有做这类风控，所以手机上的 AI 助理暂时还发挥不了太大作用</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219115">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18219115" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">s1n1an</span>
+        <span>#15</span>
+        <span>2026/10/25 23:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不一定是 Codex ，我台式机登微信 + 挂着 sunshine 远程软件，笔记本用 moonlight 连接台式机远控，微信都直接退出</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219133">不一定是 Codex ，我台式机登微信 + 挂着 sunshine 远程软件，笔记本用 moonlight 连接台式机远控，微信都直接退出</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219133">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18219133" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cctv180</span>
+        <span>#16</span>
+        <span>2026/10/25 23:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">检测到不很正常么，国内软件爱获取管理员身份 <a href="https://i.imgur.com/Ug1iMq4.png" target="_blank" rel="noopener noreferrer"></a>，像游戏外挂他们得利用 dma 把数据搬出去再用另外一台机来开挂。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219149">检测到不很正常么，国内软件爱获取管理员身份 <a href="https://i.imgur.com/Ug1iMq4.png" target="_blank" rel="noopener noreferrer"></a>，像游戏外挂他们得利用 dma 把数据搬出去再用另外一台机来开挂。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219149">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251624#reply18219149" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

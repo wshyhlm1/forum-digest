@@ -1,0 +1,73 @@
+{
+  "id": 1251702,
+  "storyKey": "v2ex-1251702",
+  "source": "v2ex",
+  "sourceLabel": "V2EX",
+  "rank": 11,
+  "sourceRank": 1,
+  "type": "story",
+  "title": "二开信源管道跑了半个月，聊聊用 pgvector 语义降噪和防重推送踩的几个深坑",
+  "titleZh": "二开信源管道跑了半个月，聊聊用 pgvector 语义降噪和防重推送踩的几个深坑",
+  "url": "https://www.v2ex.com/t/1251702",
+  "domain": "v2ex.com",
+  "hnUrl": "https://www.v2ex.com/t/1251702",
+  "discussionUrl": "https://www.v2ex.com/t/1251702",
+  "author": "xxcpqzm",
+  "score": 2,
+  "publishedAt": "2026-10-25T14:31:59.000Z",
+  "commentsCount": 2,
+  "category": "开发工具",
+  "relevanceScore": 90,
+  "relevanceReason": "命中 5 个 AI/科技关键词。",
+  "hotScore": 4.71,
+  "textRawHtml": "<p>平时转型做独立开发与出海调研，最大的痛点就是每天被垃圾信息淹没：刷推特、Product Hunt 和各大社区，充斥着大量套壳工具互吹与营销号焦虑小作文。想找点真正有落地参考价值的技术选型、开源轮子，每天在信息堆里淘金太累。</p>\n<p>半个月前基于开源底座二开了一套垂直情报过滤管道，单机部署跑在吃灰的 Linux VPS 上。跑顺了之后每天只推 2~3 条高信噪比卡片，省心很多。但回顾这半个月的二开踩坑，有几个工程层面的细节值得复盘：</p>\n1. 语义向量去重的边界与阈值陷阱\n<p>最开始想用 pgvector 解决「不同媒体在 48 小时内反复报道同一件事」的冗余。直接用文本做 embedding ，发现余弦相似度阈值如果设在 0.85 ，很多同赛道但不同技术方案的独立项目会被误杀；如果放宽到 0.92 ，换个标题的通稿又漏了进来。\n最终的解法：先做实体与依赖层提取（ GitHub Repo 归一化、顶级域名折叠），实体命中直接折叠；实体不命中才走 5 轴语义打分（落地可行性、商业闭环、代码成熟度），把纯公关稿在打分层直接干掉。</p>\n2. Prepared Statement 的异步双写灾难\n<p>这是最隐蔽的一个线上坑。异步队列消费时，外部消息（如推到频道）成功发送，但数据库记账由于连续拼接了两段 SQL 语句撞了底层 Prepared Statement 解析报错。\n结果事务回滚，队列引擎误判该任务未完成，进入指数退避重试，直接引发同一条消息向外部端点死循环狂推。教训就是：跨外部网络调用的 side-effect 必须与本地数据库状态做原子防重设计，外部调用前显式插入 pending 占位锁。</p>\n3. 极度克制的推送纪律\n<p>做聚合最容易犯的错误是“觉得什么都好，不停往群里塞”。真正自用下来发现，单日超过 4 条人就会麻木。\n后来在后端代码里把推送频率写死成了物理门禁：</p>\n<ul>\n<li>单日封顶 ≤4 条，两次推送硬间隔 ≥2.5 小时；</li>\n<li>夜间（ 23:00 - 08:30 ）绝对静默，任务直接推迟到次日早晨。</li>\n</ul>\n4. 开源与自用归档\n<p>整套流水线目前全自动跑，每天晚上会自动抓取 Top 信号并同步生成 Markdown 归档推送到 GitHub 。</p>\n<p>大家平时自己搭信息流、做数据清洗或向量搜索时，有没有遇到过更优雅的降噪去重思路？欢迎交流指正。</p>\n<ul>\n<li><strong>GitHub 每日归档仓库</strong>： <a href=\"https://github.com/louis-cai/daily-indie-radar\" target=\"_blank\" rel=\"noopener noreferrer\">https://github.com/louis-cai/daily-indie-radar</a></li>\n<li><strong>TG 点滴频道</strong>：Telegram 搜索 @<a href=\"/member/IndieRadarPro\" target=\"_blank\" rel=\"noopener noreferrer\">IndieRadarPro</a></li>\n</ul>\n",
+  "textZhHtml": "<p>平时转型做独立开发与出海调研，最大的痛点就是每天被垃圾信息淹没：刷推特、Product Hunt 和各大社区，充斥着大量套壳工具互吹与营销号焦虑小作文。想找点真正有落地参考价值的技术选型、开源轮子，每天在信息堆里淘金太累。</p>\n<p>半个月前基于开源底座二开了一套垂直情报过滤管道，单机部署跑在吃灰的 Linux VPS 上。跑顺了之后每天只推 2~3 条高信噪比卡片，省心很多。但回顾这半个月的二开踩坑，有几个工程层面的细节值得复盘：</p>\n1. 语义向量去重的边界与阈值陷阱\n<p>最开始想用 pgvector 解决「不同媒体在 48 小时内反复报道同一件事」的冗余。直接用文本做 embedding ，发现余弦相似度阈值如果设在 0.85 ，很多同赛道但不同技术方案的独立项目会被误杀；如果放宽到 0.92 ，换个标题的通稿又漏了进来。\n最终的解法：先做实体与依赖层提取（ GitHub Repo 归一化、顶级域名折叠），实体命中直接折叠；实体不命中才走 5 轴语义打分（落地可行性、商业闭环、代码成熟度），把纯公关稿在打分层直接干掉。</p>\n2. Prepared Statement 的异步双写灾难\n<p>这是最隐蔽的一个线上坑。异步队列消费时，外部消息（如推到频道）成功发送，但数据库记账由于连续拼接了两段 SQL 语句撞了底层 Prepared Statement 解析报错。\n结果事务回滚，队列引擎误判该任务未完成，进入指数退避重试，直接引发同一条消息向外部端点死循环狂推。教训就是：跨外部网络调用的 side-effect 必须与本地数据库状态做原子防重设计，外部调用前显式插入 pending 占位锁。</p>\n3. 极度克制的推送纪律\n<p>做聚合最容易犯的错误是“觉得什么都好，不停往群里塞”。真正自用下来发现，单日超过 4 条人就会麻木。\n后来在后端代码里把推送频率写死成了物理门禁：</p>\n<ul>\n<li>单日封顶 ≤4 条，两次推送硬间隔 ≥2.5 小时；</li>\n<li>夜间（ 23:00 - 08:30 ）绝对静默，任务直接推迟到次日早晨。</li>\n</ul>\n4. 开源与自用归档\n<p>整套流水线目前全自动跑，每天晚上会自动抓取 Top 信号并同步生成 Markdown 归档推送到 GitHub 。</p>\n<p>大家平时自己搭信息流、做数据清洗或向量搜索时，有没有遇到过更优雅的降噪去重思路？欢迎交流指正。</p>\n<ul>\n<li><strong>GitHub 每日归档仓库</strong>： <a href=\"https://github.com/louis-cai/daily-indie-radar\" target=\"_blank\" rel=\"noopener noreferrer\">https://github.com/louis-cai/daily-indie-radar</a></li>\n<li><strong>TG 点滴频道</strong>：Telegram 搜索 @<a href=\"/member/IndieRadarPro\" target=\"_blank\" rel=\"noopener noreferrer\">IndieRadarPro</a></li>\n</ul>\n",
+  "summaryRaw": [
+    "平时转型做独立开发与出海调研，最大的痛点就是每天被垃圾信息淹没：刷推特、Product Hunt 和各大社区，充斥着大量套壳工具互吹与营销号焦虑小作文。想找点真正有落地参考价值的技术选型、开源轮子，每天在信息堆里淘金太累。",
+    "半个月前基于开源底座二开了一套垂直情报过滤管道，单机部署跑在吃灰的 Linux VPS 上。跑顺了之后每天只推 2~3 条高信噪比卡片，省心很多。但回顾这半个月的二开踩坑，有几个工程层面的细节值得复盘：",
+    "最开始想用 pgvector 解决「不同媒体在 48 小时内反复报道同一件事」的冗余。直接用文本做 embedding ，发现余弦相似度阈值如果设在 0.85 ，很多同赛道但不同技术方案的独立项目会被误杀；如果放宽到 0.92 ，换个标题的通稿又漏了进来。 最终的解法：先做实体与依赖层提取（ GitHub Repo 归一化、顶级域名折叠），实体命中直接折叠；实体不命中才走 5 轴语义打分（落地可行性、商业闭环、代码成熟度），把纯公关稿在打分层直接干掉。",
+    "这是最隐蔽的一个线上坑。异步队列消费时，外部消息（如推到频道）成功发送，但数据库记账由于连续拼接了两段 SQL 语句撞了底层 Prepared Statement 解析报错。 结果事务回滚，队列引擎误判该任务未完成，进入指数退避重试，直接引发同一条消息向外部端点死循环狂推。教训就是：跨外部网络调用的 side-effect 必须与本地数据库状态做原子防重设计，外部调用前显式插入 pending 占位锁。",
+    "做聚合最容易犯的错误是“觉得什么都好，不停往群里塞”。真正自用下来发现，单日超过 4 条人就会麻木。 后来在后端代码里把推送频率写死成了物理门禁："
+  ],
+  "summaryZh": [
+    "平时转型做独立开发与出海调研，最大的痛点就是每天被垃圾信息淹没：刷推特、Product Hunt 和各大社区，充斥着大量套壳工具互吹与营销号焦虑小作文。想找点真正有落地参考价值的技术选型、开源轮子，每天在信息堆里淘金太累。",
+    "半个月前基于开源底座二开了一套垂直情报过滤管道，单机部署跑在吃灰的 Linux VPS 上。跑顺了之后每天只推 2~3 条高信噪比卡片，省心很多。但回顾这半个月的二开踩坑，有几个工程层面的细节值得复盘："
+  ],
+  "highlightsZh": [],
+  "translationStatus": "translated",
+  "contentHash": "4735c5a10cbb00cb491c04056063820ea0d61c9cdb3dce6f6e57bb7f5ca8da60",
+  "comments": [
+    {
+      "id": 18219063,
+      "commentKey": "v2ex-18219063",
+      "parentId": 1251702,
+      "author": "lovercpuer",
+      "publishedAt": "2026-10-25T14:44:40.000Z",
+      "level": 1,
+      "hnUrl": "https://www.v2ex.com/t/1251702#reply18219063",
+      "sourceUrl": "https://www.v2ex.com/t/1251702#reply18219063",
+      "floor": 1,
+      "textRawHtml": "佬。收徒不。跟佬出海。目前能给佬的学费只有情绪价值到位。emoji",
+      "textZhHtml": "佬。收徒不。跟佬出海。目前能给佬的学费只有情绪价值到位。emoji",
+      "translationStatus": "translated",
+      "contentHash": "d95849f97540cab5053e291a8c09f4c91ce512aa29078b8601381ae9f42c790f",
+      "children": []
+    },
+    {
+      "id": 18219070,
+      "commentKey": "v2ex-18219070",
+      "parentId": 1251702,
+      "author": "xxcpqzm",
+      "publishedAt": "2026-10-25T14:53:30.000Z",
+      "level": 1,
+      "hnUrl": "https://www.v2ex.com/t/1251702#reply18219070",
+      "sourceUrl": "https://www.v2ex.com/t/1251702#reply18219070",
+      "floor": 2,
+      "textRawHtml": "@<a href=\"/member/lovercpuer\" target=\"_blank\" rel=\"noopener noreferrer\">lovercpuer</a> 不收徒哈，也是个折腾十几年的普通大龄码农，边做边交学费。欢迎常交流，一起折腾。",
+      "textZhHtml": "@<a href=\"/member/lovercpuer\" target=\"_blank\" rel=\"noopener noreferrer\">lovercpuer</a> 不收徒哈，也是个折腾十几年的普通大龄码农，边做边交学费。欢迎常交流，一起折腾。",
+      "translationStatus": "translated",
+      "contentHash": "b99b2e4b1790de305705ba35158c59a9c758c5daa8f8a9cbccfe9af57993c51a",
+      "children": []
+    }
+  ]
+}

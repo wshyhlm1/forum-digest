@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>想给自己做的安卓控制工具加个外网远程，和 RustDesk 认真比了一次，结论是：不做了 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-25/">返回日报</a>
+      <div class="source-chip">V2EX #10</div>
+      <h1>想给自己做的安卓控制工具加个外网远程，和 RustDesk 认真比了一次，结论是：不做了</h1>
+      <p class="original-title">想给自己做的安卓控制工具加个外网远程，和 RustDesk 认真比了一次，结论是：不做了</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 xxzhaoming</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/10/25 22:30</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1251701" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1251701.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>我在做一个小工具叫统一控制（ UnitCtrl ），在电脑上看、控制家里的安卓，只走局域网（官网）。人在外面的时候，我一直用 RustDesk 远程。</li><li>用着用着有点嫌它：看不到画面到底晚了多少，也看不到刷新率。于是冒出个念头：干脆自己给统一控制做个外网远程，说不定能比它好？开工前先定了规矩：比 RustDesk 好就做，不如就算了。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>我在做一个小工具叫统一控制（ UnitCtrl ），在电脑上看、控制家里的安卓，只走局域网（<a href="https://techinfo-apps.github.io/unitctrl/" target="_blank" rel="noopener noreferrer">官网</a>）。人在外面的时候，我一直用 RustDesk 远程。</p>
+<p>用着用着有点嫌它：看不到画面到底晚了多少，也看不到刷新率。于是冒出个念头：干脆自己给统一控制做个外网远程，说不定能比它好？开工前先定了规矩：<strong>比 RustDesk 好就做，不如就算了。</strong></p>
+<p><strong>怎么比：用同一把尺子</strong></p>
+<p>各家自己报的延迟算法不一样，不能直接比，所以我做了个笨办法：</p>
+<ul>
+<li>远处那台安卓上开一个网页：一个毫秒时钟，上面一排黑白色块，是把当前的毫秒数编成二进制（第二排取反，用来自检读没读错）</li>
+<li>电脑上用浏览器开同一个页面，和远程窗口并排放</li>
+<li>每 0.5 秒截一次屏，程序读出截图里的两个条码一减，就是“从远端屏幕到我屏幕”的真实延迟。两台机器的时钟差另外量过，大约 33 毫秒，已经扣掉</li>
+<li>两家轮流测：同一台电脑、同一台远端设备（没有硬件编码器，屏幕每秒最多 15 帧）、同一条网络（来回约 240 毫秒，带宽 1–3 Mbit/s ，晚上会抖）</li>
+<li>页面三种：只有条码在变（像平时点点看看）、整屏都在动（像一直在滑）、一屏小字（看清晰度）。每组 25 张</li>
+</ul>
+<p><strong>结果</strong></p>
+<ul>
+<li><strong>平时点点看看</strong>：RustDesk 中位数约 0.55 秒，最慢的 10% 约 0.86 秒；统一控制 0.84 秒 / 1.41 秒。<strong>RustDesk 赢</strong></li>
+<li><strong>整屏一直在动</strong>：RustDesk 每秒只剩 2–3 帧，画面落后 20 多秒，而且越积越多；统一控制约 1.4 秒，一直稳着。这项我们赢，不过那台设备的 CPU 被测试页吃满了，这对 RustDesk 的软件编码最不利，不太公平</li>
+<li><strong>清晰度</strong>：同一屏小字，统一控制的笔画边缘锐度大约是 RustDesk 的 2.5 倍</li>
+<li><strong>网络变差的时候</strong>（带宽掉到约 1 Mbit/s ）：RustDesk 还是 0.5 秒左右；统一控制越积越多，最多落后 37 秒</li>
+</ul>
+<p><strong>为什么会这样</strong></p>
+<ul>
+<li>RustDesk 把码率压得很低（实测约 0.2 Mbit/s ，VP9 ），还会按网络来回的时间主动降帧率和画质，所以网络又窄又抖的时候也稳</li>
+<li>统一控制用硬件编码，码率高（约 1.2 Mbit/s ），画面清楚、整屏动起来也不崩；但它是为家里局域网设计的，网络一窄，多出来的画面就排在路上，手机这边看不到，也不会主动降码率</li>
+<li>顺便翻了 RustDesk 的源码：它界面上“质量监测”里那个延迟，是一条测试消息在网络上来回一趟的时间，不包括编码、排队和解码。所以它显示 255 毫秒的时候，屏幕上实际晚了半秒多。这正是我当初嫌它的地方：数字是有，但不是眼睛看到的那个</li>
+</ul>
+<p><strong>结论</strong></p>
+<p>最常用的场景输了，网络一差还会崩，照开工前的规矩：<strong>不做了</strong>。专业的事交给专业的工具，外网远程继续用 RustDesk ，记得常更新。统一控制继续只做局域网，不经过云端。</p>
+<p>这一趟也不算白忙：</p>
+<ol>
+<li>有了一套量“屏幕到屏幕”延迟的办法，一个网页加截图就行，谁都能拿去量自己的远程工具。测试页很短，有人要的话我回帖贴出来</li>
+<li>知道了统一控制的短板在哪：码率不会跟着网络降。局域网里一般碰不到，以后真要做再说</li>
+</ol>
+<p>代码和测试脚本都是和 Claude 一起写的，我负责出主意和挑毛病。有想法回帖或者写信 <a href="mailto:sublueai@gmail.com" target="_blank" rel="noopener noreferrer">sublueai@gmail.com</a> 都行。</p>
+<p>只做小而美的软件和小游戏。免费，无广告，守护你的隐私——数据只留在你自己的设备上。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>我在做一个小工具叫统一控制（ UnitCtrl ），在电脑上看、控制家里的安卓，只走局域网（<a href="https://techinfo-apps.github.io/unitctrl/" target="_blank" rel="noopener noreferrer">官网</a>）。人在外面的时候，我一直用 RustDesk 远程。</p>
+<p>用着用着有点嫌它：看不到画面到底晚了多少，也看不到刷新率。于是冒出个念头：干脆自己给统一控制做个外网远程，说不定能比它好？开工前先定了规矩：<strong>比 RustDesk 好就做，不如就算了。</strong></p>
+<p><strong>怎么比：用同一把尺子</strong></p>
+<p>各家自己报的延迟算法不一样，不能直接比，所以我做了个笨办法：</p>
+<ul>
+<li>远处那台安卓上开一个网页：一个毫秒时钟，上面一排黑白色块，是把当前的毫秒数编成二进制（第二排取反，用来自检读没读错）</li>
+<li>电脑上用浏览器开同一个页面，和远程窗口并排放</li>
+<li>每 0.5 秒截一次屏，程序读出截图里的两个条码一减，就是“从远端屏幕到我屏幕”的真实延迟。两台机器的时钟差另外量过，大约 33 毫秒，已经扣掉</li>
+<li>两家轮流测：同一台电脑、同一台远端设备（没有硬件编码器，屏幕每秒最多 15 帧）、同一条网络（来回约 240 毫秒，带宽 1–3 Mbit/s ，晚上会抖）</li>
+<li>页面三种：只有条码在变（像平时点点看看）、整屏都在动（像一直在滑）、一屏小字（看清晰度）。每组 25 张</li>
+</ul>
+<p><strong>结果</strong></p>
+<ul>
+<li><strong>平时点点看看</strong>：RustDesk 中位数约 0.55 秒，最慢的 10% 约 0.86 秒；统一控制 0.84 秒 / 1.41 秒。<strong>RustDesk 赢</strong></li>
+<li><strong>整屏一直在动</strong>：RustDesk 每秒只剩 2–3 帧，画面落后 20 多秒，而且越积越多；统一控制约 1.4 秒，一直稳着。这项我们赢，不过那台设备的 CPU 被测试页吃满了，这对 RustDesk 的软件编码最不利，不太公平</li>
+<li><strong>清晰度</strong>：同一屏小字，统一控制的笔画边缘锐度大约是 RustDesk 的 2.5 倍</li>
+<li><strong>网络变差的时候</strong>（带宽掉到约 1 Mbit/s ）：RustDesk 还是 0.5 秒左右；统一控制越积越多，最多落后 37 秒</li>
+</ul>
+<p><strong>为什么会这样</strong></p>
+<ul>
+<li>RustDesk 把码率压得很低（实测约 0.2 Mbit/s ，VP9 ），还会按网络来回的时间主动降帧率和画质，所以网络又窄又抖的时候也稳</li>
+<li>统一控制用硬件编码，码率高（约 1.2 Mbit/s ），画面清楚、整屏动起来也不崩；但它是为家里局域网设计的，网络一窄，多出来的画面就排在路上，手机这边看不到，也不会主动降码率</li>
+<li>顺便翻了 RustDesk 的源码：它界面上“质量监测”里那个延迟，是一条测试消息在网络上来回一趟的时间，不包括编码、排队和解码。所以它显示 255 毫秒的时候，屏幕上实际晚了半秒多。这正是我当初嫌它的地方：数字是有，但不是眼睛看到的那个</li>
+</ul>
+<p><strong>结论</strong></p>
+<p>最常用的场景输了，网络一差还会崩，照开工前的规矩：<strong>不做了</strong>。专业的事交给专业的工具，外网远程继续用 RustDesk ，记得常更新。统一控制继续只做局域网，不经过云端。</p>
+<p>这一趟也不算白忙：</p>
+<ol>
+<li>有了一套量“屏幕到屏幕”延迟的办法，一个网页加截图就行，谁都能拿去量自己的远程工具。测试页很短，有人要的话我回帖贴出来</li>
+<li>知道了统一控制的短板在哪：码率不会跟着网络降。局域网里一般碰不到，以后真要做再说</li>
+</ol>
+<p>代码和测试脚本都是和 Claude 一起写的，我负责出主意和挑毛病。有想法回帖或者写信 <a href="mailto:sublueai@gmail.com" target="_blank" rel="noopener noreferrer">sublueai@gmail.com</a> 都行。</p>
+<p>只做小而美的软件和小游戏。免费，无广告，守护你的隐私——数据只留在你自己的设备上。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ivvei</span>
+        <span>#1</span>
+        <span>2026/10/25 23:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">平常写代码或者写文档用 AI 也就罢了，这发帖怎么还用 AI 写……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219123">平常写代码或者写文档用 AI 也就罢了，这发帖怎么还用 AI 写……</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219123">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251701#reply18219123" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shum0412</span>
+        <span>#2</span>
+        <span>2026/10/25 23:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">adb 自带的那个不就行了，局域网的话</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219140">adb 自带的那个不就行了，局域网的话</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219140">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251701#reply18219140" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">honjow</span>
+        <span>#3</span>
+        <span>2026/10/26 01:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ivvei" target="_blank" rel="noopener noreferrer">ivvei</a> #1 已经丧失了语言组织能力了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219198">@<a href="/member/ivvei" target="_blank" rel="noopener noreferrer">ivvei</a> #1 已经丧失了语言组织能力了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219198">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251701#reply18219198" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xxzhaoming</span>
+        <span>#4</span>
+        <span>2026/10/26 01:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/ivvei" target="_blank" rel="noopener noreferrer">ivvei</a> 脑袋疼不想码字了 明天还得上班</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18219200">@<a href="/member/ivvei" target="_blank" rel="noopener noreferrer">ivvei</a> 脑袋疼不想码字了 明天还得上班</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18219200">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1251701#reply18219200" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
