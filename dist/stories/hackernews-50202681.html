@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docker is weird | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-26/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>Docker is weird</h1>
+      <p class="original-title">Docker is weird</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 psxuaw</span>
+        <span>热度 875</span>
+        <span>回复 366</span>
+        <span>2026/10/23 07:45</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50202681" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://codeandcake.dev/posts/2026-10-22-docker-is-weird" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50202681.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>I decided to make my own container runtime for fun, and even though I’m still early on, I’ve learned that Docker is weird. Here’s some weird things I learned about Docker.</li><li>Containers aren’t real</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shykes</span>
+        
+        <span>2026/10/23 08:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Hi, I'm the creator of Docker and came across this post. It's always fun to see other engineers think about how you designed a system. I haven't been involved in developing Docker in many years, but it's a fun trip down memory lane.<p>I'm happy to answer any questions you may have.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50202931">Hi, I'm the creator of Docker and came across this post. It's always fun to see other engineers think about how you designed a system. I haven't been involved in developing Docker in many years, but it's a fun trip down memory lane.<p>I'm happy to answer any questions you may have.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50202931">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50202931" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">pixelmonkey</span>
+        
+        <span>2026/10/23 13:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was in the audience when you gave the 5-minute docker lightning talk at PyCon US Santa Clara in 2013. I remember chatting with a friend/colleague about it (<a href="https://nvie.com/about/" target="_blank" rel="noopener noreferrer">https://nvie.com/about/</a>) and we both agreed it was the most interesting lightning talk that day.<p>What’s funny, though, is that since it was “just” a lightning talk, it didn’t even make it into the roundup of notes I sent to my team after PyCon. But a mere year later, Docker was how my team (and seemingly everyone else) ran projects locally.</p><p>Any interesting memories from that day in 2013? From your perspective, what happened in the year that followed that caused docker to be adopted so widely? Were there other key moments or turning points?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50204708">I was in the audience when you gave the 5-minute docker lightning talk at PyCon US Santa Clara in 2013. I remember chatting with a friend/colleague about it (<a href="https://nvie.com/about/" target="_blank" rel="noopener noreferrer">https://nvie.com/about/</a>) and we both agreed it was the most interesting lightning talk that day.<p>What’s funny, though, is that since it was “just” a lightning talk, it didn’t even make it into the roundup of notes I sent to my team after PyCon. But a mere year later, Docker was how my team (and seemingly everyone else) ran projects locally.</p><p>Any interesting memories from that day in 2013? From your perspective, what happened in the year that followed that caused docker to be adopted so widely? Were there other key moments or turning points?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50204708">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50204708" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">shykes</span>
+        
+        <span>2026/10/23 13:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>Any interesting memories from that day in 2013?</i><p>That day is forever engraved in my memory... Off the top of my head:</p><p>I signed up for a lightning talk expecting an audience of 10-20 people, for a confidential demo of our unfinished project that we had so far only showed in 1-1 demos. Imagine my surprise when I learned Pycon does lightning talks on the main stage!</p><p>The previous speaker didn't show, so I started early. In the recording you can hear me joke that perhaps I should get his time allocation too - the MC was not amused.</p><p>I went over time and had to speedtalk through the end.. The MC once again was not amused and practically shoved me off stage :-D</p><p>We had a small sponsor booth at the even, where our small marketing team was prepared to pitch our product (DotCloud) but was thoroughly confused when a horde of people showed up after the talk, to ask about "Docker" - which as far as they knew was the founder's side project.</p><p>I drove down to Santa Clara on my newly acquired motorcycle - my very first trip on the freeway. I remember telling myself, "today is the day to take all the risks!"</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50204886">&gt; <i>Any interesting memories from that day in 2013?</i><p>That day is forever engraved in my memory... Off the top of my head:</p><p>I signed up for a lightning talk expecting an audience of 10-20 people, for a confidential demo of our unfinished project that we had so far only showed in 1-1 demos. Imagine my surprise when I learned Pycon does lightning talks on the main stage!</p><p>The previous speaker didn't show, so I started early. In the recording you can hear me joke that perhaps I should get his time allocation too - the MC was not amused.</p><p>I went over time and had to speedtalk through the end.. The MC once again was not amused and practically shoved me off stage :-D</p><p>We had a small sponsor booth at the even, where our small marketing team was prepared to pitch our product (DotCloud) but was thoroughly confused when a horde of people showed up after the talk, to ask about "Docker" - which as far as they knew was the founder's side project.</p><p>I drove down to Santa Clara on my newly acquired motorcycle - my very first trip on the freeway. I remember telling myself, "today is the day to take all the risks!"</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50204886">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50204886" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nzealand</span>
+        
+        <span>2026/10/24 02:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Whenever I am anxious about a presentation, a motorcycle ride to the presentation usually puts everything in perspective.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50213241">Whenever I am anxious about a presentation, a motorcycle ride to the presentation usually puts everything in perspective.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50213241">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50213241" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">vel0city</span>
+        
+        <span>2026/10/24 02:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I agree with this take, even not riding as much as I'd like these days.<p>I had a pretty much near death motorcycle accident I happened to mostly walk away from which really made me restructure my perspective on things I'm afraid of.</p><p>It also managed to make my then to be wife realize she really couldn't live without me when I sent her a photo of a mangled bike and the text "ouchies", so that accident really changed my life positively and radically.</p><p>Although I'm still sad it destroyed my OG Surface Pro. It was a maxed out launch model with the year of the dragon touch cover I bought at a Microsoft store at a mall that doesn't even exist anymore. Worn in a messenger bag on my back, and ended up like a crazy twisted piece of metal in the end.</p><p>So yeah. Motorcycles. They'll change your life.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50213674">I agree with this take, even not riding as much as I'd like these days.<p>I had a pretty much near death motorcycle accident I happened to mostly walk away from which really made me restructure my perspective on things I'm afraid of.</p><p>It also managed to make my then to be wife realize she really couldn't live without me when I sent her a photo of a mangled bike and the text "ouchies", so that accident really changed my life positively and radically.</p><p>Although I'm still sad it destroyed my OG Surface Pro. It was a maxed out launch model with the year of the dragon touch cover I bought at a Microsoft store at a mall that doesn't even exist anymore. Worn in a messenger bag on my back, and ended up like a crazy twisted piece of metal in the end.</p><p>So yeah. Motorcycles. They'll change your life.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50213674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50213674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">gortok</span>
+        
+        <span>2026/10/23 23:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was there as well, and while I was really impressed; I was also weirdly weirded out that this wasn’t a bigger deal to all the folks in attendance.  And so that made me doubt that what I saw was that impressive, as surely other folks in the audience would know better than I would.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50210817">I was there as well, and while I was really impressed; I was also weirdly weirded out that this wasn’t a bigger deal to all the folks in attendance.  And so that made me doubt that what I saw was that impressive, as surely other folks in the audience would know better than I would.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50210817">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50210817" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">w8vY7ER</span>
+        
+        <span>2026/10/23 14:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">How much have you ridden since that day? Any new bikes?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50204986">How much have you ridden since that day? Any new bikes?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50204986">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50204986" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">shykes</span>
+        
+        <span>2026/10/24 14:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I continued riding regularly for 5 years. First on a ninja 250, then a honda cbr 600rr. Stopped riding 8 years ago when I became a dad.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50218783">I continued riding regularly for 5 years. First on a ninja 250, then a honda cbr 600rr. Stopped riding 8 years ago when I became a dad.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50218783">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50218783" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">indymike</span>
+        
+        <span>2026/10/24 03:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was there :-) My business partner at pycon observed that Docker looked like a complicated way to fix easy_install (at the time it looked like to official fix would be to adopt pip). I thought it had some potential :-) but definitely didn't expect it to take over the way it did.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50213939">I was there :-) My business partner at pycon observed that Docker looked like a complicated way to fix easy_install (at the time it looked like to official fix would be to adopt pip). I thought it had some potential :-) but definitely didn't expect it to take over the way it did.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50213939">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50213939" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">elendilm</span>
+        
+        <span>2026/10/24 02:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That literally was history in the making. Much respect.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50213263">That literally was history in the making. Much respect.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50213263">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50213263" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">buddhistdude</span>
+        
+        <span>2026/10/23 21:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">now imagine what the guy who invented AI must've thought on his first motorcycle ride back from work</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50208994">now imagine what the guy who invented AI must've thought on his first motorcycle ride back from work</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50208994">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50208994" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Rediscover</span>
+        
+        <span>2026/10/23 23:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Referencing bicycles and Dr. Albert Hofmann?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50210703">Referencing bicycles and Dr. Albert Hofmann?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50210703">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50210703" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">buddhistdude</span>
+        
+        <span>2026/10/24 22:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I wasn't but it's an interesting connection</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50221440">I wasn't but it's an interesting connection</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50221440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50221440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">raymond_goo</span>
+        
+        <span>2026/10/23 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The Video in Question: <a href="https://www.youtube.com/watch?v=wW9CAH9nSLs" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=wW9CAH9nSLs</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50205303">The Video in Question: <a href="https://www.youtube.com/watch?v=wW9CAH9nSLs" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=wW9CAH9nSLs</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50205303">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50205303" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ignurant</span>
+        
+        <span>2026/10/23 20:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is wild to see. I remember how exciting this was when I eventually learned about this tech. To see it minimized to a five minute surprise intro like this and then shuffled off stage is amazing. Thanks for sharing the video in this context.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50207927">This is wild to see. I remember how exciting this was when I eventually learned about this tech. To see it minimized to a five minute surprise intro like this and then shuffled off stage is amazing. Thanks for sharing the video in this context.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50207927">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50207927" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tkapin</span>
+        
+        <span>2026/10/23 16:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks for sharing this, a really interesting piece of history. It’s always nice to look back at the beginnings of great technology that powers the modern world. Also, thank you, Solomon!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50206152">Thanks for sharing this, a really interesting piece of history. It’s always nice to look back at the beginnings of great technology that powers the modern world. Also, thank you, Solomon!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50206152">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50206152" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">zerkten</span>
+        
+        <span>2026/10/24 02:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The recording of that lightning talk session is at <a href="https://pyvideo.org/pycon-us-2013/friday-evening-lightning-talks.html" target="_blank" rel="noopener noreferrer">https://pyvideo.org/pycon-us-2013/friday-evening-lightning-t...</a>. I was there too and was among those who didn't get it immediately. I do recall more and some mentions of that talk during conversations through the remainder of PyCon though.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50213216">The recording of that lightning talk session is at <a href="https://pyvideo.org/pycon-us-2013/friday-evening-lightning-talks.html" target="_blank" rel="noopener noreferrer">https://pyvideo.org/pycon-us-2013/friday-evening-lightning-t...</a>. I was there too and was among those who didn't get it immediately. I do recall more and some mentions of that talk during conversations through the remainder of PyCon though.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50213216">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50213216" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">davnicwil</span>
+        
+        <span>2026/10/23 08:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm a big fan of docker and mainly just want to say thanks for bringing it about.<p>I remember my first time trying to use a container was about 2015 on a beach cafe's wifi in Bocas del Toro, Panama. You can imagine how it went...</p><p>After a brief hiatus though I was back to it and since then it's been a core part of many a local dev stack and even production stack (compose) I've set up. I recall the magic moment for me being when I first realised you could mount src to use all your local native dev tools while completely virtualising everything else, including and especially whatever combo of runtimes and dependencies you need.</p><p>It was just a lightbulb moment, like it entirely solves 'works on my machine', setting new people up on a project, it just seems like how software engineering ought to work and once you have experienced it it's difficult to go back.</p><p>I'm curious, as its creator are you still using it, or as someone who can clearly look ahead to experimental ways of doing things are you on to the next thing whatever that may be? If so, what is it? :-)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50203171">I'm a big fan of docker and mainly just want to say thanks for bringing it about.<p>I remember my first time trying to use a container was about 2015 on a beach cafe's wifi in Bocas del Toro, Panama. You can imagine how it went...</p><p>After a brief hiatus though I was back to it and since then it's been a core part of many a local dev stack and even production stack (compose) I've set up. I recall the magic moment for me being when I first realised you could mount src to use all your local native dev tools while completely virtualising everything else, including and especially whatever combo of runtimes and dependencies you need.</p><p>It was just a lightbulb moment, like it entirely solves 'works on my machine', setting new people up on a project, it just seems like how software engineering ought to work and once you have experienced it it's difficult to go back.</p><p>I'm curious, as its creator are you still using it, or as someone who can clearly look ahead to experimental ways of doing things are you on to the next thing whatever that may be? If so, what is it? :-)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50203171">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50203171" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">shykes</span>
+        
+        <span>2026/10/23 10:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thank you for sharing that!<p>Yes, I still use Docker. Although my way of using it has changed over time, like many others I assume.</p><p>My new project, Dagger, although it doesn't directly compete with Docker, does implement its own container runtime and orchestrator (for CI pipelines), and we recently added compatibility with Dockerfiles and Docker Compose files... So increasingly I find myself using Dagger instead of Docker, in the context of my CI pipelines.</p><p>On the other hand, I use docker compose on almost every personal project - like a minecraft server for my kids, home automation, AI hacks, etc. These days I just let my AI agent set it up for me, though :)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50203999">Thank you for sharing that!<p>Yes, I still use Docker. Although my way of using it has changed over time, like many others I assume.</p><p>My new project, Dagger, although it doesn't directly compete with Docker, does implement its own container runtime and orchestrator (for CI pipelines), and we recently added compatibility with Dockerfiles and Docker Compose files... So increasingly I find myself using Dagger instead of Docker, in the context of my CI pipelines.</p><p>On the other hand, I use docker compose on almost every personal project - like a minecraft server for my kids, home automation, AI hacks, etc. These days I just let my AI agent set it up for me, though :)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50203999">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50203999" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">elliottmoos</span>
+        
+        <span>2026/10/23 18:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Love Dagger! Not sure how I missed the connection here until now.<p>“You’re overpaying for CI” (<a href="https://www.youtube.com/watch?v=tsH3eTo2GLI" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=tsH3eTo2GLI</a>) from KubeCon 2024 seems especially pertinent these days with AI.</p><p>Was one of my favorite talks that year and really made Dagger click for me.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50206882">Love Dagger! Not sure how I missed the connection here until now.<p>“You’re overpaying for CI” (<a href="https://www.youtube.com/watch?v=tsH3eTo2GLI" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=tsH3eTo2GLI</a>) from KubeCon 2024 seems especially pertinent these days with AI.</p><p>Was one of my favorite talks that year and really made Dagger click for me.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50206882">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50206882" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
