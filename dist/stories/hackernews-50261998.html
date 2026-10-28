@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ghostty 1.4 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-28/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Ghostty 1.4</h1>
+      <p class="original-title">Ghostty 1.4</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 deaux</span>
+        <span>热度 1163</span>
+        <span>回复 367</span>
+        <span>2026/10/28 00:51</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50261998" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://ghostty.org/docs/install/release-notes/1-4-0" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50261998.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Ghostty 1.4.0 is a major release that includes large performance and memory improvements, a 100% complete Kitty graphics implementation including animation and relative placements (the first non-Kitty terminal to do so), SSH integration improvements, and hundreds more improvements and fixes across all platforms. This release features 7 months of work with changes from 172 contributors over 2,889 commits. Thank you to all the contributors, maintainers, community moderators, translators, packagers, and users who each helped make this release possible. These release notes are painstakingly and lovingly hand-crafted by human Ghostty maintainers, including the full changelog. They take a combined 16+ hours to write, so please enjoy. 🥰</li><li>GHSA-4hwh-wx3w-3fqg. Paste protection didn&#39;t treat carriage returns as line endings, so a paste could run a command without confirmation in programs that don&#39;t use bracketed paste. This requires user interaction (copy-paste) to trigger. GHSA-mhff-mv4q-fp63. Malicious Kitty graphics commands could crash or hang Ghostty, force huge allocations, or in limited cases read or delete files outside the allowed temporary directories. This only requires displaying malicious output. GHSA-hcr9-7hcr-mjm8. Malicious terminal output could crash Ghostty, closing every window, via tmux control mode. tmux doesn&#39;t need to be installed. This affects Ghostty 1.3.0 and 1.3.1. GHSA-hp9c-qp4q-cpw3. The same impact as above, via a tmux control mode layout with a zero-sized or oversized pane. This affects Ghostty 1.3.0 and 1.3.1. GHSA-w9q4-5jvv-mcv4. Clearing the screen into scrollback could corrupt memory if it deleted the scrollback page holding a styled or hyperlinked cursor. This only requires displaying malicious output, but only with a small scrollback-limit such as 0. The default isn&#39;t known to be affected. GHSA-2r63-vmw6-3m3c. A crafted directory name could make the zsh shell integration send arbitrary escape sequences, such as silently replacing the clipboard via OSC 52. bash was affected in a more limited way. This only requires cd-ing into a directory from untrusted content, such as a cloned repository. macOS: GHSA-cw69-wm67-5pv8. Cmd-clicking a crafted OSC 8 hyperlink could open unsafe local files or custom URL schemes, leading to arbitrary command execution. Ghostty now blocks unsafe targets and confirms custom URL schemes. This requires user interaction (cmd-click) to trigger. macOS: GHSA-mfw9-xcr3-7gfp. The same issue as above for links detected by the link configuration, including the default URL matcher. This requires user interaction (cmd-click) to trigger. macOS: GHSA-v8cw-fg4j-jcc4. Drag-and-drop text skipped paste protection, with the same impact as above. This requires user interaction (drag-and-drop) to trigger. macOS: GHSA-mxqx-236q-wrv7. Opening a file whose name contains control characters could run a different command than the one shown in the confirmation dialog. This requires a crafted file on your system and confirming the dialog.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mitchellh</span>
+        
+        <span>2026/10/28 01:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">These are Ghostty GUI release notes, but I want to take a moment to highlight the libghostty progress we've made since Ghostty 1.3.<p>As a reminder, libghostty is the highly portable, embeddable library that provides core terminal emulation, render state, and more. I always felt that a free, high qualty, lightweight, reusable terminal emulation core would benefit the developer world more than any single GUI application. And that is playing out!</p><p>It is and always was my true purpose with the Ghostty project (I said this in my first ever talk about Ghostty!). I've jokingly said many times that Ghostty GUI is just a glorified tech demo for libghostty. That's not fair though, because GUI is great and there are really talented people working on it.</p><p>Since I started the project, Ghostty has always gotten people saying "I don't understand why you'd start a terminal emulator today." Well, the answer is libghostty. It's truly unique and its enabling something special (imo!).</p><p>Highlights of libghostty since 6 months ago (none of the below was true 6 months ago):</p><p>- Libghostty has nearly 100% coverage of all of Ghostty's core (and you can compile with flags to remove any of these features for size/safety): <a href="https://libghostty.tip.ghostty.org/" target="_blank" rel="noopener noreferrer">https://libghostty.tip.ghostty.org/</a></p><p>- Libghostty now builds and is tested (in CI) for: Apple (macOS, iOS, visionOS), Windows (MSVC and GNU), Linux, FreeBSD, Android, WebAssembly, and freestanding (i.e. direct on hardware with no OS).</p><p>- Libghostty has bindings in pretty much every popular programming language: C, Zig, Go, Swift, Python, Rust, .NET, etc.</p><p>- Libghostty's memory requirements have dramatically shrunk to enable the portability above. There's still work to do but a single empty terminal now takes 90% less memory. And at scale I've proven 10,000 active (input/output happening) terminals on a Linux server with 4 cores and 8 GB of RAM.</p><p>- Libghostty powers all JetBrains IDE terminals, over 12.5 million active users. <a href="https://blog.jetbrains.com/platform/2026/10/jetbrains-terminal-now-uses-ghostty/" target="_blank" rel="noopener noreferrer">https://blog.jetbrains.com/platform/2026/10/jetbrains-termin...</a></p><p>- Libghostty is the most popular core behind the wave of venture-backed "agentic" terminals and editors, such as Herdr, cmux, and many others.</p><p>- Libghostty is being discussed and has been verbally accepted to replace the terminal core in Neovim: <a href="https://github.com/neovim/neovim/pull/39773" target="_blank" rel="noopener noreferrer">https://github.com/neovim/neovim/pull/39773</a> (work still to be done)</p><p>- Libghostty powers a really popular and powerful terminal emulator for emacs (Ghostel): <a href="https://github.com/dakra/ghostel" target="_blank" rel="noopener noreferrer">https://github.com/dakra/ghostel</a></p><p>- Libghostty's speed is used by Antithesis to fuzz popular terminal programs and has directly led to hundreds of bug fixes sent upstream to programs such as tmux, btop, shells, and other terminal emulators. :)</p><p>- And so much more: <a href="https://github.com/Uzaaft/awesome-libghostty" target="_blank" rel="noopener noreferrer">https://github.com/Uzaaft/awesome-libghostty</a></p><p>Libghostty is really successfully turning into the tide that raises all boats. As it becomes more popular, Ghostty itself gets more performant and stable, and so does everyone else. It is also a vehicle for delivering modern terminal emulation to the widest source possible.</p><p>I plan on tagging libghostty 1.0 in the next few months and declaring ABI stability at that point!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50262760">These are Ghostty GUI release notes, but I want to take a moment to highlight the libghostty progress we've made since Ghostty 1.3.<p>As a reminder, libghostty is the highly portable, embeddable library that provides core terminal emulation, render state, and more. I always felt that a free, high qualty, lightweight, reusable terminal emulation core would benefit the developer world more than any single GUI application. And that is playing out!</p><p>It is and always was my true purpose with the Ghostty project (I said this in my first ever talk about Ghostty!). I've jokingly said many times that Ghostty GUI is just a glorified tech demo for libghostty. That's not fair though, because GUI is great and there are really talented people working on it.</p><p>Since I started the project, Ghostty has always gotten people saying "I don't understand why you'd start a terminal emulator today." Well, the answer is libghostty. It's truly unique and its enabling something special (imo!).</p><p>Highlights of libghostty since 6 months ago (none of the below was true 6 months ago):</p><p>- Libghostty has nearly 100% coverage of all of Ghostty's core (and you can compile with flags to remove any of these features for size/safety): <a href="https://libghostty.tip.ghostty.org/" target="_blank" rel="noopener noreferrer">https://libghostty.tip.ghostty.org/</a></p><p>- Libghostty now builds and is tested (in CI) for: Apple (macOS, iOS, visionOS), Windows (MSVC and GNU), Linux, FreeBSD, Android, WebAssembly, and freestanding (i.e. direct on hardware with no OS).</p><p>- Libghostty has bindings in pretty much every popular programming language: C, Zig, Go, Swift, Python, Rust, .NET, etc.</p><p>- Libghostty's memory requirements have dramatically shrunk to enable the portability above. There's still work to do but a single empty terminal now takes 90% less memory. And at scale I've proven 10,000 active (input/output happening) terminals on a Linux server with 4 cores and 8 GB of RAM.</p><p>- Libghostty powers all JetBrains IDE terminals, over 12.5 million active users. <a href="https://blog.jetbrains.com/platform/2026/10/jetbrains-terminal-now-uses-ghostty/" target="_blank" rel="noopener noreferrer">https://blog.jetbrains.com/platform/2026/10/jetbrains-termin...</a></p><p>- Libghostty is the most popular core behind the wave of venture-backed "agentic" terminals and editors, such as Herdr, cmux, and many others.</p><p>- Libghostty is being discussed and has been verbally accepted to replace the terminal core in Neovim: <a href="https://github.com/neovim/neovim/pull/39773" target="_blank" rel="noopener noreferrer">https://github.com/neovim/neovim/pull/39773</a> (work still to be done)</p><p>- Libghostty powers a really popular and powerful terminal emulator for emacs (Ghostel): <a href="https://github.com/dakra/ghostel" target="_blank" rel="noopener noreferrer">https://github.com/dakra/ghostel</a></p><p>- Libghostty's speed is used by Antithesis to fuzz popular terminal programs and has directly led to hundreds of bug fixes sent upstream to programs such as tmux, btop, shells, and other terminal emulators. :)</p><p>- And so much more: <a href="https://github.com/Uzaaft/awesome-libghostty" target="_blank" rel="noopener noreferrer">https://github.com/Uzaaft/awesome-libghostty</a></p><p>Libghostty is really successfully turning into the tide that raises all boats. As it becomes more popular, Ghostty itself gets more performant and stable, and so does everyone else. It is also a vehicle for delivering modern terminal emulation to the widest source possible.</p><p>I plan on tagging libghostty 1.0 in the next few months and declaring ABI stability at that point!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50262760">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50262760" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">why-el</span>
+        
+        <span>2026/10/28 02:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Because of your multiple "I am tired of saying this, but this text was written by me and not an LLM" in your blog posts, I want to tell you that I read it word for word. :D I know this comment adds not much but I felt it needed to be said.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50263696">Because of your multiple "I am tired of saying this, but this text was written by me and not an LLM" in your blog posts, I want to tell you that I read it word for word. :D I know this comment adds not much but I felt it needed to be said.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50263696">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50263696" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">NorthSouthNorth</span>
+        
+        <span>2026/10/28 03:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">One almost forgets how easy it is to read a wall of text when it was written by a human. This was nice to read (also because you can feel it's got care behind it).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50264289">One almost forgets how easy it is to read a wall of text when it was written by a human. This was nice to read (also because you can feel it's got care behind it).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50264289">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50264289" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">vhiremath4</span>
+        
+        <span>2026/10/28 10:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I have been reading through pharma textbooks written before AI and realized it's so relieving to follow language that has been crafted over multiple editions by humans. When I started to realize how much easier it was for me to read textbooks than the average AI-assisted text, that's when I realized we are truly cooked (at least for this chapter of AI + writing).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50268466">I have been reading through pharma textbooks written before AI and realized it's so relieving to follow language that has been crafted over multiple editions by humans. When I started to realize how much easier it was for me to read textbooks than the average AI-assisted text, that's when I realized we are truly cooked (at least for this chapter of AI + writing).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50268466">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50268466" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throwaway2037</span>
+        
+        <span>2026/10/28 16:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Can you give an example of a pharma textbook that has gotten worse during the AI-slopp-ocalypse?  Bonus Internet points for sharing any especially egregious passages!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50270512">Can you give an example of a pharma textbook that has gotten worse during the AI-slopp-ocalypse?  Bonus Internet points for sharing any especially egregious passages!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50270512">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50270512" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">matsemann</span>
+        
+        <span>2026/10/28 20:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They didn't claim they've read ai pharma textbooks, just used a pharma textbook (which I guess is heavy to read) as a comparison to being easier to read than ai written text.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50272574">They didn't claim they've read ai pharma textbooks, just used a pharma textbook (which I guess is heavy to read) as a comparison to being easier to read than ai written text.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50272574">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50272574" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">RetardedBastard</span>
+        
+        <span>2026/10/28 18:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">He obviously just wanted everyone to know he’s reading pharma textbooks. Probably larping</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50271226">He obviously just wanted everyone to know he’s reading pharma textbooks. Probably larping</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50271226">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50271226" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">throwaway2037</span>
+        
+        <span>2026/10/28 18:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, I thought the pharma bit was <i>potentially</i> performative, but I want to give OP the benefit of the doubt, as is customary here on HN.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50271319">Yeah, I thought the pharma bit was <i>potentially</i> performative, but I want to give OP the benefit of the doubt, as is customary here on HN.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50271319">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50271319" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">elxr</span>
+        
+        <span>2026/10/28 16:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Amen. I'll never, ever stop writing my own articles by hand.<p>I don't mind if my English isn't entirely idiomatic and all my sentence constuctions aren't "by the book" correct. I want to write, and I want anyone reading my writing to know that it's the product of thinking and editing that's unique to me.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50270586">Amen. I'll never, ever stop writing my own articles by hand.<p>I don't mind if my English isn't entirely idiomatic and all my sentence constuctions aren't "by the book" correct. I want to write, and I want anyone reading my writing to know that it's the product of thinking and editing that's unique to me.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50270586">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50270586" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">lukan</span>
+        
+        <span>2026/10/28 12:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">"One almost forgets how easy it is to read a wall of text when it was written by a human. "<p>Erm, this really depends on the human I think.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50269387">"One almost forgets how easy it is to read a wall of text when it was written by a human. "<p>Erm, this really depends on the human I think.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50269387">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50269387" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">anonreplier</span>
+        
+        <span>2026/10/28 06:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">you mean you don't like phrases like "here’s what they don’t tell you" !?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50266969">you mean you don't like phrases like "here’s what they don’t tell you" !?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50266969">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50266969" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">WelkinFolk</span>
+        
+        <span>2026/10/28 13:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">At this point I just get frustrated reading AI prose. I tried for the past few months to just shut my mouth and force myself to read AI prose, since r/singularity wasted no breath telling people how they're Luddites for not marrying an AI.<p>But I can't do this any longer. I'm tired, boss.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50269581">At this point I just get frustrated reading AI prose. I tried for the past few months to just shut my mouth and force myself to read AI prose, since r/singularity wasted no breath telling people how they're Luddites for not marrying an AI.<p>But I can't do this any longer. I'm tired, boss.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50269581">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50269581" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">UqWBcuFx6NV4r</span>
+        
+        <span>2026/10/28 08:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You were right to call me out on that.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50268058">You were right to call me out on that.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50268058">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50268058" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">coldtea</span>
+        
+        <span>2026/10/28 08:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And the real load-bearing part? It's not that, it's this. And honestly? That's great!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50267739">And the real load-bearing part? It's not that, it's this. And honestly? That's great!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50267739">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50267739" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ilvez</span>
+        
+        <span>2026/10/28 13:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They should train AI for this, God it would help.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50269649">They should train AI for this, God it would help.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50269649">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50269649" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">_matthew_</span>
+        
+        <span>2026/10/28 07:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Lowkey so true. I was wondering why I was able to read to the end without getting lost or distracted lol</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50267367">Lowkey so true. I was wondering why I was able to read to the end without getting lost or distracted lol</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50267367">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50267367" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tigerlily</span>
+        
+        <span>2026/10/28 07:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">When I am tired, it's when I know I am alive.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50267224">When I am tired, it's when I know I am alive.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50267224">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50267224" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jan_m_savage</span>
+        
+        <span>2026/10/28 09:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">what a great quote.<p>here's another:</p><p>"when i am sad, i have to remind myself that sadness i feel so as to qualify me to enjoy and feel joy."</p><p>this is not mine, it's a paraphrase of a poem verse from Mawlawi (aka Rumi in the West).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50268464">what a great quote.<p>here's another:</p><p>"when i am sad, i have to remind myself that sadness i feel so as to qualify me to enjoy and feel joy."</p><p>this is not mine, it's a paraphrase of a poem verse from Mawlawi (aka Rumi in the West).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50268464">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50268464" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">abustamam</span>
+        
+        <span>2026/10/28 17:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As an aside, I once saw someone cite something somewhat profound and cited Rumi as the source, and I was like "hm that doesn't sound like him but maybe I'm just uncultured."<p>Turns out they were quoting Rumi from K Pop Demon Hunters and I indeed am uncultured.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50270929">As an aside, I once saw someone cite something somewhat profound and cited Rumi as the source, and I was like "hm that doesn't sound like him but maybe I'm just uncultured."<p>Turns out they were quoting Rumi from K Pop Demon Hunters and I indeed am uncultured.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50270929">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50270929" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jan_m_savage</span>
+        
+        <span>2026/10/28 18:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">haha. well consider me uncultured wrt to K pop Rumi.... I didn't know about it until your comment.<p>The one I am mentioning is جلال الدین محمد بلخی رومی So the sufi saint.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50271316">haha. well consider me uncultured wrt to K pop Rumi.... I didn't know about it until your comment.<p>The one I am mentioning is جلال الدین محمد بلخی رومی So the sufi saint.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50271316">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50271316" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
