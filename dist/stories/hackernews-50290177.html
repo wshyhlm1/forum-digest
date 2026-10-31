@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Voice | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-31/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>LLM Voice</h1>
+      <p class="original-title">LLM Voice</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ibobev</span>
+        <span>热度 594</span>
+        <span>回复 328</span>
+        <span>2026/10/29 22:57</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50290177" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://martinfowler.com/bliki/LLM-Voice.html" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50290177.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Sometimes when I read a post, I get the growing feeling that I&#39;m reading the output of an LLM. I can&#39;t necessarily define why, although there are the common tells (it&#39;s not the em-dashes, it&#39;s the load-bearing tapestries). As I do this my desire to read on atrophies, sometimes to the point of revulsion</li><li>There are tools out there that claim to be able to tell the difference between LLM-written prose and the old-fashioned biological product. I&#39;m wary of them, partly due skeptism about their accuracy, but also because it rather misses the point. The reaction to LLM-Voice is a human one, that sense that we are in an uncanny valley of prose. By the time I&#39;d reach for a tool to tell me what I&#39;m reading, it&#39;s already too late, even if it confidently tells me there&#39;s no LLM present.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BurritoKing</span>
+        
+        <span>2026/10/30 01:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As someone who is aggressively pro AI, I've also noticed how awful everything is to read lately.  It's always so hard to put my finger on the exact thing, but it's a mixture of everything sounding identical and everything being a rambling unconcise mess.  I find I routinely start reading interesting posts and just .. stop part way, abandoning it.  A site I read stories on has been flooded with AI generated content, all of it terrible, and it just makes me retreat to things created before 2023 as a way of filtering it all out.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50293240">As someone who is aggressively pro AI, I've also noticed how awful everything is to read lately.  It's always so hard to put my finger on the exact thing, but it's a mixture of everything sounding identical and everything being a rambling unconcise mess.  I find I routinely start reading interesting posts and just .. stop part way, abandoning it.  A site I read stories on has been flooded with AI generated content, all of it terrible, and it just makes me retreat to things created before 2023 as a way of filtering it all out.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50293240">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50293240" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/10/30 02:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A model trained to minimize statistical prediction errors is going to sound ... predictable (aka boring). A (good) human author tries to keep their writing interesting, while an LLM strives for predictable instead.<p>It's not just predicting content but also the form/shape of the response, highly shaped by RLHF preferences, which seems to encourage longer form responses which need padding with filler to generate the "preferred" amount of verbiage.</p><p>It seems most of these models have been trained to interpret questions as wanting a long-form authoritative/comprehensive-sounding response (even when midwit filler is all it has to offer), rather than initiating a short-turn conversation which would better allow you to steer the conversation. Apparently Muse is much better in this regard, but so far I've resisted signing up for any Meta/FaceBook service, and not inclined to break this winning streak!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50294006">A model trained to minimize statistical prediction errors is going to sound ... predictable (aka boring). A (good) human author tries to keep their writing interesting, while an LLM strives for predictable instead.<p>It's not just predicting content but also the form/shape of the response, highly shaped by RLHF preferences, which seems to encourage longer form responses which need padding with filler to generate the "preferred" amount of verbiage.</p><p>It seems most of these models have been trained to interpret questions as wanting a long-form authoritative/comprehensive-sounding response (even when midwit filler is all it has to offer), rather than initiating a short-turn conversation which would better allow you to steer the conversation. Apparently Muse is much better in this regard, but so far I've resisted signing up for any Meta/FaceBook service, and not inclined to break this winning streak!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50294006">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50294006" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ThrustVectoring</span>
+        
+        <span>2026/10/30 09:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Human writers also use specific constructions for definite (though not always consciously known) reasons, and mapping those correlations onto writing models is only getting done on accident. This is a big part of why LLMs doing pointless negations (it's not X, it's Y) is so jarring: people use that construction in order to preempt an expected misconception, whereas LLMs try to use linear algebra over the learning corpus to generate it in appropriate quantities and places according to RLHF/fine-tuning/etc.<p>In other words, it isn't just verbiage that has a "preferred" quantity, but also higher-level language features, and the appropriate contexts for those features feel like the sort of thing that will be extraordinarily difficult to replicate without a theory of mind.</p><p>edit after coming back and re-reading: the "in other words," and rephrase is because I'm trying to explain something complex enough that I'm not even sure I fully understand it, so I try typing out multiple explanations and leave the ones that make the most sense to me. This might be idiosyncratic to my writing and not a significant feature of training corpuses, but even if it wasn't it's a second example of the sort of thing I'd suspect LLMs to be bad at using appropriately.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50298826">Human writers also use specific constructions for definite (though not always consciously known) reasons, and mapping those correlations onto writing models is only getting done on accident. This is a big part of why LLMs doing pointless negations (it's not X, it's Y) is so jarring: people use that construction in order to preempt an expected misconception, whereas LLMs try to use linear algebra over the learning corpus to generate it in appropriate quantities and places according to RLHF/fine-tuning/etc.<p>In other words, it isn't just verbiage that has a "preferred" quantity, but also higher-level language features, and the appropriate contexts for those features feel like the sort of thing that will be extraordinarily difficult to replicate without a theory of mind.</p><p>edit after coming back and re-reading: the "in other words," and rephrase is because I'm trying to explain something complex enough that I'm not even sure I fully understand it, so I try typing out multiple explanations and leave the ones that make the most sense to me. This might be idiosyncratic to my writing and not a significant feature of training corpuses, but even if it wasn't it's a second example of the sort of thing I'd suspect LLMs to be bad at using appropriately.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50298826">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50298826" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ahartmetz</span>
+        
+        <span>2026/10/30 14:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Another LLM weirdness is to explain what code is not doing. My theory: such negations were somehow encouraged in training because they are very valuable where used properly (and sparely) by humans. "Not doing the obvious thing due to xyz happening two modules over" is a very useful comment. "Not using bubblesort because quicksort is faster" is garbage.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50300420">Another LLM weirdness is to explain what code is not doing. My theory: such negations were somehow encouraged in training because they are very valuable where used properly (and sparely) by humans. "Not doing the obvious thing due to xyz happening two modules over" is a very useful comment. "Not using bubblesort because quicksort is faster" is garbage.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50300420">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50300420" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">benjamincburns</span>
+        
+        <span>2026/10/30 15:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think a lot of the time it's prompt leakage. Forgive the personification, but it's like they don't have a mental model of the reader of the thing that they're authoring being separate from the person who's prompting them to author it, so it often seems like the main conversation kind of spills into the prose.<p>Not to pick on GenHTTP Lambda, especially because I think it's someone's fun side project, but I was just trying to read though their docs and I was finding it super difficult. I kept getting distracted thinking "why the hell did it write it _that_ way?"</p><p>Like, the first sentence of "The control center" section [1] is the exact sort of weird negation that you're describing:</p><p>&gt; The editor link opens a control center rather than a text box: most of the code here is written by agents, so the first thing on the screen is how your lambda is doing.</p><p>I can't help but think it generated the first round of the page with a text box to paste the code into, got told "no, I want a control center," and then this ended up in the docs.</p><p>I also think the phrasing of that sentence (and many others in those docs) is just super weird and unnatural - e.g. "so the first thing on the screen is how your lambda is doing." It also feels like it mirrors a prompt - like, "no, it should be a control center, not a text box, and the first thing the user should see is how their lambda is doing." But in docs I'd never expect it to be written "the status of your lambda" or "the health of your lambda." And what does the code being written by agents have to do with it?</p><p>1: <a href="https://genhttp.dev/en/docs#editor" target="_blank" rel="noopener noreferrer">https://genhttp.dev/en/docs#editor</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50300801">I think a lot of the time it's prompt leakage. Forgive the personification, but it's like they don't have a mental model of the reader of the thing that they're authoring being separate from the person who's prompting them to author it, so it often seems like the main conversation kind of spills into the prose.<p>Not to pick on GenHTTP Lambda, especially because I think it's someone's fun side project, but I was just trying to read though their docs and I was finding it super difficult. I kept getting distracted thinking "why the hell did it write it _that_ way?"</p><p>Like, the first sentence of "The control center" section [1] is the exact sort of weird negation that you're describing:</p><p>&gt; The editor link opens a control center rather than a text box: most of the code here is written by agents, so the first thing on the screen is how your lambda is doing.</p><p>I can't help but think it generated the first round of the page with a text box to paste the code into, got told "no, I want a control center," and then this ended up in the docs.</p><p>I also think the phrasing of that sentence (and many others in those docs) is just super weird and unnatural - e.g. "so the first thing on the screen is how your lambda is doing." It also feels like it mirrors a prompt - like, "no, it should be a control center, not a text box, and the first thing the user should see is how their lambda is doing." But in docs I'd never expect it to be written "the status of your lambda" or "the health of your lambda." And what does the code being written by agents have to do with it?</p><p>1: <a href="https://genhttp.dev/en/docs#editor" target="_blank" rel="noopener noreferrer">https://genhttp.dev/en/docs#editor</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50300801">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50300801" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Kaliumhexacyano</span>
+        
+        <span>2026/10/30 19:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Lambda is my side project and I 100% agree. Updating documentation with Claude does not work, unless you spend so much effort that you could have written a perfect version yourself. Opus 5.5 got better at it, but it's still a long way to go. I personally cannot stand the PR descriptions generated by Claude. Three pages of text for just a simple change ...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50302667">Lambda is my side project and I 100% agree. Updating documentation with Claude does not work, unless you spend so much effort that you could have written a perfect version yourself. Opus 5.5 got better at it, but it's still a long way to go. I personally cannot stand the PR descriptions generated by Claude. Three pages of text for just a simple change ...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50302667">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50302667" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zenoprax</span>
+        
+        <span>2026/10/30 23:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is my experience as well. I have spent many hours trying to eliminate this kind of contamination and the only solution I've found is to re-write from scratch every time. If the result isn't to your liking just reset its context and provide a more detailed prompt.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50305038">This is my experience as well. I have spent many hours trying to eliminate this kind of contamination and the only solution I've found is to re-write from scratch every time. If the result isn't to your liking just reset its context and provide a more detailed prompt.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50305038">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50305038" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bavell</span>
+        
+        <span>2026/10/30 15:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1000% this. I encounter this all the time (with Claude) and it drives me nuts!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50300833">1000% this. I encounter this all the time (with Claude) and it drives me nuts!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50300833">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50300833" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">hxtk</span>
+        
+        <span>2026/10/30 07:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I vaguely remember a study that I was able to find when fact-checking this comment before publishing it [1], which found that music needs periods of high predictability to nurture listener expectations for the sake of later subverting those expectations, and the most enjoyable parts of music are those moments where expectations are subverted. This sounds like a similar effect.<p>1: PDF warning <a href="https://www.cell.com/current-biology/pdfExtended/S0960-9822(19)31258-8" target="_blank" rel="noopener noreferrer">https://www.cell.com/current-biology/pdfExtended/S0960-9822(...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50297490">I vaguely remember a study that I was able to find when fact-checking this comment before publishing it [1], which found that music needs periods of high predictability to nurture listener expectations for the sake of later subverting those expectations, and the most enjoyable parts of music are those moments where expectations are subverted. This sounds like a similar effect.<p>1: PDF warning <a href="https://www.cell.com/current-biology/pdfExtended/S0960-9822(19)31258-8" target="_blank" rel="noopener noreferrer">https://www.cell.com/current-biology/pdfExtended/S0960-9822(...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50297490">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50297490" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">thin_carapace</span>
+        
+        <span>2026/10/30 12:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">uh huh. so music is like a joke - the payoff is unexpected, while simultaneously adhering to scenario expectations.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50299739">uh huh. so music is like a joke - the payoff is unexpected, while simultaneously adhering to scenario expectations.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50299739">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50299739" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/10/30 21:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes, with the "scenario expectations" just being the necessary setup to deliberately create false expectations and make the punchline that much more unexpected/funny.<p>I think both music and humor are both exploiting the same evolutionary essentials of human nature - to find comfort/safety in predictability, and excitement/danger in unpredictability. Laughter would seem to be a social thing - perhaps it helps develop a theory of mind in signalling that you get the joke - that the punchline is indeed unexpected to you as well ? And/or perhaps it helps draw others attention to an unexpected situation with learning potential.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50303839">Yes, with the "scenario expectations" just being the necessary setup to deliberately create false expectations and make the punchline that much more unexpected/funny.<p>I think both music and humor are both exploiting the same evolutionary essentials of human nature - to find comfort/safety in predictability, and excitement/danger in unpredictability. Laughter would seem to be a social thing - perhaps it helps develop a theory of mind in signalling that you get the joke - that the punchline is indeed unexpected to you as well ? And/or perhaps it helps draw others attention to an unexpected situation with learning potential.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50303839">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50303839" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jacmilts</span>
+        
+        <span>2026/10/30 04:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Gemini models are so, so much better in this regard. Their outputs are actually readable.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50295080">Gemini models are so, so much better in this regard. Their outputs are actually readable.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50295080">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50295080" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">api</span>
+        
+        <span>2026/10/30 08:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Gemini tends to glaze you though. I now believe I’m a genius at pretty much everything after trying it a little.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50298424">Gemini tends to glaze you though. I now believe I’m a genius at pretty much everything after trying it a little.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50298424">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50298424" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">FranzFerdiNaN</span>
+        
+        <span>2026/10/30 13:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Every model has done this. And sometimes the makers go the other way to compensate, and then you get Opus 5 who answered like it was possessed by the ghost of stack overflow.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50300160">Every model has done this. And sometimes the makers go the other way to compensate, and then you get Opus 5 who answered like it was possessed by the ghost of stack overflow.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50300160">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50300160" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">3371</span>
+        
+        <span>2026/10/30 21:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not really, Gemini is at a different level, it will naturally burst out compliments and honorable nickname to provide emptional values. My last company was iterally destroyed because the old boss (successful boomer who had no idea how software industry work) believe everything his Gemini told him and gives us all kinds of unrealistic assignments and force us to use whatever tools/services Gemini suggested.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50303305">Not really, Gemini is at a different level, it will naturally burst out compliments and honorable nickname to provide emptional values. My last company was iterally destroyed because the old boss (successful boomer who had no idea how software industry work) believe everything his Gemini told him and gives us all kinds of unrealistic assignments and force us to use whatever tools/services Gemini suggested.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50303305">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50303305" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">mythrwy</span>
+        
+        <span>2026/10/31 03:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Agreed. In my experience it gets to the heart of information faster rather than so much filler. Also better information and more comprehensive in general.<p>The main issues seem to be glazing that sibling mentions and also it seems to play a bit loser with facts and reality and makes up more stuff.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50309155">Agreed. In my experience it gets to the heart of information faster rather than so much filler. Also better information and more comprehensive in general.<p>The main issues seem to be glazing that sibling mentions and also it seems to play a bit loser with facts and reality and makes up more stuff.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50309155">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50309155" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">blobbers</span>
+        
+        <span>2026/10/30 14:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">"A model trained to minimize statistical prediction errors is going to sound ... predictable (aka boring)." -- what if the goal is to be a (good) human author.<p>In that case, model will in fact strive to keep their writing as close to interesting writing as possible.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50300626">"A model trained to minimize statistical prediction errors is going to sound ... predictable (aka boring)." -- what if the goal is to be a (good) human author.<p>In that case, model will in fact strive to keep their writing as close to interesting writing as possible.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50300626">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50300626" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/10/30 21:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The goal (literal, not figurative) of an LLM is to reduce training/inference errors - to predict the training material.<p>The "quality/goodness" (likability) of output is only selected for to extent that it also reflects RLHF preferences originating from low paid contractors who are scoring based on "looks good to me", not based on Pulitzer prize prose potential.</p><p>To explore a false hypothetical, suppose an LLM was only trained on the output of a single popular author, then you'd certainly expect it to reproduce that author's style, but it would not be "upredictably interesting" but rather predictably quirky, reproducing the same "surprises" over and over so that they no longer are surprising and therefore interesting.</p><p>To continue the hypothetical, if you trained an LLM exclusively on the output of multiple good authors, then rather than get the best of each you'd get a statistical blend (this is how training works) that emphasized what they had in common rather than the individual quirks that made them interesting.</p><p>There is a fairly common misperception that "AI" (LLMs) is always trying to do it's best, where "best" has been anthropomorphized to have the human sense rather than the LLM sense of "the most statistically accurate continuation prediction" it can make. For example, if you give an LLM the moves of a partial chess game and ask it to predict next moves for one of the players, it will NOT play to win, but will rather play to predict how the game would have continued, which means continuing at the level (ELO rating) and style of the player who had made those moves.</p><p>Of course you can ask an LLM to play to win, just as you can ask it to write in a style that is, say, "unpredictable and interesting", but it can't escape itself - you will necessarily get predictable unpredictability.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50303591">The goal (literal, not figurative) of an LLM is to reduce training/inference errors - to predict the training material.<p>The "quality/goodness" (likability) of output is only selected for to extent that it also reflects RLHF preferences originating from low paid contractors who are scoring based on "looks good to me", not based on Pulitzer prize prose potential.</p><p>To explore a false hypothetical, suppose an LLM was only trained on the output of a single popular author, then you'd certainly expect it to reproduce that author's style, but it would not be "upredictably interesting" but rather predictably quirky, reproducing the same "surprises" over and over so that they no longer are surprising and therefore interesting.</p><p>To continue the hypothetical, if you trained an LLM exclusively on the output of multiple good authors, then rather than get the best of each you'd get a statistical blend (this is how training works) that emphasized what they had in common rather than the individual quirks that made them interesting.</p><p>There is a fairly common misperception that "AI" (LLMs) is always trying to do it's best, where "best" has been anthropomorphized to have the human sense rather than the LLM sense of "the most statistically accurate continuation prediction" it can make. For example, if you give an LLM the moves of a partial chess game and ask it to predict next moves for one of the players, it will NOT play to win, but will rather play to predict how the game would have continued, which means continuing at the level (ELO rating) and style of the player who had made those moves.</p><p>Of course you can ask an LLM to play to win, just as you can ask it to write in a style that is, say, "unpredictable and interesting", but it can't escape itself - you will necessarily get predictable unpredictability.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50303591">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50303591" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">blobbers</span>
+        
+        <span>2026/10/30 23:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think you're missing what I'm saying; the LLM <i>can</i> and will have trained on all interesting prose, and it will evaluate all interesting prose. If you indicate that you are goal setting for amazing prose, and you give enough chain of thought, it will self evaluate.<p>Your chess game example misses the point. If you give an LLM the moves of a partial chess game and ask it to predict the moves of the players, it will predict how the game would have continued, even if it is low level players. But if you ask it how Magnus Carlsen would win the game, it will likely come up with a sequence that can beat most human players, or possibly just decide to invoke a chess solver, which will most definitely win.</p><p>The key for your prompts and thinking loops is you need to indicate proper goals. "Write the a story about 1775 England." is different then setting a goal for it to write the a fantastic storyin the style of Dickens about England in 1775.</p><p>Regarding the ML portion; what you've written about a 'statistical blend' is a little bit coarse. That would be what you might have gotten from a 2 layer neural net or a regression in 1999; the neural networks today operating with attention or an incredibly high number of parameters are non-linear and non-interpretable, that's the entire point. This isn't a regression of simple parameters, it's all interactions of all parameters deeply netted. Model interpretability vs. Model Prediction power are generally inversely related.</p><p>The model <i>can</i> in fact escape itself in that it has many, many, many more parameters than a simple "predictable unpredictability" and that is exactly the point of it.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50305073">I think you're missing what I'm saying; the LLM <i>can</i> and will have trained on all interesting prose, and it will evaluate all interesting prose. If you indicate that you are goal setting for amazing prose, and you give enough chain of thought, it will self evaluate.<p>Your chess game example misses the point. If you give an LLM the moves of a partial chess game and ask it to predict the moves of the players, it will predict how the game would have continued, even if it is low level players. But if you ask it how Magnus Carlsen would win the game, it will likely come up with a sequence that can beat most human players, or possibly just decide to invoke a chess solver, which will most definitely win.</p><p>The key for your prompts and thinking loops is you need to indicate proper goals. "Write the a story about 1775 England." is different then setting a goal for it to write the a fantastic storyin the style of Dickens about England in 1775.</p><p>Regarding the ML portion; what you've written about a 'statistical blend' is a little bit coarse. That would be what you might have gotten from a 2 layer neural net or a regression in 1999; the neural networks today operating with attention or an incredibly high number of parameters are non-linear and non-interpretable, that's the entire point. This isn't a regression of simple parameters, it's all interactions of all parameters deeply netted. Model interpretability vs. Model Prediction power are generally inversely related.</p><p>The model <i>can</i> in fact escape itself in that it has many, many, many more parameters than a simple "predictable unpredictability" and that is exactly the point of it.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50305073">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50305073" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/10/31 00:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not sure how you are imagining an LLM "self evaluating". They are feed-forward auto-regressive predictors. The only source for the next word they spit out is what came before and the patterns that contains.<p>If you ask an LLM to "win like Magnus" it can't because, as above, it is a feed-forward auto-regressive predictor. Do you realize how much different this is to how something like Stockfish (that can play at, and far beyond, Magnus' level) works?</p><p>A big LLM is still an LLM - the architecture and operation doesn't change. It just has more capacity to learn, both to learn deep predictive patterns and to memorize factual knowledge.</p><p>Does it not occur to you that your beliefs of what LLMs are capable of (generating amazing prose) is totally at odds with what we see them doing? Where is all the amazing prose?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50306113">I'm not sure how you are imagining an LLM "self evaluating". They are feed-forward auto-regressive predictors. The only source for the next word they spit out is what came before and the patterns that contains.<p>If you ask an LLM to "win like Magnus" it can't because, as above, it is a feed-forward auto-regressive predictor. Do you realize how much different this is to how something like Stockfish (that can play at, and far beyond, Magnus' level) works?</p><p>A big LLM is still an LLM - the architecture and operation doesn't change. It just has more capacity to learn, both to learn deep predictive patterns and to memorize factual knowledge.</p><p>Does it not occur to you that your beliefs of what LLMs are capable of (generating amazing prose) is totally at odds with what we see them doing? Where is all the amazing prose?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50306113">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50306113" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

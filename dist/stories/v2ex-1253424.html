@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了个 Sublime Text 的 Swift 语法高亮插件，没想到被官方安排接管了用户量最多的老插件 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-31/">返回日报</a>
+      <div class="source-chip">V2EX #5</div>
+      <h1>做了个 Sublime Text 的 Swift 语法高亮插件，没想到被官方安排接管了用户量最多的老插件</h1>
+      <p class="original-title">做了个 Sublime Text 的 Swift 语法高亮插件，没想到被官方安排接管了用户量最多的老插件</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 hanguokai</span>
+        <span>热度 7</span>
+        <span>回复 7</span>
+        <span>2026/10/31 17:30</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1253424" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1253424.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>用 Sublime 看 Swift 代码有个痛点：Sublime 官方一直没有内置 Swift 支持。而去 Package Control （ Sublime 的官方插件商店）里搜，排名靠前的几个 Swift 插件（在我开始动手做的时候）全都停留在好几年前——有的甚至是十年前 Swift 1/2 时代的产物；稍微好一点的是两年前更新的，但也只支持到 Swift 5.6 。</li><li>于是我就动手做了一个，方便自己阅读代码。写完之后，心想做都做了，不如顺手提交到 Package Control 上，这样也可以让别人用。没想到在提交 PR 的时候，遇到了一段意料之外的经历。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>用 Sublime 看 Swift 代码有个痛点：Sublime 官方一直没有内置 Swift 支持。而去 Package Control （ Sublime 的官方插件商店）里搜，排名靠前的几个 Swift 插件（在我开始动手做的时候）全都停留在好几年前——有的甚至是十年前 Swift 1/2 时代的产物；稍微好一点的是两年前更新的，但也只支持到 Swift 5.6 。</p>
+<p>于是我就动手做了一个，方便自己阅读代码。写完之后，心想做都做了，不如顺手提交到 Package Control 上，这样也可以让别人用。没想到在提交 PR 的时候，遇到了一段意料之外的经历。</p>
+<p>本来我是想反正上面已经有好几个 Swift 插件了，多我一个不多，少我一个不少。在我看来，网上同一个功能存在一堆竞品是再正常不过的事，用户爱用哪个用哪个。</p>
+<p>结果 PR 提上去之后，神奇的事情发生了。</p>
+<p>Package Control 的核心维护者们看法跟我完全不一样。他们不希望基础语言的语法插件继续碎片化下去。用户只需要一个完好能用的，而不是几个各有缺陷的。</p>
+<p>核心维护者 @<a href="/member/braver" target="_blank" rel="noopener noreferrer">braver</a> 和负责 Sublime 官方内置语法库的 @<a href="/member/deathaxe" target="_blank" rel="noopener noreferrer">deathaxe</a> 在 PR 里聊了起来，顺便给我科普了一段历史：原来过去很多年里，社区先后尝试过两次想孵化一个能够内置进官方的标准 Swift 语法插件，但都半途而废了，结果就是现在的局面。</p>
+<p>@<a href="/member/deathaxe" target="_blank" rel="noopener noreferrer">deathaxe</a> 审查了一遍我的实现，认为整体架构很干净，甚至可以向下兼容 Sublime Text 3 。最终他们拍板了一个让我受宠若惊的决定：直接由我接管那个 97K 安装量的元老级 <code>Swift</code> 插件，用我这套新实现顶替它！</p>
+<p>更让人感慨开源社区氛围的是：@braver 本来在评论里说“那个老项目看起来已经彻底凉了，按规矩我们给十年前的原作者 @<a href="/member/quiqueg" target="_blank" rel="noopener noreferrer">quiqueg</a> 留两周时间看是否反对”，结果话音刚落 <strong>2 分钟</strong>，@quiqueg 居然就在 PR 里闪现秒回了！他不仅爽快地表示双手赞，承认其它实现可能好得多。甚至还主动帮我把他十年前的最后一个旧版本打包成了无历史记录的孤立分支，让我作为历史记录同步到我的分支里。</p>
+<p>现在所有安装了 <code>Swift</code> 插件的老用户会自动升级到我这个新实现上。而新用户在 Package Control 上搜索 Swift 也会优先找到这个用户量很大的插件。这样实现了对 Sublime Text 社区的最大收益。</p>
+<p>本来只是为了自己看代码方便随手造的小轮子，莫名其妙就成了 9.7 万存量用户的“正统继承人”，突然感觉肩上多了一份沉甸甸的责任感 😅。</p>
+<ul>
+<li>项目地址： <a href="https://github.com/hanguokai/sublime-swift" target="_blank" rel="noopener noreferrer">https://github.com/hanguokai/sublime-swift</a></li>
+<li>Package Control 地址： <a href="https://packagecontrol.io/packages/Swift" target="_blank" rel="noopener noreferrer">https://packagecontrol.io/packages/Swift</a></li>
+</ul>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>用 Sublime 看 Swift 代码有个痛点：Sublime 官方一直没有内置 Swift 支持。而去 Package Control （ Sublime 的官方插件商店）里搜，排名靠前的几个 Swift 插件（在我开始动手做的时候）全都停留在好几年前——有的甚至是十年前 Swift 1/2 时代的产物；稍微好一点的是两年前更新的，但也只支持到 Swift 5.6 。</p>
+<p>于是我就动手做了一个，方便自己阅读代码。写完之后，心想做都做了，不如顺手提交到 Package Control 上，这样也可以让别人用。没想到在提交 PR 的时候，遇到了一段意料之外的经历。</p>
+<p>本来我是想反正上面已经有好几个 Swift 插件了，多我一个不多，少我一个不少。在我看来，网上同一个功能存在一堆竞品是再正常不过的事，用户爱用哪个用哪个。</p>
+<p>结果 PR 提上去之后，神奇的事情发生了。</p>
+<p>Package Control 的核心维护者们看法跟我完全不一样。他们不希望基础语言的语法插件继续碎片化下去。用户只需要一个完好能用的，而不是几个各有缺陷的。</p>
+<p>核心维护者 @<a href="/member/braver" target="_blank" rel="noopener noreferrer">braver</a> 和负责 Sublime 官方内置语法库的 @<a href="/member/deathaxe" target="_blank" rel="noopener noreferrer">deathaxe</a> 在 PR 里聊了起来，顺便给我科普了一段历史：原来过去很多年里，社区先后尝试过两次想孵化一个能够内置进官方的标准 Swift 语法插件，但都半途而废了，结果就是现在的局面。</p>
+<p>@<a href="/member/deathaxe" target="_blank" rel="noopener noreferrer">deathaxe</a> 审查了一遍我的实现，认为整体架构很干净，甚至可以向下兼容 Sublime Text 3 。最终他们拍板了一个让我受宠若惊的决定：直接由我接管那个 97K 安装量的元老级 <code>Swift</code> 插件，用我这套新实现顶替它！</p>
+<p>更让人感慨开源社区氛围的是：@braver 本来在评论里说“那个老项目看起来已经彻底凉了，按规矩我们给十年前的原作者 @<a href="/member/quiqueg" target="_blank" rel="noopener noreferrer">quiqueg</a> 留两周时间看是否反对”，结果话音刚落 <strong>2 分钟</strong>，@quiqueg 居然就在 PR 里闪现秒回了！他不仅爽快地表示双手赞，承认其它实现可能好得多。甚至还主动帮我把他十年前的最后一个旧版本打包成了无历史记录的孤立分支，让我作为历史记录同步到我的分支里。</p>
+<p>现在所有安装了 <code>Swift</code> 插件的老用户会自动升级到我这个新实现上。而新用户在 Package Control 上搜索 Swift 也会优先找到这个用户量很大的插件。这样实现了对 Sublime Text 社区的最大收益。</p>
+<p>本来只是为了自己看代码方便随手造的小轮子，莫名其妙就成了 9.7 万存量用户的“正统继承人”，突然感觉肩上多了一份沉甸甸的责任感 😅。</p>
+<ul>
+<li>项目地址： <a href="https://github.com/hanguokai/sublime-swift" target="_blank" rel="noopener noreferrer">https://github.com/hanguokai/sublime-swift</a></li>
+<li>Package Control 地址： <a href="https://packagecontrol.io/packages/Swift" target="_blank" rel="noopener noreferrer">https://packagecontrol.io/packages/Swift</a></li>
+</ul>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">7</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">stormer</span>
+        <span>#1</span>
+        <span>2026/10/31 20:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">大佬牛逼</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18242818">大佬牛逼</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18242818">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18242818" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">liangch</span>
+        <span>#2</span>
+        <span>2026/10/31 21:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看加入时间就知道了 佬</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18242906">看加入时间就知道了 佬</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18242906">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18242906" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">TerranC</span>
+        <span>#3</span>
+        <span>2026/10/31 23:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有了 AI 之后 sublime text 真的香，反正只需要一个高亮就行了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18243093">有了 AI 之后 sublime text 真的香，反正只需要一个高亮就行了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18243093">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18243093" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Gomoku2024</span>
+        <span>#4</span>
+        <span>2026/11/01 00:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">sublime text 轻量，但是插件数量和更新速度都不行</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18243146">sublime text 轻量，但是插件数量和更新速度都不行</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18243146">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18243146" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">driedfish</span>
+        <span>#5</span>
+        <span>2026/11/01 00:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">正在用这个插件👍👍👍</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18243169">正在用这个插件👍👍👍</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18243169">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18243169" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Yuanlaoer</span>
+        <span>#6</span>
+        <span>2026/11/01 01:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">使用 Sublime Text 看代码已经超过十年了，尤其是 Swift ，算是断断续续在用，但是从来没想过自己开发 package control 的资源。<br />很赞！<br />我自己曾经也做过一些开源项目，如果欢迎的话，请回复我，我会在你的 PR 里提一些 issue 或 fork/PR 。<br />感谢！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18243201">使用 Sublime Text 看代码已经超过十年了，尤其是 Swift ，算是断断续续在用，但是从来没想过自己开发 package control 的资源。<br />很赞！<br />我自己曾经也做过一些开源项目，如果欢迎的话，请回复我，我会在你的 PR 里提一些 issue 或 fork/PR 。<br />感谢！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18243201">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18243201" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">guolei1998</span>
+        <span>#7</span>
+        <span>2026/11/01 02:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这就是开源的力量！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18243210">这就是开源的力量！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18243210">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253424#reply18243210" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

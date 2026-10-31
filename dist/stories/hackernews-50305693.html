@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI isn&#39;t replacing SREs, it&#39;s deskilling them | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-10-31/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>AI isn&#39;t replacing SREs, it&#39;s deskilling them</h1>
+      <p class="original-title">AI isn&#39;t replacing SREs, it&#39;s deskilling them</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 dorianniemiec</span>
+        <span>热度 596</span>
+        <span>回复 446</span>
+        <span>2026/10/30 23:52</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50305693" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://newsletter.signoz.io/p/ai-isnt-replacing-sres-its-deskilling" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50305693.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>💌 Hey there, it’s Elizabeth from SigNoz!This newsletter is an honest attempt to talk about all things - observability, OpenTelemetry, open-source and the engineering in between! &amp;This piece took 6 days, 5 hours to be cooked, hope we served. 🌚There are two popular prophecies floating around tech circles these days.The first says SRE is the future of all software engineering, that as AI writes more and more code, the humans who remain will be the ones keeping systems alive. The second says AI will devour every tech job alive, SREs included. Neither is particularly useful if you’re an SRE trying to figure out what your Tuesday will look like in 2027.Let’s ask a more grounded question by looking at what’s already happening: When AI handles 95% of your incident response, do you get worse at handling the 5% that actually matters?Most of us already use AI for our daily work (our brains a little fried!), and so do SREs. Today’s discussion agenda is not whether AI replaces SREs, but whether AI is quietly making SREs less capable and whether anyone will notice anything before the next novel outage hits. The foundational framework for this entire debate comes from a 1983 research paper that’s eerily prescient.Note from author: Below is a brief precursor to History of Automation, which you might enjoy if you are into History and Cultures (like me 😉).In 1983, a cognitive psychologist named Lisanne Bainbridge published a paper called Ironies of Automation. It became one of the most cited papers in human factors research, and its core argument is almost uncomfortably relevant today.Bainbridge studied what happened when factories and industrial systems automated the work of blue-collar operators. The findings were paradoxical and revealed that the more you automate a process, the more critical the human operator becomes during the rare moments automation fails and the less practice they get, and the worse they become at exactly those interventions. Automation, which was inherently designed to remove humans from the loop, left them with the worst possible job, i.e., long stretches of passive monitoring punctuated by rare, high-stakes crises they were increasingly unprepared for.Ring any bells yet? 🙂Basically, I’m drawing a parallel between the AI revolution and industrial automation. Industrial automation reshaped blue-collar work by taking over routine physical tasks, and the workers who remained had to handle exceptions they’d lost the muscle memory for. AI is doing the same thing to knowledge workers by taking over the routine cognitive tasks, the pattern matching, the triage, the known-issue resolution and leaving humans with the rare, complex, ambiguous problems.The exact problems that require deep expertise, the exact expertise that atrophies when you stop practising.Now we’re replaying this pattern with AI agents, and the stakes in software systems are only growing.Let’s take stock of where things stand today in the world of site reliability engineering.Alert noise reduction and intelligent grouping, runbook execution for known issues, log pattern detection and anomaly flagging, and basic root-cause suggestions from historical incident data, and auto-remediation for well-understood failure modes like restarting a crashed pod or scaling up a service that’s running hot, are all fairly automated today.Some immediate targets include multi-signal correlation across metrics, logs, and traces, autonomous root-cause analysis for partially understood failures, predictive incident detection before users are affected, AI-driven change risk assessment and automated rollbacks.PagerDuty frames this as a tiered model.Tier 1 incidents: Known issues with known fixes get fully automated.Tier 2 incidents: Partially understood problems receive AI recommendations with human validation.Tier 3 incidents: Novel, complex, cascading failures stay human-led, with AI providing supporting context.But here’s the catch.If human SREs (okay, now we have to use adjectives like human 🥹) only engage with Tier 3 incidents, i.e. the novel, never-before-seen outages, where do they build the intuition to handle them? Intuition is usually developed from years of hands-on incident response, pattern recognition built through repetition, and the kind of gut-level understanding of a system that only develops from painfully waking up at the odd hour to solve the bug that brought the system down.This is where the picture starts getting blurry. Let’s look at some emerging research on AI-induced deskilling across multiple fields, which paints a consistent and concerning picture.In medicine, a recent study found that endoscopists who used AI assistance for polyp detection saw their unassisted detection rates drop from 28% to 22% after a period of AI use. They got worse at the thing they were supposed to be experts in, not because they forgot the theory, but because they stopped exercising the skill.In aviation, research has shown that long-haul pilots who rely heavily on autopilot systems experience measurable degradation in situational awareness and manual flying ability. The problem got serious enough that the FAA now mandates more manual flying time to counteract the effect.Somewhere over the past year, AI stopped being a tool I occasionally reached for and became the first thing I reach for, always. My instinct now is to offload as much as possible and apply my own thinking only where it’s absolutely unavoidable. The problem is that these moments are becoming the only exercises my brain gets, and I can feel the rust.We can draw a pattern here. The more you let the system handle, the worse you get at handling things yourself and here’s the truly dangerous part, you don’t feel it happening. It gets masked as hyper-productivity. Cognitive research suggests that because AI tools make tasks feel easier and enhance visible performance, users are often unable to accurately judge the true status of their own skills. You feel competent, dashboards look green, and then on a Wednesday, a novel incident hits that doesn’t match any pattern the AI has seen, and you realise the muscle has atrophied.For SREs, this manifests in specific ways, like we stop reading raw log streams because the AI summarises them, we stop forming hypotheses during incidents because the AI suggests root causes, we stop building mental models of system architecture because the AI maps dependencies for us, and each of these individually looks like a productivity win. Collectively, they hollow out the very expertise that makes an SRE effective when things go sideways in ways nobody anticipated.But there’s something even more concerning than deskilling, and researchers have started calling it never-skilling. Deskilling means you once had a capability but have since lost it. Never-skilling means you never developed it in the first place. For junior SREs entering the field today in an environment where AI handles most of the incident response workflow, the opportunities to build foundational intuition and muscle through hands-on practice are vanishing.The training pipeline itself is broken and not self-healing.SREs realise their skills are degrading and lean more on AI to compensate, which further degrades their skills, creating a vicious cycle from which escape is difficult.We are definitely not rejecting AI tooling; we are adopting it and integrating it stronger than ever before, because that’s the only way forward.A few approaches worth considering:Deliberate inefficiency. Just as the FAA mandates manual flying time even when the autopilot is perfectly capable, SRE teams can designate certain incidents, even the ones the AI could handle, as human-practice opportunities. This can be considered as a long-term investment to keep skills fresh, although it might come at the cost of a super-fast solutionBuild for human-in-the-loop, not human-on-the-side. There’s a meaningful difference between a system where a human approves an AI’s recommendation and one where a human actively engages with the problem alongside AI. The former keeps humans in a supervisory role that Bainbridge (the lady who wrote that research paper about 40 years ago) showed leads to vigilance decay, and the latter keeps them cognitively engaged.Let’s zoom out and take a look at the bigger picture.Everything we’ve discussed here, the ironies of automation, the deskilling risk, the never-skilling problem, collectively applies well beyond SRE. Software engineering as a whole is navigating the same tension. As AI writes more code, reviews more PRs, and handles more debugging, the same questions apply.We’re talking about SREs specifically because that’s the world we live in at SigNoz. We build an open-source observability platform, the kind of tool that gives SREs the metrics, traces, and logs they need to understand their systems deeply. For us, this deskilling question is not a rhetorical fad; it directly shapes how we’re building AI into our product.Our approach is to start with an AI assistant that helps SREs leverage the power of LLMs while keeping humans firmly in control. Eventually, we’ll enable more autonomy but within clear guardrails, and only as trust is earned.One advantage we have in this space is that, as an observability platform, we sit on the data itself, the metrics, traces, and logs that SREs rely on. Most AI SRE products today integrate with observability tools through APIs, which means they’re working with a limited, second-hand view of your systems. Because we own the data layer, we can build much deeper, more context-aware AI capabilities that understand your system the way an experienced SRE would.And to answer the burning question in your head, our goal isn’t AI that replaces SREs. It’s AI that supercharges SREs. Unlike ongoing lore, we believe humans will remain essential for the decisions that matter most, especially those that impact production infrastructure.The future of SRE is human with AI intentionally designed to keep humans sharp, engaged, and ready for the 5% that really counts.Here’s the LinkedIn post our founder posted a few days ago, which inspired me to write this.No posts</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">andix</span>
+        
+        <span>2026/10/31 00:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; "Just as the FAA mandates manual flying time even when the autopilot is perfectly capable, SRE teams can designate certain incidents, even the ones the AI could handle, as human-practice opportunities"<p>This is a great example. Aviation is a perfect industry to learn from, they figured out a lot of things about how to keep humans from making mistakes. While complexity increases and automation takes away more and more tasks.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50306192">&gt; "Just as the FAA mandates manual flying time even when the autopilot is perfectly capable, SRE teams can designate certain incidents, even the ones the AI could handle, as human-practice opportunities"<p>This is a great example. Aviation is a perfect industry to learn from, they figured out a lot of things about how to keep humans from making mistakes. While complexity increases and automation takes away more and more tasks.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50306192">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50306192" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Muromec</span>
+        
+        <span>2026/10/31 00:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Aviation is a good example if you want to have zero fatal mistakes. There is a way and there is a cost to do so.<p>The same way erlang is good example of how to run a highly available system with hot reload and observability and stuff. There is cost for that too.</p><p>Maybe not all of the projects need the same properties. I'm fine if some of the stuff is having scheduled or unscheduled maintenance. Some kind of government portal that I use once a year had my permission to be offline between 0300 and 0500 and then again after 1200.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50306440">Aviation is a good example if you want to have zero fatal mistakes. There is a way and there is a cost to do so.<p>The same way erlang is good example of how to run a highly available system with hot reload and observability and stuff. There is cost for that too.</p><p>Maybe not all of the projects need the same properties. I'm fine if some of the stuff is having scheduled or unscheduled maintenance. Some kind of government portal that I use once a year had my permission to be offline between 0300 and 0500 and then again after 1200.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50306440">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50306440" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">jeremyjh</span>
+        
+        <span>2026/10/31 05:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The problem is that people go on Twitter and see the posts from "thought leaders" and "influencers" who say things like "reading the code is not needed". Those people are not working on systems that have paying customers who would cancel their subscription - or worse - if the software became too defective or unreliable.<p>You only need a handful of occasions of creating massive billing errors for your customer's customers before they will slag you to all their CTO friends and pull the plug. Imagine Stripe began double-charging every third transaction once a week, and couldn't fix it after two months of thrashing because no one there has any understanding of how anything works anymore. They are simply done at that point, all the value of their brand lost.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50310221">The problem is that people go on Twitter and see the posts from "thought leaders" and "influencers" who say things like "reading the code is not needed". Those people are not working on systems that have paying customers who would cancel their subscription - or worse - if the software became too defective or unreliable.<p>You only need a handful of occasions of creating massive billing errors for your customer's customers before they will slag you to all their CTO friends and pull the plug. Imagine Stripe began double-charging every third transaction once a week, and couldn't fix it after two months of thrashing because no one there has any understanding of how anything works anymore. They are simply done at that point, all the value of their brand lost.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50310221">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50310221" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nickstinemates</span>
+        
+        <span>2026/10/31 07:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Those people are not working on systems that have paying customers who would cancel their subscription - or worse - if the software became too defective or unreliable.<p>That's just not true.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311360">&gt; Those people are not working on systems that have paying customers who would cancel their subscription - or worse - if the software became too defective or unreliable.<p>That's just not true.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311360">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311360" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Spartan-S63</span>
+        
+        <span>2026/10/31 08:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think the parent take is valid if you disqualify people managers/leaders rather than ICs. I think that's also valid to disqualify those takes because they aren't in the trenches every day. They may have points strategically for what's best for the company, but not what's best for the workforce or the industry.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311994">I think the parent take is valid if you disqualify people managers/leaders rather than ICs. I think that's also valid to disqualify those takes because they aren't in the trenches every day. They may have points strategically for what's best for the company, but not what's best for the workforce or the industry.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311994">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311994" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jeremyjh</span>
+        
+        <span>2026/10/31 07:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Name one. Point me to one developer that actually works - themselves, not just in the same company - on a system with serious customers that demand correctness and is spreading that message on Twitter.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311475">Name one. Point me to one developer that actually works - themselves, not just in the same company - on a system with serious customers that demand correctness and is spreading that message on Twitter.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311475">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311475" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nickstinemates</span>
+        
+        <span>2026/10/31 08:23</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311948">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311948">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311948" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">qlte</span>
+        
+        <span>2026/10/31 08:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You're promoting your own company here, which as far as I can tell from the vibecoded website is Yet Another Agentic Platform of some sort. And prominently features a leaderboard with high scores for some reason.<p>It hardly meets the bar of a mission critical product like an ERP or payment processor layer where introducing random billing errors in customer data could be fatal to a B2B company's viability.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312022">You're promoting your own company here, which as far as I can tell from the vibecoded website is Yet Another Agentic Platform of some sort. And prominently features a leaderboard with high scores for some reason.<p>It hardly meets the bar of a mission critical product like an ERP or payment processor layer where introducing random billing errors in customer data could be fatal to a B2B company's viability.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312022">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312022" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nickstinemates</span>
+        
+        <span>2026/10/31 08:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Ok. Keep moving the goal posts.<p>I guess we are not serious engineers making a serious product for serious business. I'll make sure to let our customers know.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312045">Ok. Keep moving the goal posts.<p>I guess we are not serious engineers making a serious product for serious business. I'll make sure to let our customers know.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312045">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312045" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">qlte</span>
+        
+        <span>2026/10/31 08:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If you scroll up to the message you originally replied to, OP's goal posts from the start were companies like Stripe (which was specifically named).<p><i>Most</i> businesses aren't in that category, that doesn't mean they aren't able to provide useful services and make money. But your company does not seem like it meets that bar.</p><p>Expanding the group to "any money making SaaS" would be moving the goalposts for the point OP was clearly making from the beginning.</p><p>Sorry for being a bit dismissive in my previous comment but it was fairly jarring clicking your link expecting a more responsive counter example to their argument, and then left a further bad taste after realizing from your bio that it was self-promotion.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312077">If you scroll up to the message you originally replied to, OP's goal posts from the start were companies like Stripe (which was specifically named).<p><i>Most</i> businesses aren't in that category, that doesn't mean they aren't able to provide useful services and make money. But your company does not seem like it meets that bar.</p><p>Expanding the group to "any money making SaaS" would be moving the goalposts for the point OP was clearly making from the beginning.</p><p>Sorry for being a bit dismissive in my previous comment but it was fairly jarring clicking your link expecting a more responsive counter example to their argument, and then left a further bad taste after realizing from your bio that it was self-promotion.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312077">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312077" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">disgruntledphd2</span>
+        
+        <span>2026/10/31 17:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And just to pile on, payments is an incredibly competitive space, and operational excellence is non negotiable for someone like Stripe, as they are a higher priced provider.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50314327">And just to pile on, payments is an incredibly competitive space, and operational excellence is non negotiable for someone like Stripe, as they are a higher priced provider.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50314327">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50314327" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">icedchai</span>
+        
+        <span>2026/10/31 13:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Your site does not give me “serious” vibes. Swamp club? More like slop club.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50313418">Your site does not give me “serious” vibes. Swamp club? More like slop club.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50313418">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50313418" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">imtringued</span>
+        
+        <span>2026/10/31 17:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">His top customer is skunk-ape.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50314463">His top customer is skunk-ape.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50314463">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50314463" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jeremyjh</span>
+        
+        <span>2026/10/31 08:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Oh my that is convincing. Yes, I've seen lots of this sort of thing. I believe you, a Twitter influencer is behind it. AI building AI systems for AI to build AI systems with.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312007">Oh my that is convincing. Yes, I've seen lots of this sort of thing. I believe you, a Twitter influencer is behind it. AI building AI systems for AI to build AI systems with.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312007">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312007" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nickstinemates</span>
+        
+        <span>2026/10/31 08:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312055">Thanks!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312055">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312055" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">charitablechari</span>
+        
+        <span>2026/10/31 17:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Unable to understand sarcasm, AI truly allows a certain type of mouth breather to shine.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50314424">Unable to understand sarcasm, AI truly allows a certain type of mouth breather to shine.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50314424">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50314424" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/10/31 15:04</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50313881"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50313881">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50313881" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">otterley</span>
+        
+        <span>2026/10/31 07:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As if engineers, especially those writing software to handle financial transactions (which are usually in regulated businesses), don’t know how to write conformance tests with invariant cases.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311340">As if engineers, especially those writing software to handle financial transactions (which are usually in regulated businesses), don’t know how to write conformance tests with invariant cases.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311340">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311340" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jeremyjh</span>
+        
+        <span>2026/10/31 07:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Who are the people who are responsibly writing all this test code but declare loudly on Twitter that no one needs to read the production code?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50311554">Who are the people who are responsibly writing all this test code but declare loudly on Twitter that no one needs to read the production code?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50311554">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50311554" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/10/31 10:29</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50312678"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50312678">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50312678" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

