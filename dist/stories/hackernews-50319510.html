@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HackerTube: YouTube built from videos recommended by HN | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-01/">返回日报</a>
+      <div class="source-chip">Hacker News #5</div>
+      <h1>HackerTube: YouTube built from videos recommended by HN</h1>
+      <p class="original-title">HackerTube: YouTube built from videos recommended by HN</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 karpathy</span>
+        <span>热度 1168</span>
+        <span>回复 345</span>
+        <span>2026/11/01 03:56</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50319510" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://karpathy.bearblog.dev/hacker-tube/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50319510.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>karpathy Home Blog</li><li>31 Oct, 2026</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">YouTube-style UI over 6,454 videos sourced from 39,834 HN comments since 2007.<p><a href="https://hackertube.org/" target="_blank" rel="noopener noreferrer">https://hackertube.org/</a></p></div>
+      <div class="post-body is-hidden" data-role="story-raw">YouTube-style UI over 6,454 videos sourced from 39,834 HN comments since 2007.<p><a href="https://hackertube.org/" target="_blank" rel="noopener noreferrer">https://hackertube.org/</a></p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">manbash</span>
+        
+        <span>2026/11/02 04:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Maybe I am out of the loop, but why did Karpathy prefer using Claude models instead of OpenAI's?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50329431">Maybe I am out of the loop, but why did Karpathy prefer using Claude models instead of OpenAI's?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50329431">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50329431" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">theptip</span>
+        
+        <span>2026/11/02 00:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think there is a massive opportunity for this kind of feed disaggregation. Used to be the recommender and indexing of content was hard, now I believe we can likely build our own according to our own preferences.<p>Haiku/Sonnet (or even Jev) can do a lot of the filtering work to rank and extend an RSS feed list.</p><p>I think this gives us an opportunity to fully cut the cord from eyeball merchants who want us to maximally engage and therefore polarize their content.</p><p>The big remaining hook will be the social graph; I am interested to see how far the EU push for mandatory interoperability will go. Another angle I’d support would be mandatory pluggable standards for your own ranking algorithm, but it captures less of the win than full disaggregation.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50327005">I think there is a massive opportunity for this kind of feed disaggregation. Used to be the recommender and indexing of content was hard, now I believe we can likely build our own according to our own preferences.<p>Haiku/Sonnet (or even Jev) can do a lot of the filtering work to rank and extend an RSS feed list.</p><p>I think this gives us an opportunity to fully cut the cord from eyeball merchants who want us to maximally engage and therefore polarize their content.</p><p>The big remaining hook will be the social graph; I am interested to see how far the EU push for mandatory interoperability will go. Another angle I’d support would be mandatory pluggable standards for your own ranking algorithm, but it captures less of the win than full disaggregation.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50327005">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50327005" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">roansh</span>
+        
+        <span>2026/11/02 00:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Made a books version of this: <a href="https://news.ycombinator.com/item?id=50326821" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50326821</a><p>PS: thank you karpathy, been binging videos on hackertube.org</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50326842">Made a books version of this: <a href="https://news.ycombinator.com/item?id=50326821" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50326821</a><p>PS: thank you karpathy, been binging videos on hackertube.org</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50326842">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50326842" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tabs_or_spaces</span>
+        
+        <span>2026/11/02 03:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I did something similar, but with current youtube search results and not really stress processing on HN data. My technique was simply saving my search terms and topics, and then putting that under a crop and continually updating the results. Super simple, but resulted in such a better experience for YouTube videos for me.<p>I call it "re-algorithming" your data. Basically you're not happy with the algorithm of a product, then you use it's data and introduce your own.</p><p>It also seems like folks are tired of the youtube algorithm and want something different instead? I'm willing to bet that many sites and apps have this opportunity in them.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50328993">I did something similar, but with current youtube search results and not really stress processing on HN data. My technique was simply saving my search terms and topics, and then putting that under a crop and continually updating the results. Super simple, but resulted in such a better experience for YouTube videos for me.<p>I call it "re-algorithming" your data. Basically you're not happy with the algorithm of a product, then you use it's data and introduce your own.</p><p>It also seems like folks are tired of the youtube algorithm and want something different instead? I'm willing to bet that many sites and apps have this opportunity in them.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50328993">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50328993" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mettamage</span>
+        
+        <span>2026/11/02 01:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This makes me think that perhaps we should like have a social feed. If I, for exmaple, say that one of my friends I'd follow them. Then whatever they synchronize as a recommendation, I'd get in my feed.<p>So that's not a like they give but a separate "publish this into my recommendations for my friends" feature. Which would then show up in my feed and everyone that subscribes to my friend.</p><p>A pubsub system basically. Users publish, friends of said users (if they want to) subscribe, and then that's how they get content.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50327450">This makes me think that perhaps we should like have a social feed. If I, for exmaple, say that one of my friends I'd follow them. Then whatever they synchronize as a recommendation, I'd get in my feed.<p>So that's not a like they give but a separate "publish this into my recommendations for my friends" feature. Which would then show up in my feed and everyone that subscribes to my friend.</p><p>A pubsub system basically. Users publish, friends of said users (if they want to) subscribe, and then that's how they get content.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50327450">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50327450" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/11/02 02:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">FB basically tried this (it was basically what the "Like" widget on websites was for). It was a decent-ish heuristic for its time, but it ran into the fundamental issue that the people you consider "friends", the people you want to see life updates from, and the people who like the same kind of content you do, are groups with some overlap, but they are not the same people.<p>You probably want to see the pictures of your cousin's new kid, but you don't care for her flat Earth content or crocheting videos.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50328348">FB basically tried this (it was basically what the "Like" widget on websites was for). It was a decent-ish heuristic for its time, but it ran into the fundamental issue that the people you consider "friends", the people you want to see life updates from, and the people who like the same kind of content you do, are groups with some overlap, but they are not the same people.<p>You probably want to see the pictures of your cousin's new kid, but you don't care for her flat Earth content or crocheting videos.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50328348">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50328348" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">niutech</span>
+        
+        <span>2026/11/02 02:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is how fediverse works, like PeerTube, isn't it?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50328262">This is how fediverse works, like PeerTube, isn't it?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50328262">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50328262" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">minimaxa</span>
+        
+        <span>2026/11/01 05:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You know what I like about this? It's 100% pure nerd content, no sneaky influencer videos or clickbaity news.<p>It does need a new-to-old sort though, which is easy to add in.</p><p>If you watched all of these videos, you would be the smartest, most annoying person ever. Lol</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50320482">You know what I like about this? It's 100% pure nerd content, no sneaky influencer videos or clickbaity news.<p>It does need a new-to-old sort though, which is easy to add in.</p><p>If you watched all of these videos, you would be the smartest, most annoying person ever. Lol</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50320482">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50320482" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">x234ah</span>
+        
+        <span>2026/11/02 04:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What do you mean? Tech influencers like Karpathy himself are in the list, Julia Ioffe is there, Microsoft people are there.<p>When will folks understand that most tech videos are sponcon, either through a sponsor contract or through corporate affiliation?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50329245">What do you mean? Tech influencers like Karpathy himself are in the list, Julia Ioffe is there, Microsoft people are there.<p>When will folks understand that most tech videos are sponcon, either through a sponsor contract or through corporate affiliation?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50329245">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50329245" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">0xpgm</span>
+        
+        <span>2026/11/01 13:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It is also quite ironic that nerds of the 21st century who built social media and a hyper-connected world are simultaneously repulsed by it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50322990">It is also quite ironic that nerds of the 21st century who built social media and a hyper-connected world are simultaneously repulsed by it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50322990">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50322990" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">tomjen3</span>
+        
+        <span>2026/11/01 16:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It was built by nerds but optimized on the data of everyone, so it ended up appealing mostly to the average person.<p>Maybe that's also the solution to a question I've had for years. The ads I see on diverse social platforms are terrible, but if they are matched with algorithms that try to fit me in as an average person, then it makes sense that, as a huge nerd, they miss the mark.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50323679">It was built by nerds but optimized on the data of everyone, so it ended up appealing mostly to the average person.<p>Maybe that's also the solution to a question I've had for years. The ads I see on diverse social platforms are terrible, but if they are matched with algorithms that try to fit me in as an average person, then it makes sense that, as a huge nerd, they miss the mark.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50323679">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50323679" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dexterdog</span>
+        
+        <span>2026/11/02 01:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Ad algorithms are horrible everywhere. Why are you not blocking them?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50327818">Ad algorithms are horrible everywhere. Why are you not blocking them?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50327818">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50327818" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">miki123211</span>
+        
+        <span>2026/11/02 02:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Don't worry! If it gets popular enough, it will be Goodharted to hell and back.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50328361">Don't worry! If it gets popular enough, it will be Goodharted to hell and back.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50328361">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50328361" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">SamDc73</span>
+        
+        <span>2026/11/01 06:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; It's 100% pure nerd content<p>well some might use it to listen to Rick Astley's Music</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50320766">&gt; It's 100% pure nerd content<p>well some might use it to listen to Rick Astley's Music</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50320766">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50320766" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">sublinear</span>
+        
+        <span>2026/11/01 08:11</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50321529">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50321529">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50321529" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">darknavi</span>
+        
+        <span>2026/11/01 08:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; The rants about dishwashers and HVAC were memorable for being completely impractical advice and ignorant of economics<p>How you got that message from hour long rants and findings about dishwashers I'll never now.</p><p>The main take aways I got were:
+- You might be using way too much soap
+- Run your tap until it is hot before starting the dishwasher</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50321588">&gt; The rants about dishwashers and HVAC were memorable for being completely impractical advice and ignorant of economics<p>How you got that message from hour long rants and findings about dishwashers I'll never now.</p><p>The main take aways I got were:
+- You might be using way too much soap
+- Run your tap until it is hot before starting the dishwasher</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50321588">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50321588" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sublinear</span>
+        
+        <span>2026/11/01 08:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's still far cheaper, faster, and less wasteful to wash by hand. It's just that the technique required to achieve that is... controversial? It's definitely <i>always</i> so misrepresented you'd swear it's the "before" part of a 90s informercial shot in black and white with a frustrated idiot failing at a simple task before throwing their hands up and pleading that "there has to be a better way".<p>Dishwashers simply aren't used in places with water restrictions. Broke people don't have a budget for dishwashing detergent because it's less general purpose than dish soap. There are likely people who started using their dishwasher more or even suddenly bought one based on those rants. It jiggled the handle on consumer trends that otherwise rarely change, so I consider that "influence".</p><p>If he stuck to just explaining how they work instead of attacking people's way of living, it would have flown under the radar.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50321641">It's still far cheaper, faster, and less wasteful to wash by hand. It's just that the technique required to achieve that is... controversial? It's definitely <i>always</i> so misrepresented you'd swear it's the "before" part of a 90s informercial shot in black and white with a frustrated idiot failing at a simple task before throwing their hands up and pleading that "there has to be a better way".<p>Dishwashers simply aren't used in places with water restrictions. Broke people don't have a budget for dishwashing detergent because it's less general purpose than dish soap. There are likely people who started using their dishwasher more or even suddenly bought one based on those rants. It jiggled the handle on consumer trends that otherwise rarely change, so I consider that "influence".</p><p>If he stuck to just explaining how they work instead of attacking people's way of living, it would have flown under the radar.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50321641">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50321641" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">AlexErrant</span>
+        
+        <span>2026/11/01 10:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; It's still far cheaper, faster, and less wasteful to wash by hand.<p>Citation please? <a href="https://skeptics.stackexchange.com/questions/20798" target="_blank" rel="noopener noreferrer">https://skeptics.stackexchange.com/questions/20798</a> links 2 sources that disagree with you.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50322186">&gt; It's still far cheaper, faster, and less wasteful to wash by hand.<p>Citation please? <a href="https://skeptics.stackexchange.com/questions/20798" target="_blank" rel="noopener noreferrer">https://skeptics.stackexchange.com/questions/20798</a> links 2 sources that disagree with you.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50322186">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50322186" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">whoanoway</span>
+        
+        <span>2026/11/01 10:29</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50322213">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50322213">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50322213" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sublinear</span>
+        
+        <span>2026/11/01 12:19</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50322677">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50322677">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50322677" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
