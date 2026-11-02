@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 错题本 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-02/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>AI 错题本</h1>
+      <p class="original-title">AI 错题本</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 flysic</span>
+        <span>热度 3</span>
+        <span>回复 3</span>
+        <span>2026/11/02 21:59</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1253952" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1253952.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>家里孩子上初中，数学练习册、试卷源源不断。错题管理的传统流程是：抄题（费时）、贴卷子（凌乱）、复习时东翻西找。市面上拍照搜题 App 只给答案，不管&quot;这道题我错在哪、下次还会不会错&quot;。</li><li>我想要的是一个私有错题知识库：</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">一、为什么做这个
+<p>家里孩子上初中，数学练习册、试卷源源不断。错题管理的传统流程是：抄题（费时）、贴卷子（凌乱）、复习时东翻西找。市面上拍照搜题 App 只给答案，不管"这道题我错在哪、下次还会不会错"。</p>
+<p>我想要的是一个<strong>私有错题知识库</strong>：</p>
+<ul>
+<li>拍照就能把整页题目数字化，我来审核哪些值得入库、错因是什么</li>
+<li>平时能刷题、能按知识点出卷</li>
+<li>连对 3 次的题自动建议归档——真正掌握的题不再占用注意力</li>
+<li>数据在我自己手里</li>
+</ul>
+<p>恰好此前我做过一个出题系统（ quiz-demo ），里面有一条经过实战验证的"质量链"：几何图形数值校验（ geocheck ）→ 独立解题验伪（ verify_answers ）→ 矢量试卷导出（ export_paper ）。错题本直接把这条链复用过来——<strong>所有 AI 生成的题目都必须过三道工序，禁止裸奔</strong>。</p>
+二、完整工作流
+<pre><code>拍照上传（可多张）
+  → 视觉模型多题转录（题干 LaTeX 、选项、图形框、印刷答案、手写标记）
+  → 自动按框抓取原图（权威图形，0 token ）
+  →  [人审视图] 左原图右题目卡片，KaTeX 实时渲染
+      勾选入库 + 标错因（马虎/不会/其他）+ 图形可抓原图/手动框选
+      年级、知识点自动归类（教材知识树），可改
+  → 提交入库：题库查重 → 独立解题验伪 → 章节难度知识点分析
+  → 工作台（筛选/统计/详情）
+  → 刷题（单题循环，自动评分）/ 做题（勾选试卷式，统一批改给分+评价）
+  → 连对 3 次 → 建议归档 → 归档
+  → 针对性出卷（按章节/知识点/难度占比，原题变式或原创）→ 矢量 PDF
+</code></pre>
+三、功能清单（ V1.0 ）
+1. 录入·排版机（最花功夫的模块）
+<ul>
+<li><strong>多题转录</strong>：一张照片里所有题目一次转录，只认印刷体，手写痕迹只标记不转录</li>
+<li><strong>人审前置</strong>：转录结果必须经人审（左原图、右题目卡片对照），勾选才入库——AI 只打草稿，取舍由人</li>
+<li><strong>图形来源分层</strong>：几何题可一键生成规范矢量 SVG （ geocheck 数值校验循环）；默认使用原题照片裁剪图（省 token ）；表格/函数图象类题只能用原图</li>
+<li><strong>图形纠正三入口</strong>：重新抓取原图、手动拖拽框选（ box 存档可重放）、整单幂等重裁</li>
+<li><strong>EXIF 方向统一</strong>：手机照片的旋转信息曾导致抓图转 90°、手动框选完全错位——全链路统一到"转正空间"后彻底解决</li>
+<li><strong>年级/知识点自动归类</strong>：教材（浙教版八上）用 build_kb 视觉转录成知识库（ 201 页），录入时 LLM 只能在知识树内选，人审可调</li>
+</ul>
+2. 入库质量链
+<ul>
+<li><strong>查重</strong>：题干归一化（去 LaTeX 命令名/标点/空白）后相似度 ≥92% 判重复，不重复录入，完成横幅里报告</li>
+<li><strong>不信任照片答案</strong>：照片里的印刷答案仅作参考，一律让另一个模型独立解题对账；冲突以审题答案为准并留痕，判题不合格进 needs_review</li>
+<li><strong>错因驱动分析</strong>：马虎 → 易错点写"易算错环节"；不会 → 写"思路卡点"</li>
+</ul>
+3. 工作台
+<ul>
+<li>统计图（总/在库/已归档/零练习/建议归档）+ 五组分布图（默认折叠，点开查看）</li>
+<li>错题列表：公式渲染、章节/难度/知识点/错因列、<strong>查看弹窗</strong>（题目全部信息+逐次练习历史）</li>
+<li><strong>筛选联动</strong>：章节/难度/错因/知识点/含已归档，搜索后统计和列表一起更新；筛选与勾选持久化，跨标签页不丢</li>
+<li>行内归档/激活，勾选后可直接导出练习卷 PDF （矢量公式排版，答案附卷末可裁）</li>
+</ul>
+4. 刷题与做题（两种模式）
+<ul>
+<li><strong>刷题</strong>（单题模式）：自动循环在库全部题目；单选/多选/填空<strong>自动评分</strong>，问答看答案自判；答完即时反馈连对 n/3 、建议归档、重复做错，可做相似题</li>
+<li><strong>做题</strong>（试卷模式）：工作台勾选 → 新标签页整卷作答 → 统一批改：得分（百分制）、评价、<strong>错题知识点汇总</strong>（直指薄弱点）</li>
+<li><strong>相似题</strong>：围绕同一知识点与易错点生成，过图形校验 + 验伪，不过关自动重生成</li>
+</ul>
+5. 多用户
+<p>按用户分目录存储（题库/草稿单/照片各自独立），页头切换/新建用户，存量数据自动迁移。两个孩子的错题互不干扰。</p>
+四、几个关键设计决策
+<p><strong>1. 数据即文件，不用 SQLite</strong></p>
+<p>全部数据是 JSON （原子写 + .bak ），人类可读、git 可版本管理（题库本身就是重要资产）。几百题规模下，一个 <code>git log</code> 就是完整的演进史——后来一次测试事故把题库覆盖了，正是靠备份和 git 恢复的。</p>
+<p><strong>2. 向量化（ SVG 生成）从默认改为按需</strong></p>
+<p>最初设计是"几何题都自动转成规范矢量图"，但实测发现这是<strong>全链路最费 token 、最慢的一步</strong>（每题 1~3 次 LLM 调用 + geocheck 失败重试）。v0.6 反转为：转录默认用照片裁剪图（ 0 token ），需要规范图形时人审期一键生成。省一半以上开销，录入速度大幅提升。</p>
+<p><strong>3. 不让 LLM 自由发挥知识点</strong></p>
+<p>知识点候选来自教材知识库（把纸质课本逐页视觉转录成结构化 JSON ），录入时 LLM 只能在树内选；而<strong>工作台筛选用的知识点候选来自题库实际标注</strong>——保证下拉框里选了就一定能搜到（教材命名和 LLM 标注命名对不上是真实的坑）。</p>
+<p><strong>4. 人审是产品的核心，不是过渡方案</strong></p>
+<p>照片转录的不确定性（多题混排、手写干扰、印刷质量）决定了全自动入库不可靠。与其追求"全自动"，不如把人审界面做到顺手：对照原图逐题确认、错因标注、图形纠正都是两次点击内的事。AI 负责 80% 的体力活，人负责 20% 的判断。</p>
+五、踩坑记录（节选）
+<ul>
+<li><strong>CV 定位图形在真实照片上失效</strong>：行剖面定位在假照片上 IoU 95.9%，真实照片上把斜排文字误判为图形，两轮实测后废弃，改用视觉模型直接输出图形框</li>
+<li><strong>DeepSeek 思考链烧光 max_tokens</strong>：导致 content 为空且 finish_reason=length——降级策略：json_object → 关思考重试 → plain ，实测 645s → 16s</li>
+<li><strong>EXIF orientation 双坐标系</strong>：浏览器自动转正、服务端不转，抓图转 90°、手动框选完全错位。全链路统一转正空间 + 历史数据迁移工具</li>
+<li><strong>公式在列表里时渲染时不渲染</strong>：题干截断 40 字符会把 <code>$...$</code> 配对切断，KaTeX 找不到闭合符就放弃——改返回全文 + CSS 单行截断</li>
+<li><strong>导出 PDF 显示 LaTeX 源码</strong>：导出链路不渲染 LaTeX ，加了一层 LaTeX → Unicode 数学符号转换（\triangle→△、\circ→°、\frac→(a/b)、上标转 ⁰¹²³）</li>
+<li><strong>测试覆盖了真实题库</strong>：测试 patch 路径常量但存储层重构后路径被重新绑定，种子数据覆盖了真实数据（ 10 题 → 1 题）——靠 .bak 和 git 恢复，并给所有测试加了测试模式保险。这个事故再次证明了"数据即文件 + git 管理"的价值</li>
+</ul>
+六、后续计划
+<ul>
+<li>归档题的周期性复习提醒（错题本变复习系统）</li>
+<li>移动端适配（拍照场景天然在手机）</li>
+<li>教材 KB 扩展到九年级，知识点归一化到教材命名</li>
+<li>错因/知识点的长期趋势分析</li>
+</ul>
+结语
+<p>这个项目最大的感受：<strong>AI 应用的价值不在模型本身，而在模型外围的工程</strong>——质量链、人审流程、数据管理、测试回归，这些"笨功夫"决定了它能不能真的每天用。3 天开发 + 真实使用反馈驱动的 12 轮迭代，现在它已经是我家每天在用的工具了。</p>
+
+<p><em>项目为自用工具，未开源服务端部署；如对质量链（ geocheck / verify_answers / export_paper ）或错题本实现细节感兴趣，欢迎交流。</em></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">一、为什么做这个
+<p>家里孩子上初中，数学练习册、试卷源源不断。错题管理的传统流程是：抄题（费时）、贴卷子（凌乱）、复习时东翻西找。市面上拍照搜题 App 只给答案，不管"这道题我错在哪、下次还会不会错"。</p>
+<p>我想要的是一个<strong>私有错题知识库</strong>：</p>
+<ul>
+<li>拍照就能把整页题目数字化，我来审核哪些值得入库、错因是什么</li>
+<li>平时能刷题、能按知识点出卷</li>
+<li>连对 3 次的题自动建议归档——真正掌握的题不再占用注意力</li>
+<li>数据在我自己手里</li>
+</ul>
+<p>恰好此前我做过一个出题系统（ quiz-demo ），里面有一条经过实战验证的"质量链"：几何图形数值校验（ geocheck ）→ 独立解题验伪（ verify_answers ）→ 矢量试卷导出（ export_paper ）。错题本直接把这条链复用过来——<strong>所有 AI 生成的题目都必须过三道工序，禁止裸奔</strong>。</p>
+二、完整工作流
+<pre><code>拍照上传（可多张）
+  → 视觉模型多题转录（题干 LaTeX 、选项、图形框、印刷答案、手写标记）
+  → 自动按框抓取原图（权威图形，0 token ）
+  →  [人审视图] 左原图右题目卡片，KaTeX 实时渲染
+      勾选入库 + 标错因（马虎/不会/其他）+ 图形可抓原图/手动框选
+      年级、知识点自动归类（教材知识树），可改
+  → 提交入库：题库查重 → 独立解题验伪 → 章节难度知识点分析
+  → 工作台（筛选/统计/详情）
+  → 刷题（单题循环，自动评分）/ 做题（勾选试卷式，统一批改给分+评价）
+  → 连对 3 次 → 建议归档 → 归档
+  → 针对性出卷（按章节/知识点/难度占比，原题变式或原创）→ 矢量 PDF
+</code></pre>
+三、功能清单（ V1.0 ）
+1. 录入·排版机（最花功夫的模块）
+<ul>
+<li><strong>多题转录</strong>：一张照片里所有题目一次转录，只认印刷体，手写痕迹只标记不转录</li>
+<li><strong>人审前置</strong>：转录结果必须经人审（左原图、右题目卡片对照），勾选才入库——AI 只打草稿，取舍由人</li>
+<li><strong>图形来源分层</strong>：几何题可一键生成规范矢量 SVG （ geocheck 数值校验循环）；默认使用原题照片裁剪图（省 token ）；表格/函数图象类题只能用原图</li>
+<li><strong>图形纠正三入口</strong>：重新抓取原图、手动拖拽框选（ box 存档可重放）、整单幂等重裁</li>
+<li><strong>EXIF 方向统一</strong>：手机照片的旋转信息曾导致抓图转 90°、手动框选完全错位——全链路统一到"转正空间"后彻底解决</li>
+<li><strong>年级/知识点自动归类</strong>：教材（浙教版八上）用 build_kb 视觉转录成知识库（ 201 页），录入时 LLM 只能在知识树内选，人审可调</li>
+</ul>
+2. 入库质量链
+<ul>
+<li><strong>查重</strong>：题干归一化（去 LaTeX 命令名/标点/空白）后相似度 ≥92% 判重复，不重复录入，完成横幅里报告</li>
+<li><strong>不信任照片答案</strong>：照片里的印刷答案仅作参考，一律让另一个模型独立解题对账；冲突以审题答案为准并留痕，判题不合格进 needs_review</li>
+<li><strong>错因驱动分析</strong>：马虎 → 易错点写"易算错环节"；不会 → 写"思路卡点"</li>
+</ul>
+3. 工作台
+<ul>
+<li>统计图（总/在库/已归档/零练习/建议归档）+ 五组分布图（默认折叠，点开查看）</li>
+<li>错题列表：公式渲染、章节/难度/知识点/错因列、<strong>查看弹窗</strong>（题目全部信息+逐次练习历史）</li>
+<li><strong>筛选联动</strong>：章节/难度/错因/知识点/含已归档，搜索后统计和列表一起更新；筛选与勾选持久化，跨标签页不丢</li>
+<li>行内归档/激活，勾选后可直接导出练习卷 PDF （矢量公式排版，答案附卷末可裁）</li>
+</ul>
+4. 刷题与做题（两种模式）
+<ul>
+<li><strong>刷题</strong>（单题模式）：自动循环在库全部题目；单选/多选/填空<strong>自动评分</strong>，问答看答案自判；答完即时反馈连对 n/3 、建议归档、重复做错，可做相似题</li>
+<li><strong>做题</strong>（试卷模式）：工作台勾选 → 新标签页整卷作答 → 统一批改：得分（百分制）、评价、<strong>错题知识点汇总</strong>（直指薄弱点）</li>
+<li><strong>相似题</strong>：围绕同一知识点与易错点生成，过图形校验 + 验伪，不过关自动重生成</li>
+</ul>
+5. 多用户
+<p>按用户分目录存储（题库/草稿单/照片各自独立），页头切换/新建用户，存量数据自动迁移。两个孩子的错题互不干扰。</p>
+四、几个关键设计决策
+<p><strong>1. 数据即文件，不用 SQLite</strong></p>
+<p>全部数据是 JSON （原子写 + .bak ），人类可读、git 可版本管理（题库本身就是重要资产）。几百题规模下，一个 <code>git log</code> 就是完整的演进史——后来一次测试事故把题库覆盖了，正是靠备份和 git 恢复的。</p>
+<p><strong>2. 向量化（ SVG 生成）从默认改为按需</strong></p>
+<p>最初设计是"几何题都自动转成规范矢量图"，但实测发现这是<strong>全链路最费 token 、最慢的一步</strong>（每题 1~3 次 LLM 调用 + geocheck 失败重试）。v0.6 反转为：转录默认用照片裁剪图（ 0 token ），需要规范图形时人审期一键生成。省一半以上开销，录入速度大幅提升。</p>
+<p><strong>3. 不让 LLM 自由发挥知识点</strong></p>
+<p>知识点候选来自教材知识库（把纸质课本逐页视觉转录成结构化 JSON ），录入时 LLM 只能在树内选；而<strong>工作台筛选用的知识点候选来自题库实际标注</strong>——保证下拉框里选了就一定能搜到（教材命名和 LLM 标注命名对不上是真实的坑）。</p>
+<p><strong>4. 人审是产品的核心，不是过渡方案</strong></p>
+<p>照片转录的不确定性（多题混排、手写干扰、印刷质量）决定了全自动入库不可靠。与其追求"全自动"，不如把人审界面做到顺手：对照原图逐题确认、错因标注、图形纠正都是两次点击内的事。AI 负责 80% 的体力活，人负责 20% 的判断。</p>
+五、踩坑记录（节选）
+<ul>
+<li><strong>CV 定位图形在真实照片上失效</strong>：行剖面定位在假照片上 IoU 95.9%，真实照片上把斜排文字误判为图形，两轮实测后废弃，改用视觉模型直接输出图形框</li>
+<li><strong>DeepSeek 思考链烧光 max_tokens</strong>：导致 content 为空且 finish_reason=length——降级策略：json_object → 关思考重试 → plain ，实测 645s → 16s</li>
+<li><strong>EXIF orientation 双坐标系</strong>：浏览器自动转正、服务端不转，抓图转 90°、手动框选完全错位。全链路统一转正空间 + 历史数据迁移工具</li>
+<li><strong>公式在列表里时渲染时不渲染</strong>：题干截断 40 字符会把 <code>$...$</code> 配对切断，KaTeX 找不到闭合符就放弃——改返回全文 + CSS 单行截断</li>
+<li><strong>导出 PDF 显示 LaTeX 源码</strong>：导出链路不渲染 LaTeX ，加了一层 LaTeX → Unicode 数学符号转换（\triangle→△、\circ→°、\frac→(a/b)、上标转 ⁰¹²³）</li>
+<li><strong>测试覆盖了真实题库</strong>：测试 patch 路径常量但存储层重构后路径被重新绑定，种子数据覆盖了真实数据（ 10 题 → 1 题）——靠 .bak 和 git 恢复，并给所有测试加了测试模式保险。这个事故再次证明了"数据即文件 + git 管理"的价值</li>
+</ul>
+六、后续计划
+<ul>
+<li>归档题的周期性复习提醒（错题本变复习系统）</li>
+<li>移动端适配（拍照场景天然在手机）</li>
+<li>教材 KB 扩展到九年级，知识点归一化到教材命名</li>
+<li>错因/知识点的长期趋势分析</li>
+</ul>
+结语
+<p>这个项目最大的感受：<strong>AI 应用的价值不在模型本身，而在模型外围的工程</strong>——质量链、人审流程、数据管理、测试回归，这些"笨功夫"决定了它能不能真的每天用。3 天开发 + 真实使用反馈驱动的 12 轮迭代，现在它已经是我家每天在用的工具了。</p>
+
+<p><em>项目为自用工具，未开源服务端部署；如对质量链（ geocheck / verify_answers / export_paper ）或错题本实现细节感兴趣，欢迎交流。</em></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">3</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flysic</span>
+        <span>#1</span>
+        <span>2026/11/02 22:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">可以查看掘金版本，有图，<a href="https://juejin.cn/post/7703428711233765419" target="_blank" rel="noopener noreferrer">https://juejin.cn/post/7703428711233765419</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18248885">可以查看掘金版本，有图，<a href="https://juejin.cn/post/7703428711233765419" target="_blank" rel="noopener noreferrer">https://juejin.cn/post/7703428711233765419</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18248885">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253952#reply18248885" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">left7410</span>
+        <span>#2</span>
+        <span>2026/11/02 22:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">挺好的，我最近也在做一个 AI 教辅类的软件，核心也是强化学习，专项提升，帮助孩子提升薄弱的科目，难点是搭建个人正常体系，如何介入 AI 形成一个长期的伴读家教这么个一个角色。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18248961">挺好的，我最近也在做一个 AI 教辅类的软件，核心也是强化学习，专项提升，帮助孩子提升薄弱的科目，难点是搭建个人正常体系，如何介入 AI 形成一个长期的伴读家教这么个一个角色。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18248961">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253952#reply18248961" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">flysic</span>
+        <span>#3</span>
+        <span>2026/11/02 23:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/left7410" target="_blank" rel="noopener noreferrer">left7410</a> 那么多交流吧，我先让自己孩子受益</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18249006">@<a href="/member/left7410" target="_blank" rel="noopener noreferrer">left7410</a> 那么多交流吧，我先让自己孩子受益</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18249006">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1253952#reply18249006" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

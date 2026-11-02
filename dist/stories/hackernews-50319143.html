@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TCP Use-After-Free: CVE-2026-98432 / CVSS 9.8 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-02/">返回日报</a>
+      <div class="source-chip">Hacker News #8</div>
+      <h1>TCP Use-After-Free: CVE-2026-98432 / CVSS 9.8</h1>
+      <p class="original-title">TCP Use-After-Free: CVE-2026-98432 / CVSS 9.8</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 oger</span>
+        <span>热度 711</span>
+        <span>回复 328</span>
+        <span>2026/11/01 03:16</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50319143" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://atlasum.net/blog/cve-2026-98432-linux-ipv4-tcp-uaf" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50319143.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Trevor Fannin@trvrioFounder, AtlasSecurity alerts and CVE breakdowns, plus infrastructure and general tech.Followon X (opens in a new tab) #Overview Linux&#39;s stable kernels shipped a fix on October 11 and 15, 2026 for CVE-2026-98432, a use-after-free in the IPv4 TCP handshake that a remote, unauthenticated peer can reach. The kernel&#39;s own CVE Numbering Authority (CNA) scores it CVSS 3.1 9.8, Critical. The fixed releases are 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.56, 7.2.10, and 7.3, and the bug goes back to Linux 4.4. The upstream fix is a four-line change, but most servers run a distribution&#39;s kernel. Red Hat, which now rates the bug Critical too, shipped fixed kernels for Red Hat Enterprise Linux (RHEL) 8, 9, and 10 on November 1, and AlmaLinux followed on November 2. As of 12:00 PM CST on November 2, Ubuntu&#39;s tracker still reads &quot;Vulnerable&quot; for its kernel on every release.</li><li>Why it&#39;s urgent: the bug sits in code every Linux server runs when it accepts an IPv4 TCP connection, before any application sees the connection. Anthropic, whose researcher reported it, says its Claude model wrote a working proof-of-concept exploit that runs commands as root on &quot;Linux servers with a multipath TCP listener,&quot; with no credentials. Go programs open those listeners by default, per the Go Security Team. See the timeline. #Key facts FieldDetailCVECVE-2026-98432, &quot;ipv4: free inet_opt and ireq_opt after an RCU grace period,&quot; issued by the Linux kernel CNASeverityCritical, CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), the kernel CNA&#39;s score. Red Hat also rates it Critical, CVSS 3.1 9.8, raised from Important (8.1) on October 30. SUSE rates it important, Ubuntu rates it High, and Oracle and Amazon rate it Important with CVSS 3.1 8.1.WeaknessUse-after-free of IPv4 option data during the TCP handshake (the record lists no CWE)ImpactPer the CNA&#39;s scoring notes: kernel heap contents disclosed to the remote peer, kernel memory corruption, or a crash. Red Hat&#39;s bulletin: a remote, unauthenticated attacker &quot;could exploit a race condition during TCP connection request processing to trigger remote code execution.&quot;Fixed in7.2.10 and 6.18.56 (Oct 11) · 6.12.113, 6.6.159, 6.1.190, 5.15.223, and 5.10.272 (Oct 15) · 7.3 (Oct 18)No fix yetUbuntu (every release), as of 12:00 PM CST, November 2. Red Hat fixed RHEL 8, 9, and 10 on November 1 but still lists OpenShift&#39;s RHEL CoreOS as affected. Upstream branches that reached end-of-life before 5.10 get no fix.Proof of conceptAnthropic says Claude built a remote root exploit for servers with a multipath TCP listener. It hasn&#39;t published the exploit.CVE recordsPublished on cve.org on October 15. NVD lists it as &quot;Received,&quot; with no analysis of its own, as of 12:00 PM CST, November 2.CreditReported by Xinyang Ge of Anthropic. Fixed by Eric Dumazet and reviewed by Kuniyuki Iwashima, per the fix commit. #Who is affected Any Linux kernel from 4.4 on that lacks the fix, whether it serves the network directly or hosts containers: a container runs on the host&#39;s kernel, so a new image doesn&#39;t change anything. IPv6 connections aren&#39;t affected by the main issue; the commit says &quot;IPv6 is not affected by the first issue.&quot; Release lineStatus on Nov 2, 2026Fixed inReleased7.3Stable7.3 (from 7.3-rc7)Oct 18, 20267.2End of life (last release 7.2.15, Nov 1)7.2.10Oct 11, 20266.18Longterm6.18.56Oct 11, 20266.12Longterm6.12.113Oct 15, 20266.6Longterm6.6.159Oct 15, 20266.1Longterm6.1.190Oct 15, 20265.15Longterm5.15.223Oct 15, 20265.10Longterm5.10.272Oct 15, 20264.4 – 5.4End-of-life upstreamdistro fixes only— #Distribution status Distribution kernels carry backported fixes under their own version numbers, so check the tracker, not the upstream number. As of 12:00 PM CST, November 2:</li></ul>
+      
+      <p class="reason">命中 6 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">asveikau</span>
+        
+        <span>2026/11/01 07:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; TCP Use-After-Free: CVE-2026-98432 / CVSS 9.8<p>I know it's customary for HN to edit titles to remove extraneous information, but removing "Linux" here really takes away something useful and relevant.  This is a Linux vulnerability.  If you're running *BSD or Mac or Windows, not affected.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50321127">&gt; TCP Use-After-Free: CVE-2026-98432 / CVSS 9.8<p>I know it's customary for HN to edit titles to remove extraneous information, but removing "Linux" here really takes away something useful and relevant.  This is a Linux vulnerability.  If you're running *BSD or Mac or Windows, not affected.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50321127">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50321127" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">gerdesj</span>
+        
+        <span>2026/11/01 08:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Quite, however it looks quite rare:<p>"Why it's urgent: the bug sits in code every Linux server runs when it accepts an IPv4 TCP connection, before any application sees the connection. Anthropic, whose researcher reported it, says its Claude model wrote a working proof-of-concept exploit that runs commands as root on "Linux servers with a multipath TCP listener," with no credentials. Go programs open those listeners by default, per the Go Security Team. See the timeline."</p><p>I don't know of any Linux boxes running a multipath TCP listener in my care and I have quite a few.  MP generally implies a router of some sort and the intersections in a Venn diagram continue to get smaller ...</p><p>This is still an issue and must be patched but I think it will be rare, very rare.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50321732">Quite, however it looks quite rare:<p>"Why it's urgent: the bug sits in code every Linux server runs when it accepts an IPv4 TCP connection, before any application sees the connection. Anthropic, whose researcher reported it, says its Claude model wrote a working proof-of-concept exploit that runs commands as root on "Linux servers with a multipath TCP listener," with no credentials. Go programs open those listeners by default, per the Go Security Team. See the timeline."</p><p>I don't know of any Linux boxes running a multipath TCP listener in my care and I have quite a few.  MP generally implies a router of some sort and the intersections in a Venn diagram continue to get smaller ...</p><p>This is still an issue and must be patched but I think it will be rare, very rare.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50321732">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50321732" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">reissbaker</span>
+        
+        <span>2026/11/01 08:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is not rare. Every TCP connection in Go by default enables MPTCP [1]. Simply running a Go program that uses TCP without explicitly disabling this behavior will cause the running kernel to be vulnerable.<p>1: <a href="https://groups.google.com/g/golang-announce/c/PCoQcdxoScw" target="_blank" rel="noopener noreferrer">https://groups.google.com/g/golang-announce/c/PCoQcdxoScw</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50321759">This is not rare. Every TCP connection in Go by default enables MPTCP [1]. Simply running a Go program that uses TCP without explicitly disabling this behavior will cause the running kernel to be vulnerable.<p>1: <a href="https://groups.google.com/g/golang-announce/c/PCoQcdxoScw" target="_blank" rel="noopener noreferrer">https://groups.google.com/g/golang-announce/c/PCoQcdxoScw</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50321759">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50321759" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">dada216</span>
+        
+        <span>2026/11/01 19:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">the default on all of my RHEL is to have it disabled, I believe it's the same on Debian based<p>sysctl -a | grep net.mptcp.enabled
+net.mptcp.enabled = 0</p><p>and golang apps would just gracefully downgrade to non mptcp in that case.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50324681">the default on all of my RHEL is to have it disabled, I believe it's the same on Debian based<p>sysctl -a | grep net.mptcp.enabled
+net.mptcp.enabled = 0</p><p>and golang apps would just gracefully downgrade to non mptcp in that case.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50324681">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50324681" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">RetroTechie</span>
+        
+        <span>2026/11/01 22:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I believe it's the same on Debian based<p>"sysctl -a | grep net.mptcp.enabled" gives "net.mptcp.enabled = 1" on Debian 13 (Trixie). That's a non-server desktop install fwiw.</p><p>Edit - security advisory is here: (dated Oct 16)
+<a href="https://lists.debian.org/debian-security-announce/2026/msg00482.html" target="_blank" rel="noopener noreferrer">https://lists.debian.org/debian-security-announce/2026/msg00...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50326191">&gt; I believe it's the same on Debian based<p>"sysctl -a | grep net.mptcp.enabled" gives "net.mptcp.enabled = 1" on Debian 13 (Trixie). That's a non-server desktop install fwiw.</p><p>Edit - security advisory is here: (dated Oct 16)
+<a href="https://lists.debian.org/debian-security-announce/2026/msg00482.html" target="_blank" rel="noopener noreferrer">https://lists.debian.org/debian-security-announce/2026/msg00...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50326191">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50326191" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ForHackernews</span>
+        
+        <span>2026/11/01 20:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Does this mean Caddy is vulnerable? IIRC, I think it's written in Go.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50325044">Does this mean Caddy is vulnerable? IIRC, I think it's written in Go.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50325044">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50325044" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">BoardsOfCanada</span>
+        
+        <span>2026/11/01 21:10</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50325318">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50325318">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50325318" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">philipwhiuk</span>
+        
+        <span>2026/11/01 20:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">*Since Go 1.24</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50324885">*Since Go 1.24</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50324885">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50324885" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Eueudhsbsj32</span>
+        
+        <span>2026/11/01 17:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">But any sane configuration would have the MPTCP port blocked behind a firewall (unless you were intentionally using MPTCP).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50323926">But any sane configuration would have the MPTCP port blocked behind a firewall (unless you were intentionally using MPTCP).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50323926">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50323926" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hnlmorg</span>
+        
+        <span>2026/11/01 18:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; MPTCP port blocked<p>MPTCP doesn’t use any specific ports. It’s an OSI layer higher than that. It’s part of the TCP protocol itself. So if your firewall routes TCP traffic of a specific port (eg HTTP) already then it’ll route MPTCP along with it too.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50324162">&gt; MPTCP port blocked<p>MPTCP doesn’t use any specific ports. It’s an OSI layer higher than that. It’s part of the TCP protocol itself. So if your firewall routes TCP traffic of a specific port (eg HTTP) already then it’ll route MPTCP along with it too.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50324162">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50324162" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ButlerianJihad</span>
+        
+        <span>2026/11/01 18:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">MPTCP is a protocol extension that requires cooperation by both peers and all middleboxes. So, if there is a Layer 7 firewall, or DPI/SPI, or TLS termination on the path, and it's not inclined to preserve the MPTCP options, then MPTCP will be disabled.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50324174">MPTCP is a protocol extension that requires cooperation by both peers and all middleboxes. So, if there is a Layer 7 firewall, or DPI/SPI, or TLS termination on the path, and it's not inclined to preserve the MPTCP options, then MPTCP will be disabled.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50324174">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50324174" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hnlmorg</span>
+        
+        <span>2026/11/01 20:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Firewalls do not operate at layer 7 nor do TLS termination.<p>What you’re thinking of is load balancers. Most of them will do TLS termination. But there’s also plenty of load balancing solutions out there that will forward the raw TCP traffic (AWS NLB, DNS based solutions, and so forth).</p><p>But it’s also worth noting that this vulnerability doesn’t explicitly need MPTCP. Just the POC exploit uses that.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50325101">Firewalls do not operate at layer 7 nor do TLS termination.<p>What you’re thinking of is load balancers. Most of them will do TLS termination. But there’s also plenty of load balancing solutions out there that will forward the raw TCP traffic (AWS NLB, DNS based solutions, and so forth).</p><p>But it’s also worth noting that this vulnerability doesn’t explicitly need MPTCP. Just the POC exploit uses that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50325101">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50325101" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">otterley</span>
+        
+        <span>2026/11/02 02:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Firewalls can operate at Layer 7, too. The “F” in “WAF” stands for “firewall.”</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50328381">Firewalls can operate at Layer 7, too. The “F” in “WAF” stands for “firewall.”</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50328381">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50328381" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">icedchai</span>
+        
+        <span>2026/11/02 22:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I thought it stood for "false positives"?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337257">I thought it stood for "false positives"?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337257">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337257" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">justsomehnguy</span>
+        
+        <span>2026/11/02 04:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Attorneys can operate as a firewall too: if they sit in a building with <i>a firewall</i>.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50329793">Attorneys can operate as a firewall too: if they sit in a building with <i>a firewall</i>.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50329793">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50329793" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">justsomehnguy</span>
+        
+        <span>2026/11/02 04:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Bwahahah!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50329297">Bwahahah!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50329297">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50329297" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ButlerianJihad</span>
+        
+        <span>2026/11/01 21:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><i>fnord</i></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50325393"><i>fnord</i></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50325393">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50325393" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">splatter9859</span>
+        
+        <span>2026/11/01 21:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Wait.  So; just because you've studied with someone makes your opinion correct? Damn.  I wish I would have known that long ago!  In both my education tracts of medicine and CS, I've studied with some pretty great minds and I could have been passing off my opinion as fact for decades now.<p>I wish I would have received that memo. &lt;/sarcasm&gt;</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50325731">Wait.  So; just because you've studied with someone makes your opinion correct? Damn.  I wish I would have known that long ago!  In both my education tracts of medicine and CS, I've studied with some pretty great minds and I could have been passing off my opinion as fact for decades now.<p>I wish I would have received that memo. &lt;/sarcasm&gt;</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50325731">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50325731" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hnlmorg</span>
+        
+        <span>2026/11/01 21:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A request from authority isn’t a counter argument. And it doesn’t mean your opinions about this attack were correct.<p>Congratulations on knowing what a bastion server is though. But that’s extremely common knowledge and doesn’t prove your point either.</p><p>Perhaps you can share how a layer 7 inspection tool might mitigate a layer 4 attack an actual networking terms?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50325538">A request from authority isn’t a counter argument. And it doesn’t mean your opinions about this attack were correct.<p>Congratulations on knowing what a bastion server is though. But that’s extremely common knowledge and doesn’t prove your point either.</p><p>Perhaps you can share how a layer 7 inspection tool might mitigate a layer 4 attack an actual networking terms?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50325538">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50325538" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">compumike</span>
+        
+        <span>2026/11/01 11:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Try:<p></p><pre><code>  sudo ss -lnp -A mptcp
+</code></pre>
+to check. If you're running any Go code, you may be surprised. I was.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50322430">Try:<p></p><pre><code>  sudo ss -lnp -A mptcp
+</code></pre>
+to check. If you're running any Go code, you may be surprised. I was.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50322430">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50322430" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

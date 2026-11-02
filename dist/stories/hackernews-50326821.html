@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Show HN: HackerBooks – HackerTube, but for books mentioned on HN | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-02/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Show HN: HackerBooks – HackerTube, but for books mentioned on HN</h1>
+      <p class="original-title">Show HN: HackerBooks – HackerTube, but for books mentioned on HN</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 roansh</span>
+        <span>热度 1295</span>
+        <span>回复 223</span>
+        <span>2026/11/01 23:58</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50326821" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://hackerbooks.org" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50326821.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Get an email when the list is refreshed. A few times a year, nothing else. Made by roansh · About · Not affiliated with Y Combinator or Hacker News 15,766 books · 281,363 mentions · 2007–2026 · generated 2026-11-02</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">Saw Karpathy's HackerTube and wanted the same thing for books. So I had Claude build one (Opus 5.5).<p>It's ~16.5k books that at least two different HN commenters brought up, from 2007 till now. Each book links back to the comments that mentioned it. Data is downloadable from the about page.</p><p>To be clear: Claude wrote almost all of it, including the data pipeline and the site. I mostly steered and made calls, bought the domain name, etc.</p><p>It counts mentions, so it's not perfect (praising a book and trashing it both count). If your favourite book is missing or matched to the wrong thing, tell me.</p></div>
+      <div class="post-body is-hidden" data-role="story-raw">Saw Karpathy's HackerTube and wanted the same thing for books. So I had Claude build one (Opus 5.5).<p>It's ~16.5k books that at least two different HN commenters brought up, from 2007 till now. Each book links back to the comments that mentioned it. Data is downloadable from the about page.</p><p>To be clear: Claude wrote almost all of it, including the data pipeline and the site. I mostly steered and made calls, bought the domain name, etc.</p><p>It counts mentions, so it's not perfect (praising a book and trashing it both count). If your favourite book is missing or matched to the wrong thing, tell me.</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sarreph</span>
+        
+        <span>2026/11/02 21:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">On the subject of reading (since the 'decline' in literacy is being raised in this thread) -- especially if you haven't read in a while and are thinking about reading but are maybe struggling to because you feel like it's "been too long" or that you'll struggle to concentrate on a book...<p>Please give reading (especially fiction) another chance. I had a stretch of about a decade where I finished maybe two or three books total. Partly, I didn't think I "needed to read" because of how much time I spend reading HN and other non-fiction sources, especially on the internet: or that I was "too busy".</p><p>I was running my startup, and had a copy of Infinite Jest on my bedside table for nearly 2 years -- telling myself that I would finish it. It's an amazing book (the part I've read anyway), but it was such an intricate piece of work that I managed to convince myself I basically had reading-ADHD and there was no point in me trying to read other books.</p><p>Last year, I started reading (fiction!) books that were just interesting to me or that other people were talking about, instead of picking up "aspirational" fiction or non-fiction and reading the first chapter.</p><p>I've been getting through a book every month or two since and am absolutely loving it. I read a lot of fiction as a child and teenager and I'd forgotten just how visceral good fiction can be. Reading properly again also helped convince me to write stories, too.</p><p>If this sounds like you, I challenge you (with kindness) to pick up a piece of approachable fiction and see how much more you get out of it than you expected to!</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336411">On the subject of reading (since the 'decline' in literacy is being raised in this thread) -- especially if you haven't read in a while and are thinking about reading but are maybe struggling to because you feel like it's "been too long" or that you'll struggle to concentrate on a book...<p>Please give reading (especially fiction) another chance. I had a stretch of about a decade where I finished maybe two or three books total. Partly, I didn't think I "needed to read" because of how much time I spend reading HN and other non-fiction sources, especially on the internet: or that I was "too busy".</p><p>I was running my startup, and had a copy of Infinite Jest on my bedside table for nearly 2 years -- telling myself that I would finish it. It's an amazing book (the part I've read anyway), but it was such an intricate piece of work that I managed to convince myself I basically had reading-ADHD and there was no point in me trying to read other books.</p><p>Last year, I started reading (fiction!) books that were just interesting to me or that other people were talking about, instead of picking up "aspirational" fiction or non-fiction and reading the first chapter.</p><p>I've been getting through a book every month or two since and am absolutely loving it. I read a lot of fiction as a child and teenager and I'd forgotten just how visceral good fiction can be. Reading properly again also helped convince me to write stories, too.</p><p>If this sounds like you, I challenge you (with kindness) to pick up a piece of approachable fiction and see how much more you get out of it than you expected to!</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336411">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336411" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">mft_</span>
+        
+        <span>2026/11/02 21:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I second this.<p>For quite a long period in my 20s I would buy very worthy intellectual non-fiction books (based on reviews or recommendations) and then struggle to make headway with them. In retrospect, I think I was just usually too tired from work and life to have the mental energy to focus.</p><p>I then read an article by (IIRC) Irvine Welsh, the nub of which was ‘just read something’ - and reading fiction rather than non-fiction, and even trashy fiction rather than worthy fiction, was immeasurably better than not reading at all.</p><p>It was like I was given permission to not have to try and be intellectual and serious: (or pretentious?) and I’ve never looked back. Amongst many others, and to my surprise, I found I enjoy (what one might call) mid-level science-fiction and have happily worked through quite a lot now.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336754">I second this.<p>For quite a long period in my 20s I would buy very worthy intellectual non-fiction books (based on reviews or recommendations) and then struggle to make headway with them. In retrospect, I think I was just usually too tired from work and life to have the mental energy to focus.</p><p>I then read an article by (IIRC) Irvine Welsh, the nub of which was ‘just read something’ - and reading fiction rather than non-fiction, and even trashy fiction rather than worthy fiction, was immeasurably better than not reading at all.</p><p>It was like I was given permission to not have to try and be intellectual and serious: (or pretentious?) and I’ve never looked back. Amongst many others, and to my surprise, I found I enjoy (what one might call) mid-level science-fiction and have happily worked through quite a lot now.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336754">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336754" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">theshrike79</span>
+        
+        <span>2026/11/02 21:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I read SO much military sci-fi, and it’s the best. I can tear through a book in a day because it’s just fun.<p>Marko Kloos, Joel Shepherd, Glynn Stewart. All write good sci-fi with cool ideas.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336872">I read SO much military sci-fi, and it’s the best. I can tear through a book in a day because it’s just fun.<p>Marko Kloos, Joel Shepherd, Glynn Stewart. All write good sci-fi with cool ideas.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336872">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336872" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">wildzzz</span>
+        
+        <span>2026/11/02 22:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't read nearly as much as I should but I do listen to a lot of audiobooks. My wife scoffs at my collection, a lot of spy or military thrillers like Mitch Rapp and Jack Ryan (The Company is one of my favorites) but also Bobiverse and Expanse are great. Meanwhile she buys lots of books but reads none of them. Audiobooks aren't a perfect substitute for reading but they do stop me from doomscrolling or listening to stupid podcasts.<p>As for podcasts, Hardcore History and Blowback are my favorites that aren't political junk. I know people have their opinions on pop history media but it's interesting content and entertaining.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337581">I don't read nearly as much as I should but I do listen to a lot of audiobooks. My wife scoffs at my collection, a lot of spy or military thrillers like Mitch Rapp and Jack Ryan (The Company is one of my favorites) but also Bobiverse and Expanse are great. Meanwhile she buys lots of books but reads none of them. Audiobooks aren't a perfect substitute for reading but they do stop me from doomscrolling or listening to stupid podcasts.<p>As for podcasts, Hardcore History and Blowback are my favorites that aren't political junk. I know people have their opinions on pop history media but it's interesting content and entertaining.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337581">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337581" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">theshrike79</span>
+        
+        <span>2026/11/03 04:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Cautionary Tales might fit your interests on the podcast side: <a href="https://timharford.com/articles/cautionarytales/" target="_blank" rel="noopener noreferrer">https://timharford.com/articles/cautionarytales/</a><p>Basically telling a story from history and explaining what went wrong and why. Some of the stories are dramatised with professional actors and sound effects.</p><p>Like this episode about the woman who was instrumental in the creation of Monopoly, startting Helena Bonham Carter: <a href="https://timharford.com/2021/05/cautionary-tales-do-not-pass-go/" target="_blank" rel="noopener noreferrer">https://timharford.com/2021/05/cautionary-tales-do-not-pass-...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50342888">Cautionary Tales might fit your interests on the podcast side: <a href="https://timharford.com/articles/cautionarytales/" target="_blank" rel="noopener noreferrer">https://timharford.com/articles/cautionarytales/</a><p>Basically telling a story from history and explaining what went wrong and why. Some of the stories are dramatised with professional actors and sound effects.</p><p>Like this episode about the woman who was instrumental in the creation of Monopoly, startting Helena Bonham Carter: <a href="https://timharford.com/2021/05/cautionary-tales-do-not-pass-go/" target="_blank" rel="noopener noreferrer">https://timharford.com/2021/05/cautionary-tales-do-not-pass-...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50342888">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50342888" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">carlosjobim</span>
+        
+        <span>2026/11/02 23:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Why would reading trashy fiction be better than not reading? Being alone with your mind is a healthier option in my opinion.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50338618">Why would reading trashy fiction be better than not reading? Being alone with your mind is a healthier option in my opinion.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50338618">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50338618" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">phainopepla2</span>
+        
+        <span>2026/11/03 01:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A couple of reasons I can think of.<p>- Reading helps hone your ability to focus your attention on one thing for sustained periods.</p><p>- Getting back into the habit of reading by reading "trashy" or otherwise easy books can serve as a stepping stone to reading more difficult or rewarding books. This worked for me when I fell out of the reading habit for a while and was bouncing off books that I wanted to read that were less immediately engaging.</p><p>I would also say that while I agree that being alone with your mind is quite healthy and something we would all ideally make time for, I don't think that it's the alternative most people are opting for over reading.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50340190">A couple of reasons I can think of.<p>- Reading helps hone your ability to focus your attention on one thing for sustained periods.</p><p>- Getting back into the habit of reading by reading "trashy" or otherwise easy books can serve as a stepping stone to reading more difficult or rewarding books. This worked for me when I fell out of the reading habit for a while and was bouncing off books that I wanted to read that were less immediately engaging.</p><p>I would also say that while I agree that being alone with your mind is quite healthy and something we would all ideally make time for, I don't think that it's the alternative most people are opting for over reading.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50340190">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50340190" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">eudamoniac</span>
+        
+        <span>2026/11/03 03:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think it's better iff it's used as training for reading better books. Definitely not worth doing if you insist on only reading that forever, though.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50341928">I think it's better iff it's used as training for reading better books. Definitely not worth doing if you insist on only reading that forever, though.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50341928">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50341928" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nkrisc</span>
+        
+        <span>2026/11/02 22:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’ll add: re-read books. When reading a book a second time (or third, or fourth) you’ll get new things out of it because you’ll spend less time and energy focused on the obvious things you’re already familiar with. And if it’s been some good number of years I think you’ll also find your memory of the book isn’t as good as you might have thought.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337438">I’ll add: re-read books. When reading a book a second time (or third, or fourth) you’ll get new things out of it because you’ll spend less time and energy focused on the obvious things you’re already familiar with. And if it’s been some good number of years I think you’ll also find your memory of the book isn’t as good as you might have thought.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337438">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337438" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">chunky1994</span>
+        
+        <span>2026/11/02 22:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Whenever this topic comes up I always wonder if people mean reading as all long-form reading (including pop fiction) or if they mean “serious” reading. To me it’s actually quite strange but I feel like I have “lessened” as a reader over the past decades.<p>I used to be able to read some of the more classic novels a bit easier and now I just find them…a tad tedious? Is that the decline of reading that people are mentioning, or just… not reading at all?</p><p>I find it remarkably easy to read the popcorn fiction novels or anything very plot driven where characterization and world building is only in the service of the plot, but somehow this just feels like watching a movie but in book form. Is <i>that</i> also considered “reading”?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337508">Whenever this topic comes up I always wonder if people mean reading as all long-form reading (including pop fiction) or if they mean “serious” reading. To me it’s actually quite strange but I feel like I have “lessened” as a reader over the past decades.<p>I used to be able to read some of the more classic novels a bit easier and now I just find them…a tad tedious? Is that the decline of reading that people are mentioning, or just… not reading at all?</p><p>I find it remarkably easy to read the popcorn fiction novels or anything very plot driven where characterization and world building is only in the service of the plot, but somehow this just feels like watching a movie but in book form. Is <i>that</i> also considered “reading”?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337508">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337508" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jhallenworld</span>
+        
+        <span>2026/11/03 01:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As I age, reading has become a bit less enjoyable because I have to wear reading glasses (yes, I'm a baby).  But I found that I really enjoy audio books- they give a different experience, it's very weird listening to books that I previously had read.  One reason is that I read much faster than the audio book reading rate, and I find the slowness is a good thing- more time to experience and think I guess.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50340152">As I age, reading has become a bit less enjoyable because I have to wear reading glasses (yes, I'm a baby).  But I found that I really enjoy audio books- they give a different experience, it's very weird listening to books that I previously had read.  One reason is that I read much faster than the audio book reading rate, and I find the slowness is a good thing- more time to experience and think I guess.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50340152">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50340152" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">smugglerFlynn</span>
+        
+        <span>2026/11/02 22:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’ll add to this for cases where the problem is motivation for reading and spending time “non-productively.”<p>Many life and work problems have relevant fiction books that cover similar or loosely related situations. Reading these can create a perfect “mental sandbox” for problem solving, where your brain unconsciously plays around with a topic in a safe and fun way, all while you’re following a fictional narrative.</p><p>This is an alternative to more “rational” methods, like reading non-fiction, prompting an LLM for possible approaches, or problem-solving explicitly. Brains work in weird ways, and they often need lots of unstructured time, lateral thinking, and play. Reading fiction provides all three.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337031">I’ll add to this for cases where the problem is motivation for reading and spending time “non-productively.”<p>Many life and work problems have relevant fiction books that cover similar or loosely related situations. Reading these can create a perfect “mental sandbox” for problem solving, where your brain unconsciously plays around with a topic in a safe and fun way, all while you’re following a fictional narrative.</p><p>This is an alternative to more “rational” methods, like reading non-fiction, prompting an LLM for possible approaches, or problem-solving explicitly. Brains work in weird ways, and they often need lots of unstructured time, lateral thinking, and play. Reading fiction provides all three.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337031">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337031" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jjkaczor</span>
+        
+        <span>2026/11/02 21:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">So - I find it difficult to read even fiction when things are stressful (which is perverse as I find it relaxing and refreshing).  So, sometimes will go months without reading anything - then a spurt of 6-8 weeks and 30-40 books.  Given the state of the world, the last couple of years have been rough.  (And top that with a workload for the past year where there hasn't been a single month that I have worked less than 200-hrs (contract, so it ain't all that bad))</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336767">So - I find it difficult to read even fiction when things are stressful (which is perverse as I find it relaxing and refreshing).  So, sometimes will go months without reading anything - then a spurt of 6-8 weeks and 30-40 books.  Given the state of the world, the last couple of years have been rough.  (And top that with a workload for the past year where there hasn't been a single month that I have worked less than 200-hrs (contract, so it ain't all that bad))</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336767">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336767" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">kedosprisma</span>
+        
+        <span>2026/11/02 22:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I can only second this message! 
+I read a lot of non-fiction books when I was younger (during the whole improve-yourself trip of course) and most of them were so incredibly boring (always one concept explained with a 100 similar examples). Since then, I have started to read only fiction books and I learned more about society, relationships and life then with any non-fiction, while at the same time enjoying it more.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337088">I can only second this message! 
+I read a lot of non-fiction books when I was younger (during the whole improve-yourself trip of course) and most of them were so incredibly boring (always one concept explained with a 100 similar examples). Since then, I have started to read only fiction books and I learned more about society, relationships and life then with any non-fiction, while at the same time enjoying it more.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337088">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337088" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">ReedorReed</span>
+        
+        <span>2026/11/03 00:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I wanted to get back into reading again and started just reading comics though it was through an app, it motivated me and after a while I started reading books instead both fiction and non-fiction.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50339175">I wanted to get back into reading again and started just reading comics though it was through an app, it motivated me and after a while I started reading books instead both fiction and non-fiction.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50339175">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50339175" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">theshrike79</span>
+        
+        <span>2026/11/02 21:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And it’s OK to read fun books, not everything has to be a classic or a guide to self improvement or some heavy tome dealing with deep issues.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336852">And it’s OK to read fun books, not everything has to be a classic or a guide to self improvement or some heavy tome dealing with deep issues.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336852">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336852" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">thunspa</span>
+        
+        <span>2026/11/02 21:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Care to share something to good you've read recently?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336764">Care to share something to good you've read recently?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336764">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336764" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Cthulhu_</span>
+        
+        <span>2026/11/02 21:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Not OP and not "good" in the literary sense but I've enjoyed reading Warhammer books since about last year. They're brainless and depressing dystopian, possibly YA level novels but at least it's self-aware and leans into it.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50336781">Not OP and not "good" in the literary sense but I've enjoyed reading Warhammer books since about last year. They're brainless and depressing dystopian, possibly YA level novels but at least it's self-aware and leans into it.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50336781">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50336781" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">sarreph</span>
+        
+        <span>2026/11/02 22:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Flesh, by David Szalay.<p>It won the Booker Prize last year.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50337086">Flesh, by David Szalay.<p>It won the Booker Prize last year.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50337086">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50337086" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">yeah879846</span>
+        
+        <span>2026/11/03 01:42</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50340524">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50340524">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50340524" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
