@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Astra can read and write weights to improve Qwen | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-03/">返回日报</a>
+      <div class="source-chip">Hacker News #1</div>
+      <h1>Astra can read and write weights to improve Qwen</h1>
+      <p class="original-title">Astra can read and write weights to improve Qwen</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 dbreunig</span>
+        <span>热度 2698</span>
+        <span>回复 817</span>
+        <span>2026/11/03 02:21</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50341174" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://rikiyat.github.io/blog/weight-space-programming/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50341174.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>TL;DRWe find that frontier LLMs are surprisingly good at natively reading and writing neural network weights, using a variety of recent tools and algorithms or even via direct weight editing. These results show sparks of Weight-Space Programming, which may extend beyond what we’d expect from humans or conventional algorithms. This might be a big deal for both optimization and interpretability. Just by looking at the raw weights, GPT-6 Astra can tell what a network was trained to do. And without any environment feedback, it has no trouble writing, from scratch, small game-playing networks that outplay networks trained with PPO for 100 million steps. Likewise, asked to make Qwen3.5-0.8B better at math without gradients, Astra identifies an issue in its weights causing reasoning loops that Qwen’s own model card warns about, and fixes this by natively editing 0.016% of the weights. With the same sampling settings, this weight correction raises MATH-500 from 7.9% to 48.1% and generalizes out of the box to instruction following, raising IFEval by 3x. All of this is possible without allowing Astra to write training loops. It uses its reasoning to figure out what each part of a neural network computes, or should compute, and changes the weights accordingly. We call this Weight-Space Programming. Throughout the history of deep learning, we encoded our simplistic inductive biases into tiny symbolic optimizers like Adam or Muon. This is changing: our neural network weights will soon be natively optimized by LLMs that deliberately reason about their weights. Read Which game was this neural network trained on? Astra reads the 17,253 weights, with no tools Breakout 99% confident Fix A trained policy never gets the car over the strip. Astra edits 3.5% of the weights, in one shot 100% success, up from 0% Improve Make Qwen3.5-0.8B better at math. 7.9%base 7.9%Astra’s edit Astra edits the weights in a Python kernel, with no training 48.1% on MATH-500, up from 7.9%</li><li>If you were asked to handcraft a neural network that plays Go, what would you do? If you were handed raw neural network weights and asked to predict their behavior, where would you even start? For almost any human, this is practically impossible. Today, weights are written by optimization, by custom networks trained to write them, or by compilers from formal programs. In this post, we find that the current generation of frontier LLMs, used natively in natural language, are starting to become eerily good at understanding and crafting neural network weights around natural-language goals.</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">yurimo</span>
+        
+        <span>2026/11/03 11:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Respectfully to the authors and to everyone here, I ask you to actually read the paper before losing your mind, or at the very least plug it into Claude. It is a cool project but not as nearly as insane as people say. I think the blog writing and subsequent posting overstate the results.<p>Part of my research is in weight space learning. For starters, we have had the ability to edit weights, to generate new weights, to identify weights for a while. Here is an example for larger models as early as 2023:
+<a href="https://rome.baulab.info/" target="_blank" rel="noopener noreferrer">https://rome.baulab.info/</a></p><p>Weight space interpretability and learning is an active research community, has been for the past 3 years with many great papers. I suspect it is hitting non-interp folks harder because the authors hyped up their work, and people who are not in the field did not bother to read it before typing up X posts.</p><p>Some experiments here are done on very small models (20K params). We already know that small models are more interpretable. In fact, much of editing here you can do by hand. For Qwen, the model fixed a looping bug that may have been known apriori, and it is basically a steering vector, a very established technique. This is clear when they then attempt to "improve" math capability, and it doesn't work. For me, this paper rather shows that OpenAI has done training on mechinterp  environment, in fact, maybe even on weight space learning datasets, which are open. But it does not show some insane "well past what we’d expect from humans or conventional algorithms" (from the blog post), more like past what I would expect from a large model with no specialized harness. I still think it is cool work, but do check out recent advances in autointerp, to ground your expectation.</p><p>On a personal note, I understand the need for promotion of your work, but I think healthy skepticism is fine too. Otherwise, your understanding of what problems need to be worked on and solved in science becomes warped.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50347685">Respectfully to the authors and to everyone here, I ask you to actually read the paper before losing your mind, or at the very least plug it into Claude. It is a cool project but not as nearly as insane as people say. I think the blog writing and subsequent posting overstate the results.<p>Part of my research is in weight space learning. For starters, we have had the ability to edit weights, to generate new weights, to identify weights for a while. Here is an example for larger models as early as 2023:
+<a href="https://rome.baulab.info/" target="_blank" rel="noopener noreferrer">https://rome.baulab.info/</a></p><p>Weight space interpretability and learning is an active research community, has been for the past 3 years with many great papers. I suspect it is hitting non-interp folks harder because the authors hyped up their work, and people who are not in the field did not bother to read it before typing up X posts.</p><p>Some experiments here are done on very small models (20K params). We already know that small models are more interpretable. In fact, much of editing here you can do by hand. For Qwen, the model fixed a looping bug that may have been known apriori, and it is basically a steering vector, a very established technique. This is clear when they then attempt to "improve" math capability, and it doesn't work. For me, this paper rather shows that OpenAI has done training on mechinterp  environment, in fact, maybe even on weight space learning datasets, which are open. But it does not show some insane "well past what we’d expect from humans or conventional algorithms" (from the blog post), more like past what I would expect from a large model with no specialized harness. I still think it is cool work, but do check out recent advances in autointerp, to ground your expectation.</p><p>On a personal note, I understand the need for promotion of your work, but I think healthy skepticism is fine too. Otherwise, your understanding of what problems need to be worked on and solved in science becomes warped.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50347685">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50347685" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">bottlepalm</span>
+        
+        <span>2026/11/03 11:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think a lot of the upvotes, including mine, are just realizing that this is a thing. We can see implications of this as the model sizes scale up, just like early LLMs weren't as impressive, but we could see where they were heading.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50347836">I think a lot of the upvotes, including mine, are just realizing that this is a thing. We can see implications of this as the model sizes scale up, just like early LLMs weren't as impressive, but we could see where they were heading.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50347836">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50347836" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">yurimo</span>
+        
+        <span>2026/11/03 12:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Scale is an interesting point here. Large overparametrized networks don't behave in the same way as small toy models do; this is one of the big caveats of many interp works. I expect naked weight edit will not work for large models. Why? Because an agent needs to know what it edits and reason on it. You could theoretically improve a model on some form of weight recognition; maybe it will work, maybe it won't. But again, we come up against a cost/benefit dilemma; it sounds exotic and sci-fi but likely impractical. Parameters of the model are connected and relate to each other. Instead, current SOTA auto-interp argues that what we need are better tools for models to know themselves, so rather than direct edit, we need to give models better understanding of large parameter geometries, then they apply edits with non-destructive approaches at scale. This is much harder to do than applying a steering vector.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50348007">Scale is an interesting point here. Large overparametrized networks don't behave in the same way as small toy models do; this is one of the big caveats of many interp works. I expect naked weight edit will not work for large models. Why? Because an agent needs to know what it edits and reason on it. You could theoretically improve a model on some form of weight recognition; maybe it will work, maybe it won't. But again, we come up against a cost/benefit dilemma; it sounds exotic and sci-fi but likely impractical. Parameters of the model are connected and relate to each other. Instead, current SOTA auto-interp argues that what we need are better tools for models to know themselves, so rather than direct edit, we need to give models better understanding of large parameter geometries, then they apply edits with non-destructive approaches at scale. This is much harder to do than applying a steering vector.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50348007">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50348007" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pyrale</span>
+        
+        <span>2026/11/03 18:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I expect naked weight edit will not work for large models. Why? Because an agent needs to know what it edits and reason on it.<p>Would that still be true for MoE models where only a small part is activated on a specific topic?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50350085">&gt; I expect naked weight edit will not work for large models. Why? Because an agent needs to know what it edits and reason on it.<p>Would that still be true for MoE models where only a small part is activated on a specific topic?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50350085">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50350085" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">chemicalnovae</span>
+        
+        <span>2026/11/03 18:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think _small_ is still doing a lot of work here. Yes, an MoE model doesn't "use" all of it's weights at once _but_ what it does use is still a hell of a lot heavier than the 20K toy shown in the paper.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50350328">I think _small_ is still doing a lot of work here. Yes, an MoE model doesn't "use" all of it's weights at once _but_ what it does use is still a hell of a lot heavier than the 20K toy shown in the paper.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50350328">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50350328" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">cft</span>
+        
+        <span>2026/11/03 15:07</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50348980">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50348980">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50348980" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ale42</span>
+        
+        <span>2026/11/03 16:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And? What's the point here?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50349476">And? What's the point here?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50349476">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50349476" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">irthomasthomas</span>
+        
+        <span>2026/11/03 17:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think its a meta comment about LLMs overconfidence. Like, htf does Astra, the big frontier model, still hallucinate confidence scores like this? Reliability and interpretability are still over the horizon.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50349946">I think its a meta comment about LLMs overconfidence. Like, htf does Astra, the big frontier model, still hallucinate confidence scores like this? Reliability and interpretability are still over the horizon.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50349946">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50349946" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/11/03 16:45</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50349577"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50349577">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50349577" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">hollowonepl</span>
+        
+        <span>2026/11/03 17:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I agree, I’m impressed by a sole idea of connecting these two things together</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50349944">I agree, I’m impressed by a sole idea of connecting these two things together</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50349944">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50349944" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">chrsw</span>
+        
+        <span>2026/11/03 20:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I upvoted without looking into the details because it sounds cool, whether it's new or not.<p>I suspect a lot of upvotes also come from people afraid of closed western labs running away with AI. Similar to other articles with positive news about open weight models.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50351324">I upvoted without looking into the details because it sounds cool, whether it's new or not.<p>I suspect a lot of upvotes also come from people afraid of closed western labs running away with AI. Similar to other articles with positive news about open weight models.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50351324">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50351324" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">fcanesin</span>
+        
+        <span>2026/11/03 20:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">RL the model on weight editing</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50351073">RL the model on weight editing</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50351073">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50351073" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Schlagbohrer</span>
+        
+        <span>2026/11/03 20:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The #1 thing frontier AIs are optimized to do is create/train new AIs.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50351117">The #1 thing frontier AIs are optimized to do is create/train new AIs.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50351117">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50351117" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">billyjoel1009</span>
+        
+        <span>2026/11/03 23:36</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50353313">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50353313">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50353313" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">youareundersell</span>
+        
+        <span>2026/11/03 17:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I might be mistaken but I have the feeling you are not getting the point of this article. Your example is about identifying "facts" in a network. While very interesting is not what strikes me as the main point. The raw ability to state things about NNs is indeed an existing field, but...<p>The fact you can give an LLM a raw dump of neural weights and it will hand-wire a bunch of changes on the fly is quite something. It's not so much about the OMG! RSI! for me personally, it's more about the fact we are dealing with a system that reasons successfully over a raw bulk of extraordinarily opaque data without breaking a sweat. That ability is alien and we need time to adjust to that.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50350016">I might be mistaken but I have the feeling you are not getting the point of this article. Your example is about identifying "facts" in a network. While very interesting is not what strikes me as the main point. The raw ability to state things about NNs is indeed an existing field, but...<p>The fact you can give an LLM a raw dump of neural weights and it will hand-wire a bunch of changes on the fly is quite something. It's not so much about the OMG! RSI! for me personally, it's more about the fact we are dealing with a system that reasons successfully over a raw bulk of extraordinarily opaque data without breaking a sweat. That ability is alien and we need time to adjust to that.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50350016">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50350016" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">stymaar</span>
+        
+        <span>2026/11/03 19:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; about the fact we are dealing with a system that reasons successfully over a raw bulk of extraordinarily opaque data without breaking a sweat. That ability is alien<p>But it's not what's happening here at all! Read the thing in detail and you'll see that it's not doing anything alien, it does exactly what you (or at least someone with at least some knowledge abouy neural nets) would do if you were asked to perform the task. It doesn't reason about weights in a magical way, instead it reads the easy to interpret parts or use directional ablation to tweak a model's behavior, exactly like how the ERP folks have been decensoring models to produce adult content over the past two years.</p><p>It's an interesting demonstration of ML knowledge and agentic ability, but it's not alien NY any means, and it's not actually surprising given how strong today's models are with agentic work.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50350548">&gt; about the fact we are dealing with a system that reasons successfully over a raw bulk of extraordinarily opaque data without breaking a sweat. That ability is alien<p>But it's not what's happening here at all! Read the thing in detail and you'll see that it's not doing anything alien, it does exactly what you (or at least someone with at least some knowledge abouy neural nets) would do if you were asked to perform the task. It doesn't reason about weights in a magical way, instead it reads the easy to interpret parts or use directional ablation to tweak a model's behavior, exactly like how the ERP folks have been decensoring models to produce adult content over the past two years.</p><p>It's an interesting demonstration of ML knowledge and agentic ability, but it's not alien NY any means, and it's not actually surprising given how strong today's models are with agentic work.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50350548">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50350548" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pera</span>
+        
+        <span>2026/11/03 19:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think this other submission from yesterday that visualised the examples was quite helpful:<p><a href="https://news.ycombinator.com/item?id=50344861" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50344861</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50350898">I think this other submission from yesterday that visualised the examples was quite helpful:<p><a href="https://news.ycombinator.com/item?id=50344861" target="_blank" rel="noopener noreferrer">https://news.ycombinator.com/item?id=50344861</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50350898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50350898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">stymaar</span>
+        
+        <span>2026/11/03 20:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thank you for sharing that, it's a shame that the overhyped paper received this much attention while this one ended up burrowed beyond eyesight.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50351064">Thank you for sharing that, it's a shame that the overhyped paper received this much attention while this one ended up burrowed beyond eyesight.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50351064">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50351064" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">frays</span>
+        
+        <span>2026/11/03 20:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks for sharing. I was also onboard the hype train ready to share this widely and get others onboard, but now I'll be sharing this article instead.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50351302">Thanks for sharing. I was also onboard the hype train ready to share this widely and get others onboard, but now I'll be sharing this article instead.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50351302">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50351302" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">youareundersell</span>
+        
+        <span>2026/11/03 22:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I read the report; it's not complicated. I'm sure there is some basic misunderstanding here.<p>When I say "alien" I don't mean "magic" and I don't mean "emergent new woo-woo scary ability". I mean, not human in speed/volume. No human can process that amount of raw bulk in that amount of time successfully. And indeed, it's not magic at all. It is enormously mundane actually. It reminds me of old computers being able to do arithmetic at insane speeds compared to humans. It's not magic at all, but to be honest, I have the distinct feeling of goalposts flying all around me. Being able to handle tasks of this complexity.. I don't know about you but I still have to adjust to computers being able to do this and that it's actually "not surprising". I guess I'm getting old.</p><p>I can see how you want to calibrate the enthusiasm I see around here as it can be a bit.. well, but it's not necessary for me. I'm not overly enthused by this because I don't care about the NN adjusting itself and RSI etc. I'm sure it's all quite basic but the fact it can do it at all is reason to be.. watchful, IMO. That is to say, I can appreciate the level of capability necessary to do this work successfully, but I do take your point seriously. It made me think, thanks.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50352722">I read the report; it's not complicated. I'm sure there is some basic misunderstanding here.<p>When I say "alien" I don't mean "magic" and I don't mean "emergent new woo-woo scary ability". I mean, not human in speed/volume. No human can process that amount of raw bulk in that amount of time successfully. And indeed, it's not magic at all. It is enormously mundane actually. It reminds me of old computers being able to do arithmetic at insane speeds compared to humans. It's not magic at all, but to be honest, I have the distinct feeling of goalposts flying all around me. Being able to handle tasks of this complexity.. I don't know about you but I still have to adjust to computers being able to do this and that it's actually "not surprising". I guess I'm getting old.</p><p>I can see how you want to calibrate the enthusiasm I see around here as it can be a bit.. well, but it's not necessary for me. I'm not overly enthused by this because I don't care about the NN adjusting itself and RSI etc. I'm sure it's all quite basic but the fact it can do it at all is reason to be.. watchful, IMO. That is to say, I can appreciate the level of capability necessary to do this work successfully, but I do take your point seriously. It made me think, thanks.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50352722">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50352722" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
