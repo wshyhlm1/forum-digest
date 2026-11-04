@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Postman silently auto-installs AI plugins and attempts to share all API data | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-04/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Postman silently auto-installs AI plugins and attempts to share all API data</h1>
+      <p class="original-title">Postman silently auto-installs AI plugins and attempts to share all API data</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 sidgarimella</span>
+        <span>热度 1205</span>
+        <span>回复 393</span>
+        <span>2026/11/04 01:22</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50354960" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://github.com/postmanlabs/postman-app-support/issues/14370" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50354960.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Is there an existing issue for this?</li><li>I have searched the tracker for existing similar issues and I know that duplicates will be closed</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">pants2</span>
+        
+        <span>2026/11/04 01:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's a shame what happened to Postman. It started as an excellent little developer tool for testing APIs. Then for some reason they raised over $400M in funding and hired 1,500+ employees, for what should have been a tiny OSS/passion project like curl or little snitch. Instead they now have to justify their valuation by forcing logins, collecting data, monthly subscriptions, AI features, etc.<p>I still don't know how they're valued at $5B+ when I don't know a single developer who actually uses it anymore</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50355299">It's a shame what happened to Postman. It started as an excellent little developer tool for testing APIs. Then for some reason they raised over $400M in funding and hired 1,500+ employees, for what should have been a tiny OSS/passion project like curl or little snitch. Instead they now have to justify their valuation by forcing logins, collecting data, monthly subscriptions, AI features, etc.<p>I still don't know how they're valued at $5B+ when I don't know a single developer who actually uses it anymore</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50355299">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50355299" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">swatcoder</span>
+        
+        <span>2026/11/04 02:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; for some reason they raised over $400M in funding and hired 1,500+ employees<p>You know the reason. A bunch of people were able to take home a lot of money because of that growth and now have the option to FIRE themselves whenever they want to shake off the stress.</p><p>That's the founder mentality that Y Combinator exists to leverage or encourage and it's ubiquity is what separates the prevailing 21st century technology movement from the nerdy, academic, UNIX-y movement that gave us GNU, linux, curl, ffmpeg, redis, etc</p><p>We got to watch innovative products get pumped full of helium until they explode with bloat and rent-seeking instead of accumulating a growing foundation of sturdy technical building blocks as we could have had on the other path.</p><p>AI now leads us into some new movement, the worst version of which a few model vendors protected by regulations absorb almost all technical accomplishment and lease it back out to everybody else, and the best version of which democratizes technical construction so widely that individuals can naively spin up effective solutions for the most idiosyncratic needs.</p><p>We'll see how it goes.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50355650">&gt; for some reason they raised over $400M in funding and hired 1,500+ employees<p>You know the reason. A bunch of people were able to take home a lot of money because of that growth and now have the option to FIRE themselves whenever they want to shake off the stress.</p><p>That's the founder mentality that Y Combinator exists to leverage or encourage and it's ubiquity is what separates the prevailing 21st century technology movement from the nerdy, academic, UNIX-y movement that gave us GNU, linux, curl, ffmpeg, redis, etc</p><p>We got to watch innovative products get pumped full of helium until they explode with bloat and rent-seeking instead of accumulating a growing foundation of sturdy technical building blocks as we could have had on the other path.</p><p>AI now leads us into some new movement, the worst version of which a few model vendors protected by regulations absorb almost all technical accomplishment and lease it back out to everybody else, and the best version of which democratizes technical construction so widely that individuals can naively spin up effective solutions for the most idiosyncratic needs.</p><p>We'll see how it goes.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50355650">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50355650" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">mifydev</span>
+        
+        <span>2026/11/04 03:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I miss the UNIX-y movement so much :(</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50356593">I miss the UNIX-y movement so much :(</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50356593">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50356593" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">antod</span>
+        
+        <span>2026/11/04 05:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah. The plucky rebels pretty much won against the evil empire, but the forces of darkness weren't completely beaten. They regrouped and then repurposed the rebels tools against them. The might of venture capital, big tech, SaaS, hyperscalers and AI was too much. The rebels weren't decisively beaten so much as eventually eroded out of any real significance.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50358487">Yeah. The plucky rebels pretty much won against the evil empire, but the forces of darkness weren't completely beaten. They regrouped and then repurposed the rebels tools against them. The might of venture capital, big tech, SaaS, hyperscalers and AI was too much. The rebels weren't decisively beaten so much as eventually eroded out of any real significance.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50358487">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50358487" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Vaushite</span>
+        
+        <span>2026/11/04 09:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It helps that the rebels donated copies of all their equipment to the dark forces.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50360327">It helps that the rebels donated copies of all their equipment to the dark forces.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50360327">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50360327" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">satvikpendem</span>
+        
+        <span>2026/11/04 09:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">MIT and other non copy left licenses were a mistake. In the 2000s and 2010s people were so concerned with usage and GitHub stars of their OSS that they just gave everything away to corporations and now don't have the right to complain anymore.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50360701">MIT and other non copy left licenses were a mistake. In the 2000s and 2010s people were so concerned with usage and GitHub stars of their OSS that they just gave everything away to corporations and now don't have the right to complain anymore.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50360701">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50360701" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">brians</span>
+        
+        <span>2026/11/04 15:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Can you point at projects that got abused that way?  I see plenty of things that got written by corps or by conglomerates, many of which landed with Apache. And I see lots of copyleft software that pulls whole systems with it.<p>What’s something that was released as MIT but, had it been GPL2, would have seeded a community?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50362290">Can you point at projects that got abused that way?  I see plenty of things that got written by corps or by conglomerates, many of which landed with Apache. And I see lots of copyleft software that pulls whole systems with it.<p>What’s something that was released as MIT but, had it been GPL2, would have seeded a community?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50362290">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50362290" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hkt</span>
+        
+        <span>2026/11/04 17:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In fairness, it is easier to point out has-beens than never-weres.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50363171">In fairness, it is easier to point out has-beens than never-weres.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50363171">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50363171" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">eagleal</span>
+        
+        <span>2026/11/04 16:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Eh, I don't think Openai and Anthropic trained with only MIT licensed copy.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50362650">Eh, I don't think Openai and Anthropic trained with only MIT licensed copy.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50362650">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50362650" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ethbr1</span>
+        
+        <span>2026/11/04 18:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Fair, there is the Uber model of 'When a founder does it, it's not illegal.'</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50363680">Fair, there is the Uber model of 'When a founder does it, it's not illegal.'</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50363680">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50363680" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oblio</span>
+        
+        <span>2026/11/04 13:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What do you mean? GPL licenses aren't truly free! They limit the right of corporations to abuse users! That can't be right! Better to use another license on the off chance you'll win the VC lottery.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50361817">What do you mean? GPL licenses aren't truly free! They limit the right of corporations to abuse users! That can't be right! Better to use another license on the off chance you'll win the VC lottery.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50361817">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50361817" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">LoganDark</span>
+        
+        <span>2026/11/04 16:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I generally agree with fighting corporate abuse, though IMO, GPLv3's anti-tivoization clause is kind of misguided. It may stop locked-down hardware makers from using your software, but it doesn't stop the hardware from being locked-down in the first place.<p>We have evidence that any hardware maker that would open up their hardware  will do it already (see: reMarkable, Ubiquiti offering SSH root access). If you try to fight that battle by holding software from them, you only lose them as a contributor as they make their own, which is worse for everyone.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50362803">I generally agree with fighting corporate abuse, though IMO, GPLv3's anti-tivoization clause is kind of misguided. It may stop locked-down hardware makers from using your software, but it doesn't stop the hardware from being locked-down in the first place.<p>We have evidence that any hardware maker that would open up their hardware  will do it already (see: reMarkable, Ubiquiti offering SSH root access). If you try to fight that battle by holding software from them, you only lose them as a contributor as they make their own, which is worse for everyone.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50362803">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50362803" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ctmlr</span>
+        
+        <span>2026/11/04 17:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Miss? Linux won the war and there is more open source software than ever before, now with language models here I think the best has yet to come.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50363213">Miss? Linux won the war and there is more open source software than ever before, now with language models here I think the best has yet to come.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50363213">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50363213" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ThrowawayR2</span>
+        
+        <span>2026/11/04 06:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Like, what?  Solaris/SunOS, DEC Ultrix/Tru64, AIX, HP-UX, Xenix, etc., all with big bad monopolist AT&amp;T's UNIX as their grandpappy.  UNIX was corporate to the hilt.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50359128">Like, what?  Solaris/SunOS, DEC Ultrix/Tru64, AIX, HP-UX, Xenix, etc., all with big bad monopolist AT&amp;T's UNIX as their grandpappy.  UNIX was corporate to the hilt.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50359128">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50359128" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jasomill</span>
+        
+        <span>2026/11/04 07:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Corporate, sure, but painting DEC, (old) HP, and Sun with the same brush as AT&amp;T, IBM, and Microsoft just because they sold proprietary, but generally well-documented and reliable hardware and software at whatever prices the market would bear seems unfair.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50359787">Corporate, sure, but painting DEC, (old) HP, and Sun with the same brush as AT&amp;T, IBM, and Microsoft just because they sold proprietary, but generally well-documented and reliable hardware and software at whatever prices the market would bear seems unfair.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50359787">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50359787" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">zaik</span>
+        
+        <span>2026/11/04 03:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's not dead??</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50356736">It's not dead??</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50356736">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50356736" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">conductr</span>
+        
+        <span>2026/11/04 03:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It’s as dead as rock and roll</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50356909">It’s as dead as rock and roll</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50356909">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50356909" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">rnd0</span>
+        
+        <span>2026/11/04 11:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">but the heart of GNU is still beating!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50361292">but the heart of GNU is still beating!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50361292">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50361292" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kyleee</span>
+        
+        <span>2026/11/04 10:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Rock vive no muere</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50360869">Rock vive no muere</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50360869">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50360869" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bigyabai</span>
+        
+        <span>2026/11/04 03:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">UNIX is, UNIX-y stuff isn't.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50357148">UNIX is, UNIX-y stuff isn't.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50357148">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50357148" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
