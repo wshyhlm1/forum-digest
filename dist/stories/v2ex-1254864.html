@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>微信输入法敏感词提取器 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-06/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>微信输入法敏感词提取器</h1>
+      <p class="original-title">微信输入法敏感词提取器</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 Lightbright</span>
+        <span>热度 171</span>
+        <span>回复 171</span>
+        <span>2026/11/06 08:26</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1254864" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1254864.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>众所不周知，微信输入法存在一个内置的敏感词库</li><li>具体表现为：命中该词库的输入，无法组词、联想、形成记忆、永远不会出现在候选中（例如：鸡巴）</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>众所不周知，微信输入法存在一个内置的敏感词库</p>
+<p>具体表现为：命中该词库的输入，无法组词、联想、形成记忆、永远不会出现在候选中（例如：鸡巴）</p>
+<p>该词库并非实时联网获取，而是直接集成在输入法的安装包内</p>
+<p>出于兴趣，在 AI 的辅助下，我编写了本微信输入法敏感词提取器</p>
+<p>目前该词库的词条数量在 1 万出头，提取效果预览：</p>
+<p>（由于内容过于劲爆，这里不放结果了）</p>
+<p>本工具从微信输入法安装目录的.\BuildIn\cell_dict.ssrc.zh 文件提取，在 Windows 最新版测试通过</p>
+<p>具体用法：</p>
+<pre><code>python export_sensitive_single.py -f &lt;cell_dict.ssrc.zh&gt; -o &lt;out.txt&gt;
+</code></pre>
+<p>此外还有一些有趣的发现，微信输入法还另内置一个不那么敏感的“敏感词”库（ kind=440 ）</p>
+<p>该额外的词库虽然可以组词，但是在输入法实现中被单独归类，</p>
+<p>至于是否有特殊处理（比如记录），本人没有进一步分析</p>
+<p>工具下载地址： <a href="https://pastebin.com/emEXbrCh" target="_blank" rel="noopener noreferrer">https://pastebin.com/emEXbrCh</a> （提取码：x7E56zQ4uZ ）</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>众所不周知，微信输入法存在一个内置的敏感词库</p>
+<p>具体表现为：命中该词库的输入，无法组词、联想、形成记忆、永远不会出现在候选中（例如：鸡巴）</p>
+<p>该词库并非实时联网获取，而是直接集成在输入法的安装包内</p>
+<p>出于兴趣，在 AI 的辅助下，我编写了本微信输入法敏感词提取器</p>
+<p>目前该词库的词条数量在 1 万出头，提取效果预览：</p>
+<p>（由于内容过于劲爆，这里不放结果了）</p>
+<p>本工具从微信输入法安装目录的.\BuildIn\cell_dict.ssrc.zh 文件提取，在 Windows 最新版测试通过</p>
+<p>具体用法：</p>
+<pre><code>python export_sensitive_single.py -f &lt;cell_dict.ssrc.zh&gt; -o &lt;out.txt&gt;
+</code></pre>
+<p>此外还有一些有趣的发现，微信输入法还另内置一个不那么敏感的“敏感词”库（ kind=440 ）</p>
+<p>该额外的词库虽然可以组词，但是在输入法实现中被单独归类，</p>
+<p>至于是否有特殊处理（比如记录），本人没有进一步分析</p>
+<p>工具下载地址： <a href="https://pastebin.com/emEXbrCh" target="_blank" rel="noopener noreferrer">https://pastebin.com/emEXbrCh</a> （提取码：x7E56zQ4uZ ）</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">DawnMoon</span>
+        <span>#1</span>
+        <span>2026/11/06 08:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262141">我没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262141">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262141" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mythjava</span>
+        <span>#2</span>
+        <span>2026/11/06 08:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262142">我也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262142">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262142" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">titi14gj</span>
+        <span>#3</span>
+        <span>2026/11/06 08:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262143">我也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262143">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262143" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kkcling</span>
+        <span>#4</span>
+        <span>2026/11/06 08:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262147">我也也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262147">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262147" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cloakshadow</span>
+        <span>#5</span>
+        <span>2026/11/06 08:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">为啥有人要用💩，rime 不好吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262154">为啥有人要用💩，rime 不好吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262154">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262154" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Verx0</span>
+        <span>#6</span>
+        <span>2026/11/06 08:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262158">我也没有安装微信输入法。坐等 V 友共享词库。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262158">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262158" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ajaxfunction</span>
+        <span>#7</span>
+        <span>2026/11/06 08:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">你这个脚本测试关键词有风险啊，<br />可以用脏话，但不能用 xx 开坦克，x 大大 这种自投罗网的词语</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262172">你这个脚本测试关键词有风险啊，<br />可以用脏话，但不能用 xx 开坦克，x 大大 这种自投罗网的词语</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262172">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262172" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">radishzz</span>
+        <span>#8</span>
+        <span>2026/11/06 08:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也也没有安装微信输入法。坐等 V 友共享词库。<br />PS：挂个公开仓库分享不就行了吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262183">我也也没有安装微信输入法。坐等 V 友共享词库。<br />PS：挂个公开仓库分享不就行了吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262183">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262183" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">someonesnone</span>
+        <span>#9</span>
+        <span>2026/11/06 08:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也也没有安装 guochan 输入法。坐等 V 友共享词库。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262211">我也也没有安装 guochan 输入法。坐等 V 友共享词库。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262211">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262211" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kingofzihua</span>
+        <span>#10</span>
+        <span>2026/11/06 09:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我也没有安装微信输入法。坐等 V 友共享词库</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262240">我也没有安装微信输入法。坐等 V 友共享词库</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262240">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262240" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Fish1024</span>
+        <span>#11</span>
+        <span>2026/11/06 09:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看来党的几把很敏感</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262287">看来党的几把很敏感</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262287">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262287" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shuiduoduo</span>
+        <span>#12</span>
+        <span>2026/11/06 09:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">好奇什么人用这种输入法，我自己设备输入什么自己还决定不了？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262300">好奇什么人用这种输入法，我自己设备输入什么自己还决定不了？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262300">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262300" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">moefishtang</span>
+        <span>#13</span>
+        <span>2026/11/06 09:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我急需一本脏话字典 x</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262341">我急需一本脏话字典 x</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262341">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262341" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">psklf</span>
+        <span>#14</span>
+        <span>2026/11/06 09:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">吹微信输入法的那些人怎么还没来？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262351">吹微信输入法的那些人怎么还没来？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262351">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262351" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cnlongxi</span>
+        <span>#15</span>
+        <span>2026/11/06 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">看完了，确实无法分享</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262356">看完了，确实无法分享</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262356">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262356" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">seedhk</span>
+        <span>#16</span>
+        <span>2026/11/06 09:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">提示提取码不对</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262358">提示提取码不对</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262358">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262358" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JDSN</span>
+        <span>#17</span>
+        <span>2026/11/06 09:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我可以不说但不能没有</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262361">我可以不说但不能没有</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262361">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262361" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v21984</span>
+        <span>#18</span>
+        <span>2026/11/06 09:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在这里提这个输入法就是原罪</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262368">在这里提这个输入法就是原罪</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262368">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262368" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fenfire</span>
+        <span>#19</span>
+        <span>2026/11/06 09:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">刚从小狼毫切到清风，也蛮好的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262385">刚从小狼毫切到清风，也蛮好的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262385">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262385" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">klxyy</span>
+        <span>#20</span>
+        <span>2026/11/06 09:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这是微信输入法推广哇？想看还得下载一个...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18262394">这是微信输入法推广哇？想看还得下载一个...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18262394">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1254864#reply18262394" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
