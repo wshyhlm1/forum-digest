@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blender&#39;s UI and Runtime: Much Faster Than GPUI | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-08/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Blender&#39;s UI and Runtime: Much Faster Than GPUI</h1>
+      <p class="original-title">Blender&#39;s UI and Runtime: Much Faster Than GPUI</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 ppmpreetham</span>
+        <span>热度 728</span>
+        <span>回复 290</span>
+        <span>2026/11/06 15:40</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50389333" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://github.com/ppmpreetham/BUI" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50389333.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Blender&#39;s user interface, as a library you can use from Python, Rust, JavaScript (React, Svelte), C, C++ and Dear ImGui. People spent decades building and optimizing Blender&#39;s GUI. It&#39;s battery and memory efficient, and super duper fast. We decoupled it, to give everyone a chance to build their own products with it. It supports multiple languages and frameworks, so you won&#39;t miss a beat!</li><li>Website and full documentation: bui.preetham.top · Chat: Discord</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">munksbeer</span>
+        
+        <span>2026/11/06 21:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Can I please congratulate you on your README. It rapidly tells me what I'm looking at, and why I might be interested in the project. There are so many READMEs around that ... just don't do that. They ramble about technical implementation details, how their language choice is amazing, and a third of the way through the README, I'm still left wondering, "but what does this project do?".</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50391818">Can I please congratulate you on your README. It rapidly tells me what I'm looking at, and why I might be interested in the project. There are so many READMEs around that ... just don't do that. They ramble about technical implementation details, how their language choice is amazing, and a third of the way through the README, I'm still left wondering, "but what does this project do?".</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50391818">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50391818" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">laserbeam</span>
+        
+        <span>2026/11/06 23:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I find it to be confusing LLM spam. It spends a lot of time talking about Qt APIs, and dearimgui... most of which could go in a separate page.<p>But the worst part is all code snippets are followed by an image which is not related to the code snippet. It's not what you get by typing the code... it's something completely different.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50393174">I find it to be confusing LLM spam. It spends a lot of time talking about Qt APIs, and dearimgui... most of which could go in a separate page.<p>But the worst part is all code snippets are followed by an image which is not related to the code snippet. It's not what you get by typing the code... it's something completely different.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50393174">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50393174" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">actinium226</span>
+        
+        <span>2026/11/07 04:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Did you skip Part I?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50398009">Did you skip Part I?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50398009">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50398009" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">varispeed</span>
+        
+        <span>2026/11/06 22:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It still sounds like LLM which is nauseating to read. For instance: "Blender's interface is famous for how it feels. You press a number field and drag: the cursor vanishes, the value glides under your hand, and you never hit the edge of the screen. " that's ChatGPT writing.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50392668">It still sounds like LLM which is nauseating to read. For instance: "Blender's interface is famous for how it feels. You press a number field and drag: the cursor vanishes, the value glides under your hand, and you never hit the edge of the screen. " that's ChatGPT writing.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50392668">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50392668" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">whatthejesus</span>
+        
+        <span>2026/11/06 23:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It is ALL AI generated I can say that because I recently worked on a landing page and wrestled with Claude Opus the WHOLE way through. Claude has no idea how to write copy. Neither do any of the others, you have to edit with a fine-toothed comb.<p>To the project maintainer: don’t ask people to read a terrible AI generated sales pitch novella that quantifies your AI generated port against every UI framework out there.</p><p>Here’s the obvious giveaways:</p><p>“ 4. The many ways in”
+“ Python, four ways”</p><p>“ tkinter: all 7,846 public names of tkinter and ttk. Nine real programs behave identically on the standard library and on BUI.”</p><p>“ Rust: the web platform, natively”</p><p>Ugh it’s excruciating. You’re better off with a readme that shows a few screenshots and installation instructions.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50393276">It is ALL AI generated I can say that because I recently worked on a landing page and wrestled with Claude Opus the WHOLE way through. Claude has no idea how to write copy. Neither do any of the others, you have to edit with a fine-toothed comb.<p>To the project maintainer: don’t ask people to read a terrible AI generated sales pitch novella that quantifies your AI generated port against every UI framework out there.</p><p>Here’s the obvious giveaways:</p><p>“ 4. The many ways in”
+“ Python, four ways”</p><p>“ tkinter: all 7,846 public names of tkinter and ttk. Nine real programs behave identically on the standard library and on BUI.”</p><p>“ Rust: the web platform, natively”</p><p>Ugh it’s excruciating. You’re better off with a readme that shows a few screenshots and installation instructions.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50393276">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50393276" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/11/07 00:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It also says it's all LLM explicitly near the bottom in the FAQ</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50394886">It also says it's all LLM explicitly near the bottom in the FAQ</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50394886">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50394886" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">stuaxo</span>
+        
+        <span>2026/11/07 04:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I could handle the API being LLM generated (but maybe gently prize it out over time), it's the copy that gives me LLM nausea[1]<p>1 - thanks to the poster that mentioned nausea, I've been looking for the word to describe LLM based writing for a while and it's perfect.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50397582">I could handle the API being LLM generated (but maybe gently prize it out over time), it's the copy that gives me LLM nausea[1]<p>1 - thanks to the poster that mentioned nausea, I've been looking for the word to describe LLM based writing for a while and it's perfect.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50397582">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50397582" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/11/07 06:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Large Language Malaise</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50399119">Large Language Malaise</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50399119">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50399119" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">varispeed</span>
+        
+        <span>2026/11/07 03:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My mind checks out when I see LLM prose. Didn't get that far.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50397227">My mind checks out when I see LLM prose. Didn't get that far.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50397227">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50397227" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Groxx</span>
+        
+        <span>2026/11/07 06:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">With that much spew, yeah - I didn't read it all. Got about a paragraph in (signs were pretty clear already) and then skimmed looking for confirmation.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50399129">With that much spew, yeah - I didn't read it all. Got about a paragraph in (signs were pretty clear already) and then skimmed looking for confirmation.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50399129">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50399129" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">varispeed</span>
+        
+        <span>2026/11/07 03:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is why I stopped using Claude. ChatGPT is better in that regards, but you still have to write a ton of rules for it to read half-decent and then edit it manually anyway.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50397214">This is why I stopped using Claude. ChatGPT is better in that regards, but you still have to write a ton of rules for it to read half-decent and then edit it manually anyway.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50397214">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50397214" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">whatthejesus</span>
+        
+        <span>2026/11/07 05:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">None of them is better than the others on the frontier. But to be honest, the models are designed for acing STEM exams not doing copywriting.<p>This is further evidence of the need for small models doing specific things well.</p><p>Where I would say models fit in the process is establishing the general layout of documentation and iteratively refining things out. Interestingly, it’s the same for image generation too. But 9 out of 10 it creates incomplete work that needs refinement.</p><p>Go wide, then hone in, refine. There’s no such thing as getting AI to single shot creative tasks. Which is funny because everyone thought writers are on the chopping block initially, but that is unequivocally NOT the case.</p><p>Even technical tasks, agents doing it their own way yields garbage in some right. It’s just a question of how long it runs before it goes down a path of no return.</p><p>Human in the loop is the only way. And, to be honest, what’s the f*king rush anyway? We all need to slow down. Good ideas with unravel in time. :)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50398589">None of them is better than the others on the frontier. But to be honest, the models are designed for acing STEM exams not doing copywriting.<p>This is further evidence of the need for small models doing specific things well.</p><p>Where I would say models fit in the process is establishing the general layout of documentation and iteratively refining things out. Interestingly, it’s the same for image generation too. But 9 out of 10 it creates incomplete work that needs refinement.</p><p>Go wide, then hone in, refine. There’s no such thing as getting AI to single shot creative tasks. Which is funny because everyone thought writers are on the chopping block initially, but that is unequivocally NOT the case.</p><p>Even technical tasks, agents doing it their own way yields garbage in some right. It’s just a question of how long it runs before it goes down a path of no return.</p><p>Human in the loop is the only way. And, to be honest, what’s the f*king rush anyway? We all need to slow down. Good ideas with unravel in time. :)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50398589">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50398589" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">busssard</span>
+        
+        <span>2026/11/07 02:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">i am way too lazy to write good documentation. 
+BUt i also dont want to have anyone read claudette-prose so i noticed that<p>"down to earth" and "hobby-project" does a good job. 
+its still not perfect but better than the vanilla output.
+eg.
+<a href="https://github.com/busssard/OpenRing" target="_blank" rel="noopener noreferrer">https://github.com/busssard/OpenRing</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50396110">i am way too lazy to write good documentation. 
+BUt i also dont want to have anyone read claudette-prose so i noticed that<p>"down to earth" and "hobby-project" does a good job. 
+its still not perfect but better than the vanilla output.
+eg.
+<a href="https://github.com/busssard/OpenRing" target="_blank" rel="noopener noreferrer">https://github.com/busssard/OpenRing</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50396110">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50396110" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/11/07 04:01</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50397598"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50397598">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50397598" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">0x69420</span>
+        
+        <span>2026/11/07 03:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">it's funny how these claudese constructions also come out of lil baby local qwens and stuff too. i guess they're just directly distilling a claude endpoint, or whatever.<p>like, if people are gonna be turning the crank to generate prose-like text from statistical models and calling it a day, aren't "subagents" a hip new thing nowadays? there do exist models that aren't overcooked to impressively bad long-tail in the pursuit of maximum coding benchmark scores. such other models generate prose-like text that is significantly less miserable to wade through.</p><p>if you're a vibecoder who's terminally committed to the bit, for god's sake, at <i>least</i> tell a local gemma to draft your readme or something. an occasional <i>outright falsehood</i> is less damaging to usability than the experience of reading feeling like trudging through a pool filled with treacle. (mind, both are a violation of trust, and a failure to deliver proof of work, and please stop, but at least if the falsehoods are comprehensible and identifiable there's light at the end of the tunnel)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50396986">it's funny how these claudese constructions also come out of lil baby local qwens and stuff too. i guess they're just directly distilling a claude endpoint, or whatever.<p>like, if people are gonna be turning the crank to generate prose-like text from statistical models and calling it a day, aren't "subagents" a hip new thing nowadays? there do exist models that aren't overcooked to impressively bad long-tail in the pursuit of maximum coding benchmark scores. such other models generate prose-like text that is significantly less miserable to wade through.</p><p>if you're a vibecoder who's terminally committed to the bit, for god's sake, at <i>least</i> tell a local gemma to draft your readme or something. an occasional <i>outright falsehood</i> is less damaging to usability than the experience of reading feeling like trudging through a pool filled with treacle. (mind, both are a violation of trust, and a failure to deliver proof of work, and please stop, but at least if the falsehoods are comprehensible and identifiable there's light at the end of the tunnel)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50396986">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50396986" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">stuaxo</span>
+        
+        <span>2026/11/07 04:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks for the word nausea - I've been trying to put my finger on that - I kept thinking of sickness but that's too much, LLM nausea is definitely a thing.<p>Edit:  I found reading those examples in the most sanctimonious voice I could imagine seemed very plausible - maybe LLMs sound like they are up their own arse.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50397643">Thanks for the word nausea - I've been trying to put my finger on that - I kept thinking of sickness but that's too much, LLM nausea is definitely a thing.<p>Edit:  I found reading those examples in the most sanctimonious voice I could imagine seemed very plausible - maybe LLMs sound like they are up their own arse.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50397643">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50397643" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">meowface</span>
+        
+        <span>2026/11/06 21:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Many of my old &gt;1K star GitHub projects were not that great, but I always made sure to create the cleanest, simplest possible READMEs, inspired by things like the Python requests library's docs (<a href="https://github.com/psf/requests" target="_blank" rel="noopener noreferrer">https://github.com/psf/requests</a>). I think it helped a lot in their success.<p>I remember someone once created a GitHub issue requesting I turn the README into some verbose technical thing with full API docs and a bunch of people replied saying they greatly preferred the "pitch + high-level examples" style.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50391920">Many of my old &gt;1K star GitHub projects were not that great, but I always made sure to create the cleanest, simplest possible READMEs, inspired by things like the Python requests library's docs (<a href="https://github.com/psf/requests" target="_blank" rel="noopener noreferrer">https://github.com/psf/requests</a>). I think it helped a lot in their success.<p>I remember someone once created a GitHub issue requesting I turn the README into some verbose technical thing with full API docs and a bunch of people replied saying they greatly preferred the "pitch + high-level examples" style.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50391920">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50391920" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">stuaxo</span>
+        
+        <span>2026/11/07 03:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Would be good if you could write the README without an LLM</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50397539">Would be good if you could write the README without an LLM</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50397539">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50397539" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nmstoker</span>
+        
+        <span>2026/11/06 21:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes, this is so important and yet so often not considered. This README was pretty good, thorough and not ambiguous. The number of projects that assume you know what their obscure idea relates to is huge, mainly as the authors can't put themselves in the shoes of their audience.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50391841">Yes, this is so important and yet so often not considered. This README was pretty good, thorough and not ambiguous. The number of projects that assume you know what their obscure idea relates to is huge, mainly as the authors can't put themselves in the shoes of their audience.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50391841">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50391841" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">rubatuga</span>
+        
+        <span>2026/11/06 21:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes, this is definitely one of my pet peeves. Just give me input --&gt; output, then everything in between.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50391823">Yes, this is definitely one of my pet peeves. Just give me input --&gt; output, then everything in between.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50391823">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50391823" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了个随打字随翻译的小工具 GlowTrans,免费可用,支持 macOS / Windows | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-08/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>做了个随打字随翻译的小工具 GlowTrans,免费可用,支持 macOS / Windows</h1>
+      <p class="original-title">做了个随打字随翻译的小工具 GlowTrans,免费可用,支持 macOS / Windows</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 kuse2001</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/11/08 18:43</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1255368" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1255368.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>GlowTrans 追光快译:用你习惯的输入法打母语,停一下,译文就出现在光标旁边。免费可用,支持 macOS / Windows 。</li><li>官网: https://glowtrans.beautare.com/</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p><strong>GlowTrans 追光快译:用你习惯的输入法打母语,停一下,译文就出现在光标旁边。免费可用,支持 macOS / Windows 。</strong></p>
+<p>官网: <a href="https://glowtrans.beautare.com/" target="_blank" rel="noopener noreferrer">https://glowtrans.beautare.com/</a></p>
+<p></p>
+<p>我经常回英文邮件、在海外客户群聊天，或者逛海外论坛，总是写两句就切到翻译网站、复制、粘贴、再切回来，思路断在半路。所以做了这个: 翻译直接发生在输入框旁边。</p>
+<p><strong>怎么用</strong></p>
+<ul>
+<li>照常用你的输入法或语音输入母语</li>
+<li>文字上屏后稍停一下,译文出现在光标附近(浮窗不抢输入焦点)</li>
+<li>满意就点一下替换，想改就先复制走，发不发送仍由你决定</li>
+<li>快捷键只有两个: <code>⌘/Ctrl+Shift+Y</code> 手动翻译当前输入框，<code>⌘/Ctrl+Alt+Shift+P</code> 开关自动翻译</li>
+</ul>
+<p>不用换输入法，原来的词库和手感都在。</p>
+<p><strong>译文从哪来(你自己选)</strong></p>
+<ul>
+<li><strong>MyMemory 公共服务</strong>:默认，开箱即用，不用注册、不用填 Key ，对方有每日额度限制。</li>
+<li><strong>自己的 OpenAI 兼容接口</strong>: 费用直接和你的服务商结算</li>
+<li><strong>macOS 系统翻译</strong>: 设备端翻译,完全在本机完成，完全免费</li>
+<li><strong>官方翻译</strong>: LLM 翻译，每天有重置的额度(约 800 个短句)</li>
+</ul>
+<p>官方翻译比公共服务强在"能把话说到合适的语气":</p>
+<ul>
+<li>预设风格:自然、商务、轻松、忠实，也能自定义; 浮窗里可临时换风格重译</li>
+<li>语言偏好:美式/英式英语，日语、韩语可选礼貌或普通语气</li>
+<li>带上文:把待译内容前面几句作为参考，译文更贴切</li>
+<li>术语表:把产品名、专业词固定成你想要的译法</li>
+<li>注意: 原文和启用的上下文会经官方服务器发给上游模型</li>
+<li>付费是时长卡， 买一段用一段，不自动续费，不会忘取消被扣钱</li>
+</ul>
+<p><strong>隐私</strong></p>
+<ul>
+<li>密码框不读取</li>
+<li>关掉自动翻译后，不再自动读取其他应用</li>
+<li>翻译历史默认不写磁盘，最近译文只缓存在内存,退出即清空</li>
+</ul>
+<p><strong>适合的场景</strong>
+外贸沟通、回英文邮件、海外客户群、逛外文论坛、写 GitHub issue / PR 描述、填英文表单或和房东客服沟通、游戏里和国际队友沟通。也适合高频沉浸学习外语表达等等场景。</p>
+<p><strong>当前限制</strong>
+目前支持 macOS 和 Windows 上部分应用的输入框，不同应用和控件的效果有差别，还在持续打磨。遇到不灵的地方请直接告诉我。</p>
+<p><strong>福利</strong>
+回复你注册用的邮箱（自己 base64 ），送一个月会员，限前 20 位。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p><strong>GlowTrans 追光快译:用你习惯的输入法打母语,停一下,译文就出现在光标旁边。免费可用,支持 macOS / Windows 。</strong></p>
+<p>官网: <a href="https://glowtrans.beautare.com/" target="_blank" rel="noopener noreferrer">https://glowtrans.beautare.com/</a></p>
+<p></p>
+<p>我经常回英文邮件、在海外客户群聊天，或者逛海外论坛，总是写两句就切到翻译网站、复制、粘贴、再切回来，思路断在半路。所以做了这个: 翻译直接发生在输入框旁边。</p>
+<p><strong>怎么用</strong></p>
+<ul>
+<li>照常用你的输入法或语音输入母语</li>
+<li>文字上屏后稍停一下,译文出现在光标附近(浮窗不抢输入焦点)</li>
+<li>满意就点一下替换，想改就先复制走，发不发送仍由你决定</li>
+<li>快捷键只有两个: <code>⌘/Ctrl+Shift+Y</code> 手动翻译当前输入框，<code>⌘/Ctrl+Alt+Shift+P</code> 开关自动翻译</li>
+</ul>
+<p>不用换输入法，原来的词库和手感都在。</p>
+<p><strong>译文从哪来(你自己选)</strong></p>
+<ul>
+<li><strong>MyMemory 公共服务</strong>:默认，开箱即用，不用注册、不用填 Key ，对方有每日额度限制。</li>
+<li><strong>自己的 OpenAI 兼容接口</strong>: 费用直接和你的服务商结算</li>
+<li><strong>macOS 系统翻译</strong>: 设备端翻译,完全在本机完成，完全免费</li>
+<li><strong>官方翻译</strong>: LLM 翻译，每天有重置的额度(约 800 个短句)</li>
+</ul>
+<p>官方翻译比公共服务强在"能把话说到合适的语气":</p>
+<ul>
+<li>预设风格:自然、商务、轻松、忠实，也能自定义; 浮窗里可临时换风格重译</li>
+<li>语言偏好:美式/英式英语，日语、韩语可选礼貌或普通语气</li>
+<li>带上文:把待译内容前面几句作为参考，译文更贴切</li>
+<li>术语表:把产品名、专业词固定成你想要的译法</li>
+<li>注意: 原文和启用的上下文会经官方服务器发给上游模型</li>
+<li>付费是时长卡， 买一段用一段，不自动续费，不会忘取消被扣钱</li>
+</ul>
+<p><strong>隐私</strong></p>
+<ul>
+<li>密码框不读取</li>
+<li>关掉自动翻译后，不再自动读取其他应用</li>
+<li>翻译历史默认不写磁盘，最近译文只缓存在内存,退出即清空</li>
+</ul>
+<p><strong>适合的场景</strong>
+外贸沟通、回英文邮件、海外客户群、逛外文论坛、写 GitHub issue / PR 描述、填英文表单或和房东客服沟通、游戏里和国际队友沟通。也适合高频沉浸学习外语表达等等场景。</p>
+<p><strong>当前限制</strong>
+目前支持 macOS 和 Windows 上部分应用的输入框，不同应用和控件的效果有差别，还在持续打磨。遇到不灵的地方请直接告诉我。</p>
+<p><strong>福利</strong>
+回复你注册用的邮箱（自己 base64 ），送一个月会员，限前 20 位。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kuse2001</span>
+        <span>#1</span>
+        <span>2026/11/08 18:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">![输入中文后，译文出现在光标旁]( <a href="https://i.imgur.com/e9xm73i.gif" target="_blank" rel="noopener noreferrer"></a>)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268362">![输入中文后，译文出现在光标旁]( <a href="https://i.imgur.com/e9xm73i.gif" target="_blank" rel="noopener noreferrer"></a>)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268362">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255368#reply18268362" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">missx</span>
+        <span>#2</span>
+        <span>2026/11/08 22:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">太棒了 其实我有跟豆包输入法团队建议过加入这个功能。。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268659">太棒了 其实我有跟豆包输入法团队建议过加入这个功能。。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268659">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255368#reply18268659" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kuse2001</span>
+        <span>#3</span>
+        <span>2026/11/08 22:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/missx" target="_blank" rel="noopener noreferrer">missx</a> #2 他要是做了，我大概就可以撤掉了，我相信字节 ：）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268663">@<a href="/member/missx" target="_blank" rel="noopener noreferrer">missx</a> #2 他要是做了，我大概就可以撤掉了，我相信字节 ：）</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268663">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255368#reply18268663" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cryptitalk</span>
+        <span>#4</span>
+        <span>2026/11/09 00:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个不错 支持多少种语言？ 我觉得你可以做成一个 chrome 插件我会用，因为我的 concern 还是安全问题</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268800">这个不错 支持多少种语言？ 我觉得你可以做成一个 chrome 插件我会用，因为我的 concern 还是安全问题</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268800">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255368#reply18268800" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

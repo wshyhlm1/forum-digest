@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>写了个开源工具：手机照片视频无损搬到电脑，局域网直传， PC 不装任何客户端 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-08/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>写了个开源工具：手机照片视频无损搬到电脑，局域网直传， PC 不装任何客户端</h1>
+      <p class="original-title">写了个开源工具：手机照片视频无损搬到电脑，局域网直传， PC 不装任何客户端</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 tushushare</span>
+        <span>热度 38</span>
+        <span>回复 38</span>
+        <span>2026/11/08 11:53</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1255317" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1255317.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>写了个工具解决自己的痛点，开源出来给大家用，求轻喷、求反馈。</li><li>GitHub： https://github.com/malatomato1989/photosmove</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>写了个工具解决自己的痛点，开源出来给大家用，求轻喷、求反馈。</p>
+<p><strong>GitHub</strong>： <a href="https://github.com/malatomato1989/photosmove" target="_blank" rel="noopener noreferrer">https://github.com/malatomato1989/photosmove</a></p>
+<p><strong>官网</strong>：<a href="https://www.photosmove.com" target="_blank" rel="noopener noreferrer">https://www.photosmove.com</a></p>
+<p><strong>Google Play</strong>：搜索 PhotosMove ，或 <a href="https://play.google.com/store/apps/details?id=com.photosmove.app" target="_blank" rel="noopener noreferrer">https://play.google.com/store/apps/details?id=com.photosmove.app</a></p>
+起因
+<p>老婆手机里攒了 1600+ 张照片、20 多个 G 的视频，想搬进电脑做本地备份，把主流方案试了一圈，都有点膈应：</p>
+<ul>
+<li><strong>微信/QQ 传文件助手</strong>：图片走压缩管道，视频超过 1GB 直接传不了，传完时间戳和 EXIF 还可能被动过</li>
+<li><strong>网盘</strong>：上传即转码的风险 + 不开会员限速，几十 G 要传到天荒地老，而且照片这东西我不想让它过第三方服务器</li>
+<li><strong>数据线 MTP</strong>：能保证原样，但大批量传的时候慢、偶发中断，中途断了还得从头排查哪些传了哪些没传</li>
+<li><strong>LocalSend / Syncthing</strong>：好用，但电脑端要装客户端，用起来有点不顺手</li>
+</ul>
+<p>我的需求其实很简单朴素：<strong>手机里的照片视频原封不动落到电脑上，电脑端一个浏览器就能搞定</strong>。找不到完全对口的，就自己写了一个。</p>
+用法
+<ol>
+<li>手机装 PhotosMove （ Google Play ），点一下启动服务</li>
+<li>电脑浏览器打开手机上显示的地址，输 6 位 PIN 码</li>
+<li>勾选相册 → 浏览器开始下载一个流式 ZIP ，完事</li>
+</ol>
+<p>PC 端零安装：不需要驱动、不需要客户端、不需要账号，有个浏览器就行。</p>
+几个实现上的点，和 V 友们聊聊
+<ul>
+<li><strong>手机端起 HTTP 服务</strong>：Go 写的服务跑在 Android 前台服务里，同一局域网下浏览器直连。不连云、不采集任何遥测、传输数据不出局域网。</li>
+<li><strong>流式 ZIP + ZIP64</strong>：20G+ 的照片集不打包进内存，边打包边下载，ZIP64 保证单个文件超 4GB 不炸。</li>
+<li><strong>字节级无损</strong>：JPG / HEIC / RAW / DNG / MP4 / Live Photo 原始字节直出，不重压缩不转码，EXIF 、GPS 、时间戳全保留。</li>
+<li><strong>完整性校验</strong>：下载完可以在浏览器本地跑 SHA-256 逐文件比对，校验逻辑也是纯前端，文件同样不上传。</li>
+<li><strong>保留目录结构</strong>：落盘后还是 DCIM/Pictures 的原始布局，方便接续你的归档习惯。</li>
+</ul>
+边界说明
+<ul>
+<li>仅 Android → 电脑方向，不做反向</li>
+<li>需要手机和电脑在同一局域网（这是特性不是缺陷：数据不出门）</li>
+</ul>
+<p><strong>GPL-3.0 开源</strong>，代码完全可审计，欢迎 code review 和提 issue 。如果你也受够了“传个照片还要过一遍别人的服务器”，欢迎试试，使用中任何问题直接在这里回复或提 issue 都行。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>写了个工具解决自己的痛点，开源出来给大家用，求轻喷、求反馈。</p>
+<p><strong>GitHub</strong>： <a href="https://github.com/malatomato1989/photosmove" target="_blank" rel="noopener noreferrer">https://github.com/malatomato1989/photosmove</a></p>
+<p><strong>官网</strong>：<a href="https://www.photosmove.com" target="_blank" rel="noopener noreferrer">https://www.photosmove.com</a></p>
+<p><strong>Google Play</strong>：搜索 PhotosMove ，或 <a href="https://play.google.com/store/apps/details?id=com.photosmove.app" target="_blank" rel="noopener noreferrer">https://play.google.com/store/apps/details?id=com.photosmove.app</a></p>
+起因
+<p>老婆手机里攒了 1600+ 张照片、20 多个 G 的视频，想搬进电脑做本地备份，把主流方案试了一圈，都有点膈应：</p>
+<ul>
+<li><strong>微信/QQ 传文件助手</strong>：图片走压缩管道，视频超过 1GB 直接传不了，传完时间戳和 EXIF 还可能被动过</li>
+<li><strong>网盘</strong>：上传即转码的风险 + 不开会员限速，几十 G 要传到天荒地老，而且照片这东西我不想让它过第三方服务器</li>
+<li><strong>数据线 MTP</strong>：能保证原样，但大批量传的时候慢、偶发中断，中途断了还得从头排查哪些传了哪些没传</li>
+<li><strong>LocalSend / Syncthing</strong>：好用，但电脑端要装客户端，用起来有点不顺手</li>
+</ul>
+<p>我的需求其实很简单朴素：<strong>手机里的照片视频原封不动落到电脑上，电脑端一个浏览器就能搞定</strong>。找不到完全对口的，就自己写了一个。</p>
+用法
+<ol>
+<li>手机装 PhotosMove （ Google Play ），点一下启动服务</li>
+<li>电脑浏览器打开手机上显示的地址，输 6 位 PIN 码</li>
+<li>勾选相册 → 浏览器开始下载一个流式 ZIP ，完事</li>
+</ol>
+<p>PC 端零安装：不需要驱动、不需要客户端、不需要账号，有个浏览器就行。</p>
+几个实现上的点，和 V 友们聊聊
+<ul>
+<li><strong>手机端起 HTTP 服务</strong>：Go 写的服务跑在 Android 前台服务里，同一局域网下浏览器直连。不连云、不采集任何遥测、传输数据不出局域网。</li>
+<li><strong>流式 ZIP + ZIP64</strong>：20G+ 的照片集不打包进内存，边打包边下载，ZIP64 保证单个文件超 4GB 不炸。</li>
+<li><strong>字节级无损</strong>：JPG / HEIC / RAW / DNG / MP4 / Live Photo 原始字节直出，不重压缩不转码，EXIF 、GPS 、时间戳全保留。</li>
+<li><strong>完整性校验</strong>：下载完可以在浏览器本地跑 SHA-256 逐文件比对，校验逻辑也是纯前端，文件同样不上传。</li>
+<li><strong>保留目录结构</strong>：落盘后还是 DCIM/Pictures 的原始布局，方便接续你的归档习惯。</li>
+</ul>
+边界说明
+<ul>
+<li>仅 Android → 电脑方向，不做反向</li>
+<li>需要手机和电脑在同一局域网（这是特性不是缺陷：数据不出门）</li>
+</ul>
+<p><strong>GPL-3.0 开源</strong>，代码完全可审计，欢迎 code review 和提 issue 。如果你也受够了“传个照片还要过一遍别人的服务器”，欢迎试试，使用中任何问题直接在这里回复或提 issue 都行。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v2wp</span>
+        <span>#1</span>
+        <span>2026/11/08 13:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这个是好东西，而且也实用，就是你这本来就是开源了免费的，默认语言怎么不能是中文呢。<a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267892">这个是好东西，而且也实用，就是你这本来就是开源了免费的，默认语言怎么不能是中文呢。<a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267892">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267892" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">A1188</span>
+        <span>#2</span>
+        <span>2026/11/08 13:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">虽然但是。。。QQ 发文件直接发我的电脑，是直接发源文件的啊，在局域网内还是直接走局域网（</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267894">虽然但是。。。QQ 发文件直接发我的电脑，是直接发源文件的啊，在局域网内还是直接走局域网（</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267894">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267894" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bennylam2017</span>
+        <span>#3</span>
+        <span>2026/11/08 13:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不做反向是否备份还原<br />到另一部手机会失真或排序乱了？ <br />遇到同樣問題,請問有<br />没有特别工具推荐<br />由电脑还原到手机.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267932">不做反向是否备份还原<br />到另一部手机会失真或排序乱了？ <br />遇到同樣問題,請問有<br />没有特别工具推荐<br />由电脑还原到手机.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267932">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267932" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">piku</span>
+        <span>#4</span>
+        <span>2026/11/08 13:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">有没有可能 localsend 有 http 模式可以不安装接收客户端</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267943">有没有可能 localsend 有 http 模式可以不安装接收客户端</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267943">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267943" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#5</span>
+        <span>2026/11/08 14:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/v2wp" target="_blank" rel="noopener noreferrer">v2wp</a> 默认是按用户的手机的语言来自动适应的，想着开源嘛，英语范围更广一些</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267991">@<a href="/member/v2wp" target="_blank" rel="noopener noreferrer">v2wp</a> 默认是按用户的手机的语言来自动适应的，想着开源嘛，英语范围更广一些</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267991">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267991" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#6</span>
+        <span>2026/11/08 14:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/A1188" target="_blank" rel="noopener noreferrer">A1188</a> 现在好久没用 QQ 了，还怎么想起来</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267994">@<a href="/member/A1188" target="_blank" rel="noopener noreferrer">A1188</a> 现在好久没用 QQ 了，还怎么想起来</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267994">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267994" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#7</span>
+        <span>2026/11/08 14:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/bennylam2017" target="_blank" rel="noopener noreferrer">bennylam2017</a> 没有做反向还原，因为我的初衷就是从手机传到电脑，后面看大家的需要再增加功能</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18267997">@<a href="/member/bennylam2017" target="_blank" rel="noopener noreferrer">bennylam2017</a> 没有做反向还原，因为我的初衷就是从手机传到电脑，后面看大家的需要再增加功能</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18267997">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18267997" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#8</span>
+        <span>2026/11/08 14:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/piku" target="_blank" rel="noopener noreferrer">piku</a> 好像他是文件一个一个传的，文件多的话 IO 占用高，有点慢，流式 zip 传输 IO 稳定且快</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268002">@<a href="/member/piku" target="_blank" rel="noopener noreferrer">piku</a> 好像他是文件一个一个传的，文件多的话 IO 占用高，有点慢，流式 zip 传输 IO 稳定且快</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268002">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268002" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">qingrain</span>
+        <span>#9</span>
+        <span>2026/11/08 15:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://www.xiaolifaa.com/" target="_blank" rel="noopener noreferrer">https://www.xiaolifaa.com/</a><br />这个我用了很久，是类似的，你可以看看。它也是把手机上的文件在电脑上用浏览器来管理，也是局域网。它的优点就是可以在浏览器里面去删除相册和图片、删除文件。也可以批量下载，它是直接把这个相册里面的打成一个压缩包来。<br />它还可以直接把电脑上的文件拖到浏览器的这一个网页下，就直接传到手机上了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268040"><a href="https://www.xiaolifaa.com/" target="_blank" rel="noopener noreferrer">https://www.xiaolifaa.com/</a><br />这个我用了很久，是类似的，你可以看看。它也是把手机上的文件在电脑上用浏览器来管理，也是局域网。它的优点就是可以在浏览器里面去删除相册和图片、删除文件。也可以批量下载，它是直接把这个相册里面的打成一个压缩包来。<br />它还可以直接把电脑上的文件拖到浏览器的这一个网页下，就直接传到手机上了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268040">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268040" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zuokanyunqishi</span>
+        <span>#10</span>
+        <span>2026/11/08 16:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没有蓝牙不爽啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268136">没有蓝牙不爽啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268136">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268136" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">honhon</span>
+        <span>#11</span>
+        <span>2026/11/08 16:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我用 immich</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268137">我用 immich</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268137">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268137" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">z775781</span>
+        <span>#12</span>
+        <span>2026/11/08 16:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">小米手机文件管理器有个 FTP 模式，可以内网 FTP 直连</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268157">小米手机文件管理器有个 FTP 模式，可以内网 FTP 直连</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268157">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268157" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sugarat</span>
+        <span>#13</span>
+        <span>2026/11/08 17:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Star 了 感觉不错</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268211">Star 了 感觉不错</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268211">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268211" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cnbatch</span>
+        <span>#14</span>
+        <span>2026/11/08 17:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果电脑是 Windows 那就没必要搞得那么麻烦，直接开启 SMB （文件共享），然后手机打开功能强一点的文件管理器（ CX 、FX 之类的）即可进入电脑的文件夹，接下来随便复制文件<br /><br />任意文件都可以复制，不止限于图片、视频</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268276">如果电脑是 Windows 那就没必要搞得那么麻烦，直接开启 SMB （文件共享），然后手机打开功能强一点的文件管理器（ CX 、FX 之类的）即可进入电脑的文件夹，接下来随便复制文件<br /><br />任意文件都可以复制，不止限于图片、视频</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268276">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268276" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">psllll</span>
+        <span>#15</span>
+        <span>2026/11/08 18:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">安卓直接用 termux rclone smb 传</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268305">安卓直接用 termux rclone smb 传</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268305">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268305" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#16</span>
+        <span>2026/11/08 19:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/qingrain" target="_blank" rel="noopener noreferrer">qingrain</a> 看着不错</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268405">@<a href="/member/qingrain" target="_blank" rel="noopener noreferrer">qingrain</a> 看着不错</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268405">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268405" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#17</span>
+        <span>2026/11/08 19:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/zuokanyunqishi" target="_blank" rel="noopener noreferrer">zuokanyunqishi</a> 蓝牙倒是还没想到，后面看看要不要加上</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268406">@<a href="/member/zuokanyunqishi" target="_blank" rel="noopener noreferrer">zuokanyunqishi</a> 蓝牙倒是还没想到，后面看看要不要加上</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268406">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268406" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#18</span>
+        <span>2026/11/08 19:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/honhon" target="_blank" rel="noopener noreferrer">honhon</a> 这个也行的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268407">@<a href="/member/honhon" target="_blank" rel="noopener noreferrer">honhon</a> 这个也行的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268407">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268407" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#19</span>
+        <span>2026/11/08 19:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/z775781" target="_blank" rel="noopener noreferrer">z775781</a> 确实是个好功能，但是其他很多手机没有这个功能</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268411">@<a href="/member/z775781" target="_blank" rel="noopener noreferrer">z775781</a> 确实是个好功能，但是其他很多手机没有这个功能</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268411">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268411" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tushushare</span>
+        <span>#20</span>
+        <span>2026/11/08 19:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/psllll" target="_blank" rel="noopener noreferrer">psllll</a> 小白用户稍微有点复杂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18268412">@<a href="/member/psllll" target="_blank" rel="noopener noreferrer">psllll</a> 小白用户稍微有点复杂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18268412">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1255317#reply18268412" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Libghostty 1.0 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-08/">返回日报</a>
+      <div class="source-chip">Hacker News #5</div>
+      <h1>Libghostty 1.0</h1>
+      <p class="original-title">Libghostty 1.0</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 mfiguiere</span>
+        <span>热度 1039</span>
+        <span>回复 182</span>
+        <span>2026/11/07 07:30</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50399933" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://mitchellh.com/writing/libghostty-1-0" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50399933.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>libghostty-vt 1.0 is here. libghostty is a portable, high-performance C library for terminal emulation, extracted directly from the core of Ghostty. The 1.0 release means both the library itself and the C ABI are now stable. A little over a year ago, I wrote that libghostty is coming. At the time, the Zig module had just been merged, the C API didn&#39;t exist, and nobody but Ghostty was a consumer. Today, the C API is a complete terminal emulator, it runs in production for millions of people across hundreds of products, both free and commercial, and it has a real, enforced ABI stability policy. This post is about how we got here and what 1.0 actually means.1</li><li>Who Is Already Using It Since starting the Ghostty project in 2022, the most common question I&#39;ve been asked is &quot;why?&quot;. I already answered this in the libghostty is coming post, so feel free to read that if you wish. Today, I&#39;d rather answer this by showing the broad industry impact libghostty has already had. I believe this strongly validates its existence. A year ago, I used a bug in JediTerm, the terminal emulator in JetBrains IDEs, as an example of why terminal emulation is hard to get right. A year later, the terminal in JetBrains IDEs now runs on libghostty. Every IntelliJ, PyCharm, GoLand, etc. user now has a libghostty-powered terminal. Based on a report by JetBrains, that&#39;s over 12.5 million active users. Neovim has an approved pull request replacing libvterm with libghostty-vt. Among other things, it closes a 10-year-old issue about reflowing scrollback on resize. The maintainers are waiting on a tagged release before merging so that distributions can package the dependency separately, and the release today should enable that. KDE developers are experimenting with a Konsole replacement built on it. Vercel&#39;s Turborepo uses it to render task output in its TUI. devenv uses it to drive shells. Antithesis used it to fuzz TUI programs and found real bugs in btop and others. Ghostel brings it to Emacs. ghostty-web is the WASM build with an Xterm.js-compatible API. Commercial products like OrbStack embed it. And a whole wave of new terminals and &quot;agentic&quot; coding tools, such as herdr and cmux, have been built on it rather than writing yet another emulator. There are community bindings for Rust, Go, JavaScript, Swift, Python, .NET, Elixir, Dart, Java, and more, and the awesome-libghostty list tracks well over a hundred projects. More people today use a terminal powered by libghostty than use Ghostty the application, by a very large multiple. And libghostty is having a much larger impact than being &quot;just&quot; a terminal emulator.2</li></ul>
+      
+      <p class="reason">命中 6 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jdorfman</span>
+        
+        <span>2026/11/07 11:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; “And a whole wave of new terminals and "agentic" coding tools, such as herdr and cmux, have been built on it rather than writing yet another emulator.”<p>Mitchell could have easily snuck his competing product Rex in there but resisted. Respect.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50401480">&gt; “And a whole wave of new terminals and "agentic" coding tools, such as herdr and cmux, have been built on it rather than writing yet another emulator.”<p>Mitchell could have easily snuck his competing product Rex in there but resisted. Respect.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50401480">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50401480" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">raglof</span>
+        
+        <span>2026/11/07 15:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I like Rex and have started using it and its replacing Ghostty for me. This has made me a bit confused: is the intent for Rex to replace Ghostty? not sure when I would use one vs the other yet</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50402341">I like Rex and have started using it and its replacing Ghostty for me. This has made me a bit confused: is the intent for Rex to replace Ghostty? not sure when I would use one vs the other yet</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50402341">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50402341" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">norman784</span>
+        
+        <span>2026/11/07 17:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">AFAIK he said that Ghostty was like a technical demo of libghostty</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50403036">AFAIK he said that Ghostty was like a technical demo of libghostty</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50403036">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50403036" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">txdv</span>
+        
+        <span>2026/11/08 16:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">a pretty good one</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50411499">a pretty good one</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50411499">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50411499" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">WD-42</span>
+        
+        <span>2026/11/07 22:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Dang. I was hoping some of this was going to come to ghostty. Especially the ssh session stuff. Wezterm has it. I prefer ghostty but it’s kinda lame if it becomes the lite version of a paid product.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405096">Dang. I was hoping some of this was going to come to ghostty. Especially the ssh session stuff. Wezterm has it. I prefer ghostty but it’s kinda lame if it becomes the lite version of a paid product.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405096">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405096" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">exitb</span>
+        
+        <span>2026/11/08 01:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">So far they stated they don't intend to charge for Rex.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50406399">So far they stated they don't intend to charge for Rex.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50406399">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50406399" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">9dev</span>
+        
+        <span>2026/11/07 15:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I suspect Ghostty is to Rex what Chromium is to Google Chrome (without all the negative connotations that is, I’m a happy Rex user!): both something of a tech demo for libghostty, and an open source, basic-but-fully-featured terminal emulator. Rex, then, will possibly be a paid product at some point, and adds features like the server, agent integration, and persistent session management on top.
+ If you had asked me two years ago if I was ready to pay for my terminal and quit my jetbrains subscription, I’d have laughed. Now I’m earnestly ready for that if Superlogical were to announce a paid plan.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50402576">I suspect Ghostty is to Rex what Chromium is to Google Chrome (without all the negative connotations that is, I’m a happy Rex user!): both something of a tech demo for libghostty, and an open source, basic-but-fully-featured terminal emulator. Rex, then, will possibly be a paid product at some point, and adds features like the server, agent integration, and persistent session management on top.
+ If you had asked me two years ago if I was ready to pay for my terminal and quit my jetbrains subscription, I’d have laughed. Now I’m earnestly ready for that if Superlogical were to announce a paid plan.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50402576">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50402576" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">goosejuice</span>
+        
+        <span>2026/11/07 22:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Rex is and will always be free.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405077">&gt; Rex is and will always be free.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405077">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405077" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">_strobe</span>
+        
+        <span>2026/11/08 09:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sweet as!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50409723">Sweet as!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50409723">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50409723" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jazzypants</span>
+        
+        <span>2026/11/07 22:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Why on Earth would folks pay for that? I'm not trying to be a jerk, but I genuinely don't understand the value proposition.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50404806">Why on Earth would folks pay for that? I'm not trying to be a jerk, but I genuinely don't understand the value proposition.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50404806">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50404806" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">r_lee</span>
+        
+        <span>2026/11/07 22:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">if it provides a nicer DX and offers value for you, why wouldn't people pay for it?<p>there's a big market for "makes your life easier" tools both in B2C and B2B</p><p>maybe not that big of a market but who knows</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405065">if it provides a nicer DX and offers value for you, why wouldn't people pay for it?<p>there's a big market for "makes your life easier" tools both in B2C and B2B</p><p>maybe not that big of a market but who knows</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405065">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405065" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">limagnolia</span>
+        
+        <span>2026/11/07 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It comes down to the question of if it provides enough value over other competing products (which may be free or lower cost) to justify the price.  If you sell 10$ widgets that solve $100 problems, you may wonder why nobody is buying your $10 widget when it "provides so much value" and it is because a $1 widget solves the same problem just as well.<p>Note, I am deliberately using a generic example, I use Ghostty but I haven't tried Rex yet and I have no idea how much value it provides over competing widgets)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405233">It comes down to the question of if it provides enough value over other competing products (which may be free or lower cost) to justify the price.  If you sell 10$ widgets that solve $100 problems, you may wonder why nobody is buying your $10 widget when it "provides so much value" and it is because a $1 widget solves the same problem just as well.<p>Note, I am deliberately using a generic example, I use Ghostty but I haven't tried Rex yet and I have no idea how much value it provides over competing widgets)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405233">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405233" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">r_lee</span>
+        
+        <span>2026/11/07 23:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">yeah, that's true. but I would say with dev tools and such, people might easily fork over $10 if they think it's nice<p>I'd say the whole "lower cost" thing is less of a problem when it comes to ergonomics, we know that many devs buy all kinds of fancy split keyboards and things like that to make their workflow smoother, so I wouldn't be surprised if people easily forked over money to this</p><p>question is if it will actually take off or actually provide/slot into workflows that people actually like etc.  if it's heavily opinionated or not really innovative, I don't see how people would "move over"</p><p>just my take though.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405328">yeah, that's true. but I would say with dev tools and such, people might easily fork over $10 if they think it's nice<p>I'd say the whole "lower cost" thing is less of a problem when it comes to ergonomics, we know that many devs buy all kinds of fancy split keyboards and things like that to make their workflow smoother, so I wouldn't be surprised if people easily forked over money to this</p><p>question is if it will actually take off or actually provide/slot into workflows that people actually like etc.  if it's heavily opinionated or not really innovative, I don't see how people would "move over"</p><p>just my take though.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405328">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405328" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">limagnolia</span>
+        
+        <span>2026/11/07 23:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Absolutely, ergonomics is a huge part of the value- it solves a real problem.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405545">Absolutely, ergonomics is a huge part of the value- it solves a real problem.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405545">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405545" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">transitorykris</span>
+        
+        <span>2026/11/08 06:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are many things enterprises will pay for for compliance purposes</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50408658">There are many things enterprises will pay for for compliance purposes</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50408658">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50408658" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">cpuguy83</span>
+        
+        <span>2026/11/07 23:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm <i>pretty sure</i> he said Rex will remain free.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405305">I'm <i>pretty sure</i> he said Rex will remain free.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405305">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405305" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">9dev</span>
+        
+        <span>2026/11/08 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sure, but then again, Superlogical is a company and as such surely will create a commercial product at some point. I would be surprised if that wouldn’t pertain to Rex in some way.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405925">Sure, but then again, Superlogical is a company and as such surely will create a commercial product at some point. I would be surprised if that wouldn’t pertain to Rex in some way.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405925">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405925" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/11/08 08:16</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50409337"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50409337">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50409337" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">tough</span>
+        
+        <span>2026/11/08 00:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm pretty sure Google Chrome is free ;)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50405718">I'm pretty sure Google Chrome is free ;)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50405718">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50405718" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jimbob74</span>
+        
+        <span>2026/11/08 20:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">And I’m equally sure chrome isn’t a direct profit driver for Google</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412586">And I’m equally sure chrome isn’t a direct profit driver for Google</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412586">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412586" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
