@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code&#39;s &quot;Don&#39;t Ask Again&quot; exposes passwords in 1,122 public GitHub files | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-09/">返回日报</a>
+      <div class="source-chip">Hacker News #9</div>
+      <h1>Claude Code&#39;s &quot;Don&#39;t Ask Again&quot; exposes passwords in 1,122 public GitHub files</h1>
+      <p class="original-title">Claude Code&#39;s &quot;Don&#39;t Ask Again&quot; exposes passwords in 1,122 public GitHub files</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 shmulc</span>
+        <span>热度 600</span>
+        <span>回复 408</span>
+        <span>2026/11/08 04:45</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50407882" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://apiiro.com/blog/coding-agents-leaking-secrets-github-dont-ask-again" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50407882.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <p class="muted">暂无摘要</p>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bcherny</span>
+        
+        <span>2026/11/08 05:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Boris from the Claude Code team here. Historically Claude Code has not done secret scrubbing (there are many good tools for that), but we are looking into what we can do to prevent this.<p>That said, a few thoughts:</p><p>1. .claude/settings.local.json is meant to stay local. This is not a file you should check into source control. We automatically gitignore it when Claude creates the file, so in this case the files were manually created and checked in (docs: <a href="https://code.claude.com/docs/en/settings" target="_blank" rel="noopener noreferrer">https://code.claude.com/docs/en/settings</a>)</p><p>2. Permission rules are old hat. Everyone should be using auto mode instead. It is safer and also does not require manually maintaining finicky allow/deny lists. Auto mode is enabled by default and is included for free in all plans.</p><p>3. Regardless of what agent you use, you should have secret scanning enabled. GitHub and other source control hosts offer it. There are many threat models that it protects against and you should absolutely use it if you can. (see <a href="https://github.com/security/plans" target="_blank" rel="noopener noreferrer">https://github.com/security/plans</a>)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50408126">Boris from the Claude Code team here. Historically Claude Code has not done secret scrubbing (there are many good tools for that), but we are looking into what we can do to prevent this.<p>That said, a few thoughts:</p><p>1. .claude/settings.local.json is meant to stay local. This is not a file you should check into source control. We automatically gitignore it when Claude creates the file, so in this case the files were manually created and checked in (docs: <a href="https://code.claude.com/docs/en/settings" target="_blank" rel="noopener noreferrer">https://code.claude.com/docs/en/settings</a>)</p><p>2. Permission rules are old hat. Everyone should be using auto mode instead. It is safer and also does not require manually maintaining finicky allow/deny lists. Auto mode is enabled by default and is included for free in all plans.</p><p>3. Regardless of what agent you use, you should have secret scanning enabled. GitHub and other source control hosts offer it. There are many threat models that it protects against and you should absolutely use it if you can. (see <a href="https://github.com/security/plans" target="_blank" rel="noopener noreferrer">https://github.com/security/plans</a>)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50408126">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50408126" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">syllogism</span>
+        
+        <span>2026/11/08 20:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I want to draw deterministic boundaries around what the agent can do. I don't want a probabilistic approach to security.<p>My view is that if the agent can decide to do something, nothing stops that thing from being done accidentally, and any attacker that can inject text into its context can do that thing.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412568">I want to draw deterministic boundaries around what the agent can do. I don't want a probabilistic approach to security.<p>My view is that if the agent can decide to do something, nothing stops that thing from being done accidentally, and any attacker that can inject text into its context can do that thing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412568">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412568" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">uw_rob</span>
+        
+        <span>2026/11/08 22:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Deterministic boundaries appear to be best solved with sandboxes/microVMs/remote infra and unique identities with probabilistic guardrails on top. The old deterministic allow/deny list running on bare metal didn't meaningfully solve the problem of giving Claude determinism. Humans got approval fatigue, and eventually, Claude got access to something like 'python3 FILE.py' and Claude could go to the races by updating 'FILE.py'.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413830">Deterministic boundaries appear to be best solved with sandboxes/microVMs/remote infra and unique identities with probabilistic guardrails on top. The old deterministic allow/deny list running on bare metal didn't meaningfully solve the problem of giving Claude determinism. Humans got approval fatigue, and eventually, Claude got access to something like 'python3 FILE.py' and Claude could go to the races by updating 'FILE.py'.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413830">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413830" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">syllogism</span>
+        
+        <span>2026/11/09 19:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The allow/deny list functionality was trash though. If I have a once-off workflow and I want to execute Claude within it, I can't even give it a whitelist of allowed tools.<p>I definitely prefer auto-mode to the granularity of prompts I was getting from Claude. But I also want to be able to use deterministic rules, and Claude Code's functionality for it sucks.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50424110">The allow/deny list functionality was trash though. If I have a once-off workflow and I want to execute Claude within it, I can't even give it a whitelist of allowed tools.<p>I definitely prefer auto-mode to the granularity of prompts I was getting from Claude. But I also want to be able to use deterministic rules, and Claude Code's functionality for it sucks.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50424110">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50424110" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">canibal</span>
+        
+        <span>2026/11/09 01:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Simple solution, don't use an indeterministic tool to do things that require deterministic constraints?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50415337">Simple solution, don't use an indeterministic tool to do things that require deterministic constraints?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50415337">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50415337" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ImPostingOnHN</span>
+        
+        <span>2026/11/09 03:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">They aren't. Allowlists are a deterministic tool. That's the whole point: instructing an llm to review itself is nondeterministic, and thus not a good tool for permissions, compared to allowlists, which are.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50416138">They aren't. Allowlists are a deterministic tool. That's the whole point: instructing an llm to review itself is nondeterministic, and thus not a good tool for permissions, compared to allowlists, which are.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50416138">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50416138" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">socalgal2</span>
+        
+        <span>2026/11/09 12:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In my experience, Allowlists are not deterministic because the #1 thing the LLM does is write python scripts nearly every prompt and ask permission to execute its latest script. I know of no developers who review that code since it would make the process too slow to be useful. So YOLO! Yes, Claude/Codex/Gemini, you can execute the python you just wrote, even though I didn't review it and you have access to the entire machine and so every command I didn't give permission to execute you could just have written the equivalent python.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50420961">In my experience, Allowlists are not deterministic because the #1 thing the LLM does is write python scripts nearly every prompt and ask permission to execute its latest script. I know of no developers who review that code since it would make the process too slow to be useful. So YOLO! Yes, Claude/Codex/Gemini, you can execute the python you just wrote, even though I didn't review it and you have access to the entire machine and so every command I didn't give permission to execute you could just have written the equivalent python.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50420961">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50420961" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">liveoneggs</span>
+        
+        <span>2026/11/09 09:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Agentic interaction is not deterministic. That's the entire deal.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50419996">Agentic interaction is not deterministic. That's the entire deal.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50419996">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50419996" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">selcuka</span>
+        
+        <span>2026/11/09 10:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes, but we are not restricted to agentic interaction only. We can always pass our inputs and outputs through deterministic filters (which is sort of the point of MCP servers and tool calling, for some use cases).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50420125">Yes, but we are not restricted to agentic interaction only. We can always pass our inputs and outputs through deterministic filters (which is sort of the point of MCP servers and tool calling, for some use cases).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50420125">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50420125" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/11/09 20:20</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50424607"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50424607">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50424607" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">coldtea</span>
+        
+        <span>2026/11/08 23:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt;<i>2. Permission rules are old hat. Everyone should be using auto mode instead. It is safer and also does not require manually maintaining finicky allow/deny lists.</i><p>The fuck we will give free reign to Claude to vibe what's secure and what's not and what it can't do.</p><p>I want fully static control over certain folders. Permissions rules should be ABSOLUTELY enforced sandboxing (even without the user bothering with custom sandboxing themselves) on top of any mode, manual or auto.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413936">&gt;<i>2. Permission rules are old hat. Everyone should be using auto mode instead. It is safer and also does not require manually maintaining finicky allow/deny lists.</i><p>The fuck we will give free reign to Claude to vibe what's secure and what's not and what it can't do.</p><p>I want fully static control over certain folders. Permissions rules should be ABSOLUTELY enforced sandboxing (even without the user bothering with custom sandboxing themselves) on top of any mode, manual or auto.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413936">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413936" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bcherny</span>
+        
+        <span>2026/11/08 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Have you tried the built in /sandbox?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413975">Have you tried the built in /sandbox?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413975">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413975" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">coldtea</span>
+        
+        <span>2026/11/08 23:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes. Leaves a lot to be desired UX wise, has no good defaults, and still allows many holes that you need to dig to know (e.g. its own write tools vs bash).<p>Built my own with Apple's (to be "deprecated") seatbelt backend, which I think anthropic also uses, with a much nicer interface, easy per working project setup, etc.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50414222">Yes. Leaves a lot to be desired UX wise, has no good defaults, and still allows many holes that you need to dig to know (e.g. its own write tools vs bash).<p>Built my own with Apple's (to be "deprecated") seatbelt backend, which I think anthropic also uses, with a much nicer interface, easy per working project setup, etc.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50414222">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50414222" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">martijnvds</span>
+        
+        <span>2026/11/09 00:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Also, "I could open $file so I tried again without the sandbox" and somehow that just works?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50414828">Also, "I could open $file so I tried again without the sandbox" and somehow that just works?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50414828">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50414828" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">OJFord</span>
+        
+        <span>2026/11/08 08:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Everyone should be using auto mode instead. It is safer<p>This is an absolutely crazy statement without also bundling proper sandboxing. Nobody should be using auto mode outside of an environment they'd be happy with an 'everything is approved' mode too.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50409262">&gt; Everyone should be using auto mode instead. It is safer<p>This is an absolutely crazy statement without also bundling proper sandboxing. Nobody should be using auto mode outside of an environment they'd be happy with an 'everything is approved' mode too.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50409262">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50409262" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">3form</span>
+        
+        <span>2026/11/08 22:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I want to coin the 3form's Law of Codegen Tech: Any time a new and improved code generation technology is developed, it will be used for anything except coding for security and safety of said technology.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413763">I want to coin the 3form's Law of Codegen Tech: Any time a new and improved code generation technology is developed, it will be used for anything except coding for security and safety of said technology.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413763">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413763" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">hxugufjfjf</span>
+        
+        <span>2026/11/08 23:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413919">What?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">coldtea</span>
+        
+        <span>2026/11/08 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What what?<p>Any new tech that can generate code (like an agent can) will be used for everything except for improving the security and safety of itself.</p><p>Like how Anthropic does shit all with all their agentic coding power to improve the security of Claude.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413978">What what?<p>Any new tech that can generate code (like an agent can) will be used for everything except for improving the security and safety of itself.</p><p>Like how Anthropic does shit all with all their agentic coding power to improve the security of Claude.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413978">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413978" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">futhey</span>
+        
+        <span>2026/11/08 09:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not here to be critical, but the hoops you have to jump through to get Claude out of .env is more than it should be. You basically need an agent to write it if it's anything complicated, like, allow .env.example but not .env.*.<p>Whereas that should probably be default on instead, and this should apply to other known sensitive folders. A simpler system like .agentignore would be even better.</p><p>I like auto mode but "the agent supervises itself" is a bad compliance/safety answer on its own.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50409690">I'm not here to be critical, but the hoops you have to jump through to get Claude out of .env is more than it should be. You basically need an agent to write it if it's anything complicated, like, allow .env.example but not .env.*.<p>Whereas that should probably be default on instead, and this should apply to other known sensitive folders. A simpler system like .agentignore would be even better.</p><p>I like auto mode but "the agent supervises itself" is a bad compliance/safety answer on its own.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50409690">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50409690" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">kstenerud</span>
+        
+        <span>2026/11/08 11:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is EXACTLY why I never use an agent outside of <a href="https://github.com/kstenerud/yoloai" target="_blank" rel="noopener noreferrer">https://github.com/kstenerud/yoloai</a><p>I appreciate that you're trying to make Claude Code safer, but the agent really needs to be a lot more restricted in its reach rather than its actions.</p><p>The agent should NOT have ANY access to:</p><p>- Your ENV</p><p>- Your homedir</p><p>- The network at large</p><p>- ANY other directory on your system</p><p>- No, not even your workdir.</p><p>The only safe way to use an agent is COMPLETELY isolated by a container or VM, using git semantics to extract its output.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50410284">This is EXACTLY why I never use an agent outside of <a href="https://github.com/kstenerud/yoloai" target="_blank" rel="noopener noreferrer">https://github.com/kstenerud/yoloai</a><p>I appreciate that you're trying to make Claude Code safer, but the agent really needs to be a lot more restricted in its reach rather than its actions.</p><p>The agent should NOT have ANY access to:</p><p>- Your ENV</p><p>- Your homedir</p><p>- The network at large</p><p>- ANY other directory on your system</p><p>- No, not even your workdir.</p><p>The only safe way to use an agent is COMPLETELY isolated by a container or VM, using git semantics to extract its output.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50410284">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50410284" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

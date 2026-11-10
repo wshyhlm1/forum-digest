@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Goodbye Claude, hello Pi | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-09/">返回日报</a>
+      <div class="source-chip">Hacker News #6</div>
+      <h1>Goodbye Claude, hello Pi</h1>
+      <p class="original-title">Goodbye Claude, hello Pi</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 karagenit</span>
+        <span>热度 754</span>
+        <span>回复 465</span>
+        <span>2026/11/08 11:11</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50410107" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://caleb.software/posts/claude-to-pi.html" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50410107.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Goodbye Claude, Hello Pi 21 September 2026 #pi #claude</li><li>I’ve been a longtime Claude Code user, ever since it became available in the Claude Pro subscription plan over a year ago. I remember the first time I used it, feeling giddy as it spat out messy Python code for whatever random weekend project I was working on, all from a single prompt. I’m certain that in a few years we’ll all look back at its release as one of the major drivers of this new era of software development we’re in.</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">bottlepalm</span>
+        
+        <span>2026/11/08 14:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I used to use ChatGPT/Claude in the TUI up until like 3 months ago, but my usage of LLMs has exploded - many sessions across many projects. I feel like I outgrew the TUI and now I'm using ChatGPT/Claude desktop. VS Code has become a code review tool and place where I manage git if need be.<p>The GUI is less verbose with the nitty gritty hidden in expandable sections, which makes history easier and cleaner to scroll through, also no scrolling bugs, rich text is easier to read with tables, and images integrated into the chat, resources like browsers in the context of the session. Drag and drop session organization (pins), scheduled tasks, etc.. all that in the side bar.</p><p>Usually a TUI would be open in VS Code and scoped to whatever repo I'm working with so 10 projects, 10 VS Code instances open, not super scalable. With the GUI desktop app it's one app, and I can start sessions in an repo and switch between them easily, no need to open VS Code for each. I don't see what could make me want to go back to using a TUI.</p><p>Who else is just using the GUI nowadays, or are you still on the TUI, and why, have you tried the GUI interfaces?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50410853">I used to use ChatGPT/Claude in the TUI up until like 3 months ago, but my usage of LLMs has exploded - many sessions across many projects. I feel like I outgrew the TUI and now I'm using ChatGPT/Claude desktop. VS Code has become a code review tool and place where I manage git if need be.<p>The GUI is less verbose with the nitty gritty hidden in expandable sections, which makes history easier and cleaner to scroll through, also no scrolling bugs, rich text is easier to read with tables, and images integrated into the chat, resources like browsers in the context of the session. Drag and drop session organization (pins), scheduled tasks, etc.. all that in the side bar.</p><p>Usually a TUI would be open in VS Code and scoped to whatever repo I'm working with so 10 projects, 10 VS Code instances open, not super scalable. With the GUI desktop app it's one app, and I can start sessions in an repo and switch between them easily, no need to open VS Code for each. I don't see what could make me want to go back to using a TUI.</p><p>Who else is just using the GUI nowadays, or are you still on the TUI, and why, have you tried the GUI interfaces?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50410853">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50410853" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jnordt</span>
+        
+        <span>2026/11/08 17:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I went from TUI and tested several GUIs that can also support a "TUI" view.<p>After testing several options at the moment I'm using Orca IDE as my daily driver - effectively as a layer on top anthropic / openai</p><p>- Supports both anthropic and openai with subscriptions and can you swithc easily between those two + other LLms</p><p>- Its a bit hidden / non intuitive to setup but it does support running everything on  remove host -&gt; I run (95%) of my jobs on remote hosts that I can both access from my laptop + their native app via a wirguard vpn</p><p>- You can switch between chatview + TUI on the same conversation - very useful if you move e.g. from desktop session to mobile view.</p><p>- For repeating LLM tasks Orca also suports a kind of scheduler - but I prefer currently to have the agent set things up via chronjobs on the remote machine (not super happy with this ...)</p><p>Key reason I dont want to go fully ChatGPT/Claude is also I dont want to build a super strong dependency on those mega players and remain the ability to switch to other interefernce providers / models.</p><p>As LLM usage is already a core workflow in our company - a sudden unavailability of one or a massive price increase - makes it absolutely necessary to build out alternatives.</p><p>We all know the downsides of SAAS Lock in too well from the 2010s. In that sense Fool me once, fool me twice..</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50411694">I went from TUI and tested several GUIs that can also support a "TUI" view.<p>After testing several options at the moment I'm using Orca IDE as my daily driver - effectively as a layer on top anthropic / openai</p><p>- Supports both anthropic and openai with subscriptions and can you swithc easily between those two + other LLms</p><p>- Its a bit hidden / non intuitive to setup but it does support running everything on  remove host -&gt; I run (95%) of my jobs on remote hosts that I can both access from my laptop + their native app via a wirguard vpn</p><p>- You can switch between chatview + TUI on the same conversation - very useful if you move e.g. from desktop session to mobile view.</p><p>- For repeating LLM tasks Orca also suports a kind of scheduler - but I prefer currently to have the agent set things up via chronjobs on the remote machine (not super happy with this ...)</p><p>Key reason I dont want to go fully ChatGPT/Claude is also I dont want to build a super strong dependency on those mega players and remain the ability to switch to other interefernce providers / models.</p><p>As LLM usage is already a core workflow in our company - a sudden unavailability of one or a massive price increase - makes it absolutely necessary to build out alternatives.</p><p>We all know the downsides of SAAS Lock in too well from the 2010s. In that sense Fool me once, fool me twice..</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50411694">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50411694" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">frogperson</span>
+        
+        <span>2026/11/09 06:41</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Orca looks neat, but also super dangerous.  It runs everything in yolo mode and actively fights staying in any sandbox you try to put it in.<p>TUI's might not have the best UI ever, but its much easier locking them down via something like nono.sh.  I can sleep at night and not have to worry where my keys and .env files are being sent.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50418244">Orca looks neat, but also super dangerous.  It runs everything in yolo mode and actively fights staying in any sandbox you try to put it in.<p>TUI's might not have the best UI ever, but its much easier locking them down via something like nono.sh.  I can sleep at night and not have to worry where my keys and .env files are being sent.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50418244">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50418244" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">haoyuant94718</span>
+        
+        <span>2026/11/09 15:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I built my own app Tomrade to do all my jobs in one place, it comes with an agentic built-in task management system like kanban board, and split-panel terminal. actually now I use Tomrade for everything except for code review, which I still use Orca. Having to say that Orca is doing a good job as ADE, so haven't had a plan to make another ADE inside Tomrade. <a href="https://tomrade.com" target="_blank" rel="noopener noreferrer">https://tomrade.com</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50422213">I built my own app Tomrade to do all my jobs in one place, it comes with an agentic built-in task management system like kanban board, and split-panel terminal. actually now I use Tomrade for everything except for code review, which I still use Orca. Having to say that Orca is doing a good job as ADE, so haven't had a plan to make another ADE inside Tomrade. <a href="https://tomrade.com" target="_blank" rel="noopener noreferrer">https://tomrade.com</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50422213">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50422213" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">kapitalx</span>
+        
+        <span>2026/11/09 10:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah I tried going to GUIs aswell but ended up writing my own Terminal manager called switchboard. Since then I've tried a few others, like T3, which is pretty decent, but still keep coming back to Switchboard. It supports both Claude and Codex CLIs together with project grouping organization.<p><a href="https://github.com/doctly/switchboard" target="_blank" rel="noopener noreferrer">https://github.com/doctly/switchboard</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50420422">Yeah I tried going to GUIs aswell but ended up writing my own Terminal manager called switchboard. Since then I've tried a few others, like T3, which is pretty decent, but still keep coming back to Switchboard. It supports both Claude and Codex CLIs together with project grouping organization.<p><a href="https://github.com/doctly/switchboard" target="_blank" rel="noopener noreferrer">https://github.com/doctly/switchboard</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50420422">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50420422" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">meetingthrower</span>
+        
+        <span>2026/11/08 20:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">+1 on the Orca and remote machine. I've basically turned it into my own Claw machine. It does super well at letting me remote in across 3 computers and phone and hitting all the same sessions. I have one master session that is always kept alive as my main "agent", and spin out other full sessions from that.<p>It solves the crappy user experience of the CLI vs using an SSH terminal in VS code. (Easy copy pasting, everything formatted correctly, etc.) I created my own version of artifact hosting with a simple "mailbox" page on the box - every session can drop it's html reports off there nicely.</p><p>Completely agree on being able to flex out to different models. I'm using Claude Code as daily driver given the insane subsidies we are getting. But want something where I can switch easily onto the open weights, etc.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412665">+1 on the Orca and remote machine. I've basically turned it into my own Claw machine. It does super well at letting me remote in across 3 computers and phone and hitting all the same sessions. I have one master session that is always kept alive as my main "agent", and spin out other full sessions from that.<p>It solves the crappy user experience of the CLI vs using an SSH terminal in VS code. (Easy copy pasting, everything formatted correctly, etc.) I created my own version of artifact hosting with a simple "mailbox" page on the box - every session can drop it's html reports off there nicely.</p><p>Completely agree on being able to flex out to different models. I'm using Claude Code as daily driver given the insane subsidies we are getting. But want something where I can switch easily onto the open weights, etc.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412665">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412665" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sidrag22</span>
+        
+        <span>2026/11/09 00:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I kinda built a "mailbox" style feature for models to dump images in, its really annoying to chase down the goofy spots they decide to dump images for review otherwise, my web ui just gets a little popup when the images are ready to review, i review them and send them back and it injects my response into the session.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50414877">I kinda built a "mailbox" style feature for models to dump images in, its really annoying to chase down the goofy spots they decide to dump images for review otherwise, my web ui just gets a little popup when the images are ready to review, i review them and send them back and it injects my response into the session.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50414877">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50414877" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">joshspankit</span>
+        
+        <span>2026/11/09 05:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Key reason I dont want to go fully ChatGPT/Claude is also I dont want to build a super strong dependency on those mega players and remain the ability to switch to other interefernce providers / models.<p>Pragmatically I agree with you, but I also believe that the landscape ahead is going to look so different that locking in to current tools won’t do anything to lock you in to near-future tools</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50417297">&gt; Key reason I dont want to go fully ChatGPT/Claude is also I dont want to build a super strong dependency on those mega players and remain the ability to switch to other interefernce providers / models.<p>Pragmatically I agree with you, but I also believe that the landscape ahead is going to look so different that locking in to current tools won’t do anything to lock you in to near-future tools</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50417297">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50417297" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">baxuz</span>
+        
+        <span>2026/11/08 20:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sadly Orca doesn't support chatview via WSL</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412843">Sadly Orca doesn't support chatview via WSL</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412843">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412843" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Daviey</span>
+        
+        <span>2026/11/08 19:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I find TUI scales <i>better</i> for multiple concurrent agents across the same and different codebases, especially using tools such as herdr.  I can fire off an agent, which runs sub-agents.  Then check-in periodically to re-steer as needed or be interrupt driven for completions of tasks.  I can't see how vscode/GUI is <i>better</i> for this?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412251">I find TUI scales <i>better</i> for multiple concurrent agents across the same and different codebases, especially using tools such as herdr.  I can fire off an agent, which runs sub-agents.  Then check-in periodically to re-steer as needed or be interrupt driven for completions of tasks.  I can't see how vscode/GUI is <i>better</i> for this?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412251">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412251" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">ianm218</span>
+        
+        <span>2026/11/08 19:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For me the tight integration with Claude Artifacts (and whatever OpenAIs copy of those is) is super value-able for me. The biggest bottleneck for me is gathering all my thoughts and analyzing what needs to be done.<p>I was a long term user of the TUI and tools like cmux / herdr but now I find it much easier to actually focus</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412303">For me the tight integration with Claude Artifacts (and whatever OpenAIs copy of those is) is super value-able for me. The biggest bottleneck for me is gathering all my thoughts and analyzing what needs to be done.<p>I was a long term user of the TUI and tools like cmux / herdr but now I find it much easier to actually focus</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412303">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412303" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">leourbina</span>
+        
+        <span>2026/11/08 21:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Check out <a href="https://open-artifacts.com" target="_blank" rel="noopener noreferrer">https://open-artifacts.com</a> - it gives you that and much more. It also allows your agent sessions to talk to each other regardless of which machine they’re running on. It’s free and OSS. I’m the creator - happy to answer questions.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413102">Check out <a href="https://open-artifacts.com" target="_blank" rel="noopener noreferrer">https://open-artifacts.com</a> - it gives you that and much more. It also allows your agent sessions to talk to each other regardless of which machine they’re running on. It’s free and OSS. I’m the creator - happy to answer questions.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413102">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413102" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ianm218</span>
+        
+        <span>2026/11/09 01:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’ll send this to the team at my company. No one likes feeling vendor locked in on artifacts but they are great at being like “hey I had an agent cook on this topic over night, here are the results, and what we need to make a decision on”.<p>Just some feedback for corporate use - it’s not clear to me from the landing page if it’s really intended for internal company use and if it’s hard tied to CloudFlare. I.e. if there was a “here’s how you can deploy it on AWS in 2 minutes” option I would just toss it on our dev env and show people a POC.</p><p>With open source projects we’re increasingly worried about supply chain type risks - it would be good if there was some boilerplate on “this is how you know this can be deployed internally and have zero risk of phoning home etc”</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50415158">I’ll send this to the team at my company. No one likes feeling vendor locked in on artifacts but they are great at being like “hey I had an agent cook on this topic over night, here are the results, and what we need to make a decision on”.<p>Just some feedback for corporate use - it’s not clear to me from the landing page if it’s really intended for internal company use and if it’s hard tied to CloudFlare. I.e. if there was a “here’s how you can deploy it on AWS in 2 minutes” option I would just toss it on our dev env and show people a POC.</p><p>With open source projects we’re increasingly worried about supply chain type risks - it would be good if there was some boilerplate on “this is how you know this can be deployed internally and have zero risk of phoning home etc”</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50415158">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50415158" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">leourbina</span>
+        
+        <span>2026/11/09 01:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Hey, great feedback. I'm currently re-doing the landing page as the project has expanded quite a bit (including native annotations/comments, presence, inter-instance collaboration/sharing, Yjs based real-time collaboration for agents and humans, etc).<p>Currently this works using Cloudflare Workers (and Durable Objects). This provides your agents with trivial tools to make realtime multi-player artifacts. Some demos include (all made by DeepSeek v4.1 Flash in ~5-10m each:</p><p>- Real-time tic-ta-toe: <a href="https://demo.open-artifacts.com/a/kA5P1UTCZ9jwRSAx" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/kA5P1UTCZ9jwRSAx</a>
+- Chess: <a href="https://demo.open-artifacts.com/a/ErF1KapC2paDnmgs" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/ErF1KapC2paDnmgs</a>
+- Mini version of r/place (pixel canvas): <a href="https://demo.open-artifacts.com/a/xsDmeifD7bX7NeSJ" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/xsDmeifD7bX7NeSJ</a>
+- Live poll: <a href="https://demo.open-artifacts.com/a/PY6AbssBQg4epqgk" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/PY6AbssBQg4epqgk</a></p><p>The full list of demos is here: <a href="https://demo.open-artifacts.com/" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/</a></p><p>I'll be opening sign-ups for a hosted version in the coming days. All feedback welcome. Actively trying to make it better.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50415233">Hey, great feedback. I'm currently re-doing the landing page as the project has expanded quite a bit (including native annotations/comments, presence, inter-instance collaboration/sharing, Yjs based real-time collaboration for agents and humans, etc).<p>Currently this works using Cloudflare Workers (and Durable Objects). This provides your agents with trivial tools to make realtime multi-player artifacts. Some demos include (all made by DeepSeek v4.1 Flash in ~5-10m each:</p><p>- Real-time tic-ta-toe: <a href="https://demo.open-artifacts.com/a/kA5P1UTCZ9jwRSAx" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/kA5P1UTCZ9jwRSAx</a>
+- Chess: <a href="https://demo.open-artifacts.com/a/ErF1KapC2paDnmgs" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/ErF1KapC2paDnmgs</a>
+- Mini version of r/place (pixel canvas): <a href="https://demo.open-artifacts.com/a/xsDmeifD7bX7NeSJ" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/xsDmeifD7bX7NeSJ</a>
+- Live poll: <a href="https://demo.open-artifacts.com/a/PY6AbssBQg4epqgk" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/a/PY6AbssBQg4epqgk</a></p><p>The full list of demos is here: <a href="https://demo.open-artifacts.com/" target="_blank" rel="noopener noreferrer">https://demo.open-artifacts.com/</a></p><p>I'll be opening sign-ups for a hosted version in the coming days. All feedback welcome. Actively trying to make it better.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50415233">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50415233" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">meetingthrower</span>
+        
+        <span>2026/11/08 21:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Very nice!!! I actually built something much more primitive as my workflow too. I'll definitely send the robots to learn from you and what you did!<p>(Edited after research: I picked up your ideas of search and versioning. Very nice! Thank you!)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413250">Very nice!!! I actually built something much more primitive as my workflow too. I'll definitely send the robots to learn from you and what you did!<p>(Edited after research: I picked up your ideas of search and versioning. Very nice! Thank you!)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413250">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413250" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">upcoming-sesame</span>
+        
+        <span>2026/11/09 02:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">interesting<p>seems like they "gadgets" concept of Cloudflare OS [1] but decoupled front Cloudflare OS chat interface.</p><p>It even runs on Durable Object like CFOS</p><p>1. <a href="https://os.cloudflare.app/" target="_blank" rel="noopener noreferrer">https://os.cloudflare.app/</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50415583">interesting<p>seems like they "gadgets" concept of Cloudflare OS [1] but decoupled front Cloudflare OS chat interface.</p><p>It even runs on Durable Object like CFOS</p><p>1. <a href="https://os.cloudflare.app/" target="_blank" rel="noopener noreferrer">https://os.cloudflare.app/</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50415583">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50415583" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">leourbina</span>
+        
+        <span>2026/11/09 03:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Exactly. It is based on Cloudflare primitives to give real-time/multiplayer capabilities to artifacts. It also comes with a bus (originally made it as a separate project <a href="https://open-bus.ai" target="_blank" rel="noopener noreferrer">https://open-bus.ai</a>, but made it all into one project).<p>The problem I'm trying to solve for myself is: I want to have a single place where me and my collaborators (my agents, other humans and _their_ agents) can all come together and do work efficiently. It's like a Google Docs/Drive but for the AI era and not tied to any one AI lab.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50416473">Exactly. It is based on Cloudflare primitives to give real-time/multiplayer capabilities to artifacts. It also comes with a bus (originally made it as a separate project <a href="https://open-bus.ai" target="_blank" rel="noopener noreferrer">https://open-bus.ai</a>, but made it all into one project).<p>The problem I'm trying to solve for myself is: I want to have a single place where me and my collaborators (my agents, other humans and _their_ agents) can all come together and do work efficiently. It's like a Google Docs/Drive but for the AI era and not tied to any one AI lab.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50416473">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50416473" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">nvarsj</span>
+        
+        <span>2026/11/08 19:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Same... I use herdr to manage 12+ sessions easily. There's no GUI that can do that.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50412283">Same... I use herdr to manage 12+ sessions easily. There's no GUI that can do that.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50412283">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50412283" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">arw0n</span>
+        
+        <span>2026/11/08 22:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This seems to be the new meta for a segment of the HN crowd, and I'm struggling to understand how it works. I'm at most having 4 sessions parallely, and even then I am burned out after a full day of this. How can you keep up with what all the agents are doing?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50413801">This seems to be the new meta for a segment of the HN crowd, and I'm struggling to understand how it works. I'm at most having 4 sessions parallely, and even then I am burned out after a full day of this. How can you keep up with what all the agents are doing?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50413801">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50413801" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">oxidant</span>
+        
+        <span>2026/11/09 02:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I've found an agent to manage agents, plus aggressively creating skills/workflows helps.<p>The main agent is the entry point:</p><p>"review this PR" should open a new workspace and spin up one or more agents to do whatever review workflow you like.</p><p>"Implement ticket xyz" should open a new space, read the ticket content, plan/write/test/review/create a PR without much managerial input. You'll still need to answer questions and check work between steps, but all of the busy work can be done by your agent(s) with skills. If they get it wrong, update the skill.</p><p>Same for "research this bug report/product question/error trace".</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50415612">I've found an agent to manage agents, plus aggressively creating skills/workflows helps.<p>The main agent is the entry point:</p><p>"review this PR" should open a new workspace and spin up one or more agents to do whatever review workflow you like.</p><p>"Implement ticket xyz" should open a new space, read the ticket content, plan/write/test/review/create a PR without much managerial input. You'll still need to answer questions and check work between steps, but all of the busy work can be done by your agent(s) with skills. If they get it wrong, update the skill.</p><p>Same for "research this bug report/product question/error trace".</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50415612">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50415612" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
