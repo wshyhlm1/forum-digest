@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service degradation on Microsoft 365 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-14/">返回日报</a>
+      <div class="source-chip">Hacker News #4</div>
+      <h1>Service degradation on Microsoft 365</h1>
+      <p class="original-title">Service degradation on Microsoft 365</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 dkpk</span>
+        <span>热度 1165</span>
+        <span>回复 985</span>
+        <span>2026/11/13 02:20</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50471731" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://status.cloud.microsoft/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50471731.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>https://www.abc.net.au/news/2026-11-13/microsoft-outage-affe...https://www.reddit.com/r/sysadmin/comments/1xuje83/microsoft...https://downdetector.com/status/microsoft-365/</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://www.abc.net.au/news/2026-11-13/microsoft-outage-affects-users-worldwide/107381050" target="_blank" rel="noopener noreferrer">https://www.abc.net.au/news/2026-11-13/microsoft-outage-affe...</a><p><a href="https://www.reddit.com/r/sysadmin/comments/1xuje83/microsoft_office_seems_to_be_down/" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/sysadmin/comments/1xuje83/microsoft...</a></p><p><a href="https://downdetector.com/status/microsoft-365/" target="_blank" rel="noopener noreferrer">https://downdetector.com/status/microsoft-365/</a></p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://www.abc.net.au/news/2026-11-13/microsoft-outage-affects-users-worldwide/107381050" target="_blank" rel="noopener noreferrer">https://www.abc.net.au/news/2026-11-13/microsoft-outage-affe...</a><p><a href="https://www.reddit.com/r/sysadmin/comments/1xuje83/microsoft_office_seems_to_be_down/" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/sysadmin/comments/1xuje83/microsoft...</a></p><p><a href="https://downdetector.com/status/microsoft-365/" target="_blank" rel="noopener noreferrer">https://downdetector.com/status/microsoft-365/</a></p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">AbbeFaria</span>
+        
+        <span>2026/11/13 14:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Ex-MSFT here, sharing my outdated POV based on working on a product that was using Microsoft Exchange and therefore was hooked onto the email delivery pipeline.<p>Note that the infra for M365, Azure etc is different. They would be running on servers hosted in MSFT DCs but have completely different CI/CD pipelines. M365 services have their own deployment pipelines and it takes on the order of weeks to deploy your changes to production.</p><p>Considering the fact that Outlook is down, clearly email doesn’t seem to be working. So email uses something called Microsoft Exchange Server, there used to be an on-premises version of this but MS stopped supporting it to run the cloud version hereby called M365. Email is one big “macro-service”, if you’re running Windows Server, look at the process called “EdgeTransport.exe” this is responsible for sending/receiving email on Windows Servers. There are probably multiple 100s of services supported by 100s of teams that are run while email is routed from sender to receiver via MSFT Exchange servers. My recollection is that even if one of these services goes down or introduces latency in the pipeline, it caused a major incident. When I was working in M365 Security in 2024, this Exchange Server pipeline was called “legacy” because it’s one big .NET Framework service. I don’t know if they upgraded to .NET core but developing on this was as HN comments say, very janky.</p><p>The reason Teams doesn’t seem to be down is that Teams services are completely different and are written using .NET Core and have their own separate release pipeline. It was much easier to interact with Teams services. I actually worked closely with the team that was responsible for ingesting Teams messages to the customer’s data store. Their code base was much more modern and easy to understand. Exchange Server not so much.</p><p>I don’t know if what I said is accurate but know that Exchange server code was like a fossil that didn’t change as much, over the ~5 years I worked on it from 2019-2024.</p><p>Story time over.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50479360">Ex-MSFT here, sharing my outdated POV based on working on a product that was using Microsoft Exchange and therefore was hooked onto the email delivery pipeline.<p>Note that the infra for M365, Azure etc is different. They would be running on servers hosted in MSFT DCs but have completely different CI/CD pipelines. M365 services have their own deployment pipelines and it takes on the order of weeks to deploy your changes to production.</p><p>Considering the fact that Outlook is down, clearly email doesn’t seem to be working. So email uses something called Microsoft Exchange Server, there used to be an on-premises version of this but MS stopped supporting it to run the cloud version hereby called M365. Email is one big “macro-service”, if you’re running Windows Server, look at the process called “EdgeTransport.exe” this is responsible for sending/receiving email on Windows Servers. There are probably multiple 100s of services supported by 100s of teams that are run while email is routed from sender to receiver via MSFT Exchange servers. My recollection is that even if one of these services goes down or introduces latency in the pipeline, it caused a major incident. When I was working in M365 Security in 2024, this Exchange Server pipeline was called “legacy” because it’s one big .NET Framework service. I don’t know if they upgraded to .NET core but developing on this was as HN comments say, very janky.</p><p>The reason Teams doesn’t seem to be down is that Teams services are completely different and are written using .NET Core and have their own separate release pipeline. It was much easier to interact with Teams services. I actually worked closely with the team that was responsible for ingesting Teams messages to the customer’s data store. Their code base was much more modern and easy to understand. Exchange Server not so much.</p><p>I don’t know if what I said is accurate but know that Exchange server code was like a fossil that didn’t change as much, over the ~5 years I worked on it from 2019-2024.</p><p>Story time over.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50479360">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50479360" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">EvanAnderson</span>
+        
+        <span>2026/11/13 21:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; So email uses something called Microsoft Exchange Server, there used to be an on-premises version of this but MS stopped supporting it ...<p>On-premises Exchange is still supported and licensed. It's a subscription instead of a perpetual license.</p><p>&gt; I don’t know if what I said is accurate but know that Exchange server code was like a fossil that didn’t change as much, over the ~5 years I worked on it from 2019-2024.</p><p>Exchange is a mature product (albeit not without its flaws). Its era of change was between its 2007 and 2013 versions (inclusive) when it was made more modular and many parts were ported to the .NET runtime. The 2016, 2019, and now Subscription Edition codebases were more of an evolution and has much less churn.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50483143">&gt; So email uses something called Microsoft Exchange Server, there used to be an on-premises version of this but MS stopped supporting it ...<p>On-premises Exchange is still supported and licensed. It's a subscription instead of a perpetual license.</p><p>&gt; I don’t know if what I said is accurate but know that Exchange server code was like a fossil that didn’t change as much, over the ~5 years I worked on it from 2019-2024.</p><p>Exchange is a mature product (albeit not without its flaws). Its era of change was between its 2007 and 2013 versions (inclusive) when it was made more modular and many parts were ported to the .NET runtime. The 2016, 2019, and now Subscription Edition codebases were more of an evolution and has much less churn.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50483143">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50483143" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bigfatkitten</span>
+        
+        <span>2026/11/14 04:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Microsoft will still charge you money for Exchange SE, and occasionally release security and other bug fixes, but “supported” is an extremely generous description of the state of the product.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50489412">Microsoft will still charge you money for Exchange SE, and occasionally release security and other bug fixes, but “supported” is an extremely generous description of the state of the product.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50489412">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50489412" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">EvanAnderson</span>
+        
+        <span>2026/11/14 05:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Realistically, though, when it comes to support that's every MSFT product unless your org is shelling-out support dollars in advance.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50490006">Realistically, though, when it comes to support that's every MSFT product unless your org is shelling-out support dollars in advance.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50490006">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50490006" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">bigfatkitten</span>
+        
+        <span>2026/11/14 05:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The difference with their other products is that they generally want you to adopt it, and they actually do feature development, neither of which are true for Exchange SE.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50490490">The difference with their other products is that they generally want you to adopt it, and they actually do feature development, neither of which are true for Exchange SE.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50490490">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50490490" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">EvanAnderson</span>
+        
+        <span>2026/11/14 06:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My take is they want anything on-prem to go away.<p>Exchange, in particular, is sort of "feature complete" to me. I'm happy w/ what it does and how it does it for the most part.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50490860">My take is they want anything on-prem to go away.<p>Exchange, in particular, is sort of "feature complete" to me. I'm happy w/ what it does and how it does it for the most part.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50490860">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50490860" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">j45</span>
+        
+        <span>2026/11/14 00:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Exchange should be well protected behind a firewall or 10 after all these years.<p>What this leaves is a comparison of whether on-premise exchange servers have been compromised or down compared to the cloud.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50486190">Exchange should be well protected behind a firewall or 10 after all these years.<p>What this leaves is a comparison of whether on-premise exchange servers have been compromised or down compared to the cloud.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50486190">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50486190" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">tallanvor</span>
+        
+        <span>2026/11/13 17:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This hasn't been the case for a long time.  Unfortunately there are micro services that can still bring down the system if there's a bad enough bug.  That's not supposed to be able to happen as updates roll out over a period of time.  Unfortunately you can still get bit if another update creates a bug that takes out instances faster than they can be recreated.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50480437">This hasn't been the case for a long time.  Unfortunately there are micro services that can still bring down the system if there's a bad enough bug.  That's not supposed to be able to happen as updates roll out over a period of time.  Unfortunately you can still get bit if another update creates a bug that takes out instances faster than they can be recreated.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50480437">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50480437" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">j45</span>
+        
+        <span>2026/11/14 00:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I would hope that enough hardening has happened over the last 20 or 30 years.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50486197">I would hope that enough hardening has happened over the last 20 or 30 years.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50486197">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50486197" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">igleria</span>
+        
+        <span>2026/11/13 16:27</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">oof, here in Ireland outlook still down this morning. teams seems to be there tho.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50480142">oof, here in Ireland outlook still down this morning. teams seems to be there tho.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50480142">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50480142" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">_1tan</span>
+        
+        <span>2026/11/13 16:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yep, same here from Germany.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50480173">Yep, same here from Germany.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50480173">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50480173" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">fuzzfactor</span>
+        
+        <span>2026/11/14 00:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I guess when you do the math that's Microsoft 364, and counting down :\</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50485854">I guess when you do the math that's Microsoft 364, and counting down :\</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50485854">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50485854" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/11/13 22:12</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50483761"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50483761">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50483761" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">[deleted]</span>
+        
+        <span>2026/11/13 22:57</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50484476"><p>[deleted]</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50484476">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50484476" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">senectus1</span>
+        
+        <span>2026/11/13 15:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">we seem to be unable to start new chat sessions with people we haven't chatted with internally before. so team is at least partially down.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50479533">we seem to be unable to start new chat sessions with people we haven't chatted with internally before. so team is at least partially down.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50479533">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50479533" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">bgarbiak</span>
+        
+        <span>2026/11/13 16:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">From the Health Status page:<p>"Microsoft Teams: Most of the core functionality including joining calls, meetings, group chats, and channel messages are not impacted.
+<i>Scenarios that depend on Exchange Online, including Calendar related failures with scheduling, invites, viewing, and meeting edits. Creation of Live or Virtual events fail. Failures with Copilot responses for outlook, calendar, or M365 files, read history, or adding to new chats. Navigating to App chats, adding new contacts or syncing contacts in settings fail.</i> Standard channels are working fine but users may experience the inability to create or delete private or shared channels."</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50479943">From the Health Status page:<p>"Microsoft Teams: Most of the core functionality including joining calls, meetings, group chats, and channel messages are not impacted.
+<i>Scenarios that depend on Exchange Online, including Calendar related failures with scheduling, invites, viewing, and meeting edits. Creation of Live or Virtual events fail. Failures with Copilot responses for outlook, calendar, or M365 files, read history, or adding to new chats. Navigating to App chats, adding new contacts or syncing contacts in settings fail.</i> Standard channels are working fine but users may experience the inability to create or delete private or shared channels."</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50479943">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50479943" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">Aloha</span>
+        
+        <span>2026/11/13 15:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I suspect that the search is broken because it relies on the exchange bits to find users.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50479795">I suspect that the search is broken because it relies on the exchange bits to find users.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50479795">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50479795" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pards</span>
+        
+        <span>2026/11/13 20:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Did search _ever_ work, though?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50482643">Did search _ever_ work, though?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50482643">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50482643" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">apexalpha</span>
+        
+        <span>2026/11/13 16:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Teams relies on Exchange API to autocomplete your search for colleagues, if you know someone's full email you should be able to start it that way.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50480150">Teams relies on Exchange API to autocomplete your search for colleagues, if you know someone's full email you should be able to start it that way.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50480150">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50480150" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">jfsebastian</span>
+        
+        <span>2026/11/13 18:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What is driving me nuts is that we still heavily rely on email. Even to the point were we are unable to get notifications other than that.<p>I work at a fortune 500 company and they got me, 3 hours after I started working , the basic info about the obvious the internet is already screaming at you.</p><p>Since we are responsible for a large web application I tried to reach out to people through VIVA (yes, we only make use of that) and we managed only to reach about 2-3% of the user base. Information-wise it's like a blackout. For living in 2026 this is completely unacceptable.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50481695">What is driving me nuts is that we still heavily rely on email. Even to the point were we are unable to get notifications other than that.<p>I work at a fortune 500 company and they got me, 3 hours after I started working , the basic info about the obvious the internet is already screaming at you.</p><p>Since we are responsible for a large web application I tried to reach out to people through VIVA (yes, we only make use of that) and we managed only to reach about 2-3% of the user base. Information-wise it's like a blackout. For living in 2026 this is completely unacceptable.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50481695">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50481695" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
