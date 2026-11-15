@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rust 1.100 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-15/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>Rust 1.100</h1>
+      <p class="original-title">Rust 1.100</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 mbStavola</span>
+        <span>热度 897</span>
+        <span>回复 322</span>
+        <span>2026/11/13 02:39</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50472038" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://blog.rust-lang.org/2026/11/12/Rust-1.100.0/" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50472038.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>The Rust team is happy to announce a new version of Rust, 1.100.0. Rust is a programming language empowering everyone to build reliable and efficient software. If you have a previous version of Rust installed via rustup, you can get 1.100.0 with: $ rustup update stable If you don&#39;t have it already, you can get rustup from the appropriate page on our website, and check out the detailed release notes for 1.100.0. If you&#39;d like to help us out by testing future releases, you might consider updating locally to use the beta channel (rustup default beta) or the nightly channel (rustup default nightly). Please report any bugs you might come across!</li><li>What&#39;s in 1.100.0 stable</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nirinor</span>
+        
+        <span>2026/11/13 02:35</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Woohoo, that's a release! My personal favorites:<p>- Stabilize never type</p><p>- Stabilize custom allocators</p><p>- Introduced minimum publish age configurations, also known as dependency cooldowns. When the relevant config is set, the resolver ignores versions published more recently than that, unless they are already in Cargo.lock. (RFC 3923) docs #17335</p><p>- cargo-install: now uses the existing lockfile in the .crate tarball by default. --locked in cargo install becomes a no-op. #17388</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50471989">Woohoo, that's a release! My personal favorites:<p>- Stabilize never type</p><p>- Stabilize custom allocators</p><p>- Introduced minimum publish age configurations, also known as dependency cooldowns. When the relevant config is set, the resolver ignores versions published more recently than that, unless they are already in Cargo.lock. (RFC 3923) docs #17335</p><p>- cargo-install: now uses the existing lockfile in the .crate tarball by default. --locked in cargo install becomes a no-op. #17388</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50471989">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50471989" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">nixpulvis</span>
+        
+        <span>2026/11/13 05:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; cargo-install: now uses the existing lockfile in the .crate tarball by default. --locked in cargo install becomes a no-op. #17388<p>Long time follower of this. Very grateful it's been implemented.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50474219">&gt; cargo-install: now uses the existing lockfile in the .crate tarball by default. --locked in cargo install becomes a no-op. #17388<p>Long time follower of this. Very grateful it's been implemented.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50474219">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50474219" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">epage</span>
+        
+        <span>2026/11/13 05:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For anyone that wants more context on the decision, see <a href="https://github.com/rust-lang/cargo/issues/7169#issuecomment-4421296987" target="_blank" rel="noopener noreferrer">https://github.com/rust-lang/cargo/issues/7169#issuecomment-...</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50474289">For anyone that wants more context on the decision, see <a href="https://github.com/rust-lang/cargo/issues/7169#issuecomment-4421296987" target="_blank" rel="noopener noreferrer">https://github.com/rust-lang/cargo/issues/7169#issuecomment-...</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50474289">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50474289" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">p-e-w</span>
+        
+        <span>2026/11/13 08:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">That was one of the biggest gotchas with Rust. It’s unfortunate that it took so long to change this very unintuitive and potentially dangerous behavior.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50476723">That was one of the biggest gotchas with Rust. It’s unfortunate that it took so long to change this very unintuitive and potentially dangerous behavior.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50476723">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50476723" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">SOLAR_FIELDS</span>
+        
+        <span>2026/11/13 09:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Dependency cooldowns receiving such a whiplash this year. Earlier everyone was advocating for them because of the supply chain attacks. Now, people are worried because you might miss 0 days if you use them.<p>Nonetheless, the ability to set and configure it is a welcome feature.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50476790">Dependency cooldowns receiving such a whiplash this year. Earlier everyone was advocating for them because of the supply chain attacks. Now, people are worried because you might miss 0 days if you use them.<p>Nonetheless, the ability to set and configure it is a welcome feature.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50476790">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50476790" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">woodruffw</span>
+        
+        <span>2026/11/13 10:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You should do both: you should let normal updates cool down, <i>and</i> you should immediately patch security advisories.<p>One of the biggest ergonomic problems with cooldowns is that many tools let the former goal obstruct the latter. Both should be part of the state machine of resolution itself, rather than things that get layered on.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50477439">You should do both: you should let normal updates cool down, <i>and</i> you should immediately patch security advisories.<p>One of the biggest ergonomic problems with cooldowns is that many tools let the former goal obstruct the latter. Both should be part of the state machine of resolution itself, rather than things that get layered on.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50477439">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50477439" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kragen</span>
+        
+        <span>2026/11/13 20:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Usually people advocate dependency cooldowns as a mitigation for supply-chain attacks, where you're depending on a module with a malicious maintainer, possibly a new one (perhaps one who stole the old maintainer's keys so they can pretend to be the old maintainer).<p>In that situation, how do you distinguish between "normal updates" (that you should let cool down) and "security advisories"?  If all the hypothetical malicious maintainer has to do to get you to update is to publish a security advisory for their own package, wouldn't they just do that?  It might even be a real advisory about a real security hole that they introduced, but claiming more versions are affected than actually are affected.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50482295">Usually people advocate dependency cooldowns as a mitigation for supply-chain attacks, where you're depending on a module with a malicious maintainer, possibly a new one (perhaps one who stole the old maintainer's keys so they can pretend to be the old maintainer).<p>In that situation, how do you distinguish between "normal updates" (that you should let cool down) and "security advisories"?  If all the hypothetical malicious maintainer has to do to get you to update is to publish a security advisory for their own package, wouldn't they just do that?  It might even be a real advisory about a real security hole that they introduced, but claiming more versions are affected than actually are affected.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50482295">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50482295" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">woodruffw</span>
+        
+        <span>2026/11/13 20:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It takes additional permissions, in general, to issue an advisory. And “supply chain” attacks in general tend to be used by smash-and-grab attackers, who don’t have time on their side. It’s not like a browser 0day where the attacker’s goal is to preserve their underlying exploit primitive for as long as possible.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50482755">It takes additional permissions, in general, to issue an advisory. And “supply chain” attacks in general tend to be used by smash-and-grab attackers, who don’t have time on their side. It’s not like a browser 0day where the attacker’s goal is to preserve their underlying exploit primitive for as long as possible.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50482755">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50482755" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">kragen</span>
+        
+        <span>2026/11/13 22:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Additional permissions?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50484477">Additional permissions?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50484477">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50484477" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">woodruffw</span>
+        
+        <span>2026/11/14 02:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’m talking about things like GHSAs. You can’t issue one just by compromising a push credential to a repository, which is how most of these supply chain attacks start.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50487370">I’m talking about things like GHSAs. You can’t issue one just by compromising a push credential to a repository, which is how most of these supply chain attacks start.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50487370">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50487370" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">jmvoodoo</span>
+        
+        <span>2026/11/13 20:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Waiting for someone to hold back a vulnerability until they can compromise a package, then release vuln publicly for maximum impact.<p>It’s only a matter of time.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50482674">Waiting for someone to hold back a vulnerability until they can compromise a package, then release vuln publicly for maximum impact.<p>It’s only a matter of time.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50482674">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50482674" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ninkendo</span>
+        
+        <span>2026/11/13 19:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">How do you separate security advisories from regular updates? (If it’s just a box you check, it only means attackers will say “this is a security update” on the malicious package they upload.)<p>The point of cooldowns is for when a crate author’s account is compromised and used to publish malicious code. Saying “security advisories bypass cooldowns” wouldn’t really help anything there.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50482232">How do you separate security advisories from regular updates? (If it’s just a box you check, it only means attackers will say “this is a security update” on the malicious package they upload.)<p>The point of cooldowns is for when a crate author’s account is compromised and used to publish malicious code. Saying “security advisories bypass cooldowns” wouldn’t really help anything there.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50482232">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50482232" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">woodruffw</span>
+        
+        <span>2026/11/13 20:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; If it’s just a box you check, it only means attackers will say “this is a security update” on the malicious package they upload.<p>It generally requires additional permissions, per the adjacent respond. And it introduces additional scrutiny on the release, which is the last thing an opportunistic attacker wants (the entire reason “supply chain” attacks are effective is because nobody gives any thought to upgrading their dependencies in the normal case).</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50482871">&gt; If it’s just a box you check, it only means attackers will say “this is a security update” on the malicious package they upload.<p>It generally requires additional permissions, per the adjacent respond. And it introduces additional scrutiny on the release, which is the last thing an opportunistic attacker wants (the entire reason “supply chain” attacks are effective is because nobody gives any thought to upgrading their dependencies in the normal case).</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50482871">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50482871" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">PaoloBarbolini</span>
+        
+        <span>2026/11/13 15:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are many cases in which security advisories aren't published. But I guess an alternative could be to update using the cooldown, and then diff the dependencies that would get a newer version if the cooldown wasn't in place to check if they contain anything relevant for the particular application you're developing.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50479649">There are many cases in which security advisories aren't published. But I guess an alternative could be to update using the cooldown, and then diff the dependencies that would get a newer version if the cooldown wasn't in place to check if they contain anything relevant for the particular application you're developing.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50479649">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50479649" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">derefr</span>
+        
+        <span>2026/11/15 02:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Why wouldn't a supply-chain attacker simply manipulate the project into producing a security advisory to get their exploit code pushed through <i>inside</i> a high-priority release?<p>I.e. get a puppet/co-conspirator to push vulnerable code; wait until that code gets released as v1.2.3; submit other vulnerable code; wait for <i>that</i> code to be merged and released as v1.2.4; then submit a vuln report for the vuln introduced in v1.2.3; and wait for v1.2.3 + v1.2.4 to be security-deprecated and v1.2.5 to be fast-released to replace them.</p><p>Now v1.2.5 exists and has your still-unknown 0day in it, while versions prior to v1.2.5 are deprecated. If devtools that had pinned v1.2.3 get forced "upward" to v1.2.5 despite the cooldown, you win.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50499464">Why wouldn't a supply-chain attacker simply manipulate the project into producing a security advisory to get their exploit code pushed through <i>inside</i> a high-priority release?<p>I.e. get a puppet/co-conspirator to push vulnerable code; wait until that code gets released as v1.2.3; submit other vulnerable code; wait for <i>that</i> code to be merged and released as v1.2.4; then submit a vuln report for the vuln introduced in v1.2.3; and wait for v1.2.3 + v1.2.4 to be security-deprecated and v1.2.5 to be fast-released to replace them.</p><p>Now v1.2.5 exists and has your still-unknown 0day in it, while versions prior to v1.2.5 are deprecated. If devtools that had pinned v1.2.3 get forced "upward" to v1.2.5 despite the cooldown, you win.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50499464">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50499464" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dns_snek</span>
+        
+        <span>2026/11/13 17:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I haven't seen anyone advocate against cooldowns because those are completely different problems.<p>How would removing cooldowns help you patch vulnerabilities? That would imply that your CI is configured to update dependencies, rebuild, and push them to production without human oversight?</p><p>That's obviously not the way to go, you must have human oversight and if you do then your humans should be alerted when one of your dependencies patches a security issue. At that point you review it, override the cooldown, and push it to production.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50480794">I haven't seen anyone advocate against cooldowns because those are completely different problems.<p>How would removing cooldowns help you patch vulnerabilities? That would imply that your CI is configured to update dependencies, rebuild, and push them to production without human oversight?</p><p>That's obviously not the way to go, you must have human oversight and if you do then your humans should be alerted when one of your dependencies patches a security issue. At that point you review it, override the cooldown, and push it to production.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50480794">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50480794" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">zarzavat</span>
+        
+        <span>2026/11/13 11:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You should use a cooldown. The effects of a supply chain attack are significantly worse than the effects of a 0 day. You can always make exceptions on a case-by-case basis.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50477955">You should use a cooldown. The effects of a supply chain attack are significantly worse than the effects of a 0 day. You can always make exceptions on a case-by-case basis.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50477955">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50477955" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">saghm</span>
+        
+        <span>2026/11/13 10:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Some of us were saying they didn't understand the endgame of everyone using cooldowns at the time. We mostly got told we were wrong though.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50477345">Some of us were saying they didn't understand the endgame of everyone using cooldowns at the time. We mostly got told we were wrong though.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50477345">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50477345" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">n_u</span>
+        
+        <span>2026/11/13 03:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Cargo now reports unused dependencies to users, e.g.<p>&gt; warning: unused dependency `tracing-subscriber`
+  --&gt; Cargo.toml:23:1
+   |
+23 | tracing-subscriber.workspace = true
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `tracing-subscriber`</p><p>Heck yes</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50472574">&gt; Cargo now reports unused dependencies to users, e.g.<p>&gt; warning: unused dependency `tracing-subscriber`
+  --&gt; Cargo.toml:23:1
+   |
+23 | tracing-subscriber.workspace = true
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = note: `cargo::unused_dependencies` is set to `warn` by default
+help: consider removing the dependency on `tracing-subscriber`</p><p>Heck yes</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50472574">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50472574" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">minimaxir</span>
+        
+        <span>2026/11/13 04:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I updated to 1.100 during a Claude session and it complained about new warnings, so I told it to fix them. It removed a large number of unused dependencies without issue.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50473354">I updated to 1.100 during a Claude session and it complained about new warnings, so I told it to fix them. It removed a large number of unused dependencies without issue.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50473354">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50473354" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>做了一个 iOS 离线音乐播放器 离音： Wi-Fi 拖歌、APE/FLAC/DSD、10 段均衡器更新啦，发帖送一波永久 pro 送码 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-15/">返回日报</a>
+      <div class="source-chip">V2EX #7</div>
+      <h1>做了一个 iOS 离线音乐播放器 离音： Wi-Fi 拖歌、APE/FLAC/DSD、10 段均衡器更新啦，发帖送一波永久 pro 送码</h1>
+      <p class="original-title">做了一个 iOS 离线音乐播放器 离音： Wi-Fi 拖歌、APE/FLAC/DSD、10 段均衡器更新啦，发帖送一波永久 pro 送码</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 andyiac</span>
+        <span>热度 8</span>
+        <span>回复 8</span>
+        <span>2026/11/15 19:41</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1257232" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1257232.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>一个纯本地音乐播放器（iPhone / iPad / Apple 芯片 Mac），无账号、无广告、不上传音频。1.7.3 共 19 处改动，补的是几件一直欠着的事：能播的格式少一块、桌面上没得用、从服务器拿歌得先存到「文件」。</li><li>格式：MP3 / M4A / MP4 / AAC / FLAC / ALAC / WAV / AIFF·AIF / CAF / MP1·MP2 / OGG·OGA / Opus / DSF·DFF / APE；APE 与 FLAC 内嵌 CUE 也认，旁边放 .lrc 就是逐行歌词。另有 10 段参数均衡器与 ReplayGain。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>一个纯本地音乐播放器（iPhone / iPad / Apple 芯片 Mac），无账号、无广告、不上传音频。1.7.3 共 19 处改动，补的是几件一直欠着的事：能播的格式少一块、桌面上没得用、从服务器拿歌得先存到「文件」。</p>
+<p>格式：MP3 / M4A / MP4 / AAC / FLAC / ALAC / WAV / AIFF·AIF / CAF / MP1·MP2 / OGG·OGA / Opus / DSF·DFF / APE；APE 与 FLAC 内嵌 CUE 也认，旁边放 .lrc 就是逐行歌词。另有 10 段参数均衡器与 ReplayGain。</p>
+<p></p>
+1.7.3 更新
+<ol>
+<li>
+<p>APE 现在能直接播（Pro）。不是导入时先转一道 WAV，是边读边解码：后台线程按块取 PCM 进环形缓冲，均衡器和播放器照常取数据，全程没有中间文件。为什么不做缓存转码——APE 无损，一首五分钟解成 WAV 就是 50–100MB，一张专辑几百兆，首次播放还得等转完；实测解码速度是实时的 20–100 倍，余量足够，没必要拿磁盘换时间。代价是只做立体声：多声道的 APE（DVD-A 抓的那种）直接拒绝播放，不静默下混。</p>
+</li>
+<li>
+<p>整轨 + .cue 的专辑按曲目分开。APE 与 FLAC 内嵌的 CUE 也认，不用在文件旁边再放一份。</p>
+</li>
+<li>
+<p>Mac 上原生运行。不另做一套 Mac 界面，同一份工程跑在 Apple 芯片的 Mac 上，曲库、播放器、Wi-Fi 传歌、导入全是 iPad 那一套；长页面可以按住鼠标拖动滚动，和系统里其它应用一致。取舍：需要 Apple 芯片的 Mac，Intel 机器不在范围内。</p>
+</li>
+<li>
+<p>WebDAV 导入。浏览服务器目录，挑文件或整个文件夹，落到本地和「文件」导入走同一条管线——命名、去重、元数据、CUE 展开都一致，不会出现「服务器来的歌和本地的不一样」。服务器密码进钥匙串，不写明文配置。取舍：单向的「挑一次、落到本地」，不做双向同步，也不扫你服务器上的整个曲库。</p>
+</li>
+<li>
+<p>睡眠定时独立成页（Pro）：圆环选时长，1 分钟到 14 小时，结束前淡出；倒计时可以暂停，想多听两首按一下，不用重设。</p>
+</li>
+<li>
+<p>iPad / Mac 键盘快捷键：空格播放暂停，⌘← ⌘→ 切歌，⇧⌘← ⇧⌘→ 快进快退，⌘R 切循环、⌘S 切随机；设置里新增一页列全。</p>
+</li>
+<li>
+<p>其余几处：音频或整个文件夹拖到文件夹页即导入；长按一首歌直接改标题、歌手、专辑、封面；歌单、收藏和自定义标题导出成带版本号的文件，换设备导回去；「存储」页拆开显示音频、封面、歌词、数据和缓存各占多少；关联文件夹保留目录结构，新文件不用手动重扫；文件在 App 外被改名或移动后，歌单按路径 → 文件名 → 标题与歌手三步找回；搜索更快，大小写和变音符号都不敏感；歌单页加了「最近播放」。</p>
+</li>
+<li>
+<p>修了几处老毛病。最要紧的是换 Apple 账号后 Pro 不再消失：只有商店明确告知「已撤销」才锁回免费，账号切换、离线、商店没回应都保留上一次判定——宁可晚锁一个退款的，也不误锁一个付过钱的。另外修了：中日韩标签的曲名不再变问号；同时带新旧标题标签的歌显示正确标题；横屏在歌词处下滑能收起播放器；系统关掉实时活动时，锁屏歌词页会说明原因并给出开关入口。</p>
+</li>
+</ol>
+<p>免费下载；Pro 一次性买断，不订阅。DSD 与 APE 播放、保存自己的 EQ 调音、播放倍速、睡眠定时、全部主题与播放器样式、备用图标与自定义封面、三行锁屏歌词在 Pro 里，其余都能免费用。</p>
+送 10 个码
+<pre><code>8EKFE6TETNPAFN6TKH
+TPH66L6FMHRTM773XF
+4L4W4XL3F7XWTTWETA
+MAPF4Y3TR3FP4K7FPL
+86ET78FWRRXARMNXKP
+MKYRXKJMHWLTKX7JPF
+HHRHENAW7834HTRR7M
+AMEHKARATPTWXA8XNJ
+WMPER7TRL7XN6AKPT8
+L37NTNEFJFK7EWEPR7
+</code></pre>
+有问题大家可以进群反馈
+<p></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>一个纯本地音乐播放器（iPhone / iPad / Apple 芯片 Mac），无账号、无广告、不上传音频。1.7.3 共 19 处改动，补的是几件一直欠着的事：能播的格式少一块、桌面上没得用、从服务器拿歌得先存到「文件」。</p>
+<p>格式：MP3 / M4A / MP4 / AAC / FLAC / ALAC / WAV / AIFF·AIF / CAF / MP1·MP2 / OGG·OGA / Opus / DSF·DFF / APE；APE 与 FLAC 内嵌 CUE 也认，旁边放 .lrc 就是逐行歌词。另有 10 段参数均衡器与 ReplayGain。</p>
+<p></p>
+1.7.3 更新
+<ol>
+<li>
+<p>APE 现在能直接播（Pro）。不是导入时先转一道 WAV，是边读边解码：后台线程按块取 PCM 进环形缓冲，均衡器和播放器照常取数据，全程没有中间文件。为什么不做缓存转码——APE 无损，一首五分钟解成 WAV 就是 50–100MB，一张专辑几百兆，首次播放还得等转完；实测解码速度是实时的 20–100 倍，余量足够，没必要拿磁盘换时间。代价是只做立体声：多声道的 APE（DVD-A 抓的那种）直接拒绝播放，不静默下混。</p>
+</li>
+<li>
+<p>整轨 + .cue 的专辑按曲目分开。APE 与 FLAC 内嵌的 CUE 也认，不用在文件旁边再放一份。</p>
+</li>
+<li>
+<p>Mac 上原生运行。不另做一套 Mac 界面，同一份工程跑在 Apple 芯片的 Mac 上，曲库、播放器、Wi-Fi 传歌、导入全是 iPad 那一套；长页面可以按住鼠标拖动滚动，和系统里其它应用一致。取舍：需要 Apple 芯片的 Mac，Intel 机器不在范围内。</p>
+</li>
+<li>
+<p>WebDAV 导入。浏览服务器目录，挑文件或整个文件夹，落到本地和「文件」导入走同一条管线——命名、去重、元数据、CUE 展开都一致，不会出现「服务器来的歌和本地的不一样」。服务器密码进钥匙串，不写明文配置。取舍：单向的「挑一次、落到本地」，不做双向同步，也不扫你服务器上的整个曲库。</p>
+</li>
+<li>
+<p>睡眠定时独立成页（Pro）：圆环选时长，1 分钟到 14 小时，结束前淡出；倒计时可以暂停，想多听两首按一下，不用重设。</p>
+</li>
+<li>
+<p>iPad / Mac 键盘快捷键：空格播放暂停，⌘← ⌘→ 切歌，⇧⌘← ⇧⌘→ 快进快退，⌘R 切循环、⌘S 切随机；设置里新增一页列全。</p>
+</li>
+<li>
+<p>其余几处：音频或整个文件夹拖到文件夹页即导入；长按一首歌直接改标题、歌手、专辑、封面；歌单、收藏和自定义标题导出成带版本号的文件，换设备导回去；「存储」页拆开显示音频、封面、歌词、数据和缓存各占多少；关联文件夹保留目录结构，新文件不用手动重扫；文件在 App 外被改名或移动后，歌单按路径 → 文件名 → 标题与歌手三步找回；搜索更快，大小写和变音符号都不敏感；歌单页加了「最近播放」。</p>
+</li>
+<li>
+<p>修了几处老毛病。最要紧的是换 Apple 账号后 Pro 不再消失：只有商店明确告知「已撤销」才锁回免费，账号切换、离线、商店没回应都保留上一次判定——宁可晚锁一个退款的，也不误锁一个付过钱的。另外修了：中日韩标签的曲名不再变问号；同时带新旧标题标签的歌显示正确标题；横屏在歌词处下滑能收起播放器；系统关掉实时活动时，锁屏歌词页会说明原因并给出开关入口。</p>
+</li>
+</ol>
+<p>免费下载；Pro 一次性买断，不订阅。DSD 与 APE 播放、保存自己的 EQ 调音、播放倍速、睡眠定时、全部主题与播放器样式、备用图标与自定义封面、三行锁屏歌词在 Pro 里，其余都能免费用。</p>
+送 10 个码
+<pre><code>8EKFE6TETNPAFN6TKH
+TPH66L6FMHRTM773XF
+4L4W4XL3F7XWTTWETA
+MAPF4Y3TR3FP4K7FPL
+86ET78FWRRXARMNXKP
+MKYRXKJMHWLTKX7JPF
+HHRHENAW7834HTRR7M
+AMEHKARATPTWXA8XNJ
+WMPER7TRL7XN6AKPT8
+L37NTNEFJFK7EWEPR7
+</code></pre>
+有问题大家可以进群反馈
+<p></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">8</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xiaweian</span>
+        <span>#1</span>
+        <span>2026/11/15 19:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感谢楼主， AMEHKARATPTWXA8XNJ 已用，界面很漂亮，不过很久没离线听歌了，还得找找资源</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292702">感谢楼主， AMEHKARATPTWXA8XNJ 已用，界面很漂亮，不过很久没离线听歌了，还得找找资源</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292702">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292702" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">andyiac</span>
+        <span>#2</span>
+        <span>2026/11/15 19:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xiaweian" target="_blank" rel="noopener noreferrer">xiaweian</a> 感谢任何，使用有问题随时反馈哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292707">@<a href="/member/xiaweian" target="_blank" rel="noopener noreferrer">xiaweian</a> 感谢任何，使用有问题随时反馈哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292707">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292707" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">andyiac</span>
+        <span>#3</span>
+        <span>2026/11/15 19:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/xiaweian" target="_blank" rel="noopener noreferrer">xiaweian</a> 写错了 感谢认可，使用有问题随时反馈哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292710">@<a href="/member/xiaweian" target="_blank" rel="noopener noreferrer">xiaweian</a> 写错了 感谢认可，使用有问题随时反馈哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292710">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292710" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">mingli</span>
+        <span>#4</span>
+        <span>2026/11/15 19:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">4L4W4XL3F7XWTTWETA 已用，感谢分享！</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292713">4L4W4XL3F7XWTTWETA 已用，感谢分享！</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292713">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292713" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fedfrank</span>
+        <span>#5</span>
+        <span>2026/11/15 20:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">用过，很清新，就是线上的歌曲太少了，还得自己导入歌</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292738">用过，很清新，就是线上的歌曲太少了，还得自己导入歌</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292738">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292738" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jose13</span>
+        <span>#6</span>
+        <span>2026/11/15 21:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">在用 hiby 不过好像很久没更新了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292852">在用 hiby 不过好像很久没更新了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292852">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292852" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">andyiac</span>
+        <span>#7</span>
+        <span>2026/11/15 21:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/jose13" target="_blank" rel="noopener noreferrer">jose13</a> hiby 是老牌了，也很优秀，好像是有硬件</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292879">@<a href="/member/jose13" target="_blank" rel="noopener noreferrer">jose13</a> hiby 是老牌了，也很优秀，好像是有硬件</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292879">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292879" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">fryrice</span>
+        <span>#8</span>
+        <span>2026/11/15 21:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">WMPER7TRL7XN6AKPT8 已用，谢谢楼主</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18292889">WMPER7TRL7XN6AKPT8 已用，谢谢楼主</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18292889">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257232#reply18292889" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
