@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qwen4-Max | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-17/">返回日报</a>
+      <div class="source-chip">Hacker News #4</div>
+      <h1>Qwen4-Max</h1>
+      <p class="original-title">Qwen4-Max</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 ilreb</span>
+        <span>热度 868</span>
+        <span>回复 481</span>
+        <span>2026/11/16 10:14</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50513215" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://qwen.ai/blog?id=qwen4-max" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50513215.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Qwen offers comprehensive functionality spanning chatbot, image and video understanding, image generation, document processing, web search integration, tool utilization, and artifacts.</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">simonw</span>
+        
+        <span>2026/11/16 11:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Qwen4-Max pelicans at four reasoning efforts 
+(none, low, high, xhigh): <a href="https://tools.simonwillison.net/markdown-svg-renderer?url=https%3A%2F%2Fgist.github.com%2Fsimonw%2Fff451620c173ea21e21b97b8cd46805b" target="_blank" rel="noopener noreferrer">https://tools.simonwillison.net/markdown-svg-renderer?url=ht...</a><p>For comparison, here's one I got from Qwen3.8 Max (at default reasoning effort): <a href="https://simonwillison.net/2026/Jul/20/afraid-of-chinese-models/" target="_blank" rel="noopener noreferrer">https://simonwillison.net/2026/Jul/20/afraid-of-chinese-mode...</a></p><p>This inspired me to re-run pelicans through 3.8 Max - but OpenRouter has qwen3.8-max-prime and qwen3.8-max-0902 - prime is twice the price and faster - so I went with the 0902 one.</p><p>Turns out Qwen4-Max has a none setting, but 3.8 Max didn't allow disabling reasoning - you had to pick from these five levels instead: minimal, low, medium, high, xhigh.</p><p>Here are those 3.8 Max 0902 pelicans: <a href="https://tools.simonwillison.net/markdown-svg-renderer?url=https%3A%2F%2Fgist.github.com%2Fsimonw%2F88071abe6ecd0f8e13ab77ade259be9e" target="_blank" rel="noopener noreferrer">https://tools.simonwillison.net/markdown-svg-renderer?url=ht...</a> - they're mostly not as good as 4, but I prefer the 3.8 xhigh one.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50513837">Qwen4-Max pelicans at four reasoning efforts 
+(none, low, high, xhigh): <a href="https://tools.simonwillison.net/markdown-svg-renderer?url=https%3A%2F%2Fgist.github.com%2Fsimonw%2Fff451620c173ea21e21b97b8cd46805b" target="_blank" rel="noopener noreferrer">https://tools.simonwillison.net/markdown-svg-renderer?url=ht...</a><p>For comparison, here's one I got from Qwen3.8 Max (at default reasoning effort): <a href="https://simonwillison.net/2026/Jul/20/afraid-of-chinese-models/" target="_blank" rel="noopener noreferrer">https://simonwillison.net/2026/Jul/20/afraid-of-chinese-mode...</a></p><p>This inspired me to re-run pelicans through 3.8 Max - but OpenRouter has qwen3.8-max-prime and qwen3.8-max-0902 - prime is twice the price and faster - so I went with the 0902 one.</p><p>Turns out Qwen4-Max has a none setting, but 3.8 Max didn't allow disabling reasoning - you had to pick from these five levels instead: minimal, low, medium, high, xhigh.</p><p>Here are those 3.8 Max 0902 pelicans: <a href="https://tools.simonwillison.net/markdown-svg-renderer?url=https%3A%2F%2Fgist.github.com%2Fsimonw%2F88071abe6ecd0f8e13ab77ade259be9e" target="_blank" rel="noopener noreferrer">https://tools.simonwillison.net/markdown-svg-renderer?url=ht...</a> - they're mostly not as good as 4, but I prefer the 3.8 xhigh one.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50513837">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50513837" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">dtech</span>
+        
+        <span>2026/11/16 15:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't fully understand why you keep doing these as-is. You original motivation was that this was not in the training set and indeed it was a great benchmark for a while, but it's clearly been incorporated now in the training data and possibly internal benchmarks.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50514952">I don't fully understand why you keep doing these as-is. You original motivation was that this was not in the training set and indeed it was a great benchmark for a while, but it's clearly been incorporated now in the training data and possibly internal benchmarks.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50514952">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50514952" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">trentor</span>
+        
+        <span>2026/11/16 19:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Because he wants the engagement they generate. I don't understand why they still get upvoted on HN, but here we are. If even I can recognize that they're pretty much useless as benchmarks at this point, he must know it too.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50516270">Because he wants the engagement they generate. I don't understand why they still get upvoted on HN, but here we are. If even I can recognize that they're pretty much useless as benchmarks at this point, he must know it too.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50516270">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50516270" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">QuantumNomad_</span>
+        
+        <span>2026/11/16 19:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">He’s our pelican man :) I will always upvote pelican posts from the HN resident pelican guy</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50516309">He’s our pelican man :) I will always upvote pelican posts from the HN resident pelican guy</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50516309">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50516309" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">doe88</span>
+        
+        <span>2026/11/16 21:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Likewise, i always upvote these posts even if i know it is biaised, it is always fun to see their evolutions, there is nothing wrong with them. Also even if we know there are trained on them specifically, some models are nonetheless better than others in engineering the output, thus it is always interesting.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50517615">Likewise, i always upvote these posts even if i know it is biaised, it is always fun to see their evolutions, there is nothing wrong with them. Also even if we know there are trained on them specifically, some models are nonetheless better than others in engineering the output, thus it is always interesting.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50517615">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50517615" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">redherring22</span>
+        
+        <span>2026/11/17 00:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">HN is not Reddit.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50519356">HN is not Reddit.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50519356">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50519356" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Izmaki</span>
+        
+        <span>2026/11/17 00:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Sometimes it's equally toxic.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50519478">Sometimes it's equally toxic.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50519478">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50519478" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">satvikpendem</span>
+        
+        <span>2026/11/17 01:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">People have been saying this for two decades now and it's literally in the guidelines not to.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50520151">People have been saying this for two decades now and it's literally in the guidelines not to.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50520151">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50520151" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">buckle8017</span>
+        
+        <span>2026/11/17 00:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I have bad news for you.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50519667">I have bad news for you.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50519667">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50519667" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">idiotsecant</span>
+        
+        <span>2026/11/17 01:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The most reddit thing about HN is how reliably someone will spend the time to tell you HN is not reddit at the slightest provocation.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50520026">The most reddit thing about HN is how reliably someone will spend the time to tell you HN is not reddit at the slightest provocation.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50520026">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50520026" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">taytus</span>
+        
+        <span>2026/11/17 01:15</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[flagged]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50520015">[flagged]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50520015">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50520015" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">embedding-shape</span>
+        
+        <span>2026/11/16 19:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Things like "I will always upvote X posts from the HN resident X" feels like what HN should actively work against.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50516405">Things like "I will always upvote X posts from the HN resident X" feels like what HN should actively work against.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50516405">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50516405" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">GTP</span>
+        
+        <span>2026/11/16 20:25</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I think their goal was just to write a funny comment.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50516865">I think their goal was just to write a funny comment.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50516865">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50516865" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">CryptoBanker</span>
+        
+        <span>2026/11/16 22:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Which is also something we try to avoid here</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50518009">Which is also something we try to avoid here</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50518009">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50518009" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">croes</span>
+        
+        <span>2026/11/17 01:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; All work and no play makes Jack a dull boy</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50519878">&gt; All work and no play makes Jack a dull boy</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50519878">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50519878" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">idiotsecant</span>
+        
+        <span>2026/11/17 01:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">GIUYS STOP BEING FUNNY ON THE INTERNET</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50520036">GIUYS STOP BEING FUNNY ON THE INTERNET</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50520036">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50520036" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">RemingtonDavies</span>
+        
+        <span>2026/11/16 22:46</span>
+        <span class="badge">deleted</span>
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">[dead]</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50518142">[dead]</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50518142">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50518142" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">embedding-shape</span>
+        
+        <span>2026/11/16 22:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, which I suppose used to be something we all kind of tried to avoid here, to make conversations more curious instead of just pilling on with memes or whatever other communities been degraded to nowadays.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50517858">Yeah, which I suppose used to be something we all kind of tried to avoid here, to make conversations more curious instead of just pilling on with memes or whatever other communities been degraded to nowadays.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50517858">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50517858" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">GTP</span>
+        
+        <span>2026/11/16 23:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">In my view, as long as it is just an occasional funny comment here and there, it is not an issue.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50518833">In my view, as long as it is just an occasional funny comment here and there, it is not an issue.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50518833">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50518833" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">meowkit</span>
+        
+        <span>2026/11/17 00:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thats why you downvote memes/jokes instead of reporting them.<p>They’re not banned, but must be discouraged. It’s like someone being loud at a museum or using their bright phone at a movie.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50519630">Thats why you downvote memes/jokes instead of reporting them.<p>They’re not banned, but must be discouraged. It’s like someone being loud at a museum or using their bright phone at a movie.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50519630">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50519630" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

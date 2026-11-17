@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我解密了电信光猫里的 m01-b01-inner 插件：它能提取手机号、IMEI，能远程执行命令，还能扫描你家内网 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-17/">返回日报</a>
+      <div class="source-chip">V2EX #4</div>
+      <h1>我解密了电信光猫里的 m01-b01-inner 插件：它能提取手机号、IMEI，能远程执行命令，还能扫描你家内网</h1>
+      <p class="original-title">我解密了电信光猫里的 m01-b01-inner 插件：它能提取手机号、IMEI，能远程执行命令，还能扫描你家内网</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 doomsday616</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/11/17 23:53</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1257838" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1257838.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>中国电信光猫里预装了一个叫 m01-b01-inner 的插件（由 b01odmv3 启动），很多人在 ps 里见过它，但它真正的业务代码是加密的 Lua 脚本，加载后不落盘，所以过去几年网上的讨论都停留在&quot;疑似上报 MAC&quot;。</li><li>我从两台电信光猫的进程内存里把解密后的 Lua 源码完整导了出来，逐个模块读了一遍。结论：</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">先说结论
+<p>中国电信光猫里预装了一个叫 <code>m01-b01-inner</code> 的插件（由 <code>b01odmv3</code> 启动），很多人在 <code>ps</code> 里见过它，但它真正的业务代码是加密的 Lua 脚本，加载后不落盘，所以过去几年网上的讨论都停留在"疑似上报 MAC"。</p>
+<p>我从两台电信光猫的进程内存里把解密后的 Lua 源码完整导了出来，逐个模块读了一遍。结论：</p>
+<ol>
+<li><strong>默认就开着</strong>的一个模块（<code>xid</code>），写明用途是 "Collect user identification information from HTTP"，从你经过光猫的 HTTP 流量的网址、Referer、Cookie 里匹配<strong>手机号、IMEI、IMSI、MEID、OAID、AndroidID、IDFA、IDFV、经纬度、设备型号</strong>，每 30 分钟上报一次。</li>
+<li>插件具备<strong>远程以 root 执行任意命令并回传结果</strong>的能力（<code>shell</code> 模块）。</li>
+<li>插件具备<strong>从电信服务器下载扫描程序、扫描你家整个局域网端口和服务</strong>的能力（<code>pscan</code> 模块，参数与 nmap 一致）。</li>
+<li>插件能记录 HTTP 完整网址、User-Agent、Cookie，HTTPS 访问的域名，DNS 查询，连接五元组，甚至<strong>原始数据包</strong>；能<strong>劫持重定向</strong>你访问的网页；能<strong>远程替换自身代码</strong>。</li>
+<li>第 2～4 条的大部分模块默认关闭，由服务器下发配置开启。也就是说：<strong>你的光猫今天做什么，取决于电信服务器今天给它发什么。</strong></li>
+</ol>
+<p>下面是证据。</p>
+一、这是什么东西
+<p>天翼网关从 3.0 开始，光猫里除了底层 Linux，还跑着一个电信改造的 OpenWrt LXC 容器（SAF 框架），里面由 <code>appmgr</code> 管理一堆"插件"，每个插件又是一个独立容器。常见的有：</p>
+<p><code>xrobotv3</code>、<code>gamespeederv3</code>、<code>opmaintainv3</code>、<code>extccv3</code>、<code>inter_conndv3</code>、<code>u01v3</code>、<code>redictv3</code>，以及本文的主角 <code>b01odmv3</code> → <code>m01-b01-inner</code>。</p>
+<p>普通用户在光猫网页后台<strong>看不到</strong>这些插件，也无法关闭。</p>
+<p>本次分析的两台设备：</p>
+
+
+
+
+设备 A
+设备 B
+
+
+
+
+地区
+上海电信
+浙江电信
+
+
+型号
+中兴 ZXHN G7615V2
+ZNXT ZN-XG120
+
+
+CPU
+ARM（ZX279133）
+MIPS（EcoNet EN7580）
+
+
+插件
+<code>m01-b01-inner</code> + 内核模块 <code>m01-b01.ko</code>
+同左
+
+<p>两台设备不同厂商、不同芯片、不同省份，跑的是同一套插件、连同一批服务器。</p>
+<p>插件文件 SHA256（方便同行比对）：</p>
+<pre><code>设备A m01-b01-inner  da1cac60eaa4603ef51f0c139619dbd448cf8ac84cf83592fa6ac498d103ef7d
+设备A init.bin       2c5d9b3b7b7e0a0b7022e42d412c48910da5624440383686e293a65878b99022
+设备A m01-b01.ko     d67b5e13feae47641f530596cd8a2b4fcc181a8f80aa64ade1fca4bf442072f2
+设备B m01-b01-inner  7c2954c43fb76b75e485755a190507855d5cd4ab1b993407fc06fe8647504544
+设备B init.bin       58b8df301eebbef83e306cde217097fcbea57561dfe97bac09544ca85c2c695b
+设备B m01-b01.ko     a75f0beb76ab8190a32c3765edb600a3d214e79d62f9fa80be93cf9c37f89e0f
+</code></pre>
+二、它是怎么藏起来的
+<ul>
+<li><code>m01-b01-inner</code> 是 C 写的外壳，里面静态链接了 <strong>Lua 5.3 解释器</strong>、mbedTLS、libpcap。</li>
+<li>真正的业务逻辑在 <code>init.bin</code> 里：文件头之后是熵值 8.00 的密文，也就是完全加密。</li>
+<li>程序启动时把它解密到 <code>/tmp/lua_XXXXXX</code>，加载进内存后立刻删除。磁盘上永远找不到明文。</li>
+<li>同目录的内核模块 <code>m01-b01.ko</code> 在内核里挂钩子，逐包解析 HTTP、HTTPS 的 SNI（访问的域名）、DNS、DHCP，再通过共享内存交给用户态的 Lua。</li>
+</ul>
+<p></p>
+<p>所以只拿到固件、只看 <code>strings</code>，是看不到它到底干什么的。我的做法是<strong>只读地导出进程内存</strong>，从中切出解密后的 Lua 源码。全程没有运行、修改或注入这个插件。</p>
+三、源码原文
+<p>以下代码均为内存中导出的原文，未作改动（仅去掉了 Lua 字符串转义的反斜杠）。</p>
+1. <code>xid</code>：从 HTTP 流量里提取手机号和设备 ID（默认开启）
+<pre><code>    subtype = "xid",
+    help = "Collect user identification information from HTTP.",
+    tname = "xid_send",
+    upload_mode = "svrdata",   -- "none", "svrdata", "operdata", "all"
+    upload_type = "x_id_info",
+    period = 1800,
+    cache_msg = {
+        -- ["mac|host|uri query|referer query|cookie query"] = {appid = 6, time = "1683815913", count = 1},
+    },
+    max_cache_cnt = 1000,
+    attr = {"url", "ref", "cookie"},
+    keyexpr = {
+        androidid = "(android_?id"?$)",
+        bdid = "(bdid"?$)",
+        caid = "(caid"?$)",
+        device_type = "(device_type"?$)",
+        hmac = "(mac"?$)",
+        idfa = "(idfa"?$)",
+        idfv = "(idfv"?$)",
+        imei = "(imei"?$)",
+        imsi = "(imsi"?$)",
+        latitude = "(^"?la.*)",
+        longtitude = "(^"?lo.*)",
+        meid = "(meid"?$)",
+        model = "(model"?$)",
+        oaid = "(oaid"?$)",
+        phone = "(phone"?$)",
+        stbType = "(stbType"?$)"
+    },
+    valexpr = {
+        imei = "(^"?(86|35)[0-9]{13,15}"?$)",
+        imsi = "(^"?460[0-9]{12}"?$)",
+        meid = "(^"?[0-9A-F]{14}"?$)",
+        phone = "((^|[^a-zA-Z0-9])1[3-9][0-9]{9}([^a-zA-Z0-9]|$))"
+    },
+</code></pre>
+<p>逐行翻译成大白话：</p>
+<ul>
+<li>看你每一个 HTTP 请求的<strong>网址、来源页、Cookie</strong>（<code>attr</code>）；</li>
+<li>参数名像 <code>imei</code>、<code>oaid</code>、<code>idfa</code>、<code>phone</code>、<code>la...</code>/<code>lo...</code>（经纬度）的，抓出来；</li>
+<li>值还要用正则校验：<code>460</code> 开头的 15 位是 IMSI（中国手机卡号），<code>1[3-9]</code> 开头的 11 位是<strong>手机号</strong>；</li>
+<li>按"设备 MAC + 网站 + 参数"去重缓存，最多 1000 条，<strong>每 1800 秒（30 分钟）上报一次</strong>到主数据服务器。</li>
+</ul>
+<p><strong>原理</strong>：很多 App 和广告 SDK 会把这些标识直接拼在不加密的 HTTP 请求里发出去。光猫是你家所有流量的必经之路，明文请求经过它，它就能读到。这就是为什么"手机连上光猫 Wi-Fi"本身就足以让这些信息暴露。</p>
+<p>另有一个 <code>httpimei</code> 模块做类似的事（"pick http key using kv pair with keywords from url/cookie"），专门抓 URL 和 Cookie 里的 <code>imei</code> 和 MAC。</p>
+2. <code>shell</code>：远程以 root 执行命令并回传结果
+<pre><code>local shell = {
+    type = "shell",
+    subtype = "shell",
+    help = "run shell cmd and return result",
+}
+
+local function shell_run(t)
+    ...
+    if t.action == "read" then
+        local p = io.popen(cmd, "r")
+        local result = p:read("a")
+        p:close()
+        return result
+    else
+        os.execute(cmd)
+    end
+end
+
+actor.action_set(shell.subtype, "write", shell_run, 'run shell with no result, ...')
+actor.action_set(shell.subtype, "read", shell_run, 'run shell with result return, ...')
+</code></pre>
+<p>收到 <code>{"subtype":"shell","action":"read","args":"..."}</code> 这样的指令，就以 root 执行并把输出返回。另有 <code>dumh</code> 模块可以经内核模块执行命令（<code>MEMSHR_DUMH_EXECVE_CMD</code>），并自动把命令里的 <code>&lt;$SN&gt;</code>、<code>&lt;$OUI&gt;</code> 替换成本机序列号和厂商代码。</p>
+3. <code>pscan</code>：下载扫描器，扫你家整个内网
+<pre><code>    repo = 'http://101.89.180.237:7890/repo_n01/n780/',
+    argv = ' --max-rate 10 -sV -oX ',
+    prog = 'n01',
+    dst= "192.168.1.0/24",
+    iface = "br0",
+    help = "parse n01 result and send to oper_data"
+</code></pre>
+<p>从一个裸 IP 的 HTTP 地址下载名为 <code>n01</code> 的程序，用 <code>--max-rate 10 -sV -oX</code> 扫描光猫下的整个 <code>/24</code> 网段，解析结果后上传。<code>-sV -oX</code> 是 nmap 的"服务版本探测 + XML 输出"参数，<code>n01</code> 很可能就是改名的 nmap（推测，未取得该程序）。扫描结果意味着：你家每台设备开了哪些端口、跑的什么服务、什么版本。</p>
+<p>电信自己的《小翼管家基本功能隐私政策》（2026-09-01 版）对此有一句说明："获得<strong>天翼网关扫描权限</strong>，用于识别联网设备类型并检测联网设备非必要开放端口、脆弱性端口风险"。但这份政策只覆盖<strong>主动使用小翼管家 App 的用户</strong>，而插件预装在所有人的光猫里。</p>
+4. 记录上网行为：HTTP、HTTPS、DNS、原始包
+<p>内核传给 Lua 的每条 HTTP 记录包括：</p>
+<pre><code>    http_table.sport, http_table.ip, http_table.mac, http_table.dport,
+    http_table.ts_sec, http_table.ts_usec, http_table.dstip, http_table.method,
+    url_len, ref_len, ua_len, cookie_len, http_table.appid ...
+    http_table.url / http_table.ref / http_table.ua / http_table.cookie
+</code></pre>
+<p>HTTPS 记录（<code>help = "get https from kernel and send to server"</code>）：</p>
+<pre><code>    local https_table = {
+        type = "https_domain",
+        mac = myip.mac_ntoa(mac),
+        sip = ..., dip = ..., sport = sport, dport = dport,
+        appid = appid,
+        domain = svrname,
+        timestamp = tostring(now)
+    }
+</code></pre>
+<p>也就是<strong>哪台设备（MAC）、在什么时间、访问了哪个网站</strong>。HTTPS 内容加密，它看不到内容，但域名看得到。</p>
+<p>此外还有 <code>dns</code>（DNS 查询）、<code>tuple</code>（所有连接的地址端口）、<code>rawpkt</code>（直接上传原始数据包，默认每连接最多 16 个包，可按 IP、端口、MAC 设策略）。这些模块代码里的默认周期都是 0，即默认关闭，由服务器下发开启。</p>
+5. 劫持网页、代抓网页
+<p><code>hredirect</code>（"redirect http from server"）：服务器下发 <code>host + uri + location</code> 规则，内核把匹配的 HTTP 请求 302 跳转到指定地址。<code>crawler</code>：让光猫替服务器去抓取指定 URL 列表。</p>
+<p>网上流传的"访问某网站跳转反诈页面、几分钟后接到反诈电话"的案例（见文末 V2EX 2023 年帖），机制上和这个模块对得上，但我没有证据证明那个案例用的就是这个插件。</p>
+6. 摄像头与"安全数据"
+<pre><code>local sec_camera = {
+    help = "set sec_camera conf",
+    enable = false,
+    addr = "mk-collect.189smarthome.com:7890",
+    period = 120,
+    lanstats_period = 120,
+}
+local sec_data = {
+    help = "filter secdata and send to server",
+    send_period = 120,
+    enable = false,
+    svr_addr = "xapp.189cube.com:7870",
+}
+</code></pre>
+<p><code>sec_camera</code> 一旦开启，会把局域网设备统计和连接记录每 2 分钟发往 <code><a href="http://mk-collect.189smarthome.com" target="_blank" rel="noopener noreferrer">mk-collect.189smarthome.com</a></code>。另外插件会通过 ONVIF（摄像头协议）、UPnP、mDNS、DHCP 主动识别局域网设备，在内存里我看到了它对内网 NAS 的 UPnP 描述文件的探测记录。</p>
+7. 远程替换自己
+<pre><code>local function upgrade_http(t)
+    local http = require"socket.http"
+    local body, code = http.request(t.url)
+    ...
+    myfile.write(body, lcmd_tmp_path(upgrade.ufile))
+    ... "upgrade_post", "module":"%s" ...
+end
+</code></pre>
+<p><code>module</code> 可以是 <code>lua</code>、<code>sig</code>、<code>plugin</code>，即业务脚本、特征库、整个插件，都能从服务器给出的任意 URL 下载替换。另有 <code>hotpatch</code>（"hot fixbug, and hot add more function"）。</p>
+四、上报给谁
+
+
+
+服务器
+用途
+默认周期
+
+
+
+
+<code><a href="http://b01-data-reported.189cube.com:7890" target="_blank" rel="noopener noreferrer">b01-data-reported.189cube.com:7890</a></code>
+主数据上报（含 <code>xid</code>）
+30 分钟
+
+
+<code><a href="http://b01.189cube.com:7870" target="_blank" rel="noopener noreferrer">b01.189cube.com:7870</a></code>
+运维通道：心跳、原始包、命令结果
+数据 10 分钟，心跳 2 小时
+
+
+<code><a href="http://message.189cube.com:9890" target="_blank" rel="noopener noreferrer">message.189cube.com:9890</a></code>
+App 使用统计、应用控制
+按配置
+
+
+<code><a href="http://xapp.189cube.com:7870/7871/7872" target="_blank" rel="noopener noreferrer">xapp.189cube.com:7870/7871/7872</a></code>
+<code>sec_data</code> 等
+按配置
+
+
+<code><a href="http://mk-collect.189smarthome.com:7890" target="_blank" rel="noopener noreferrer">mk-collect.189smarthome.com:7890</a></code>
+摄像头/局域网安全数据
+按配置
+
+
+<code>101.89.180.237:7890</code>
+扫描器下载源
+按需
+
+<p>数据先 gzip 压缩，再 AES 加密，密钥经 ECDH 交换。在外面抓包看不到内容，这也是为什么过去没人能说清它到底传了什么。</p>
+<p>上报的每条数据都带着光猫身份：</p>
+<pre><code>{"data":%s,"sn":"%s","oui":"%s","int_ver":"%s","ad":"%s","loid":"%s","ipv4":"%s"}
+</code></pre>
+<p><code>loid</code> 是宽带的注册码，<strong>一个 LOID 对应一个实名宽带账户</strong>。也就是说，上面这些设备 ID、手机号、访问记录，在上报时就已经和你的实名宽带绑在一起。</p>
+五、哪些是开着的，哪些是关着的
+<p>为了公平，必须说清楚：</p>
+<ul>
+<li><strong>代码默认就启用的</strong>：<code>xid</code>（手机号、设备 ID 提取，30 分钟）、设备清单（<code>topo</code>/<code>osinfo</code>，含所有设备的 MAC、IP、主机名、品牌型号、系统、上下线时间、流量）、App 使用统计、光猫和 PON 状态。</li>
+<li><strong>代码默认关闭、由服务器下发开启的</strong>：<code>http</code>、<code>https</code>、<code>dns</code>、<code>rawpkt</code>、<code>murl</code>、<code>sec_data</code>、<code>sec_camera</code>、<code>hredirect</code>、<code>pscan</code>。</li>
+<li><strong>我无法验证的</strong>：电信服务器实际对普通用户下发了哪些开关。我的两台光猫都是桥接、且删掉了 TR069 管理通道，连不上服务器，内存里只有 <code>connect failed</code> / <code>send failed</code>。所以我没有"它已经上传了某某数据"的实证，只有"它被设计成能做什么、默认做什么"。</li>
+</ul>
+六、谁会受影响
+<ul>
+<li>光猫是<strong>路由模式</strong>（出厂默认，绝大多数家庭）：家里所有设备都在光猫的 DHCP 下，所有流量都经过它。上面的一切都适用。</li>
+<li>光猫路由模式、后面再接一个<strong>路由模式</strong>的路由器（二级路由）：光猫只看得到你那台路由器的 MAC，看不到每台设备的身份，但<strong>流量照样经过它</strong>，网址、Cookie 里的设备 ID、HTTPS 域名照样能读。</li>
+<li>光猫<strong>桥接</strong>、自己的路由器拨号：光猫上没有到公网的路由，插件基本瘫痪。这是目前普通人能做的最有效的隔离。</li>
+</ul>
+<p></p>
+七、这合理吗
+<p>我不是律师，以下是我对照条文的看法：</p>
+<ul>
+<li>《个人信息保护法》第 6 条要求"限于实现处理目的的最小范围"。提供宽带不需要知道你手机的 IMEI、手机号和经纬度。</li>
+<li>第 13、14、17 条要求告知并取得同意。装宽带时没有任何人告诉过我光猫会做这些事。</li>
+<li>第 28、29 条：行踪轨迹属于敏感个人信息，需要<strong>单独同意</strong>。</li>
+<li>用户的 Cookie 是用户和第三方网站之间的会话数据，运营商借助"流量必经之路"的位置从中提取标识，这已经超出了"网关运维"的范畴。</li>
+</ul>
+八、你能做什么
+<ol>
+<li><strong>把光猫改成桥接，用自己的路由器拨号。</strong> 这是最有效的一步。改桥接后 IPTV 怎么继续看，我另写了一篇教程。</li>
+<li>能删 TR069 管理通道就删掉（注意：删掉后电信无法远程维护，出问题要自己处理）。</li>
+<li>有能力的可以参考恩山、chinadsl 上的教程用 <code><a href="http://ctc-app.sh" target="_blank" rel="noopener noreferrer">ctc-app.sh</a></code> 卸载插件（会被重新下发，需要同时处理 <code>cloudclient</code>）。</li>
+<li>依据《个保法》第 45 条，书面要求运营商告知其处理了你哪些个人信息。</li>
+</ol>
+九、前人的工作
+<p>这件事不是我第一个发现，我只是往下多走了一步：</p>
+<ul>
+<li>V2EX 2024-02《迁移宽带后续，不经意发现光猫里的 b01odmv3 插件疑似会上报光猫下所有设备 MAC 地址》（t/1016693）：第一次公开了 <code>conf_init.json</code>、<code><a href="http://b01-data-reported.189cube.com:7890" target="_blank" rel="noopener noreferrer">b01-data-reported.189cube.com:7890</a></code>，但当时无法提权进入 SAF 容器。</li>
+<li>V2EX 2023-10《某些运营商开始在光猫内置反诈插件了?》（t/986550，中国数字时代转载）：访问特定网站后跳转反诈页面并接到电话，换普通光猫后不再触发。</li>
+<li>IoTsec-Zone 2023-04《电信天翼网关3.0分析》：天翼网关 LXC/SAF 架构分析。</li>
+<li><a href="http://nanrennan.cn" target="_blank" rel="noopener noreferrer">nanrennan.cn</a> 2025-01《中兴光猫免插件固化启动脚本以及插件控制整理》：SAF 启动流程与插件停用。</li>
+<li>chinadsl、恩山论坛多帖：<code>m01-b01-inner</code> 进程截图。</li>
+<li>中国电信《小翼管家基本功能隐私政策》（2026-09-01 版）：官方承认的扫描权限、DNS/HTTP 流量采集范围。</li>
+</ul>
+十、邀请
+<p>如果你有电信光猫的 root shell，欢迎用上面的哈希比对你的版本，或者用同样的方法（只读导出 <code>m01-b01-inner</code> 进程的可写内存段，搜索 <code>help = "</code>）看看你的插件里有哪些模块、默认值是什么。特别想知道：</p>
+<ul>
+<li>路由模式、正常联网的光猫上，服务器实际下发了哪些开关（<code>/files</code> 下的配置和内存里的 <code>"subtype"</code> 记录）；</li>
+<li>其他省份、移动和联通的同类插件（移动是 <code>com.chinamobile.smartgateway.cmccdpi</code>）。</li>
+</ul>
+
+<p><em>分析方法：在自有光猫上取得 root shell，只读复制插件文件与配置，只读导出插件进程内存，在独立的 Linux 主机上做静态分析。未运行、修改、注入插件，未访问任何电信服务器。</em></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw">先说结论
+<p>中国电信光猫里预装了一个叫 <code>m01-b01-inner</code> 的插件（由 <code>b01odmv3</code> 启动），很多人在 <code>ps</code> 里见过它，但它真正的业务代码是加密的 Lua 脚本，加载后不落盘，所以过去几年网上的讨论都停留在"疑似上报 MAC"。</p>
+<p>我从两台电信光猫的进程内存里把解密后的 Lua 源码完整导了出来，逐个模块读了一遍。结论：</p>
+<ol>
+<li><strong>默认就开着</strong>的一个模块（<code>xid</code>），写明用途是 "Collect user identification information from HTTP"，从你经过光猫的 HTTP 流量的网址、Referer、Cookie 里匹配<strong>手机号、IMEI、IMSI、MEID、OAID、AndroidID、IDFA、IDFV、经纬度、设备型号</strong>，每 30 分钟上报一次。</li>
+<li>插件具备<strong>远程以 root 执行任意命令并回传结果</strong>的能力（<code>shell</code> 模块）。</li>
+<li>插件具备<strong>从电信服务器下载扫描程序、扫描你家整个局域网端口和服务</strong>的能力（<code>pscan</code> 模块，参数与 nmap 一致）。</li>
+<li>插件能记录 HTTP 完整网址、User-Agent、Cookie，HTTPS 访问的域名，DNS 查询，连接五元组，甚至<strong>原始数据包</strong>；能<strong>劫持重定向</strong>你访问的网页；能<strong>远程替换自身代码</strong>。</li>
+<li>第 2～4 条的大部分模块默认关闭，由服务器下发配置开启。也就是说：<strong>你的光猫今天做什么，取决于电信服务器今天给它发什么。</strong></li>
+</ol>
+<p>下面是证据。</p>
+一、这是什么东西
+<p>天翼网关从 3.0 开始，光猫里除了底层 Linux，还跑着一个电信改造的 OpenWrt LXC 容器（SAF 框架），里面由 <code>appmgr</code> 管理一堆"插件"，每个插件又是一个独立容器。常见的有：</p>
+<p><code>xrobotv3</code>、<code>gamespeederv3</code>、<code>opmaintainv3</code>、<code>extccv3</code>、<code>inter_conndv3</code>、<code>u01v3</code>、<code>redictv3</code>，以及本文的主角 <code>b01odmv3</code> → <code>m01-b01-inner</code>。</p>
+<p>普通用户在光猫网页后台<strong>看不到</strong>这些插件，也无法关闭。</p>
+<p>本次分析的两台设备：</p>
+
+
+
+
+设备 A
+设备 B
+
+
+
+
+地区
+上海电信
+浙江电信
+
+
+型号
+中兴 ZXHN G7615V2
+ZNXT ZN-XG120
+
+
+CPU
+ARM（ZX279133）
+MIPS（EcoNet EN7580）
+
+
+插件
+<code>m01-b01-inner</code> + 内核模块 <code>m01-b01.ko</code>
+同左
+
+<p>两台设备不同厂商、不同芯片、不同省份，跑的是同一套插件、连同一批服务器。</p>
+<p>插件文件 SHA256（方便同行比对）：</p>
+<pre><code>设备A m01-b01-inner  da1cac60eaa4603ef51f0c139619dbd448cf8ac84cf83592fa6ac498d103ef7d
+设备A init.bin       2c5d9b3b7b7e0a0b7022e42d412c48910da5624440383686e293a65878b99022
+设备A m01-b01.ko     d67b5e13feae47641f530596cd8a2b4fcc181a8f80aa64ade1fca4bf442072f2
+设备B m01-b01-inner  7c2954c43fb76b75e485755a190507855d5cd4ab1b993407fc06fe8647504544
+设备B init.bin       58b8df301eebbef83e306cde217097fcbea57561dfe97bac09544ca85c2c695b
+设备B m01-b01.ko     a75f0beb76ab8190a32c3765edb600a3d214e79d62f9fa80be93cf9c37f89e0f
+</code></pre>
+二、它是怎么藏起来的
+<ul>
+<li><code>m01-b01-inner</code> 是 C 写的外壳，里面静态链接了 <strong>Lua 5.3 解释器</strong>、mbedTLS、libpcap。</li>
+<li>真正的业务逻辑在 <code>init.bin</code> 里：文件头之后是熵值 8.00 的密文，也就是完全加密。</li>
+<li>程序启动时把它解密到 <code>/tmp/lua_XXXXXX</code>，加载进内存后立刻删除。磁盘上永远找不到明文。</li>
+<li>同目录的内核模块 <code>m01-b01.ko</code> 在内核里挂钩子，逐包解析 HTTP、HTTPS 的 SNI（访问的域名）、DNS、DHCP，再通过共享内存交给用户态的 Lua。</li>
+</ul>
+<p></p>
+<p>所以只拿到固件、只看 <code>strings</code>，是看不到它到底干什么的。我的做法是<strong>只读地导出进程内存</strong>，从中切出解密后的 Lua 源码。全程没有运行、修改或注入这个插件。</p>
+三、源码原文
+<p>以下代码均为内存中导出的原文，未作改动（仅去掉了 Lua 字符串转义的反斜杠）。</p>
+1. <code>xid</code>：从 HTTP 流量里提取手机号和设备 ID（默认开启）
+<pre><code>    subtype = "xid",
+    help = "Collect user identification information from HTTP.",
+    tname = "xid_send",
+    upload_mode = "svrdata",   -- "none", "svrdata", "operdata", "all"
+    upload_type = "x_id_info",
+    period = 1800,
+    cache_msg = {
+        -- ["mac|host|uri query|referer query|cookie query"] = {appid = 6, time = "1683815913", count = 1},
+    },
+    max_cache_cnt = 1000,
+    attr = {"url", "ref", "cookie"},
+    keyexpr = {
+        androidid = "(android_?id"?$)",
+        bdid = "(bdid"?$)",
+        caid = "(caid"?$)",
+        device_type = "(device_type"?$)",
+        hmac = "(mac"?$)",
+        idfa = "(idfa"?$)",
+        idfv = "(idfv"?$)",
+        imei = "(imei"?$)",
+        imsi = "(imsi"?$)",
+        latitude = "(^"?la.*)",
+        longtitude = "(^"?lo.*)",
+        meid = "(meid"?$)",
+        model = "(model"?$)",
+        oaid = "(oaid"?$)",
+        phone = "(phone"?$)",
+        stbType = "(stbType"?$)"
+    },
+    valexpr = {
+        imei = "(^"?(86|35)[0-9]{13,15}"?$)",
+        imsi = "(^"?460[0-9]{12}"?$)",
+        meid = "(^"?[0-9A-F]{14}"?$)",
+        phone = "((^|[^a-zA-Z0-9])1[3-9][0-9]{9}([^a-zA-Z0-9]|$))"
+    },
+</code></pre>
+<p>逐行翻译成大白话：</p>
+<ul>
+<li>看你每一个 HTTP 请求的<strong>网址、来源页、Cookie</strong>（<code>attr</code>）；</li>
+<li>参数名像 <code>imei</code>、<code>oaid</code>、<code>idfa</code>、<code>phone</code>、<code>la...</code>/<code>lo...</code>（经纬度）的，抓出来；</li>
+<li>值还要用正则校验：<code>460</code> 开头的 15 位是 IMSI（中国手机卡号），<code>1[3-9]</code> 开头的 11 位是<strong>手机号</strong>；</li>
+<li>按"设备 MAC + 网站 + 参数"去重缓存，最多 1000 条，<strong>每 1800 秒（30 分钟）上报一次</strong>到主数据服务器。</li>
+</ul>
+<p><strong>原理</strong>：很多 App 和广告 SDK 会把这些标识直接拼在不加密的 HTTP 请求里发出去。光猫是你家所有流量的必经之路，明文请求经过它，它就能读到。这就是为什么"手机连上光猫 Wi-Fi"本身就足以让这些信息暴露。</p>
+<p>另有一个 <code>httpimei</code> 模块做类似的事（"pick http key using kv pair with keywords from url/cookie"），专门抓 URL 和 Cookie 里的 <code>imei</code> 和 MAC。</p>
+2. <code>shell</code>：远程以 root 执行命令并回传结果
+<pre><code>local shell = {
+    type = "shell",
+    subtype = "shell",
+    help = "run shell cmd and return result",
+}
+
+local function shell_run(t)
+    ...
+    if t.action == "read" then
+        local p = io.popen(cmd, "r")
+        local result = p:read("a")
+        p:close()
+        return result
+    else
+        os.execute(cmd)
+    end
+end
+
+actor.action_set(shell.subtype, "write", shell_run, 'run shell with no result, ...')
+actor.action_set(shell.subtype, "read", shell_run, 'run shell with result return, ...')
+</code></pre>
+<p>收到 <code>{"subtype":"shell","action":"read","args":"..."}</code> 这样的指令，就以 root 执行并把输出返回。另有 <code>dumh</code> 模块可以经内核模块执行命令（<code>MEMSHR_DUMH_EXECVE_CMD</code>），并自动把命令里的 <code>&lt;$SN&gt;</code>、<code>&lt;$OUI&gt;</code> 替换成本机序列号和厂商代码。</p>
+3. <code>pscan</code>：下载扫描器，扫你家整个内网
+<pre><code>    repo = 'http://101.89.180.237:7890/repo_n01/n780/',
+    argv = ' --max-rate 10 -sV -oX ',
+    prog = 'n01',
+    dst= "192.168.1.0/24",
+    iface = "br0",
+    help = "parse n01 result and send to oper_data"
+</code></pre>
+<p>从一个裸 IP 的 HTTP 地址下载名为 <code>n01</code> 的程序，用 <code>--max-rate 10 -sV -oX</code> 扫描光猫下的整个 <code>/24</code> 网段，解析结果后上传。<code>-sV -oX</code> 是 nmap 的"服务版本探测 + XML 输出"参数，<code>n01</code> 很可能就是改名的 nmap（推测，未取得该程序）。扫描结果意味着：你家每台设备开了哪些端口、跑的什么服务、什么版本。</p>
+<p>电信自己的《小翼管家基本功能隐私政策》（2026-09-01 版）对此有一句说明："获得<strong>天翼网关扫描权限</strong>，用于识别联网设备类型并检测联网设备非必要开放端口、脆弱性端口风险"。但这份政策只覆盖<strong>主动使用小翼管家 App 的用户</strong>，而插件预装在所有人的光猫里。</p>
+4. 记录上网行为：HTTP、HTTPS、DNS、原始包
+<p>内核传给 Lua 的每条 HTTP 记录包括：</p>
+<pre><code>    http_table.sport, http_table.ip, http_table.mac, http_table.dport,
+    http_table.ts_sec, http_table.ts_usec, http_table.dstip, http_table.method,
+    url_len, ref_len, ua_len, cookie_len, http_table.appid ...
+    http_table.url / http_table.ref / http_table.ua / http_table.cookie
+</code></pre>
+<p>HTTPS 记录（<code>help = "get https from kernel and send to server"</code>）：</p>
+<pre><code>    local https_table = {
+        type = "https_domain",
+        mac = myip.mac_ntoa(mac),
+        sip = ..., dip = ..., sport = sport, dport = dport,
+        appid = appid,
+        domain = svrname,
+        timestamp = tostring(now)
+    }
+</code></pre>
+<p>也就是<strong>哪台设备（MAC）、在什么时间、访问了哪个网站</strong>。HTTPS 内容加密，它看不到内容，但域名看得到。</p>
+<p>此外还有 <code>dns</code>（DNS 查询）、<code>tuple</code>（所有连接的地址端口）、<code>rawpkt</code>（直接上传原始数据包，默认每连接最多 16 个包，可按 IP、端口、MAC 设策略）。这些模块代码里的默认周期都是 0，即默认关闭，由服务器下发开启。</p>
+5. 劫持网页、代抓网页
+<p><code>hredirect</code>（"redirect http from server"）：服务器下发 <code>host + uri + location</code> 规则，内核把匹配的 HTTP 请求 302 跳转到指定地址。<code>crawler</code>：让光猫替服务器去抓取指定 URL 列表。</p>
+<p>网上流传的"访问某网站跳转反诈页面、几分钟后接到反诈电话"的案例（见文末 V2EX 2023 年帖），机制上和这个模块对得上，但我没有证据证明那个案例用的就是这个插件。</p>
+6. 摄像头与"安全数据"
+<pre><code>local sec_camera = {
+    help = "set sec_camera conf",
+    enable = false,
+    addr = "mk-collect.189smarthome.com:7890",
+    period = 120,
+    lanstats_period = 120,
+}
+local sec_data = {
+    help = "filter secdata and send to server",
+    send_period = 120,
+    enable = false,
+    svr_addr = "xapp.189cube.com:7870",
+}
+</code></pre>
+<p><code>sec_camera</code> 一旦开启，会把局域网设备统计和连接记录每 2 分钟发往 <code><a href="http://mk-collect.189smarthome.com" target="_blank" rel="noopener noreferrer">mk-collect.189smarthome.com</a></code>。另外插件会通过 ONVIF（摄像头协议）、UPnP、mDNS、DHCP 主动识别局域网设备，在内存里我看到了它对内网 NAS 的 UPnP 描述文件的探测记录。</p>
+7. 远程替换自己
+<pre><code>local function upgrade_http(t)
+    local http = require"socket.http"
+    local body, code = http.request(t.url)
+    ...
+    myfile.write(body, lcmd_tmp_path(upgrade.ufile))
+    ... "upgrade_post", "module":"%s" ...
+end
+</code></pre>
+<p><code>module</code> 可以是 <code>lua</code>、<code>sig</code>、<code>plugin</code>，即业务脚本、特征库、整个插件，都能从服务器给出的任意 URL 下载替换。另有 <code>hotpatch</code>（"hot fixbug, and hot add more function"）。</p>
+四、上报给谁
+
+
+
+服务器
+用途
+默认周期
+
+
+
+
+<code><a href="http://b01-data-reported.189cube.com:7890" target="_blank" rel="noopener noreferrer">b01-data-reported.189cube.com:7890</a></code>
+主数据上报（含 <code>xid</code>）
+30 分钟
+
+
+<code><a href="http://b01.189cube.com:7870" target="_blank" rel="noopener noreferrer">b01.189cube.com:7870</a></code>
+运维通道：心跳、原始包、命令结果
+数据 10 分钟，心跳 2 小时
+
+
+<code><a href="http://message.189cube.com:9890" target="_blank" rel="noopener noreferrer">message.189cube.com:9890</a></code>
+App 使用统计、应用控制
+按配置
+
+
+<code><a href="http://xapp.189cube.com:7870/7871/7872" target="_blank" rel="noopener noreferrer">xapp.189cube.com:7870/7871/7872</a></code>
+<code>sec_data</code> 等
+按配置
+
+
+<code><a href="http://mk-collect.189smarthome.com:7890" target="_blank" rel="noopener noreferrer">mk-collect.189smarthome.com:7890</a></code>
+摄像头/局域网安全数据
+按配置
+
+
+<code>101.89.180.237:7890</code>
+扫描器下载源
+按需
+
+<p>数据先 gzip 压缩，再 AES 加密，密钥经 ECDH 交换。在外面抓包看不到内容，这也是为什么过去没人能说清它到底传了什么。</p>
+<p>上报的每条数据都带着光猫身份：</p>
+<pre><code>{"data":%s,"sn":"%s","oui":"%s","int_ver":"%s","ad":"%s","loid":"%s","ipv4":"%s"}
+</code></pre>
+<p><code>loid</code> 是宽带的注册码，<strong>一个 LOID 对应一个实名宽带账户</strong>。也就是说，上面这些设备 ID、手机号、访问记录，在上报时就已经和你的实名宽带绑在一起。</p>
+五、哪些是开着的，哪些是关着的
+<p>为了公平，必须说清楚：</p>
+<ul>
+<li><strong>代码默认就启用的</strong>：<code>xid</code>（手机号、设备 ID 提取，30 分钟）、设备清单（<code>topo</code>/<code>osinfo</code>，含所有设备的 MAC、IP、主机名、品牌型号、系统、上下线时间、流量）、App 使用统计、光猫和 PON 状态。</li>
+<li><strong>代码默认关闭、由服务器下发开启的</strong>：<code>http</code>、<code>https</code>、<code>dns</code>、<code>rawpkt</code>、<code>murl</code>、<code>sec_data</code>、<code>sec_camera</code>、<code>hredirect</code>、<code>pscan</code>。</li>
+<li><strong>我无法验证的</strong>：电信服务器实际对普通用户下发了哪些开关。我的两台光猫都是桥接、且删掉了 TR069 管理通道，连不上服务器，内存里只有 <code>connect failed</code> / <code>send failed</code>。所以我没有"它已经上传了某某数据"的实证，只有"它被设计成能做什么、默认做什么"。</li>
+</ul>
+六、谁会受影响
+<ul>
+<li>光猫是<strong>路由模式</strong>（出厂默认，绝大多数家庭）：家里所有设备都在光猫的 DHCP 下，所有流量都经过它。上面的一切都适用。</li>
+<li>光猫路由模式、后面再接一个<strong>路由模式</strong>的路由器（二级路由）：光猫只看得到你那台路由器的 MAC，看不到每台设备的身份，但<strong>流量照样经过它</strong>，网址、Cookie 里的设备 ID、HTTPS 域名照样能读。</li>
+<li>光猫<strong>桥接</strong>、自己的路由器拨号：光猫上没有到公网的路由，插件基本瘫痪。这是目前普通人能做的最有效的隔离。</li>
+</ul>
+<p></p>
+七、这合理吗
+<p>我不是律师，以下是我对照条文的看法：</p>
+<ul>
+<li>《个人信息保护法》第 6 条要求"限于实现处理目的的最小范围"。提供宽带不需要知道你手机的 IMEI、手机号和经纬度。</li>
+<li>第 13、14、17 条要求告知并取得同意。装宽带时没有任何人告诉过我光猫会做这些事。</li>
+<li>第 28、29 条：行踪轨迹属于敏感个人信息，需要<strong>单独同意</strong>。</li>
+<li>用户的 Cookie 是用户和第三方网站之间的会话数据，运营商借助"流量必经之路"的位置从中提取标识，这已经超出了"网关运维"的范畴。</li>
+</ul>
+八、你能做什么
+<ol>
+<li><strong>把光猫改成桥接，用自己的路由器拨号。</strong> 这是最有效的一步。改桥接后 IPTV 怎么继续看，我另写了一篇教程。</li>
+<li>能删 TR069 管理通道就删掉（注意：删掉后电信无法远程维护，出问题要自己处理）。</li>
+<li>有能力的可以参考恩山、chinadsl 上的教程用 <code><a href="http://ctc-app.sh" target="_blank" rel="noopener noreferrer">ctc-app.sh</a></code> 卸载插件（会被重新下发，需要同时处理 <code>cloudclient</code>）。</li>
+<li>依据《个保法》第 45 条，书面要求运营商告知其处理了你哪些个人信息。</li>
+</ol>
+九、前人的工作
+<p>这件事不是我第一个发现，我只是往下多走了一步：</p>
+<ul>
+<li>V2EX 2024-02《迁移宽带后续，不经意发现光猫里的 b01odmv3 插件疑似会上报光猫下所有设备 MAC 地址》（t/1016693）：第一次公开了 <code>conf_init.json</code>、<code><a href="http://b01-data-reported.189cube.com:7890" target="_blank" rel="noopener noreferrer">b01-data-reported.189cube.com:7890</a></code>，但当时无法提权进入 SAF 容器。</li>
+<li>V2EX 2023-10《某些运营商开始在光猫内置反诈插件了?》（t/986550，中国数字时代转载）：访问特定网站后跳转反诈页面并接到电话，换普通光猫后不再触发。</li>
+<li>IoTsec-Zone 2023-04《电信天翼网关3.0分析》：天翼网关 LXC/SAF 架构分析。</li>
+<li><a href="http://nanrennan.cn" target="_blank" rel="noopener noreferrer">nanrennan.cn</a> 2025-01《中兴光猫免插件固化启动脚本以及插件控制整理》：SAF 启动流程与插件停用。</li>
+<li>chinadsl、恩山论坛多帖：<code>m01-b01-inner</code> 进程截图。</li>
+<li>中国电信《小翼管家基本功能隐私政策》（2026-09-01 版）：官方承认的扫描权限、DNS/HTTP 流量采集范围。</li>
+</ul>
+十、邀请
+<p>如果你有电信光猫的 root shell，欢迎用上面的哈希比对你的版本，或者用同样的方法（只读导出 <code>m01-b01-inner</code> 进程的可写内存段，搜索 <code>help = "</code>）看看你的插件里有哪些模块、默认值是什么。特别想知道：</p>
+<ul>
+<li>路由模式、正常联网的光猫上，服务器实际下发了哪些开关（<code>/files</code> 下的配置和内存里的 <code>"subtype"</code> 记录）；</li>
+<li>其他省份、移动和联通的同类插件（移动是 <code>com.chinamobile.smartgateway.cmccdpi</code>）。</li>
+</ul>
+
+<p><em>分析方法：在自有光猫上取得 root shell，只读复制插件文件与配置，只读导出插件进程内存，在独立的 Linux 主机上做静态分析。未运行、修改、注入插件，未访问任何电信服务器。</em></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Potatooo</span>
+        <span>#1</span>
+        <span>2026/11/18 00:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">虽然早就知道，但是这么硬核的被扒出来还是有点唏嘘。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18300938">虽然早就知道，但是这么硬核的被扒出来还是有点唏嘘。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18300938">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257838#reply18300938" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">qazwsxkevin</span>
+        <span>#2</span>
+        <span>2026/11/18 00:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">这种似乎是拿这个光猫做路由，这种场景才会裸奔？   <br />如果是后面串接路由器做 PPPoE+NAT，也就是光猫改桥式，运营商应该看不到那么多东西了...</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18300948">这种似乎是拿这个光猫做路由，这种场景才会裸奔？   <br />如果是后面串接路由器做 PPPoE+NAT，也就是光猫改桥式，运营商应该看不到那么多东西了...</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18300948">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257838#reply18300948" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">imnpc</span>
+        <span>#3</span>
+        <span>2026/11/18 03:38</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">运营商力推的全屋光纤 做不了桥接 阻止不了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18301067">运营商力推的全屋光纤 做不了桥接 阻止不了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18301067">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257838#reply18301067" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dizhang</span>
+        <span>#4</span>
+        <span>2026/11/18 05:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/imnpc" target="_blank" rel="noopener noreferrer">imnpc</a> fttr 的话你不用子光猫，然后要求桥接就可以了啊，我联通和电信的所谓 fttr 套餐都是把子光猫扔一边不用然后改桥接</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18301089">@<a href="/member/imnpc" target="_blank" rel="noopener noreferrer">imnpc</a> fttr 的话你不用子光猫，然后要求桥接就可以了啊，我联通和电信的所谓 fttr 套餐都是把子光猫扔一边不用然后改桥接</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18301089">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257838#reply18301089" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
