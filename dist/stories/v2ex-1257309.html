@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一觉醒来，V 站升级了评论区 UI 交互，Polish 要为上次的事故付出代价了 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-16/">返回日报</a>
+      <div class="source-chip">V2EX #10</div>
+      <h1>一觉醒来，V 站升级了评论区 UI 交互，Polish 要为上次的事故付出代价了</h1>
+      <p class="original-title">一觉醒来，V 站升级了评论区 UI 交互，Polish 要为上次的事故付出代价了</p>
+      <div class="meta-line">
+        <span>科技产品</span>
+        <span>作者 Veliqo</span>
+        <span>热度 56</span>
+        <span>回复 56</span>
+        <span>2026/11/16 09:44</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1257309" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1257309.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>之前我在 V 站节点提过升级的事情，当时感觉站长升级的意愿不大，虽然评论升级的呼声比较高，https://www.v2ex.com/t/1251696前一阵上次 Polish 升级产生了一次电脑卡死的事故，https://fast.v2ex.com/t/1254940感觉站长真的觉醒了，靠第三方插件提升用户体验终究不是一个可靠的路子，产品的用户体验应该主要由产品本身主导，而不是高度依赖第三方。下一步还有哪些有价值的更新呢？比如上传图片？Polish 第三方插件的效果图V 站官方升级后效果图</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh">之前我在 V 站节点提过升级的事情，当时感觉站长升级的意愿不大，虽然评论升级的呼声比较高，<a href="https://www.v2ex.com/t/1251696" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1251696</a><br /><br />前一阵上次 Polish 升级产生了一次电脑卡死的事故，<a href="https://fast.v2ex.com/t/1254940" target="_blank" rel="noopener noreferrer">https://fast.v2ex.com/t/1254940</a><br /><br />感觉站长真的觉醒了，靠第三方插件提升用户体验终究不是一个可靠的路子，产品的用户体验应该主要由产品本身主导，而不是高度依赖第三方。<br /><br /><br />下一步还有哪些有价值的更新呢？比如上传图片？<br /><br /><br />Polish 第三方插件的效果图<br /><a href="https://i.imgur.com/MqHNaHL.png" target="_blank" rel="noopener noreferrer"></a><br /><br />V 站官方升级后效果图<br /><br /><a href="https://i.imgur.com/6k2nMfW.png" target="_blank" rel="noopener noreferrer"></a></div>
+      <div class="post-body is-hidden" data-role="story-raw">之前我在 V 站节点提过升级的事情，当时感觉站长升级的意愿不大，虽然评论升级的呼声比较高，<a href="https://www.v2ex.com/t/1251696" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1251696</a><br /><br />前一阵上次 Polish 升级产生了一次电脑卡死的事故，<a href="https://fast.v2ex.com/t/1254940" target="_blank" rel="noopener noreferrer">https://fast.v2ex.com/t/1254940</a><br /><br />感觉站长真的觉醒了，靠第三方插件提升用户体验终究不是一个可靠的路子，产品的用户体验应该主要由产品本身主导，而不是高度依赖第三方。<br /><br /><br />下一步还有哪些有价值的更新呢？比如上传图片？<br /><br /><br />Polish 第三方插件的效果图<br /><a href="https://i.imgur.com/MqHNaHL.png" target="_blank" rel="noopener noreferrer"></a><br /><br />V 站官方升级后效果图<br /><br /><a href="https://i.imgur.com/6k2nMfW.png" target="_blank" rel="noopener noreferrer"></a></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Sezxy</span>
+        <span>#1</span>
+        <span>2026/11/16 09:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">上传图片本来就有，是付费功能</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293473">上传图片本来就有，是付费功能</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293473">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293473" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JoeJoeJoe</span>
+        <span>#2</span>
+        <span>2026/11/16 09:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">上传图片现在都集成到了回复框里面了, 持币或者赞助都可以开启.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293481">上传图片现在都集成到了回复框里面了, 持币或者赞助都可以开启.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293481">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293481" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Veliqo</span>
+        <span>#3</span>
+        <span>2026/11/16 09:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 我用 Polish 插件可以直接复制文件自动上传，V 站默认不可以这样吧？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293492">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 我用 Polish 插件可以直接复制文件自动上传，V 站默认不可以这样吧？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293492">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293492" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JoeJoeJoe</span>
+        <span>#4</span>
+        <span>2026/11/16 09:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 已经支持了, 但是会花费 20 铜币, 我给关掉了.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293517">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 已经支持了, 但是会花费 20 铜币, 我给关掉了.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293517">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293517" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#5</span>
+        <span>2026/11/16 09:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 下一步应该会支持的。不过肯定依然是 sponsors 独享的。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293529">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 下一步应该会支持的。不过肯定依然是 sponsors 独享的。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293529">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293529" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#6</span>
+        <span>2026/11/16 09:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 哦已经有了</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293540">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 哦已经有了</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293540">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293540" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#7</span>
+        <span>2026/11/16 09:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 没看到收费说明呀，在哪嘞</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293545">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 没看到收费说明呀，在哪嘞</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293545">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293545" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JoeJoeJoe</span>
+        <span>#8</span>
+        <span>2026/11/16 10:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Tink" target="_blank" rel="noopener noreferrer">Tink</a> 就是原来的图片上传功能, 现在集成到回复里面了. 20 铜币稍微有点贵, 我还是走之前的 imgur 路径.<br /><br /><a href="https://i.imgur.com/NTxiWe2.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293567">@<a href="/member/Tink" target="_blank" rel="noopener noreferrer">Tink</a> 就是原来的图片上传功能, 现在集成到回复里面了. 20 铜币稍微有点贵, 我还是走之前的 imgur 路径.<br /><br /><a href="https://i.imgur.com/NTxiWe2.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293567">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293567" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#9</span>
+        <span>2026/11/16 10:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="//i.v2ex.co/pXkK30o3.png" target="_blank" rel="noopener noreferrer"></a><br /><br />收费测试</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293578"><a href="//i.v2ex.co/pXkK30o3.png" target="_blank" rel="noopener noreferrer"></a><br /><br />收费测试</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293578">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293578" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Veliqo</span>
+        <span>#10</span>
+        <span>2026/11/16 10:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 为啥用插件可以免费用啊。。。我的设置就没有这个选项</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293583">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 为啥用插件可以免费用啊。。。我的设置就没有这个选项</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293583">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293583" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Tink</span>
+        <span>#11</span>
+        <span>2026/11/16 10:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 哦明白，我之前以为上传图片不花钱，只是第一次购买存储需要花钱</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293585">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 哦明白，我之前以为上传图片不花钱，只是第一次购买存储需要花钱</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JoeJoeJoe</span>
+        <span>#12</span>
+        <span>2026/11/16 10:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 因为插件走的 imgur, v 站把这个图床设置白名单了, 可以直接显示出来.<br /><br />另外 v 站原生的回复贴图是在原来的图床基础上集成进来的, 这个功能只对 sponsors 和 v 币持有者开放.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293607">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 因为插件走的 imgur, v 站把这个图床设置白名单了, 可以直接显示出来.<br /><br />另外 v 站原生的回复贴图是在原来的图床基础上集成进来的, 这个功能只对 sponsors 和 v 币持有者开放.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293607">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293607" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JoeJoeJoe</span>
+        <span>#13</span>
+        <span>2026/11/16 10:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Tink" target="_blank" rel="noopener noreferrer">Tink</a> 一次 20 铜币, 还挺贵, 哈哈哈哈.<br /><br />ps: 现在这个树形回复的 UI 太舒服了.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293612">@<a href="/member/Tink" target="_blank" rel="noopener noreferrer">Tink</a> 一次 20 铜币, 还挺贵, 哈哈哈哈.<br /><br />ps: 现在这个树形回复的 UI 太舒服了.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293612">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293612" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">AchieveHF</span>
+        <span>#14</span>
+        <span>2026/11/16 10:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">已经停用拓展了，用那个拓展就为了评论好看些</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293627">已经停用拓展了，用那个拓展就为了评论好看些</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293627">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293627" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">v21984</span>
+        <span>#15</span>
+        <span>2026/11/16 10:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我搞了个图片查看功能，左右滑动，放大缩小等都有 <a href="https://github.com/git710/V2EX-Pro" target="_blank" rel="noopener noreferrer">https://github.com/git710/V2EX-Pro</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293628">我搞了个图片查看功能，左右滑动，放大缩小等都有 <a href="https://github.com/git710/V2EX-Pro" target="_blank" rel="noopener noreferrer">https://github.com/git710/V2EX-Pro</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293628">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293628" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Veliqo</span>
+        <span>#16</span>
+        <span>2026/11/16 10:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 站长审美还是挺高的。我之前以为他是老古董，没有审美，哈哈</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293629">@<a href="/member/JoeJoeJoe" target="_blank" rel="noopener noreferrer">JoeJoeJoe</a> 站长审美还是挺高的。我之前以为他是老古董，没有审美，哈哈</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293629">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293629" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">JoeJoeJoe</span>
+        <span>#17</span>
+        <span>2026/11/16 10:10</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 站长的审美比较偏复古那种. 我还挺喜欢这种风格的. <br /><br />这是另外一个新开的站:<a href="https://hub.v2core.com" target="_blank" rel="noopener noreferrer">https://hub.v2core.com</a><br /><br />![<a href="https://hub.v2core.com/" target="_blank" rel="noopener noreferrer">https://hub.v2core.com/</a>](<a href="https://i.imgur.com/afosxQH.png" target="_blank" rel="noopener noreferrer"></a>)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293642">@<a href="/member/Veliqo" target="_blank" rel="noopener noreferrer">Veliqo</a> 站长的审美比较偏复古那种. 我还挺喜欢这种风格的. <br /><br />这是另外一个新开的站:<a href="https://hub.v2core.com" target="_blank" rel="noopener noreferrer">https://hub.v2core.com</a><br /><br />![<a href="https://hub.v2core.com/" target="_blank" rel="noopener noreferrer">https://hub.v2core.com/</a>](<a href="https://i.imgur.com/afosxQH.png" target="_blank" rel="noopener noreferrer"></a>)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293642">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293642" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">94</span>
+        <span>#18</span>
+        <span>2026/11/16 10:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><a href="https://i.imgur.com/kOBGhsV.png" target="_blank" rel="noopener noreferrer"></a><br />🤩 居然增加了 [角标 + 悬浮预览 ] 的功能，我前几天我还想自己搞一个插件出来呢。<br /><a href="https://edge.v2ex.com/help/reply-threads" target="_blank" rel="noopener noreferrer">https://edge.v2ex.com/help/reply-threads</a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293668"><a href="https://i.imgur.com/kOBGhsV.png" target="_blank" rel="noopener noreferrer"></a><br />🤩 居然增加了 [角标 + 悬浮预览 ] 的功能，我前几天我还想自己搞一个插件出来呢。<br /><a href="https://edge.v2ex.com/help/reply-threads" target="_blank" rel="noopener noreferrer">https://edge.v2ex.com/help/reply-threads</a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293668">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293668" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">54xavier</span>
+        <span>#19</span>
+        <span>2026/11/16 10:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">虽然感觉原生的楼中楼更好看，但是原生皮的 UI 感觉差点儿意思啊，非常的 IT 直男风</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293675">虽然感觉原生的楼中楼更好看，但是原生皮的 UI 感觉差点儿意思啊，非常的 IT 直男风</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293675">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293675" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Look1</span>
+        <span>#20</span>
+        <span>2026/11/16 10:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">话说后续有可能会出标签功能吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18293676">话说后续有可能会出标签功能吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18293676">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1257309#reply18293676" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
