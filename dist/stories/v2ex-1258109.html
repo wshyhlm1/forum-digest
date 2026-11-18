@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skill Stow：一个尽量做得清晰、顺手的 macOS AI Skill 管理器 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-18/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>Skill Stow：一个尽量做得清晰、顺手的 macOS AI Skill 管理器</h1>
+      <p class="original-title">Skill Stow：一个尽量做得清晰、顺手的 macOS AI Skill 管理器</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 dbaazz</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/11/18 21:14</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1258109" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1258109.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>平时用 Claude Code、Codex、Cursor、Gemini CLI 这些工具多了，本地 ~/.claude、~/.codex、~/.cursor 和各个项目里的 Skill 目录很容易越堆越乱。</li><li>其实市面上已经有现成的 Skill 管理器了，功能上大家也都大差不差。我自己又重写一个 Skill Stow，主要出发点不是&quot;发明什么新功能&quot;，而是想做一款自己每天打开都觉得舒服的工具：</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>平时用 Claude Code、Codex、Cursor、Gemini CLI 这些工具多了，本地 <code>~/.claude</code>、<code>~/.codex</code>、<code>~/.cursor</code> 和各个项目里的 Skill 目录很容易越堆越乱。</p>
+<p>其实市面上已经有现成的 Skill 管理器了，功能上大家也都大差不差。我自己又重写一个 <strong>Skill Stow</strong>，主要出发点不是"发明什么新功能"，而是想做一款<strong>自己每天打开都觉得舒服</strong>的工具：</p>
+<ol>
+<li><strong>信息足够清晰</strong>：哪个 Skill 装在公共库、哪个是某个 Agent 独有、哪个只在当前项目生效，一眼就能看明白，不要一打开全是噪音。</li>
+<li><strong>交互逻辑顺直</strong>：尽量按桌面端直觉走，减少莫名其妙的跳转和割裂感。</li>
+<li><strong>UI 和动效细节</strong>：基于 <strong>Go + MyGo</strong> 做的 macOS 原生界面（不是 Web 套壳），在排版、配色（支持浅色/深色）、过渡动画和快捷键上花了不少时间打磨。</li>
+</ol>
+顺便带过一下核心能力
+<ul>
+<li><strong>统一视图</strong>：扫描本机 32 个常见 Agent 目录和项目历史，支持卡片 / 按 Agent 分列看板两种视图。</li>
+<li><strong>按 Agent 开关</strong>：直接开关 Claude Code / Codex / Gemini CLI / OpenCode / ZCode 的配置，或软链到其他 Agent。</li>
+<li><strong>导入与本地安全检查</strong>：支持 GitHub 链接、<code>npx skills add</code> 命令、本地文件夹 / <code>.zip</code> 拖入；导入前会先做一遍本地离线扫描（并展示 <a href="http://skills.sh" target="_blank" rel="noopener noreferrer">skills.sh</a> 审计结果）。</li>
+<li><strong>可控更新与整理</strong>：GitHub 来源的 Skill 支持看 file-by-file diff 再更新，默认保留旧版到废纸篓；支持一键合并重复副本、对比差异、清理失效软链。</li>
+<li><strong>使用统计 &amp; 原生体验</strong>：读取本地 Claude Code / Codex 日志看调用频率；支持 <code>⌘K</code> 全局搜索（中文支持拼音）、磁盘实时监听、<code>⌘Z</code> 撤销删除。</li>
+</ul>
+下载与开源地址
+<ul>
+<li>GitHub：<a href="https://github.com/DBAAZzz/skill-stow" target="_blank" rel="noopener noreferrer">https://github.com/DBAAZzz/skill-stow</a></li>
+<li>Release 下载：<a href="https://github.com/DBAAZzz/skill-stow/releases/latest" target="_blank" rel="noopener noreferrer">https://github.com/DBAAZzz/skill-stow/releases/latest</a></li>
+<li>演示视频：（这里可以贴你刚传好的 YouTube 链接）</li>
+</ul>
+<p><strong>说明</strong>：</p>
+<ul>
+<li><strong>MIT 开源免费</strong>，纯本地运行，无账号、无遥测。</li>
+<li>支持 **macOS 12+**（Universal 包，Apple Silicon / Intel 通用）。</li>
+<li>目前还没有 Apple Developer ID 签名，首次打开如果被 Gatekeeper 拦截，在「系统设置 -&gt; 隐私与安全性」里点「仍要打开」，或看下 README 里的 <code>xattr</code> 放行命令即可。</li>
+</ul>
+<p>做这个项目的初衷就是自己用着顺手，顺便开源出来，欢迎提 Issue 或聊聊交互上的建议。</p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>平时用 Claude Code、Codex、Cursor、Gemini CLI 这些工具多了，本地 <code>~/.claude</code>、<code>~/.codex</code>、<code>~/.cursor</code> 和各个项目里的 Skill 目录很容易越堆越乱。</p>
+<p>其实市面上已经有现成的 Skill 管理器了，功能上大家也都大差不差。我自己又重写一个 <strong>Skill Stow</strong>，主要出发点不是"发明什么新功能"，而是想做一款<strong>自己每天打开都觉得舒服</strong>的工具：</p>
+<ol>
+<li><strong>信息足够清晰</strong>：哪个 Skill 装在公共库、哪个是某个 Agent 独有、哪个只在当前项目生效，一眼就能看明白，不要一打开全是噪音。</li>
+<li><strong>交互逻辑顺直</strong>：尽量按桌面端直觉走，减少莫名其妙的跳转和割裂感。</li>
+<li><strong>UI 和动效细节</strong>：基于 <strong>Go + MyGo</strong> 做的 macOS 原生界面（不是 Web 套壳），在排版、配色（支持浅色/深色）、过渡动画和快捷键上花了不少时间打磨。</li>
+</ol>
+顺便带过一下核心能力
+<ul>
+<li><strong>统一视图</strong>：扫描本机 32 个常见 Agent 目录和项目历史，支持卡片 / 按 Agent 分列看板两种视图。</li>
+<li><strong>按 Agent 开关</strong>：直接开关 Claude Code / Codex / Gemini CLI / OpenCode / ZCode 的配置，或软链到其他 Agent。</li>
+<li><strong>导入与本地安全检查</strong>：支持 GitHub 链接、<code>npx skills add</code> 命令、本地文件夹 / <code>.zip</code> 拖入；导入前会先做一遍本地离线扫描（并展示 <a href="http://skills.sh" target="_blank" rel="noopener noreferrer">skills.sh</a> 审计结果）。</li>
+<li><strong>可控更新与整理</strong>：GitHub 来源的 Skill 支持看 file-by-file diff 再更新，默认保留旧版到废纸篓；支持一键合并重复副本、对比差异、清理失效软链。</li>
+<li><strong>使用统计 &amp; 原生体验</strong>：读取本地 Claude Code / Codex 日志看调用频率；支持 <code>⌘K</code> 全局搜索（中文支持拼音）、磁盘实时监听、<code>⌘Z</code> 撤销删除。</li>
+</ul>
+下载与开源地址
+<ul>
+<li>GitHub：<a href="https://github.com/DBAAZzz/skill-stow" target="_blank" rel="noopener noreferrer">https://github.com/DBAAZzz/skill-stow</a></li>
+<li>Release 下载：<a href="https://github.com/DBAAZzz/skill-stow/releases/latest" target="_blank" rel="noopener noreferrer">https://github.com/DBAAZzz/skill-stow/releases/latest</a></li>
+<li>演示视频：（这里可以贴你刚传好的 YouTube 链接）</li>
+</ul>
+<p><strong>说明</strong>：</p>
+<ul>
+<li><strong>MIT 开源免费</strong>，纯本地运行，无账号、无遥测。</li>
+<li>支持 **macOS 12+**（Universal 包，Apple Silicon / Intel 通用）。</li>
+<li>目前还没有 Apple Developer ID 签名，首次打开如果被 Gatekeeper 拦截，在「系统设置 -&gt; 隐私与安全性」里点「仍要打开」，或看下 README 里的 <code>xattr</code> 放行命令即可。</li>
+</ul>
+<p>做这个项目的初衷就是自己用着顺手，顺便开源出来，欢迎提 Issue 或聊聊交互上的建议。</p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+<p></p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Drumming</span>
+        <span>#1</span>
+        <span>2026/11/18 22:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">（这里可以贴你刚传好的 YouTube 链接）</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18304882">（这里可以贴你刚传好的 YouTube 链接）</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18304882">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258109#reply18304882" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Drumming</span>
+        <span>#2</span>
+        <span>2026/11/18 22:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还不错，整理了一轮。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18304919">还不错，整理了一轮。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18304919">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258109#reply18304919" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dbaazz</span>
+        <span>#3</span>
+        <span>2026/11/18 22:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Drumming" target="_blank" rel="noopener noreferrer">Drumming</a> #2 <a href="https://i.imgur.com/Cvl7dyN.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18304924">@<a href="/member/Drumming" target="_blank" rel="noopener noreferrer">Drumming</a> #2 <a href="https://i.imgur.com/Cvl7dyN.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18304924">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258109#reply18304924" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dbaazz</span>
+        <span>#4</span>
+        <span>2026/11/18 22:53</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Drumming" target="_blank" rel="noopener noreferrer">Drumming</a> #1  ，好贴</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18304935">@<a href="/member/Drumming" target="_blank" rel="noopener noreferrer">Drumming</a> #1  ，好贴</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18304935">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258109#reply18304935" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

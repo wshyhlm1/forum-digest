@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>电信光猫插件 m01-b01-inner 里有个模块，专门从 HTTP 里提取你看的股票代码 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-18/">返回日报</a>
+      <div class="source-chip">V2EX #7</div>
+      <h1>电信光猫插件 m01-b01-inner 里有个模块，专门从 HTTP 里提取你看的股票代码</h1>
+      <p class="original-title">电信光猫插件 m01-b01-inner 里有个模块，专门从 HTTP 里提取你看的股票代码</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 doomsday616</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/11/18 23:36</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1258126" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1258126.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>前几天在本站发过电信光猫隐藏插件 m01-b01-inner 的分析帖。这篇单独讲其中一个模块：coll_domain。它的源码里写了一张表，列着东方财富、同花顺、问财、雪球的 7 个网址，专门从你的上网请求里提取股票代码，按设备记下你看了哪只股票、看了几次、看了多久，然后发往电信的服务器。</li><li>先把边界说清楚：这个模块只在上海版插件里有，出厂默认关闭，服务器下发一条配置就能打开，我没有找到它在我这台光猫上被打开过的证据。下面写的是它能做什么，不是&quot;已经在做&quot;。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>前几天在本站发过电信光猫隐藏插件 <code>m01-b01-inner</code> 的分析帖。这篇单独讲其中一个模块：<code>coll_domain</code>。它的源码里写了一张表，列着东方财富、同花顺、问财、雪球的 7 个网址，专门从你的上网请求里提取<strong>股票代码</strong>，按设备记下你看了哪只股票、看了几次、看了多久，然后发往电信的服务器。</p>
+<p>先把边界说清楚：这个模块只在上海版插件里有，出厂默认关闭，服务器下发一条配置就能打开，我没有找到它在我这台光猫上被打开过的证据。下面写的是它<strong>能做什么</strong>，不是"已经在做"。</p>
+<p></p>
+一、源码原文
+<p>模块开头的说明和配置，原样贴出：</p>
+<pre><code>local coll_domain = {
+    type = "coll_domain",
+    subtype = "coll_domain",
+    help = "collect domain/stock data and send to svrdata",
+
+    -- confs
+    addr = {"b01.189cube.com:7870"},
+    upload_period = 0,  -- default disable
+    session_period = 1800,
+    max_merge_count = 1000,
+    stock_rule = {
+        -- query
+        ["gbapi.eastmoney.com"] = {url = {"[?&amp;]code=%u*(%d+)&amp;?"}},
+        ["ai.10jqka.com.cn"] = {url = {"[?&amp;]code=%u*(%d+)&amp;?"}},
+        ["www.iwencai.com"] = {url = {"[?&amp;]q=%u*(%d+)&amp;?"}},
+        -- path
+        ["stockpage.10jqka.com.cn"] = {url = {"[^/]/%u*(%d+)/?"}},
+        ["xueqiu.com"] = {url = {"[^/]/%u*(%d+)/?"}},
+        -- ref
+        ["quote.eastmoney.com"] = {ref = {"[^/]/%a*(%d+).html"}},
+        ["myfavor.eastmoney.com"] = {ref = {"[^/]/%a*(%d+).html"}},
+    },
+</code></pre>
+<p><code>help</code> 一行写得很直白：收集域名和股票数据，发给 svrdata。</p>
+二、它盯的是哪些平台
+
+
+
+网址
+平台
+从哪里取代码
+
+
+
+
+<code><a href="http://gbapi.eastmoney.com" target="_blank" rel="noopener noreferrer">gbapi.eastmoney.com</a></code>
+东方财富（股吧接口）
+网址参数 <code>code=</code>
+
+
+<code><a href="http://quote.eastmoney.com" target="_blank" rel="noopener noreferrer">quote.eastmoney.com</a></code>
+东方财富（行情页）
+来源页 Referer，如 <code>/sh600000.html</code>
+
+
+<code><a href="http://myfavor.eastmoney.com" target="_blank" rel="noopener noreferrer">myfavor.eastmoney.com</a></code>
+东方财富（<strong>自选股</strong>）
+来源页 Referer
+
+
+<code><a href="http://ai.10jqka.com.cn" target="_blank" rel="noopener noreferrer">ai.10jqka.com.cn</a></code>
+同花顺
+网址参数 <code>code=</code>
+
+
+<code><a href="http://stockpage.10jqka.com.cn" target="_blank" rel="noopener noreferrer">stockpage.10jqka.com.cn</a></code>
+同花顺（个股页）
+网址路径 <code>/600000/</code>
+
+
+<code><a href="http://www.iwencai.com" target="_blank" rel="noopener noreferrer">www.iwencai.com</a></code>
+问财
+搜索词 <code>q=</code>
+
+
+<code><a href="http://xueqiu.com" target="_blank" rel="noopener noreferrer">xueqiu.com</a></code>
+雪球
+网址路径 <code>/S/SH600000</code>
+
+<p>规则里的 <code>%u*(%d+)</code> 意思是：跳过前面的字母（<code>SH</code>、<code>SZ</code> 这类市场前缀），把后面的数字抠出来。三种取法覆盖了"查行情、看个股页、搜股票、翻股吧、点自选股"这几种最常见的动作。</p>
+<p></p>
+<p>这 7 条只是出厂自带的。源码里服务器可以下发新的 <code>stock_rule</code> 把整张表换掉（支持直接下发表格，也支持 base64 编码的 JSON），所以能盯哪些网站，不由光猫说了算。</p>
+三、它是怎么拿到网址的
+<p>光猫里有个内核模块 <code>m01-b01.ko</code>，逐包解析经过的流量，把 HTTP 请求的完整网址和 Referer、HTTPS 连接的域名交给插件。<code>coll_domain</code> 订阅了这两路数据：</p>
+<pre><code>coll_domain.http_sindex = actor.subscribe("HTTP", http_deal)
+coll_domain.https_sindex = actor.subscribe("HTTPS", https_deal)
+</code></pre>
+<ul>
+<li><strong>HTTP</strong>：拿到完整网址和 Referer，用上面的规则匹配股票代码。</li>
+<li><strong>HTTPS</strong>：只拿到域名（握手时明文发出的 SNI）。匹配不出股票代码，但会记一条"这台设备访问了 <a href="http://xueqiu.com" target="_blank" rel="noopener noreferrer">xueqiu.com</a>"。</li>
+</ul>
+<p>也就是说，<strong>它只能从明文 HTTP 里读出你看的是哪只股票</strong>。走 HTTPS 的请求，它最多知道你打开了哪个炒股网站。</p>
+四、一条记录长什么样
+<p>匹配到股票代码后，插件按"设备 MAC + 网站 + 股票代码"合并计数，到点打包上传。字段来自源码 <code>upload_merge()</code>：</p>
+<pre><code>{
+  "type": "stock",
+  "mac": "设备 MAC",
+  "domain": "stockpage.10jqka.com.cn",
+  "stock_code": "600000",
+  "pv": 37,
+  "duration": 12,
+  "session": 3,
+  "osid": "设备系统类型",
+  "first_time": "第一次看到的时间",
+  "update_time": "最后一次看到的时间",
+  "upload_time": "上传时间"
+}
+</code></pre>
+<p>（字段名是源码原文，取值是示意。）</p>
+<ul>
+<li><code>pv</code>：这只股票被请求了几次。</li>
+<li><code>duration</code>：看了多久，按分钟计，同一分钟内只算一次。</li>
+<li><code>session</code>：间隔超过 30 分钟算新的一轮，等于"这几天反复回来看了几次"。</li>
+<li><code>osid</code>：设备是什么系统，靠插件另一个模块识别。</li>
+</ul>
+<p>另外还有一类 <code>type = "domain"</code> 的记录：每台设备访问过的每个网站、从哪个网站跳过来的，HTTP 和 HTTPS 都记。</p>
+<p>这些数据通过插件统一的上报通道发出。这个通道发出的每条消息都会带上光猫的 <strong>SN、LOID、宽带拨号账号</strong>和公网 IP。LOID 和宽带账号对应的是办宽带时登记的实名户主。</p>
+<p></p>
+<p>合起来就是：<strong>哪户人家、哪台设备、在哪天、看了哪只股票、看了多少次、看了多久、反复回来几次。</strong></p>
+五、现在还有多少请求是明文
+<p>我对这 7 个网址各发了一次明文 HTTP 请求（只请求首页，不带任何参数）：</p>
+
+
+
+网址
+结果
+
+
+
+
+<code><a href="http://gbapi.eastmoney.com" target="_blank" rel="noopener noreferrer">gbapi.eastmoney.com</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://myfavor.eastmoney.com" target="_blank" rel="noopener noreferrer">myfavor.eastmoney.com</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://ai.10jqka.com.cn" target="_blank" rel="noopener noreferrer">ai.10jqka.com.cn</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://stockpage.10jqka.com.cn" target="_blank" rel="noopener noreferrer">stockpage.10jqka.com.cn</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://quote.eastmoney.com" target="_blank" rel="noopener noreferrer">quote.eastmoney.com</a></code>
+跳转到 HTTPS
+
+
+<code><a href="http://www.iwencai.com" target="_blank" rel="noopener noreferrer">www.iwencai.com</a></code>
+跳转到 HTTPS
+
+
+<code><a href="http://xueqiu.com" target="_blank" rel="noopener noreferrer">xueqiu.com</a></code>
+跳转到 HTTPS
+
+<p>7 个里有 4 个至今仍接受明文请求。这只说明"服务器还收 HTTP"，不等于你手上的 App 一定在用 HTTP，具体要看客户端怎么写。</p>
+<p></p>
+<p>哪些情况下你的请求可能是明文的，举几个例子：</p>
+<ol>
+<li><strong>电脑上的老版行情软件和网页版。</strong> 不少用户用的是多年不更新的 PC 客户端，或者把行情页存成书签、直接输入不带 <code>https</code> 的网址。</li>
+<li><strong>App 里内嵌的 H5 页面。</strong> 主程序走 HTTPS，但个股资讯、股吧、F10 这类页面常常是内嵌网页，里面的接口和图片地址未必都升级了。</li>
+<li><strong>自选股和行情接口。</strong> 规则专门写了 <code><a href="http://myfavor.eastmoney.com" target="_blank" rel="noopener noreferrer">myfavor.eastmoney.com</a></code>（自选股）和 <code><a href="http://gbapi.eastmoney.com" target="_blank" rel="noopener noreferrer">gbapi.eastmoney.com</a></code>（股吧接口），而这两个恰好都还接受 HTTP。规则作者显然知道哪些接口值得盯。</li>
+<li><strong>家里的其他设备。</strong> 电视、平板、老人用的旧手机，系统和 App 都老，HTTP 比例更高。</li>
+<li><strong>Referer 泄露。</strong> 东方财富那两条规则不看你请求的网址，看的是"你从哪个页面过来"。哪怕请求本身无关紧要，只要它是明文、Referer 里带着 <code>sh600000.html</code>，代码就被读出来了。</li>
+</ol>
+<p>反过来，如果某个平台的请求全部走 HTTPS，这个模块只能记下"这台设备打开过东方财富"，读不出股票代码。</p>
+六、这种数据能拿来做什么
+<p>以下是推测，源码里看不出数据的用途。</p>
+<ul>
+<li><strong>给用户打标签。</strong> "这户有人炒股、关注哪个板块、多活跃"，是精准营销最值钱的标签之一。</li>
+<li><strong>打包出售。</strong> 网上长期有人公开叫卖"运营商 DPI 股民数据"，这是卖家自己的宣传，没有监管结论，但说明有这种需求。</li>
+<li><strong>最坏的情况：荐股诈骗。</strong> 最高检发布过的典型案例里，诈骗团伙就是靠买来的股民名单，冒充老师拉人进群。一份"这户人这周反复看某只股票"的名单，对他们来说比普通手机号值钱得多。</li>
+</ul>
+<p>有过先例：</p>
+<ul>
+<li><strong>瑞智华胜案</strong>：2018 年案发，涉案公司在运营商服务器上部署恶意代码，从经过的流量里截取用户 Cookie 等数据，涉及约 30 亿条，7 人被起诉。</li>
+<li><strong>Verizon「超级 Cookie」</strong>：运营商在用户的 HTTP 请求里插入唯一标识用于广告追踪，2016 年被美国 FCC 罚款 135 万美元。</li>
+</ul>
+<p>我没有证据表明电信用过、卖过这些数据。我能证实的是：<strong>能力已经预装在光猫里，用户没有被告知，服务器一条配置就能打开。</strong></p>
+七、和法律的关系
+<p>这不归证监会管，证监会管的是券商和上市公司。相关的是：</p>
+<ul>
+<li>《个人信息保护法》：处理个人信息须告知并取得同意。</li>
+<li>工信部《电信和互联网用户个人信息保护规定》：电信业务经营者收集、使用用户个人信息须明确告知目的、方式和范围。</li>
+</ul>
+八、你能做什么
+<ol>
+<li><strong>光猫改桥接，用自己的路由器拨号。</strong> 光猫只负责光电转换，插件看到的流量会少很多。</li>
+<li><strong>只用 HTTPS。</strong> 浏览器开启"仅 HTTPS 模式"；炒股软件更新到最新版，别用停更多年的老客户端。</li>
+<li><strong>家里的旧设备</strong>（电视、旧平板、老人手机）尽量别用来看行情。</li>
+</ol>
+<p></p>
+
+<p>源码出处：上海电信光猫 <code>m01-b01-inner</code> 插件解密后的 Lua，模块 <code>coll_domain</code>（<code>package.preload["coll_domain"]</code>）。浙江版插件里没有这个模块，也没有这张规则表。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>前几天在本站发过电信光猫隐藏插件 <code>m01-b01-inner</code> 的分析帖。这篇单独讲其中一个模块：<code>coll_domain</code>。它的源码里写了一张表，列着东方财富、同花顺、问财、雪球的 7 个网址，专门从你的上网请求里提取<strong>股票代码</strong>，按设备记下你看了哪只股票、看了几次、看了多久，然后发往电信的服务器。</p>
+<p>先把边界说清楚：这个模块只在上海版插件里有，出厂默认关闭，服务器下发一条配置就能打开，我没有找到它在我这台光猫上被打开过的证据。下面写的是它<strong>能做什么</strong>，不是"已经在做"。</p>
+<p></p>
+一、源码原文
+<p>模块开头的说明和配置，原样贴出：</p>
+<pre><code>local coll_domain = {
+    type = "coll_domain",
+    subtype = "coll_domain",
+    help = "collect domain/stock data and send to svrdata",
+
+    -- confs
+    addr = {"b01.189cube.com:7870"},
+    upload_period = 0,  -- default disable
+    session_period = 1800,
+    max_merge_count = 1000,
+    stock_rule = {
+        -- query
+        ["gbapi.eastmoney.com"] = {url = {"[?&amp;]code=%u*(%d+)&amp;?"}},
+        ["ai.10jqka.com.cn"] = {url = {"[?&amp;]code=%u*(%d+)&amp;?"}},
+        ["www.iwencai.com"] = {url = {"[?&amp;]q=%u*(%d+)&amp;?"}},
+        -- path
+        ["stockpage.10jqka.com.cn"] = {url = {"[^/]/%u*(%d+)/?"}},
+        ["xueqiu.com"] = {url = {"[^/]/%u*(%d+)/?"}},
+        -- ref
+        ["quote.eastmoney.com"] = {ref = {"[^/]/%a*(%d+).html"}},
+        ["myfavor.eastmoney.com"] = {ref = {"[^/]/%a*(%d+).html"}},
+    },
+</code></pre>
+<p><code>help</code> 一行写得很直白：收集域名和股票数据，发给 svrdata。</p>
+二、它盯的是哪些平台
+
+
+
+网址
+平台
+从哪里取代码
+
+
+
+
+<code><a href="http://gbapi.eastmoney.com" target="_blank" rel="noopener noreferrer">gbapi.eastmoney.com</a></code>
+东方财富（股吧接口）
+网址参数 <code>code=</code>
+
+
+<code><a href="http://quote.eastmoney.com" target="_blank" rel="noopener noreferrer">quote.eastmoney.com</a></code>
+东方财富（行情页）
+来源页 Referer，如 <code>/sh600000.html</code>
+
+
+<code><a href="http://myfavor.eastmoney.com" target="_blank" rel="noopener noreferrer">myfavor.eastmoney.com</a></code>
+东方财富（<strong>自选股</strong>）
+来源页 Referer
+
+
+<code><a href="http://ai.10jqka.com.cn" target="_blank" rel="noopener noreferrer">ai.10jqka.com.cn</a></code>
+同花顺
+网址参数 <code>code=</code>
+
+
+<code><a href="http://stockpage.10jqka.com.cn" target="_blank" rel="noopener noreferrer">stockpage.10jqka.com.cn</a></code>
+同花顺（个股页）
+网址路径 <code>/600000/</code>
+
+
+<code><a href="http://www.iwencai.com" target="_blank" rel="noopener noreferrer">www.iwencai.com</a></code>
+问财
+搜索词 <code>q=</code>
+
+
+<code><a href="http://xueqiu.com" target="_blank" rel="noopener noreferrer">xueqiu.com</a></code>
+雪球
+网址路径 <code>/S/SH600000</code>
+
+<p>规则里的 <code>%u*(%d+)</code> 意思是：跳过前面的字母（<code>SH</code>、<code>SZ</code> 这类市场前缀），把后面的数字抠出来。三种取法覆盖了"查行情、看个股页、搜股票、翻股吧、点自选股"这几种最常见的动作。</p>
+<p></p>
+<p>这 7 条只是出厂自带的。源码里服务器可以下发新的 <code>stock_rule</code> 把整张表换掉（支持直接下发表格，也支持 base64 编码的 JSON），所以能盯哪些网站，不由光猫说了算。</p>
+三、它是怎么拿到网址的
+<p>光猫里有个内核模块 <code>m01-b01.ko</code>，逐包解析经过的流量，把 HTTP 请求的完整网址和 Referer、HTTPS 连接的域名交给插件。<code>coll_domain</code> 订阅了这两路数据：</p>
+<pre><code>coll_domain.http_sindex = actor.subscribe("HTTP", http_deal)
+coll_domain.https_sindex = actor.subscribe("HTTPS", https_deal)
+</code></pre>
+<ul>
+<li><strong>HTTP</strong>：拿到完整网址和 Referer，用上面的规则匹配股票代码。</li>
+<li><strong>HTTPS</strong>：只拿到域名（握手时明文发出的 SNI）。匹配不出股票代码，但会记一条"这台设备访问了 <a href="http://xueqiu.com" target="_blank" rel="noopener noreferrer">xueqiu.com</a>"。</li>
+</ul>
+<p>也就是说，<strong>它只能从明文 HTTP 里读出你看的是哪只股票</strong>。走 HTTPS 的请求，它最多知道你打开了哪个炒股网站。</p>
+四、一条记录长什么样
+<p>匹配到股票代码后，插件按"设备 MAC + 网站 + 股票代码"合并计数，到点打包上传。字段来自源码 <code>upload_merge()</code>：</p>
+<pre><code>{
+  "type": "stock",
+  "mac": "设备 MAC",
+  "domain": "stockpage.10jqka.com.cn",
+  "stock_code": "600000",
+  "pv": 37,
+  "duration": 12,
+  "session": 3,
+  "osid": "设备系统类型",
+  "first_time": "第一次看到的时间",
+  "update_time": "最后一次看到的时间",
+  "upload_time": "上传时间"
+}
+</code></pre>
+<p>（字段名是源码原文，取值是示意。）</p>
+<ul>
+<li><code>pv</code>：这只股票被请求了几次。</li>
+<li><code>duration</code>：看了多久，按分钟计，同一分钟内只算一次。</li>
+<li><code>session</code>：间隔超过 30 分钟算新的一轮，等于"这几天反复回来看了几次"。</li>
+<li><code>osid</code>：设备是什么系统，靠插件另一个模块识别。</li>
+</ul>
+<p>另外还有一类 <code>type = "domain"</code> 的记录：每台设备访问过的每个网站、从哪个网站跳过来的，HTTP 和 HTTPS 都记。</p>
+<p>这些数据通过插件统一的上报通道发出。这个通道发出的每条消息都会带上光猫的 <strong>SN、LOID、宽带拨号账号</strong>和公网 IP。LOID 和宽带账号对应的是办宽带时登记的实名户主。</p>
+<p></p>
+<p>合起来就是：<strong>哪户人家、哪台设备、在哪天、看了哪只股票、看了多少次、看了多久、反复回来几次。</strong></p>
+五、现在还有多少请求是明文
+<p>我对这 7 个网址各发了一次明文 HTTP 请求（只请求首页，不带任何参数）：</p>
+
+
+
+网址
+结果
+
+
+
+
+<code><a href="http://gbapi.eastmoney.com" target="_blank" rel="noopener noreferrer">gbapi.eastmoney.com</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://myfavor.eastmoney.com" target="_blank" rel="noopener noreferrer">myfavor.eastmoney.com</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://ai.10jqka.com.cn" target="_blank" rel="noopener noreferrer">ai.10jqka.com.cn</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://stockpage.10jqka.com.cn" target="_blank" rel="noopener noreferrer">stockpage.10jqka.com.cn</a></code>
+直接响应，不跳转 HTTPS
+
+
+<code><a href="http://quote.eastmoney.com" target="_blank" rel="noopener noreferrer">quote.eastmoney.com</a></code>
+跳转到 HTTPS
+
+
+<code><a href="http://www.iwencai.com" target="_blank" rel="noopener noreferrer">www.iwencai.com</a></code>
+跳转到 HTTPS
+
+
+<code><a href="http://xueqiu.com" target="_blank" rel="noopener noreferrer">xueqiu.com</a></code>
+跳转到 HTTPS
+
+<p>7 个里有 4 个至今仍接受明文请求。这只说明"服务器还收 HTTP"，不等于你手上的 App 一定在用 HTTP，具体要看客户端怎么写。</p>
+<p></p>
+<p>哪些情况下你的请求可能是明文的，举几个例子：</p>
+<ol>
+<li><strong>电脑上的老版行情软件和网页版。</strong> 不少用户用的是多年不更新的 PC 客户端，或者把行情页存成书签、直接输入不带 <code>https</code> 的网址。</li>
+<li><strong>App 里内嵌的 H5 页面。</strong> 主程序走 HTTPS，但个股资讯、股吧、F10 这类页面常常是内嵌网页，里面的接口和图片地址未必都升级了。</li>
+<li><strong>自选股和行情接口。</strong> 规则专门写了 <code><a href="http://myfavor.eastmoney.com" target="_blank" rel="noopener noreferrer">myfavor.eastmoney.com</a></code>（自选股）和 <code><a href="http://gbapi.eastmoney.com" target="_blank" rel="noopener noreferrer">gbapi.eastmoney.com</a></code>（股吧接口），而这两个恰好都还接受 HTTP。规则作者显然知道哪些接口值得盯。</li>
+<li><strong>家里的其他设备。</strong> 电视、平板、老人用的旧手机，系统和 App 都老，HTTP 比例更高。</li>
+<li><strong>Referer 泄露。</strong> 东方财富那两条规则不看你请求的网址，看的是"你从哪个页面过来"。哪怕请求本身无关紧要，只要它是明文、Referer 里带着 <code>sh600000.html</code>，代码就被读出来了。</li>
+</ol>
+<p>反过来，如果某个平台的请求全部走 HTTPS，这个模块只能记下"这台设备打开过东方财富"，读不出股票代码。</p>
+六、这种数据能拿来做什么
+<p>以下是推测，源码里看不出数据的用途。</p>
+<ul>
+<li><strong>给用户打标签。</strong> "这户有人炒股、关注哪个板块、多活跃"，是精准营销最值钱的标签之一。</li>
+<li><strong>打包出售。</strong> 网上长期有人公开叫卖"运营商 DPI 股民数据"，这是卖家自己的宣传，没有监管结论，但说明有这种需求。</li>
+<li><strong>最坏的情况：荐股诈骗。</strong> 最高检发布过的典型案例里，诈骗团伙就是靠买来的股民名单，冒充老师拉人进群。一份"这户人这周反复看某只股票"的名单，对他们来说比普通手机号值钱得多。</li>
+</ul>
+<p>有过先例：</p>
+<ul>
+<li><strong>瑞智华胜案</strong>：2018 年案发，涉案公司在运营商服务器上部署恶意代码，从经过的流量里截取用户 Cookie 等数据，涉及约 30 亿条，7 人被起诉。</li>
+<li><strong>Verizon「超级 Cookie」</strong>：运营商在用户的 HTTP 请求里插入唯一标识用于广告追踪，2016 年被美国 FCC 罚款 135 万美元。</li>
+</ul>
+<p>我没有证据表明电信用过、卖过这些数据。我能证实的是：<strong>能力已经预装在光猫里，用户没有被告知，服务器一条配置就能打开。</strong></p>
+七、和法律的关系
+<p>这不归证监会管，证监会管的是券商和上市公司。相关的是：</p>
+<ul>
+<li>《个人信息保护法》：处理个人信息须告知并取得同意。</li>
+<li>工信部《电信和互联网用户个人信息保护规定》：电信业务经营者收集、使用用户个人信息须明确告知目的、方式和范围。</li>
+</ul>
+八、你能做什么
+<ol>
+<li><strong>光猫改桥接，用自己的路由器拨号。</strong> 光猫只负责光电转换，插件看到的流量会少很多。</li>
+<li><strong>只用 HTTPS。</strong> 浏览器开启"仅 HTTPS 模式"；炒股软件更新到最新版，别用停更多年的老客户端。</li>
+<li><strong>家里的旧设备</strong>（电视、旧平板、老人手机）尽量别用来看行情。</li>
+</ol>
+<p></p>
+
+<p>源码出处：上海电信光猫 <code>m01-b01-inner</code> 插件解密后的 Lua，模块 <code>coll_domain</code>（<code>package.preload["coll_domain"]</code>）。浙江版插件里没有这个模块，也没有这张规则表。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">5</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xixiv5</span>
+        <span>#1</span>
+        <span>2026/11/19 00:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还记得上一个解包光猫的人最后是怎么收场的吗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18305065">还记得上一个解包光猫的人最后是怎么收场的吗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18305065">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258126#reply18305065" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Redmoon</span>
+        <span>#2</span>
+        <span>2026/11/19 01:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">光猫桥接不是只有物理信号转换，还包括数据链路层，桥接模式由于没有了路由层，所有依赖 IP 的服务都失效。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18305086">光猫桥接不是只有物理信号转换，还包括数据链路层，桥接模式由于没有了路由层，所有依赖 IP 的服务都失效。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18305086">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258126#reply18305086" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">anonymity</span>
+        <span>#3</span>
+        <span>2026/11/19 04:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">没绷住 专盯沪爷是吧</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18305133">没绷住 专盯沪爷是吧</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18305133">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258126#reply18305133" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Anatomist</span>
+        <span>#4</span>
+        <span>2026/11/19 05:19</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">还得是权限狗会玩儿啊</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18305141">还得是权限狗会玩儿啊</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18305141">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258126#reply18305141" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">strobber16</span>
+        <span>#5</span>
+        <span>2026/11/19 05:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">火钳刘明</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18305148">火钳刘明</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18305148">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258126#reply18305148" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

@@ -216,15 +216,15 @@
 <body data-page="story">
   <main class="page story-page">
     <header class="topbar">
-      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-17/">返回日报</a>
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-18/">返回日报</a>
       <div class="source-chip">Hacker News #5</div>
       <h1>Windows 11 is collecting data on which coding agents and developer tools you use</h1>
       <p class="original-title">Windows 11 is collecting data on which coding agents and developer tools you use</p>
       <div class="meta-line">
         <span>开发工具</span>
         <span>作者 cwaffles</span>
-        <span>热度 671</span>
-        <span>回复 531</span>
+        <span>热度 724</span>
+        <span>回复 609</span>
         <span>2026/11/17 06:58</span>
       </div>
       <div class="actions">
@@ -236,7 +236,7 @@
 
     <section class="section">
       <h2>摘要</h2>
-      <ul><li>Reverse engineering Windows 11&#39;s MissionControlAggregator reveals coding-agent and developer-tool usage bits in a diagnostic ETW report. I recently asked AI to help me look through the latest Windows binaries for undocumented features and functionality. Among the leads it turned up, one list immediately caught my attention: coding agents such as codex.exe, claude.exe, copilot.exe, and cursor.exe, alongside familiar developer tools such as python.exe, dotnet.exe, gcc.exe, and code.exe. Why would a Windows system DLL need a list of coding agents and developer tools? The names were in MissionControlAggregator.dll. I asked the agent to follow the references and dig into what the DLL actually does. That led from a handful of string comparisons to a running Windows component that records which coding agents and developer tools have been used, saves that information locally, and reports it to Windows Diagnostics. And unless you have opted out of the “optional” diagnostic data (which is enabled by default), the data is uploaded to Microsoft. I shared the initial finding on X. This post includes more details about the investigation behind it. Following the names Opening the DLL in Binary Ninja made the first lead easy to see. These were explicit executable names embedded in a Windows component:</li><li>Following the references showed that the names were used in comparisons. There are four CLI-agent slots checking copilot.exe, claude.exe, codex.exe, and agy.exe, with extensionless equivalents on the WSL route. Five desktop-agent slots check github.exe, claude.exe, codex.exe, cursor.exe, and antigravity.exe. Here is one of the comparisons against codex.exe:</li></ul>
+      <ul><li>Reverse engineering Windows 11&#39;s MissionControlAggregator reveals coding-agent and developer-tool usage bits in a diagnostic ETW report.I recently asked AI to help me look through the latest Windows binaries for undocumented features and functionality. Among the leads it turned up, one list immediately caught my attention: coding agents such as codex.exe, claude.exe, copilot.exe, and cursor.exe, alongside familiar developer tools such as python.exe, dotnet.exe, gcc.exe, and code.exe.Why would a Windows system DLL need a list of coding agents and developer tools?The names were in MissionControlAggregator.dll. I asked the agent to follow the references and dig into what the DLL actually does. That led from a handful of string comparisons to a running Windows component that records which coding agents and developer tools have been used, saves that information locally, and reports it to Windows Diagnostics. And unless you have opted out of the “optional” diagnostic data (which is enabled by default), the data is uploaded to Microsoft.I shared the initial finding on X. This post includes more details about the investigation behind it.Following the namesOpening the DLL in Binary Ninja made the first lead easy to see. These were explicit executable names embedded in a Windows component:Following the references showed that the names were used in comparisons. There are four CLI-agent slots checking copilot.exe, claude.exe, codex.exe, and agy.exe, with extensionless equivalents on the WSL route. Five desktop-agent slots check github.exe, claude.exe, codex.exe, cursor.exe, and antigravity.exe.Here is one of the comparisons against codex.exe:The compiler-generated C++ names are unwieldy, so I will call these functions executable-name matchers. For reference, one related matcher is std::_Func_impl_no_alloc&lt;&lt;lambda_340dfe7e962ab225b6ac33bc664bd54f&gt;, bool, std::basic_string_view&lt;wchar_t, std::char_traits&lt;wchar_t&gt;&gt; const&amp;, Microsoft::Diagnostics::MissionControlAggregator::Utils::AppType&gt;::_Do_call. The screenshot shows another lambda instantiation performing the same kind of name comparison.The feature guarding the new agent checks has a particularly direct name: CLICodingAgentUsage, feature ID 62580080.And the list extends beyond AI agents. The same component checks for node.exe, python.exe, dotnet.exe, gcc.exe, clang.exe, gdb.exe, javac.exe, devenv.exe, and code.exe, among others. Those checks feed broader developer-tool categories. Some of these checks also verify the publisher: the Node.js slot expects Node.js Foundation, Python expects Python Software Foundation, and the .NET and Visual Studio slots expect Microsoft Corporation. The compiler/debugger group containing GCC and Clang has no additional publisher check in this path.Where does the DLL get this information?The next question was whether the component scans running processes itself. Following Aggregator::OnLoad revealed that it subscribes to existing Windows events instead.For Windows programs, it consumes KernelProcess.AppStateChangeSummary and Win32kTraceLogging.AppInteractivitySummary. These provide application identities that its handlers parse and pass to the matchers. For WSL, it consumes Microsoft.Windows.Lxss.Manager.Exec and ExecCritical, using the imageName field. A regular Windows codex.exe can therefore reach the CLI-agent checks through the app-state summary route; this is not limited to Linux programs running inside WSL.The relevant flow looks like this:Aggregator::OnLoad ├─ WSL Exec / ExecCritical │ └─ ProcessWslExecEvent → CLI agent matchers ├─ KernelProcess.AppStateChangeSummary │ └─ ProcessAppStateChangeSummaryEvent → CLI agent matchers └─ Win32kTraceLogging.AppInteractivitySummary └─ ProcessAppInteractivitySummaryEvent → desktop agent matchers</li><li>Aggregator::OnRelativeTimerExpire └─ MissionControlAggregatorLogging::ReportCohorts&lt;12,4,5&gt; └─ Segments.SubCohorts ETW report</li></ul>
       
       <p class="reason">命中 5 个 AI/科技关键词。</p>
     </section>
@@ -317,7 +317,26 @@ We are also no longer starved for potential alternative games that are very simi
           <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
           <a class="btn secondary" href="https://news.ycombinator.com/item?id=50534202" target="_blank" rel="noopener noreferrer">楼层</a>
         </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">pxc</span>
         
+        <span>2026/11/19 05:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are more games that work on Linux than you could play through in a lifetime. In that sense, you can certainly play "all the games you want". What you can't necessarily do is play <i>any</i> particular game you want.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552332">There are more games that work on Linux than you could play through in a lifetime. In that sense, you can certainly play "all the games you want". What you can't necessarily do is play <i>any</i> particular game you want.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552332">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552332" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
       </div>
     </details>
   
@@ -447,6 +466,44 @@ We are also no longer starved for potential alternative games that are very simi
           <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
           <a class="btn secondary" href="https://news.ycombinator.com/item?id=50530641" target="_blank" rel="noopener noreferrer">楼层</a>
         </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">themanualstates</span>
+        
+        <span>2026/11/18 12:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My experience on MacOS and Apple’s Game Porting Toolkit is the same also lmao.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50541808">My experience on MacOS and Apple’s Game Porting Toolkit is the same also lmao.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50541808">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50541808" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">notabotiswear</span>
+        
+        <span>2026/11/18 11:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It's funny how much the "software that doesn't run on Linux" set intersects with the "software that ideally should be avoided" one.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50541585">It's funny how much the "software that doesn't run on Linux" set intersects with the "software that ideally should be avoided" one.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50541585">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50541585" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
         
       </div>
     </details>
@@ -529,99 +586,42 @@ We are also no longer starved for potential alternative games that are very simi
   
     <details class="comment-node depth-4">
       <summary>
-        <span class="meta-author">lp92</span>
+        <span class="meta-author">account42</span>
         
-        <span>2026/11/18 01:45</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">Good luck trying to convince most of the average population to switch to a new OS with a completely different UI. People got confused with every Windows UI update and that's just still Windows where many of the core concepts/tools remain the same.</div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50535203">Good luck trying to convince most of the average population to switch to a new OS with a completely different UI. People got confused with every Windows UI update and that's just still Windows where many of the core concepts/tools remain the same.</div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50535203">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50535203" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  </div>
-      </div>
-    </details>
-  
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">bluefirebrand</span>
-        
-        <span>2026/11/17 18:31</span>
+        <span>2026/11/18 19:25</span>
         
       </summary>
       <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">I switched my wife to Mint a couple of years ago and she had never had a single problem with it, because 99% of her computer usage is in the browser</div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50529688">I switched my wife to Mint a couple of years ago and she had never had a single problem with it, because 99% of her computer usage is in the browser</div>
+        <div class="comment-text" data-role="comment-zh">What a weird question to ask in a thread about one OS literally spying on the users.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50544963">What a weird question to ask in a thread about one OS literally spying on the users.</div>
         <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50529688">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50544963">原文</button>
           <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50529688" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  
-    <details class="comment-node depth-4">
-      <summary>
-        <span class="meta-author">oblio</span>
-        
-        <span>2026/11/17 18:23</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">Those kinds of users are dark matter, they've never heard of Linux (or if they did, for them it falls into the same category as pacemakers) and will never install it on their own.<p>Techies routinely overestimate how much the average users cares about tech internals.</p><p><a href="https://xkcd.com/2501/" target="_blank" rel="noopener noreferrer">https://xkcd.com/2501/</a></p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50529627">Those kinds of users are dark matter, they've never heard of Linux (or if they did, for them it falls into the same category as pacemakers) and will never install it on their own.<p>Techies routinely overestimate how much the average users cares about tech internals.</p><p><a href="https://xkcd.com/2501/" target="_blank" rel="noopener noreferrer">https://xkcd.com/2501/</a></p></div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50529627">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50529627" target="_blank" rel="noopener noreferrer">楼层</a>
-        </div>
-        
-      </div>
-    </details>
-  </div>
-      </div>
-    </details>
-  
-    <details class="comment-node depth-3">
-      <summary>
-        <span class="meta-author">Peaches4Rent</span>
-        
-        <span>2026/11/17 19:24</span>
-        
-      </summary>
-      <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">For every "popular" game that isn't supported there are 10000s of ones which are. Gamers are spoilt for choice. This isn't the hill you want to die on.</div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50530012">For every "popular" game that isn't supported there are 10000s of ones which are. Gamers are spoilt for choice. This isn't the hill you want to die on.</div>
-        <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50530012">原文</button>
-          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50530012" target="_blank" rel="noopener noreferrer">楼层</a>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50544963" target="_blank" rel="noopener noreferrer">楼层</a>
         </div>
         <div class="comment-children">
     <details class="comment-node depth-4">
       <summary>
-        <span class="meta-author">cortesoft</span>
+        <span class="meta-author">[deleted]</span>
         
-        <span>2026/11/18 00:35</span>
-        
+        <span>2026/11/18 23:52</span>
+        <span class="badge">deleted</span>
       </summary>
       <div class="comment-body">
-        <div class="comment-text" data-role="comment-zh">Games aren't fungible, though. I have been playing Madden and FC (which used to be called FIFA) for over 30 years. I don't want to quit playing. I have friends I play with, I enjoy it every year, and I just love sports games.<p>There simply aren't any sports games that are comparable to those. I can't just switch to playing Balatro or something to replace that.</p><p>I know a ton of people don't care about those games, or don't play video games in a way where they really care which games they are playing, but a lot of people do.</p><p>I don't think it is fair or reasonable to just tell me to play different games simply because you don't think it matter which game you play.[</p></div>
-        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50533938">Games aren't fungible, though. I have been playing Madden and FC (which used to be called FIFA) for over 30 years. I don't want to quit playing. I have friends I play with, I enjoy it every year, and I just love sports games.<p>There simply aren't any sports games that are comparable to those. I can't just switch to playing Balatro or something to replace that.</p><p>I know a ton of people don't care about those games, or don't play video games in a way where they really care which games they are playing, but a lot of people do.</p><p>I don't think it is fair or reasonable to just tell me to play different games simply because you don't think it matter which game you play.[</p></div>
+        <div class="comment-text" data-role="comment-zh"><p>[deleted]</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50547824"><p>[deleted]</p></div>
         <div class="actions">
-          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50533938">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50547824">原文</button>
           <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
-          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50533938" target="_blank" rel="noopener noreferrer">楼层</a>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50547824" target="_blank" rel="noopener noreferrer">楼层</a>
         </div>
         
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
       </div>
     </details>
   </div>
