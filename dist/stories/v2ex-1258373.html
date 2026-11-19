@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自己部署 BiRefNet 做了个抠图网站，第一张图冷启动要等十几秒 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-19/">返回日报</a>
+      <div class="source-chip">V2EX #7</div>
+      <h1>自己部署 BiRefNet 做了个抠图网站，第一张图冷启动要等十几秒</h1>
+      <p class="original-title">自己部署 BiRefNet 做了个抠图网站，第一张图冷启动要等十几秒</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 catlovefishing</span>
+        <span>热度 4</span>
+        <span>回复 4</span>
+        <span>2026/11/19 21:09</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1258373" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1258373.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>remove.bg 宣布 12 月 1 日关掉独立网站和自助 API，网页用户被引到 Canva，API 用户被引到 Leonardo.Ai，后者的接口要重写调用代码。我想做一个接口一样的替代品，旧代码只换域名和 key 就能接着用，网页那边也能上传一张图、下载全分辨率的透明 PNG。现在已经上线了。</li><li>模型用的是 BiRefNet。选它主要看协议：Bria 的 RMBG 权重不能商用，img.ly 的那个是 AGPL，BiRefNet 是 MIT。模型跑在 Modal 的 GPU 上，网站和接口在 Cloudflare Workers 上，图片放 R2。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p><a href="http://remove.bg" target="_blank" rel="noopener noreferrer">remove.bg</a> 宣布 12 月 1 日关掉独立网站和自助 API，网页用户被引到 Canva，API 用户被引到 <a href="http://Leonardo.Ai" target="_blank" rel="noopener noreferrer">Leonardo.Ai</a>，后者的接口要重写调用代码。我想做一个接口一样的替代品，旧代码只换域名和 key 就能接着用，网页那边也能上传一张图、下载全分辨率的透明 PNG。现在已经上线了。</p>
+<p>模型用的是 BiRefNet。选它主要看协议：Bria 的 RMBG 权重不能商用，<a href="http://img.ly" target="_blank" rel="noopener noreferrer">img.ly</a> 的那个是 AGPL，BiRefNet 是 MIT。模型跑在 Modal 的 GPU 上，网站和接口在 Cloudflare Workers 上，图片放 R2。</p>
+<p>花时间最多的是边缘。最早测的一张是雪地上的猫，抠出来毛边一圈白，因为边缘像素一半是猫一半是雪。BiRefNet 仓库里有个 refine_foreground，用两遍模糊估算边缘像素的真实颜色，我把它移植到了 torch 上，每张图多花 0.05 到 0.15 秒，白边基本没了。</p>
+<p>上线后最头疼的是冷启动。GPU 空闲 20 秒就关，访客之间隔着好几分钟，所以几乎每个人的第一张图都碰上冷启动，大部分人要等 11 到 17 秒，GPU 实际只算了 2 秒左右，同一个人的第二张就只要 3 到 4 秒。</p>
+<p>还不行的地方也说一下：主体旁边细长的东西容易丢。</p>
+<p>地址：<a href="https://clearbg.org/" target="_blank" rel="noopener noreferrer">https://clearbg.org/</a></p>
+<p>想问问有类似经验的朋友：流量很小的时候，GPU 冷启动你们是一直留一台热着，还是让用户先等着？</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p><a href="http://remove.bg" target="_blank" rel="noopener noreferrer">remove.bg</a> 宣布 12 月 1 日关掉独立网站和自助 API，网页用户被引到 Canva，API 用户被引到 <a href="http://Leonardo.Ai" target="_blank" rel="noopener noreferrer">Leonardo.Ai</a>，后者的接口要重写调用代码。我想做一个接口一样的替代品，旧代码只换域名和 key 就能接着用，网页那边也能上传一张图、下载全分辨率的透明 PNG。现在已经上线了。</p>
+<p>模型用的是 BiRefNet。选它主要看协议：Bria 的 RMBG 权重不能商用，<a href="http://img.ly" target="_blank" rel="noopener noreferrer">img.ly</a> 的那个是 AGPL，BiRefNet 是 MIT。模型跑在 Modal 的 GPU 上，网站和接口在 Cloudflare Workers 上，图片放 R2。</p>
+<p>花时间最多的是边缘。最早测的一张是雪地上的猫，抠出来毛边一圈白，因为边缘像素一半是猫一半是雪。BiRefNet 仓库里有个 refine_foreground，用两遍模糊估算边缘像素的真实颜色，我把它移植到了 torch 上，每张图多花 0.05 到 0.15 秒，白边基本没了。</p>
+<p>上线后最头疼的是冷启动。GPU 空闲 20 秒就关，访客之间隔着好几分钟，所以几乎每个人的第一张图都碰上冷启动，大部分人要等 11 到 17 秒，GPU 实际只算了 2 秒左右，同一个人的第二张就只要 3 到 4 秒。</p>
+<p>还不行的地方也说一下：主体旁边细长的东西容易丢。</p>
+<p>地址：<a href="https://clearbg.org/" target="_blank" rel="noopener noreferrer">https://clearbg.org/</a></p>
+<p>想问问有类似经验的朋友：流量很小的时候，GPU 冷启动你们是一直留一台热着，还是让用户先等着？</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">4</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Genii</span>
+        <span>#1</span>
+        <span>2026/11/19 21:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">感觉 GPU 服务就是这样的，必须满载才能盈利 <a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18309017">感觉 GPU 服务就是这样的，必须满载才能盈利 <a href="https://i.imgur.com/agAJ0Rd.png" target="_blank" rel="noopener noreferrer"></a></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18309017">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258373#reply18309017" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Genii</span>
+        <span>#2</span>
+        <span>2026/11/19 22:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不如放到 huggingface space 的 zero gpu 上</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18309022">不如放到 huggingface space 的 zero gpu 上</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18309022">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258373#reply18309022" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">catlovefishing</span>
+        <span>#3</span>
+        <span>2026/11/19 23:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Genii" target="_blank" rel="noopener noreferrer">Genii</a> 先这么跑着，回头把 ZeroGPU 做备用，现在用 Modal 偶尔分不到 GPU</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18309136">@<a href="/member/Genii" target="_blank" rel="noopener noreferrer">Genii</a> 先这么跑着，回头把 ZeroGPU 做备用，现在用 Modal 偶尔分不到 GPU</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18309136">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258373#reply18309136" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">catlovefishing</span>
+        <span>#4</span>
+        <span>2026/11/19 23:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/Genii" target="_blank" rel="noopener noreferrer">Genii</a> 试了下，没冷启动，大概快 3 倍，就是一个月得 9 刀</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18309200">@<a href="/member/Genii" target="_blank" rel="noopener noreferrer">Genii</a> 试了下，没冷启动，大概快 3 倍，就是一个月得 9 刀</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18309200">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258373#reply18309200" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

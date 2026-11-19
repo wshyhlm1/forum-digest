@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unauthenticated remote code execution in Nginx | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-19/">返回日报</a>
+      <div class="source-chip">Hacker News #3</div>
+      <h1>Unauthenticated remote code execution in Nginx</h1>
+      <p class="original-title">Unauthenticated remote code execution in Nginx</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 speedping</span>
+        <span>热度 1456</span>
+        <span>回复 612</span>
+        <span>2026/11/18 23:19</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50547374" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50547374.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>Executive SummaryWiz Research, Ikotas Labs, Metnir, Rapid7, and Xint independently uncovered two critical remote code execution vulnerabilities in NGINX, software used to receive and route traffic to production applications and APIs.NGINX is a common default for the front door of modern web architectures, where it handles HTTPS and routes incoming traffic to the right application or API. As the world&#39;s most widely used open-source web server, it powers more than 225 million websites.Successful exploitation could let attackers take control of affected NGINX servers, steal sensitive data, tamper with websites, or disrupt services.The vulnerabilities, tracked as CVE-2026-123633 and CVE-2026-123007, are both rated Critical, with a CVSS 4.0 score of 9.2. The flaws are in NGINX itself. Websites and APIs can be exposed even when their own application code is secure. Both vulnerabilities require HTTP/2 to be enabled on the affected NGINX server. Additional conditions are described below. CVE-2026-123007 affects versions dating back to NGINX 1.9.5 in 2015.We reported our findings to F5, the company behind NGINX, and collaborated with its security team on remediation and coordinated disclosure. Organizations should identify affected deployments and apply the security updates when released.We recommend updating affected NGINX deployments to the latest release which includes multiple security fixes.Responsible disclosure timelineOctober 21, 2026: Wiz reports the HTTP/2 use-after-free vulnerability, later assigned CVE-2026-123633, to F5, including confirmed remote code execution with an ASLR bypass and a proposed fix. F5 confirms that another research team had previously reported the same vulnerability.November 10, 2026: F5 supplies a patch for CVE-2026-123633 for review.November 16, 2026: Wiz reports the second HTTP/2 vulnerability, later assigned CVE-2026-123007, to F5.November 17, 2026: F5 confirms that the second report matches CVE-2026-123007 and is included in the planned November 18 security release.November 18, 2026: F5 security release and coordinated public disclosure.OverviewWiz Research, Ikotas Labs, Metnir, Rapid7, and Xint independently uncovered CVE-2026-123633 and CVE-2026-123007, two critical unauthenticated remote code execution vulnerabilities in NGINX, and reported them to F5, the company behind NGINX. Successful exploitation can compromise the server running NGINX, allowing attackers to execute code, steal sensitive data, tamper with websites, or disrupt services.NGINX often handles traffic for several applications, so a single affected deployment can put multiple services at risk. The flaws are in NGINX itself and can affect websites even when their own application code is secure. Both vulnerabilities require HTTP/2 to be enabled on the affected NGINX server. Our testing of CVE-2026-123007 demonstrated code execution on NGINX serving ordinary static files, without a backend application or third-party modules.Wiz Research used Wiz Atlas, the harness powering Wiz’s AI Code scanning solution, to discover both vulnerabilities. Our researchers used Gemini 4 Carbon and ChatGPT 5.6 Sol to validate the impact of both vulnerabilities, confirming that each could allow an unauthenticated attacker to execute code on the server. We reported our findings to F5 and worked with its security team on remediation and coordinated disclosure.The integer underflow vulnerability dates back to NGINX 1.9.5 in 2015, meaning it had been hiding in the code for more than a decade. The use-after-free vulnerability had been there for nearly six years. Like the PHP2Shell vulnerabilities we reported last month and Java4Shell, disclosed yesterday by Calif, these are memory-safety flaws that have historically been extremely difficult to discover and exploit. Finding them often requires tracing subtle interactions between memory operations and multiple code paths. For years, that complexity itself created a practical barrier. AI is fundamentally dissolving that barrier. As AI models get better at following those interactions, both researchers and attackers can uncover longstanding flaws in software that powers the internet and modern applications. The fact that multiple independent research teams uncovered the same vulnerabilities in both PHP and NGINX, after they had remained in the code for years, makes this shift particularly striking. And as AI capabilities advance, each new generation of models may uncover even more complex vulnerabilities that were previously beyond practical reach. Complexity can no longer be relied upon as a barrier to discovery or exploitation. This changes not only which vulnerabilities can be found, but how quickly longstanding risks can become real threats.Over time, finding and fixing these flaws can harden the software we all depend on. In the near term, faster discovery and a shorter window between disclosure and exploitation add to an already demanding workload for security teams. Turning a published fix into protection in production still takes substantial manual work, from validating patches to coordinating rollouts with service owners. We recommend focusing on how quickly you can reduce exposure in production. Identify deployments running the affected version and configuration, prioritize those an attacker can reach, and apply mitigations while patches are tested and rolled out.In this post, we explain the vulnerabilities and their impact, and provide mitigation and detection guidance. Organizations should identify affected deployments and apply the security updates as soon as they are available. If upgrading is not immediately possible, temporarily disable HTTP/2.What is NGINX?NGINX is the world&#39;s most widely used open-source web server, powering more than 225 million websites. It is commonly used as a reverse proxy in front of websites and APIs. In this role, NGINX accepts incoming requests, forwards them to the appropriate application server based on its configuration, and returns the response to the user.NGINX can also serve web content directly and act as a load balancer, distributing traffic across multiple servers. A single NGINX deployment can serve several applications, making it a shared entry point for the websites and APIs behind it.The VulnerabilitiesBoth vulnerabilities are memory-safety issues in how NGINX handles HTTP/2 traffic. In CVE-2026-123633, a connection&#39;s memory is freed while a request still needs it, creating a use-after-free. In CVE-2026-123007, incorrect flow-control accounting leads to an invalid memory copy. Each can lead to unauthenticated remote code execution on the NGINX server.Tracking IDThe bugWhat an attacker can achieveCVE-2026-123633HTTP/2 connection use-after-freeExecute arbitrary code on the NGINX server without authentication.CVE-2026-123007HTTP/2 send_window integer underflowExecute arbitrary code on the NGINX server without authentication.Both vulnerabilities require HTTP/2 to be enabled, but their additional requirements differ. CVE-2026-123633 affects reverse-proxy processing when available connection slots run low. CVE-2026-123007 can also affect NGINX serving content directly, as demonstrated in our testing over HTTPS on 64-bit systems. Typical memory safety mitigations such as ASLR do not protect against these issues, as attackers can use either vulnerabilities for memory read access prior to code execution.ImpactOn affected NGINX versions with HTTP/2 enabled, these vulnerabilities can allow an unauthenticated attacker to execute arbitrary code on the server.The flaws are in NGINX itself. Exploitation does not depend on a bug in the website or API behind it, so applications with secure code can still be exposed. For CVE-2026-123007, we demonstrated remote code execution on a server serving ordinary static files, without a backend application or third-party module.An attacker could use this access to run commands, steal sensitive data, tamper with websites, or disrupt services. Because one NGINX deployment can serve several applications, the impact could extend across multiple websites and APIs.Illustrative deployment: an attacker exploits NGINX to run code on the server, putting the applications and data it serves at risk.Coordinated disclosureWe reported both vulnerabilities to F5 and collaborated with its security team on remediation and coordinated disclosure. We also shared proposed fixes. Ikotas Labs, Metnir, Rapid7, and Xint also independently discovered and reported these issues to F5. We thank the F5 and NGINX teams for their work on the fixes.Vulnerabilities Addressed in the ReleaseF5&#39;s security release addresses several other vulnerabilities in NGINX. Below is a summary of these additional CVEs, as well as the two critical HTTP/2 remote code execution flaws detailed in this post (captured in the first two rows of the table): CVEDescriptionImpactCVSSAffected VersionsCVE-2026-123007Memory corruption in HTTP/2 flow controlExploitable in default configurations with HTTP/2 enabled9.21.9.5-1.31.8CVE-2026-123633UAF in HTTP/2Exploitable configured with HTTP/2 as a proxy server9.21.19.7-1.31.8CVE-2026-121810UAF in HTTP/3Exploitable configured with HTTP/3 as a proxy server9.21.25.0-1.31.8CVE-2026-123634UAF during response processing in DNS resolverRCE when attacker controls upstream host name9.20.6.18-1.31.8CVE-2026-113425UAF in mail proxy moduleRCE when configured as a mail server proxy with auth_http9.20.5.33-1.31.8CVE-2026-118899Infinite loop while reading client request bodyPotential denial-of-service when server supports TLS 1.38.71.13.0-1.31.8CVE-2026-120993NULL pointer dereferenceDenial-of-service when configured with proxy_protocol v26.91.31.4-1.31.8CVE-2026-125283Buffer overflow when using alias with try_filesTheoretical RCE in uncommon nginx.conf configuration6.90.9.6-1.31.8CVE-2026-123640Insufficient validation in stream ssl_prereadSSRF-like access when configured with ssl_preread6.91.15.2-1.31.8CVE-2026-120967Client certificate bypassClient certificate bypass in specific SNI configurations6.31.25.5-1.31.8Mitigation and detectionIdentify affected NGINX deployments with HTTP/2 enabled and upgrade to a release that fixes both vulnerabilities as soon as it is available.ProductCVE and first affected version or branchFixed releasesNGINX OSSCVE-2026-123633: 1.19.71.30.7 stable; 1.31.9 mainlineNGINX PlusCVE-2026-123633: R33; 37.0.037.0.7.1; 37.2.0.1NGINX OSSCVE-2026-123007: 1.9.51.30.7 stable; 1.31.9 mainlineNGINX PlusCVE-2026-123007: R33; 37.0.037.0.8.1; 37.3.0.1If you cannot upgrade immediately, temporarily disable HTTP/2 on affected NGINX instances:Set http2 off; in affected server blocks on NGINX 1.25.1 or later, and remove the http2 parameter from any listen directives.Test application compatibility, reload NGINX, and confirm the old workers have exited.Re-enable HTTP/2 after upgrading.Investigate unexpected NGINX worker crashes or commands launched by NGINX; these are general warning signs, not confirmed indicators of these vulnerabilities.Technical deep diveCVE-2026-123633: An active connection marked as reusableNGINX keeps a list of connections that it can close when it needs room for new ones. An HTTP/2 connection can join this list when it has no active requests, but must leave it when a request starts.We start by sending only part of a HEADERS frame, which carries an HTTP/2 request&#39;s headers. With no active request streams, ngx_http_v2_handle_connection() marks the connection as reusable while waiting for the rest:ngx_reusable_connection(c, 1);if (h2c-&gt;state.incomplete) { return;}When we send the rest of the frame, ngx_http_v2_create_stream() creates a request stream and increments h2c-&gt;processing. However, it does not remove the connection from the reusable list. We now have a request being processed on a connection that NGINX still considers safe to close.Triggering the use-after-freeNext, we need NGINX to close this connection while the request is still running. Forwarding the request to an application server can trigger this.Opening an upstream connection calls ngx_get_connection(). When free connection slots run low, ngx_drain_connections() selects reusable connections to close. Our HTTP/2 connection is still on that list, so NGINX can select it while processing its own request.Before closing it, NGINX tries to send a GOAWAY frame to notify the client. Even creating this frame can fail, for example, if NGINX has reached its internal frame limit for the connection and has no frame available for reuse. In that case, the error path closes the connection and frees the memory associated with it. Processing then resumes in the original request, which still uses that memory. We have reached the use-after-free.From use-after-free to remote code executionThe freed memory can now be reused for other data. The request-processing code still follows its old pointers, treating the new contents as the original request or connection.This use-after-free can lead to unauthenticated remote code execution on the NGINX server.CVE-2026-123007: HTTP/2 send_window integer underflowReturning credit for unsent dataHTTP/2 allows several requests, called streams, to share one connection. Flow control limits how much response data NGINX can send before the client is ready to receive more. NGINX tracks the connection&#39;s remaining allowance in a counter called h2c-&gt;send_window.When NGINX queues response data, it subtracts that data&#39;s size from the counter before sending it. If a stream is canceled while its data is still queued, ngx_http_v2_filter_cleanup() removes the unsent data and returns the unused allowance:h2c-&gt;send_window += window;This refund does not check HTTP/2&#39;s maximum allowed window. If the client has already increased the allowance while data was waiting to be sent, the refund can push the counter above that maximum. NGINX is now tracking a value the rest of its HTTP/2 code assumes cannot occur.A bounds check that no longer worksThe next problem is in ngx_http_v2_state_window_update(), which checks whether an increase would exceed the limit:if (window &gt; NGX_HTTP_V2_MAX_WINDOW - h2c-&gt;send_window)The check subtracts the current allowance from the maximum to calculate how much room remains. But the refund has already pushed the allowance past that maximum. Because the calculation uses an unsigned integer, which cannot represent a negative number, the subtraction wraps around and underflows to a very large positive value. The check now treats an invalid counter as though it has plenty of room left and allows further increases.From an invalid length to remote code executionThe invalid counter eventually reaches ngx_http_v2_send_chain(), where it is converted to the signed integer type off_t to calculate how much data to send. A sufficiently large value becomes negative. That negative length then reaches the code that describes a portion of a response buffer, leaving its end pointer before its start pointer.When the TLS send path in ngx_ssl_send_chain() processes this malformed buffer, further signed and unsigned conversions turn the invalid length into an out-of-bounds memory copy. An attacker can use this to disclose memory, corrupt the heap, and lead to unauthenticated remote code execution on the NGINX server.We confirmed remote code execution with an ASLR bypass on official NGINX 1.31.7 and 1.31.8 builds. The tested path used HTTP/2 over TLS on 64-bit systems serving response data from memory. Ordinary static files can reach this path through standard TLS processing, without a backend application or third-party module.ExploitationTo confirm these vulnerabilities, Wiz Research built proof-of-concept exploits and managed to run them in multiple lab settings against servers running common NGINX configurations we’ve seen in customer environments. In the interest of customer protection, we will not be releasing these exploits at this time.Like other memory-safety issues, such vulnerabilities are difficult to exploit remotely and require the attacker to disclose memory addresses, groom and shape the heap correctly, and handle different NGINX versions, builds, and configurations. In reality, attackers may not need to target every single configuration, and we have seen in PHP2Shell that widespread attacks initially start against packaged products where many customers use the exact same build and configuration. Motivated attackers may tailor exploits for specific targets.Any exploit assumes the attacker is able to communicate directly with the affected NGINX server. CDNs and WAFs that terminate HTTP/2 may mitigate parts of the exploit by not reflecting the exact payload back to the underlying NGINX server. This depends on implementation.Specifically, CVE-2026-123007 requires the attacker to send a large number of WINDOW_UPDATE records to increase it to an arbitrary value. Detection rules covering long standing HTTP/2 connections sending large amounts of data may hint at an attack associated with this vulnerability. CVE-2026-123633 has different exploitation constraints and is more likely to be exploited when NGINX is configured in proxy configuration.How Can Wiz Help? Wiz customers can use the pre-built query and advisory in the Wiz Threat Center to search for vulnerable instances in their environment. ConclusionWith NGINX handling traffic for critical websites and applications, the impact of flaws in its core extends far beyond a single service. This research is another example of AI uncovering critical vulnerabilities in widely deployed infrastructure. The flaws were already there; AI helped us find them.As we saw with PHP2Shell, AI is changing the economics of vulnerability research. The same capabilities that help defenders uncover flaws can also help attackers investigate them. Software that has been used and reviewed for years still needs to be examined as these tools improve.The opportunity is to make this work routine: finding vulnerabilities in the software organizations depend on and working with maintainers to fix them. Our collaboration with F5 brings that approach to NGINX, helping protect the applications and services behind it.Stay in touchHi there! We are Nir Ohfeld and Tomer Schwartz from the Wiz Research Team (@wiz_io). We are a group of veteran white-hat hackers with a single goal: to make the cloud a safer place for everyone. We focus on finding new attack vectors in cloud software and uncovering isolation issues in the systems organizations depend on. We would love to hear from you on X or at research@wiz.io.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><a href="https://www.cve.org/CVERecord?id=CVE-2026-123633" target="_blank" rel="noopener noreferrer">https://www.cve.org/CVERecord?id=CVE-2026-123633</a><p><a href="https://www.cve.org/CVERecord?id=CVE-2026-123007" target="_blank" rel="noopener noreferrer">https://www.cve.org/CVERecord?id=CVE-2026-123007</a></p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><a href="https://www.cve.org/CVERecord?id=CVE-2026-123633" target="_blank" rel="noopener noreferrer">https://www.cve.org/CVERecord?id=CVE-2026-123633</a><p><a href="https://www.cve.org/CVERecord?id=CVE-2026-123007" target="_blank" rel="noopener noreferrer">https://www.cve.org/CVERecord?id=CVE-2026-123007</a></p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">black3r</span>
+        
+        <span>2026/11/19 00:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The bug was apparently fixed in open source repo a week earlier, this could've been abused by anyone smart enough to monitor repos like this for exploitable bugfixes for a week (the commit message even included "Reported by Xint.io" and I'm guessing skilled black hats would know about Xint)<p>Given that in this case the workaround is as simple as disabling http2, there is honestly no reason why F5/Nginx or any of the reporting teams couldn't at least put out a PSA to disable http2 for the time being before basically telling the whole wide world this exists and how to exploit it.</p><p>Especially for software like Nginx which powers a huge part of the internet.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50548510">The bug was apparently fixed in open source repo a week earlier, this could've been abused by anyone smart enough to monitor repos like this for exploitable bugfixes for a week (the commit message even included "Reported by Xint.io" and I'm guessing skilled black hats would know about Xint)<p>Given that in this case the workaround is as simple as disabling http2, there is honestly no reason why F5/Nginx or any of the reporting teams couldn't at least put out a PSA to disable http2 for the time being before basically telling the whole wide world this exists and how to exploit it.</p><p>Especially for software like Nginx which powers a huge part of the internet.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50548510">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50548510" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">verst</span>
+        
+        <span>2026/11/19 01:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Disabling http2 can be a big deal. My service is primarily made up of gRPC APIs. Not an option for me to disable http2.
+Luckily I'm not using nginx at the moment - but I easily could have been.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50548865">Disabling http2 can be a big deal. My service is primarily made up of gRPC APIs. Not an option for me to disable http2.
+Luckily I'm not using nginx at the moment - but I easily could have been.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50548865">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50548865" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">weitendorf</span>
+        
+        <span>2026/11/19 03:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">If you're using grpc, http2, etc you're so much better off using Envoy proxy<p>You basically get to piggyback off of a large chunk of big tech's infrastructure and security work. Obviously everything has the risk of security flaws (and I kind of hate that default Envoy builds ship with half-baked filter impls) but it's a generally more mature ecosystem than projects with a lot of smaller/legacy users like nginx</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50550971">If you're using grpc, http2, etc you're so much better off using Envoy proxy<p>You basically get to piggyback off of a large chunk of big tech's infrastructure and security work. Obviously everything has the risk of security flaws (and I kind of hate that default Envoy builds ship with half-baked filter impls) but it's a generally more mature ecosystem than projects with a lot of smaller/legacy users like nginx</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50550971">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50550971" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">trey-jones</span>
+        
+        <span>2026/11/19 04:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I'm not 100% informed on this, but it seems very unbelievable to me that Envoy could be considered more robust or widely used than nginx at any point in history including today.  I started using ConnectRPC instead of GRPC almost entirely because it didn't leave me subject to (what I consider to be) an unnecessary dependency in Envoy.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50551940">I'm not 100% informed on this, but it seems very unbelievable to me that Envoy could be considered more robust or widely used than nginx at any point in history including today.  I started using ConnectRPC instead of GRPC almost entirely because it didn't leave me subject to (what I consider to be) an unnecessary dependency in Envoy.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50551940">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50551940" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">weitendorf</span>
+        
+        <span>2026/11/19 05:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I guess I would just say, wordpress is also more widely used than many other projects, but that doesn't necessarily make it more robust or secure than the projects Google, Cloudflare, and security companies develop.<p>The main reason I see to not use Envoy is that it's very annoying to set up and build, and requires familiarity with things like grpc/proto/low level networking to get right. But if you're using grpc and http2 I think you're generally past that "infra overhead" threshold already and it's going to better serve your needs.</p><p>I have pretty much only worked at big tech or my own infrastructure startup, and did some systems/infra work at Google using Envoy for a while. I can't say it's 100% better than nginx but I can say that I've evaluated nginx and a lot of software like it (ie with a similar customer base, ecosystem, and history; like coturn) over the years for my personal use, and every time I've immediately been annoyed by constant security issues or poor http2/L4 networking support that I don't see when I use what Netflix/Google/etc use.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552092">I guess I would just say, wordpress is also more widely used than many other projects, but that doesn't necessarily make it more robust or secure than the projects Google, Cloudflare, and security companies develop.<p>The main reason I see to not use Envoy is that it's very annoying to set up and build, and requires familiarity with things like grpc/proto/low level networking to get right. But if you're using grpc and http2 I think you're generally past that "infra overhead" threshold already and it's going to better serve your needs.</p><p>I have pretty much only worked at big tech or my own infrastructure startup, and did some systems/infra work at Google using Envoy for a while. I can't say it's 100% better than nginx but I can say that I've evaluated nginx and a lot of software like it (ie with a similar customer base, ecosystem, and history; like coturn) over the years for my personal use, and every time I've immediately been annoyed by constant security issues or poor http2/L4 networking support that I don't see when I use what Netflix/Google/etc use.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552092">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552092" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">TedDoesntTalk</span>
+        
+        <span>2026/11/19 05:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Envoy probably has the advantage that it’s only a reverse proxy server, unlike nginx which has other uses too like a general-purpose web server with optional modules.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552267">Envoy probably has the advantage that it’s only a reverse proxy server, unlike nginx which has other uses too like a general-purpose web server with optional modules.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552267">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552267" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">weitendorf</span>
+        
+        <span>2026/11/19 05:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">You can implement custom http filters for envoy or use this for general web serving: <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/http/http_conn_man/local_reply" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/h...</a><p>The documentation, DX/UX, and discoverability for these features are pretty bad. But they work well if you know how to do it.</p><p>Implementing a custom HTTP filter itself is actually easy, I can share examples I did in the last year for a voice inference stack if anybody is interested. The problem is just that the devloop is very painful, because Envoy doesn't make it easy to know why something isn't working  (this is actually most of what I did with it at Google, tons of testing/verification and compatability infra for relatively simple http stuff) and the builds take a very long time.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552608">You can implement custom http filters for envoy or use this for general web serving: <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/http/http_conn_man/local_reply" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/h...</a><p>The documentation, DX/UX, and discoverability for these features are pretty bad. But they work well if you know how to do it.</p><p>Implementing a custom HTTP filter itself is actually easy, I can share examples I did in the last year for a voice inference stack if anybody is interested. The problem is just that the devloop is very painful, because Envoy doesn't make it easy to know why something isn't working  (this is actually most of what I did with it at Google, tons of testing/verification and compatability infra for relatively simple http stuff) and the builds take a very long time.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552608">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552608" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">technion</span>
+        
+        <span>2026/11/19 06:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">On all my small projects (eg rails apps) the reverse proxy to the app servers is the same server expected to serve the static assets directly. In fact the majority of bot nonsense never goes through the proxy due to path rules.<p>Envoy is only attractive at a higher scale.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552862">On all my small projects (eg rails apps) the reverse proxy to the app servers is the same server expected to serve the static assets directly. In fact the majority of bot nonsense never goes through the proxy due to path rules.<p>Envoy is only attractive at a higher scale.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552862">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552862" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Lucasoato</span>
+        
+        <span>2026/11/19 05:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Does Envoy support things like rate limiting?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552738">Does Envoy support things like rate limiting?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552738">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552738" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">weitendorf</span>
+        
+        <span>2026/11/19 06:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yes [0]. For a single node you can just use this, it works like the Golang/language rate limiters you might already be familiar with [1]<p>In a multiple node/distributed architecture you need away to coordinate rate limits across nodes and not try to fight the CAP theorem.</p><p>There is a way to do this [2] [3] and although it sounds complicated the shape of the solution (delegating to a third party service that aggregates and provides client-level rate limit metrics across multiple proxies) would still be the same any way you cut it.</p><p>[0] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/listeners/network_filters/local_rate_limit_filter" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/l...</a></p><p>[1] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/extensions/filters/network/local_ratelimit/v3/local_rate_limit.proto" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/extensio...</a></p><p>[2] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/intro/arch_overview/other_features/global_rate_limiting" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/intro/arch_over...</a></p><p>[3] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/config/ratelimit/v3/rls.proto#envoy-v3-api-msg-config-ratelimit-v3-ratelimitserviceconfig" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/config/r...</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50552840">Yes [0]. For a single node you can just use this, it works like the Golang/language rate limiters you might already be familiar with [1]<p>In a multiple node/distributed architecture you need away to coordinate rate limits across nodes and not try to fight the CAP theorem.</p><p>There is a way to do this [2] [3] and although it sounds complicated the shape of the solution (delegating to a third party service that aggregates and provides client-level rate limit metrics across multiple proxies) would still be the same any way you cut it.</p><p>[0] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/listeners/network_filters/local_rate_limit_filter" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/configuration/l...</a></p><p>[1] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/extensions/filters/network/local_ratelimit/v3/local_rate_limit.proto" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/extensio...</a></p><p>[2] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/intro/arch_overview/other_features/global_rate_limiting" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/intro/arch_over...</a></p><p>[3] <a href="https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/config/ratelimit/v3/rls.proto#envoy-v3-api-msg-config-ratelimit-v3-ratelimitserviceconfig" target="_blank" rel="noopener noreferrer">https://www.envoyproxy.io/docs/envoy/v1.15.2/api-v3/config/r...</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50552840">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50552840" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Lucasoato</span>
+        
+        <span>2026/11/19 15:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Thanks for the wonderful answer!</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50556898">Thanks for the wonderful answer!</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50556898">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50556898" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">fcantournet</span>
+        
+        <span>2026/11/19 09:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I don't know what nginx security vetting looks like, but just being older isn't a security guarantee.
+I know Google spends a lot of manpower on making envoy secure.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50554752">I don't know what nginx security vetting looks like, but just being older isn't a security guarantee.
+I know Google spends a lot of manpower on making envoy secure.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50554752">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50554752" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ragall</span>
+        
+        <span>2026/11/19 15:08</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">As a gRPC proxy Envoy is indeed more widely used than Nginx: it's used as <i>the</i> gRPC proxy load balancer on Google Cloud.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50556908">As a gRPC proxy Envoy is indeed more widely used than Nginx: it's used as <i>the</i> gRPC proxy load balancer on Google Cloud.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50556908">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50556908" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">trey-jones</span>
+        
+        <span>2026/11/19 21:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Well that is of course because it is the <i>only</i> proxy that seems to speak gRPC fluently.  Anyone who's ever tried to configure bare nginx to serve gRPC knows this.  And yet, I would wager that many stacks use both.<p>This requirement turns me off of gRPC entirely.  Maybe Envoy truly is more secure than nginx, but it's still a whole-ass additional attack surface.  It seemed to me that eliminating it if possible was best.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50559670">Well that is of course because it is the <i>only</i> proxy that seems to speak gRPC fluently.  Anyone who's ever tried to configure bare nginx to serve gRPC knows this.  And yet, I would wager that many stacks use both.<p>This requirement turns me off of gRPC entirely.  Maybe Envoy truly is more secure than nginx, but it's still a whole-ass additional attack surface.  It seemed to me that eliminating it if possible was best.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50559670">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50559670" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ragall</span>
+        
+        <span>2026/11/20 00:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">It seems to me that eliminating Nginx and sticking to Envoy is the best.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50562364">It seems to me that eliminating Nginx and sticking to Envoy is the best.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50562364">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50562364" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">chanux</span>
+        
+        <span>2026/11/19 10:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I wonder if being prepared to switch the reverse proxy you use in whim is a good strategy in this climate.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50555485">I wonder if being prepared to switch the reverse proxy you use in whim is a good strategy in this climate.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50555485">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50555485" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">trollbridge</span>
+        
+        <span>2026/11/19 12:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A while ago I started releasing our stuff with dual stacks (originally nginx and haproxy, more recently added traefik to the list).</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50556015">A while ago I started releasing our stuff with dual stacks (originally nginx and haproxy, more recently added traefik to the list).</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50556015">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50556015" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">verst</span>
+        
+        <span>2026/11/19 07:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I am using Envoy :)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50553781">I am using Envoy :)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50553781">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50553781" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">voodooEntity</span>
+        
+        <span>2026/11/19 07:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What WAF would you suggest to use with envoy? Have been working with Coraza and tbh satisfying is something else. So i wonder what someone that recommends envoy would recommend as WAF for it</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50553804">What WAF would you suggest to use with envoy? Have been working with Coraza and tbh satisfying is something else. So i wonder what someone that recommends envoy would recommend as WAF for it</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50553804">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50553804" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">weitendorf</span>
+        
+        <span>2026/11/19 07:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Personally I serve all static, public content off a CDN and only serve dynamic content through Envoy after it passes AuthN/AuthZ.<p>I use JWT-based sessions + a remote JWKS (which is remote static content that Envoy can cache) + either a third-party IDP or dedicated login service (this being the only application logic besides Envoy's routing exposed to the public Internet). That way, every envoy auth check is immediate and stateless.</p><p>In this setup you don't really need a WAF because all unauthenticated requests redirect to signin or 403, which get strict rate limits on login. An abusive peer that sends a ton of traffic anyway gets blocked at the network/firewall level outside of Envoy. The tradeoff is you need to decide that you aren't going to do unauthenticated SSR, and I will admit this pretty complicated to set up in its entirety.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50553980">Personally I serve all static, public content off a CDN and only serve dynamic content through Envoy after it passes AuthN/AuthZ.<p>I use JWT-based sessions + a remote JWKS (which is remote static content that Envoy can cache) + either a third-party IDP or dedicated login service (this being the only application logic besides Envoy's routing exposed to the public Internet). That way, every envoy auth check is immediate and stateless.</p><p>In this setup you don't really need a WAF because all unauthenticated requests redirect to signin or 403, which get strict rate limits on login. An abusive peer that sends a ton of traffic anyway gets blocked at the network/firewall level outside of Envoy. The tradeoff is you need to decide that you aren't going to do unauthenticated SSR, and I will admit this pretty complicated to set up in its entirety.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50553980">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50553980" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
