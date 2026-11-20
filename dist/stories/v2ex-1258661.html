@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>想偷偷出钱，做个让爸妈锻炼打卡就能提现的 App，怎么实现？ | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-20/">返回日报</a>
+      <div class="source-chip">V2EX #6</div>
+      <h1>想偷偷出钱，做个让爸妈锻炼打卡就能提现的 App，怎么实现？</h1>
+      <p class="original-title">想偷偷出钱，做个让爸妈锻炼打卡就能提现的 App，怎么实现？</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 apollo007</span>
+        <span>热度 13</span>
+        <span>回复 13</span>
+        <span>2026/11/20 22:27</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1258661" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1258661.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>我有一个思路：我父母年龄大了，肌肉流失比较快，为了鼓励他们做抗阻运动，我想到了一个办法。</li><li>直接跟他们讲道理其实不太愿意听，哪怕一天只是花个 10 分钟、20 分钟做抗阻运动，他们都不太愿意去。但他们又爱赚点小钱，平时会去捡纸壳子之类的，说白了就是想赚点零花钱。</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>我有一个思路：我父母年龄大了，肌肉流失比较快，为了鼓励他们做抗阻运动，我想到了一个办法。</p>
+<p>直接跟他们讲道理其实不太愿意听，哪怕一天只是花个 10 分钟、20 分钟做抗阻运动，他们都不太愿意去。但他们又爱赚点小钱，平时会去捡纸壳子之类的，说白了就是想赚点零花钱。</p>
+<p>我想到的办法就是：他们做锻炼，我就可以给钱，但不能让他们知道是我给的。相当于是做一个 App，他们锻炼打卡就能收钱提现。他们以为是别人给的钱，这样锻炼起来就会很有动力。</p>
+<p>我觉得这个思路挺好的，但我不太清楚怎么实现这个事情。</p>
+<p>他们的设备一个是苹果手机，一个是安卓手机。</p>
+<p>主要想问问大家：<br />
+1.  有没有现成的走路/打卡赚钱类 App 或小程序能直接套用，不用自己开发？<br />
+2.  如果自己做，是做 App 好还是微信小程序好？他们一个苹果一个安卓。<br />
+3.  最关键的是提现这块，个人主体能接微信/支付宝提现吗？钱是我这边充进去，他们那边点提现就能到账，这种怎么走通？</p>
+<p>金额不大，就是一天几块钱的零花钱，主要是想让他们动起来</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>我有一个思路：我父母年龄大了，肌肉流失比较快，为了鼓励他们做抗阻运动，我想到了一个办法。</p>
+<p>直接跟他们讲道理其实不太愿意听，哪怕一天只是花个 10 分钟、20 分钟做抗阻运动，他们都不太愿意去。但他们又爱赚点小钱，平时会去捡纸壳子之类的，说白了就是想赚点零花钱。</p>
+<p>我想到的办法就是：他们做锻炼，我就可以给钱，但不能让他们知道是我给的。相当于是做一个 App，他们锻炼打卡就能收钱提现。他们以为是别人给的钱，这样锻炼起来就会很有动力。</p>
+<p>我觉得这个思路挺好的，但我不太清楚怎么实现这个事情。</p>
+<p>他们的设备一个是苹果手机，一个是安卓手机。</p>
+<p>主要想问问大家：<br />
+1.  有没有现成的走路/打卡赚钱类 App 或小程序能直接套用，不用自己开发？<br />
+2.  如果自己做，是做 App 好还是微信小程序好？他们一个苹果一个安卓。<br />
+3.  最关键的是提现这块，个人主体能接微信/支付宝提现吗？钱是我这边充进去，他们那边点提现就能到账，这种怎么走通？</p>
+<p>金额不大，就是一天几块钱的零花钱，主要是想让他们动起来</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">13</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">allrightdev</span>
+        <span>#1</span>
+        <span>2026/11/20 23:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">一个安卓、一个苹果，肯定是选择小程序开发。<br />小程序开发的情况下，你这种肯定是无法过审核上架的，所以走体验版给他们添加测试权限即可。<br />你开通一个微信商户，然后通过微信商户的打款到个人就能完成提现了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313180">一个安卓、一个苹果，肯定是选择小程序开发。<br />小程序开发的情况下，你这种肯定是无法过审核上架的，所以走体验版给他们添加测试权限即可。<br />你开通一个微信商户，然后通过微信商户的打款到个人就能完成提现了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313180">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313180" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">gpt5</span>
+        <span>#2</span>
+        <span>2026/11/20 23:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">别人拿你 app 运动你给钱么？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313196">别人拿你 app 运动你给钱么？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313196">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313196" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">coderluan</span>
+        <span>#3</span>
+        <span>2026/11/21 00:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">做 app 容易，防作弊很困难，楼主看着 5W 步的"异常数据"正在找 bug，然后就看见自家狗身上绑着俩手机从自己面前走过。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313249">做 app 容易，防作弊很困难，楼主看着 5W 步的"异常数据"正在找 bug，然后就看见自家狗身上绑着俩手机从自己面前走过。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313249">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313249" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">iixy</span>
+        <span>#4</span>
+        <span>2026/11/21 00:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">那他们推荐给亲戚了怎么办</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313253">那他们推荐给亲戚了怎么办</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313253">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313253" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">apollo007</span>
+        <span>#5</span>
+        <span>2026/11/21 00:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/iixy" target="_blank" rel="noopener noreferrer">iixy</a> #4 大概率他们不会推荐给亲戚的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313259">@<a href="/member/iixy" target="_blank" rel="noopener noreferrer">iixy</a> #4 大概率他们不会推荐给亲戚的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313259">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313259" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">apollo007</span>
+        <span>#6</span>
+        <span>2026/11/21 00:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/gpt5" target="_blank" rel="noopener noreferrer">gpt5</a> #2 是没法给的，主要是想激励他们运动。如果大家真有这种想法，我觉得是不是可以通过子女充钱来激励父母？我不知道怎么实现</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313260">@<a href="/member/gpt5" target="_blank" rel="noopener noreferrer">gpt5</a> #2 是没法给的，主要是想激励他们运动。如果大家真有这种想法，我觉得是不是可以通过子女充钱来激励父母？我不知道怎么实现</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313260">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313260" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">apollo007</span>
+        <span>#7</span>
+        <span>2026/11/21 00:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/allrightdev" target="_blank" rel="noopener noreferrer">allrightdev</a> #1 不知道你说的这个好不好实现，不过如果只弄一个安卓版也是可以的，如果安卓版可行的话。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313264">@<a href="/member/allrightdev" target="_blank" rel="noopener noreferrer">allrightdev</a> #1 不知道你说的这个好不好实现，不过如果只弄一个安卓版也是可以的，如果安卓版可行的话。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313264">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313264" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dcncy</span>
+        <span>#8</span>
+        <span>2026/11/21 01:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">说真心的，你就放手吧，每代人有各自的生活习惯，捡纸盒子也能活动活动身体，不要试图按照你的生活方式去绑架他们的生活。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313303">说真心的，你就放手吧，每代人有各自的生活习惯，捡纸盒子也能活动活动身体，不要试图按照你的生活方式去绑架他们的生活。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313303">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313303" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">LxExExl</span>
+        <span>#9</span>
+        <span>2026/11/21 03:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">弄个所谓的内部邀请码 你只有一个 给了你父母 <br /><br />做成人工 review 之后才发放红包 然后楼主自己审一下<br /><br />父母照样领红包 其他人直接说没有参与资格 <br /><br />这样行吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313354">弄个所谓的内部邀请码 你只有一个 给了你父母 <br /><br />做成人工 review 之后才发放红包 然后楼主自己审一下<br /><br />父母照样领红包 其他人直接说没有参与资格 <br /><br />这样行吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313354">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313354" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">labay</span>
+        <span>#10</span>
+        <span>2026/11/21 04:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">防作弊有啥难的，搞个白名单只给你父母的微信号登录/提现就行了呗</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313365">防作弊有啥难的，搞个白名单只给你父母的微信号登录/提现就行了呗</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313365">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313365" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SingeeKing</span>
+        <span>#11</span>
+        <span>2026/11/21 04:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">app 真的好办，主要问题就是提现吧，打款 API 得用企业主体？不然就做成手动、24h 提现，然后让你朋友打给你爸妈……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313368">app 真的好办，主要问题就是提现吧，打款 API 得用企业主体？不然就做成手动、24h 提现，然后让你朋友打给你爸妈……</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313368">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313368" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SingeeKing</span>
+        <span>#12</span>
+        <span>2026/11/21 04:49</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">不过还有个问题就是，你爸妈赚到钱了，推荐给亲朋好友，你怎么收场😂</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313369">不过还有个问题就是，你爸妈赚到钱了，推荐给亲朋好友，你怎么收场😂</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313369">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313369" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">SingeeKing</span>
+        <span>#13</span>
+        <span>2026/11/21 04:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">等等，话说好像有个真的这种活动，招商信诺的群打卡🌚 就是不知道是不是需要先买保险才能加那个群，你感兴趣可以搜搜，没有信息的话我帮你问问……</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18313370">等等，话说好像有个真的这种活动，招商信诺的群打卡🌚 就是不知道是不是需要先买保险才能加那个群，你感兴趣可以搜搜，没有信息的话我帮你问问……</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18313370">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258661#reply18313370" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

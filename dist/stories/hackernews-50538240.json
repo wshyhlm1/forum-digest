@@ -3,8 +3,8 @@
   "storyKey": "hackernews-50538240",
   "source": "hackernews",
   "sourceLabel": "Hacker News",
-  "rank": 7,
-  "sourceRank": 7,
+  "rank": 8,
+  "sourceRank": 8,
   "type": "story",
   "title": "Java4Shell: RCE in OpenJDK when processing Base64",
   "titleZh": "Java4Shell: RCE in OpenJDK when processing Base64",
@@ -13,36 +13,36 @@
   "hnUrl": "https://news.ycombinator.com/item?id=50538240",
   "discussionUrl": "https://news.ycombinator.com/item?id=50538240",
   "author": "werrett",
-  "score": 1170,
+  "score": 1180,
   "publishedAt": "2026-11-17T21:11:28.000Z",
-  "commentsCount": 327,
+  "commentsCount": 338,
   "category": "开发工具",
   "relevanceScore": 100,
   "relevanceReason": "命中 2 个 AI/科技关键词。",
-  "hotScore": 3620.6,
-  "snapshotBestRank": 3,
-  "snapshotBestRankSource": "beststories",
-  "snapshotMaxScore": 1170,
-  "snapshotMaxComments": 327,
-  "snapshotFirstSeenAt": "2026-11-18T22:41:26.828Z",
-  "snapshotLastSeenAt": "2026-11-19T14:40:14.310Z",
-  "snapshotAppearances": 6,
+  "hotScore": 3425.6,
+  "snapshotBestRank": 83,
+  "snapshotBestRankSource": "topstories",
+  "snapshotMaxScore": 1180,
+  "snapshotMaxComments": 338,
+  "snapshotFirstSeenAt": "2026-11-19T22:45:13.302Z",
+  "snapshotLastSeenAt": "2026-11-20T14:20:07.931Z",
+  "snapshotAppearances": 3,
   "textRawHtml": "",
   "textZhHtml": "",
   "summaryRaw": [
     "The Tail of Base64 By Quang Luong On affected OpenJDK builds, malformed Base64 data can cause a constant-value overwrite of allocated heap memory. Through remote Heap Feng Shui, we turn that overwrite into a heap leak and remote code execution. Discovery A few months back, I was developing a 0-click exploit on a certain phone vendor. The bug was constrained: it is a linear out-of-bounds write and we have no way to bypass ASLR. I almost considered it unexploitable until I audited the Android Runtime. Turns out, it has some predictable memory allocation pattern and if you align the registers from the starting memory corruption just right you can make the runtime interpret attacker's bytecode.",
-    "After completing that exploit chain, inspired (and bored), I decided to look into some thing completely different. So I pulled the official JVM implementation (OpenJDK HotSpot) and started auditing. Java is a mature platform, so I was aware that having a \"good\" bug here would be hard, but I wanted to give it my best attempt anyway. Recalling my earlier lesson that complex systems and code crossing multiple boundaries are difficult to get right, I focused the audit on the JIT compiler, intrinsics, widely accessible APIs, and cryptography. Well, more precisely, I told Codex to look at those areas like any serious security researcher in 2026. To be honest, I didn't expect to find anything trivially exploitable, perhaps only some logic flaws or side-channel issues. Most early results Codex brought me were slops, either unreachable or the requirement of exploitation is not realistic at all. This looks like a gamble I am going to lose. But you know what, fortune favors the bold. So I just prompted harder... Eventually, Codex brought me a finding for a memory corruption in the Base64 decoder itself. I came looking for copper and found gold, through sheer persistence. But wait, is it really gold, or just fool's gold?",
+    "After completing that exploit chain, inspired (and bored), I decided to look into something completely different. So I pulled the official JVM implementation (OpenJDK HotSpot) and started auditing. Java is a mature platform, so I was aware that having a \"good\" bug here would be hard, but I wanted to give it my best attempt anyway. Recalling my earlier lesson that complex systems and code crossing multiple boundaries are difficult to get right, I focused the audit on the JIT compiler, intrinsics, widely accessible APIs, and cryptography. Well, more precisely, I told Codex to look at those areas like any serious security researcher in 2026. To be honest, I didn't expect to find anything trivially exploitable, perhaps only some logic flaws or side-channel issues. Most early results Codex brought me were slops, either unreachable or the requirement of exploitation is not realistic at all. This looks like a gamble I am going to lose. But you know what, fortune favors the bold. So I just prompted harder... Eventually, Codex brought me a finding for a memory corruption in the Base64 decoder itself. I came looking for copper and found gold, through sheer persistence. But wait, is it really gold, or just fool's gold?",
     "The vulnerability The issue lies in OpenJDK HotSpot's x86-64 Base64 intrinsic. C2 is the most aggressive JIT compiler in the Java Virtual Machine. Specifically, if you trigger a function repeatedly, then it will compile that function into native code. Even then, ordinary native code itself is not fast enough. Modern CPUs have specialized instructions that allow processing data even faster. HotSpot uses them in optimized routines called intrinsics. The x86-64 Base64 intrinsic miscalculated the padded tail's store mask, causing an out-of-bounds write. The x86-64 Base64 intrinsic iterates through the input in 256-byte blocks; if it is less than 256, then it will do so in 64-byte blocks. When the input is less than 64 bytes, it uses evmovdqub, the intrinsic for the VMOVDQU8 instruction. This instruction takes a 64-bit mask that decides which bytes are read from or written to memory. The mask is first calculated from the input and output length, then updated to reflect the number of padding bytes ('=') in the Base64-encoded string. This is shown in the following (pseudocode): // Zero High Bits Starting with Specified Bit Position input_mask := bzhiq(-1, input_length) output_len := (input_length / 4) * 3",
     "// handle padding if input[input_length - 1] == '=': output_len -= 1 input_mask >>= 1 if input[input_length - 2] == '=': output_len -= 1 input_mask >>= 1",
     "output_mask := bzhiq(-1, output_len) In the above code, if the remaining input is of the form =, ==, X=, X==, XY=, or ===, then output_len will be computed as zero. However, since there is padding, output_len is decremented, resulting in an underflowed value of -1 or -2. Since bzhiq(-1, output_len) doesn’t change any bits if output_len >= 64, this results in output_mask == -1u64. Later the code uses evmovdqub to read and write multiple bytes at a time. For a write, if the mask bit is 1, the byte at that index in the vector register is written to memory. So when output_mask == -1u64, all 64 bytes are written during the following operation: evmovdqub( Address(dest, dp) /* Address: destination address addr */, k1 /* k1 == output_mask */, tmp /* XMMRegister src register/value to write */, true, Assembler::AVX_512bit /* vector length */ ); The generated stub returns the number of bytes it successfully decoded, and returns early when it detects invalid input. The remaining bytes are handled by the Java code, which throws IllegalArgumentException if the input is invalid. At runtime, the decoded buffer length is calculated as (ceil(inp_len / 4) * 3) - padding. When the bug is triggered, with 65 bytes ([64 bytes] + '=') as input, that calculation allocates a 50-byte buffer. During decoding the bug makes output_mask == -1 for evmovdqub, so 64 bytes are written starting at offset 48, an out-of-bounds write past the end of the buffer. On OpenJDK 17, the trigger input is 'A' * 128 + '=' instead of 'A' * 64 + '=', because the length threshold to reach the code path is higher. Exploitation strategy The Base64 bug was gold, but not the type that sits on the riverbed waiting to be panned out. It was the type that was deep, dark, and hard to access. While we had memory corruption, exploiting it looked difficult, perhaps even borderline unexploitable, since it only wrote fixed bytes to the heap. Only the landing position of the out-of-bounds write is controllable. We get the following 64 bytes write starting from the position in buffer where the remaining sets of Base64 decoded bytes would have been written to:"
   ],
   "summaryZh": [
     "The Tail of Base64 By Quang Luong On affected OpenJDK builds, malformed Base64 data can cause a constant-value overwrite of allocated heap memory. Through remote Heap Feng Shui, we turn that overwrite into a heap leak and remote code execution. Discovery A few months back, I was developing a 0-click exploit on a certain phone vendor. The bug was constrained: it is a linear out-of-bounds write and we have no way to bypass ASLR. I almost considered it unexploitable until I audited the Android Runtime. Turns out, it has some predictable memory allocation pattern and if you align the registers from the starting memory corruption just right you can make the runtime interpret attacker's bytecode.",
-    "After completing that exploit chain, inspired (and bored), I decided to look into some thing completely different. So I pulled the official JVM implementation (OpenJDK HotSpot) and started auditing. Java is a mature platform, so I was aware that having a \"good\" bug here would be hard, but I wanted to give it my best attempt anyway. Recalling my earlier lesson that complex systems and code crossing multiple boundaries are difficult to get right, I focused the audit on the JIT compiler, intrinsics, widely accessible APIs, and cryptography. Well, more precisely, I told Codex to look at those areas like any serious security researcher in 2026. To be honest, I didn't expect to find anything trivially exploitable, perhaps only some logic flaws or side-channel issues. Most early results Codex brought me were slops, either unreachable or the requirement of exploitation is not realistic at all. This looks like a gamble I am going to lose. But you know what, fortune favors the bold. So I just prompted harder... Eventually, Codex brought me a finding for a memory corruption in the Base64 decoder itself. I came looking for copper and found gold, through sheer persistence. But wait, is it really gold, or just fool's gold?"
+    "After completing that exploit chain, inspired (and bored), I decided to look into something completely different. So I pulled the official JVM implementation (OpenJDK HotSpot) and started auditing. Java is a mature platform, so I was aware that having a \"good\" bug here would be hard, but I wanted to give it my best attempt anyway. Recalling my earlier lesson that complex systems and code crossing multiple boundaries are difficult to get right, I focused the audit on the JIT compiler, intrinsics, widely accessible APIs, and cryptography. Well, more precisely, I told Codex to look at those areas like any serious security researcher in 2026. To be honest, I didn't expect to find anything trivially exploitable, perhaps only some logic flaws or side-channel issues. Most early results Codex brought me were slops, either unreachable or the requirement of exploitation is not realistic at all. This looks like a gamble I am going to lose. But you know what, fortune favors the bold. So I just prompted harder... Eventually, Codex brought me a finding for a memory corruption in the Base64 decoder itself. I came looking for copper and found gold, through sheer persistence. But wait, is it really gold, or just fool's gold?"
   ],
   "highlightsZh": [],
   "translationStatus": "translated",
-  "contentHash": "04e58fcd83ddf32e1a28ef175e636f998a4f173cd2dfa86e53078e626132e4d2",
+  "contentHash": "87333ee25ab251a1475e968cbe5c98afbd13597c843a526d5c3cd8caa6db1107",
   "comments": [
     {
       "id": 50539499,
@@ -257,6 +257,90 @@
           "isDeleted": false
         },
         {
+          "id": 50539582,
+          "commentKey": "hackernews-50539582",
+          "parentId": 50539499,
+          "author": "jonstewart",
+          "publishedAt": "2026-11-17T23:14:47.000Z",
+          "level": 2,
+          "hnUrl": "https://news.ycombinator.com/item?id=50539582",
+          "sourceUrl": "https://news.ycombinator.com/item?id=50539582",
+          "textRawHtml": "&gt; Based on the complexity and constraints, short-term mass-exploitation seems unlikely. It will take some time before there are reliable exploits<p>Mass exploitation, maybe. But LLMs are pretty good at finding exploits now as Calif showed at unprompted a few weeks ago.</p>",
+          "textZhHtml": "&gt; Based on the complexity and constraints, short-term mass-exploitation seems unlikely. It will take some time before there are reliable exploits<p>Mass exploitation, maybe. But LLMs are pretty good at finding exploits now as Calif showed at unprompted a few weeks ago.</p>",
+          "translationStatus": "translated",
+          "contentHash": "e188b4499bc2ea6503a4a0e6d746021c16c7ca30e7dc415f6b38b87fbd8063e1",
+          "children": [
+            {
+              "id": 50539839,
+              "commentKey": "hackernews-50539839",
+              "parentId": 50539582,
+              "author": "AdrenalinMd",
+              "publishedAt": "2026-11-17T23:41:54.000Z",
+              "level": 3,
+              "hnUrl": "https://news.ycombinator.com/item?id=50539839",
+              "sourceUrl": "https://news.ycombinator.com/item?id=50539839",
+              "textRawHtml": "Indeed, it can be a SKILL.md that writes the exploit. So in the end it could still be quite mass exploitable, only depends how much context is needed to write the exploit.",
+              "textZhHtml": "Indeed, it can be a SKILL.md that writes the exploit. So in the end it could still be quite mass exploitable, only depends how much context is needed to write the exploit.",
+              "translationStatus": "translated",
+              "contentHash": "0d3ade7c5fe38ecf9897d9fd81d47da60a98efbc23c3f68201a14074f14604ba",
+              "children": [
+                {
+                  "id": 50541235,
+                  "commentKey": "hackernews-50541235",
+                  "parentId": 50539839,
+                  "author": "testtestmetest",
+                  "publishedAt": "2026-11-18T02:48:29.000Z",
+                  "level": 4,
+                  "hnUrl": "https://news.ycombinator.com/item?id=50541235",
+                  "sourceUrl": "https://news.ycombinator.com/item?id=50541235",
+                  "textRawHtml": "This is not my experience. Great for recon/fuzzing but rather bad at chaining together exploits or creatively making those connections, and you need A LOT of tokens and time to get real results with llms. These capabilities are not within reach for anyone without resources and skills.<p>But please prove me wrong, if its so easy with an llm theres millions of dollars waiting to be picked up on h1!</p><p>Calif gets unlimited tokens from OpenAI to make these findings. Theyre basically the METER operation for OpenAI and scary AI cyber narratives.</p>",
+                  "textZhHtml": "This is not my experience. Great for recon/fuzzing but rather bad at chaining together exploits or creatively making those connections, and you need A LOT of tokens and time to get real results with llms. These capabilities are not within reach for anyone without resources and skills.<p>But please prove me wrong, if its so easy with an llm theres millions of dollars waiting to be picked up on h1!</p><p>Calif gets unlimited tokens from OpenAI to make these findings. Theyre basically the METER operation for OpenAI and scary AI cyber narratives.</p>",
+                  "translationStatus": "translated",
+                  "contentHash": "ddf9c551c00bf86562df910483bcfc4c45993a12f93a193911bbbcac0cfb2338",
+                  "children": [
+                    {
+                      "id": 50547467,
+                      "commentKey": "hackernews-50547467",
+                      "parentId": 50541235,
+                      "author": "red-iron-pine",
+                      "publishedAt": "2026-11-18T15:27:39.000Z",
+                      "level": 5,
+                      "hnUrl": "https://news.ycombinator.com/item?id=50547467",
+                      "sourceUrl": "https://news.ycombinator.com/item?id=50547467",
+                      "textRawHtml": "plenty of nation-state tier actors willing to throw a ton of tokens at the problem<p>and the level of token require is not out of reach of many business either</p>",
+                      "textZhHtml": "plenty of nation-state tier actors willing to throw a ton of tokens at the problem<p>and the level of token require is not out of reach of many business either</p>",
+                      "translationStatus": "translated",
+                      "contentHash": "1ee2e07d0677a0b11eff29ed20e4695a4e96f140778e8ef7b37599911c975601",
+                      "children": [
+                        {
+                          "id": 50547514,
+                          "commentKey": "hackernews-50547514",
+                          "parentId": 50547467,
+                          "author": "[deleted]",
+                          "publishedAt": "2026-11-18T15:30:18.000Z",
+                          "level": 6,
+                          "hnUrl": "https://news.ycombinator.com/item?id=50547514",
+                          "sourceUrl": "https://news.ycombinator.com/item?id=50547514",
+                          "textRawHtml": "<p>[deleted]</p>",
+                          "textZhHtml": "<p>[deleted]</p>",
+                          "translationStatus": "translated",
+                          "contentHash": "1558967992c0c4534d65ce69458c01a866fc81359cdd42e5f20f5d316755f4b8",
+                          "children": [],
+                          "isDeleted": true
+                        }
+                      ],
+                      "isDeleted": false
+                    }
+                  ],
+                  "isDeleted": false
+                }
+              ],
+              "isDeleted": false
+            }
+          ],
+          "isDeleted": false
+        },
+        {
           "id": 50539708,
           "commentKey": "hackernews-50539708",
           "parentId": 50539499,
@@ -283,89 +367,6 @@
               "textZhHtml": "Yes but don’t those usually have nginx or friends in front of them? Which apparently frustrates the block size of data being transmitted.",
               "translationStatus": "translated",
               "contentHash": "59a5c5c5951b59e6d3f52637ab7fbd6ea233187d4f97be384d2a0c3d3656d369",
-              "children": [
-                {
-                  "id": 50543183,
-                  "commentKey": "hackernews-50543183",
-                  "parentId": 50540650,
-                  "author": "mschuster91",
-                  "publishedAt": "2026-11-18T07:59:28.000Z",
-                  "level": 4,
-                  "hnUrl": "https://news.ycombinator.com/item?id=50543183",
-                  "sourceUrl": "https://news.ycombinator.com/item?id=50543183",
-                  "textRawHtml": "Well... depending on the application, there might still be code paths in which an attacker can supply b64 to be decoded in a way that can lead to exploitation.<p>Three years ago, I'd have said, yeah fix the bug but it's so complex to exploit it doesn't need immediate urgency. But now, with AI on the scene? Probably any Java application that somehow accepts user generated input can be exploited for less than a grand in AI token spend.</p>",
-                  "textZhHtml": "Well... depending on the application, there might still be code paths in which an attacker can supply b64 to be decoded in a way that can lead to exploitation.<p>Three years ago, I'd have said, yeah fix the bug but it's so complex to exploit it doesn't need immediate urgency. But now, with AI on the scene? Probably any Java application that somehow accepts user generated input can be exploited for less than a grand in AI token spend.</p>",
-                  "translationStatus": "translated",
-                  "contentHash": "bc4a4eec01c0e113196128ab076168065bd02c99ef793c3a5acdc5611af4ac26",
-                  "children": [
-                    {
-                      "id": 50554134,
-                      "commentKey": "hackernews-50554134",
-                      "parentId": 50543183,
-                      "author": "hinkley",
-                      "publishedAt": "2026-11-19T00:04:21.000Z",
-                      "level": 5,
-                      "hnUrl": "https://news.ycombinator.com/item?id=50554134",
-                      "sourceUrl": "https://news.ycombinator.com/item?id=50554134",
-                      "textRawHtml": "Aaand now we have an nginx CVE.",
-                      "textZhHtml": "Aaand now we have an nginx CVE.",
-                      "translationStatus": "translated",
-                      "contentHash": "dde66b3ff8db70bdeb5b20619d9778ea5437dabf69aadc06732bff4d7d62946e",
-                      "children": [],
-                      "isDeleted": false
-                    }
-                  ],
-                  "isDeleted": false
-                }
-              ],
-              "isDeleted": false
-            }
-          ],
-          "isDeleted": false
-        },
-        {
-          "id": 50539828,
-          "commentKey": "hackernews-50539828",
-          "parentId": 50539499,
-          "author": "afavour",
-          "publishedAt": "2026-11-17T23:40:39.000Z",
-          "level": 2,
-          "hnUrl": "https://news.ycombinator.com/item?id=50539828",
-          "sourceUrl": "https://news.ycombinator.com/item?id=50539828",
-          "textRawHtml": "Yes, I guess the TL;DR is the chances of a drive by attack are low, but a sufficiently motivated actor with a specific target in mind might be able to exploit it.<p>So, patch your systems, governments!</p>",
-          "textZhHtml": "Yes, I guess the TL;DR is the chances of a drive by attack are low, but a sufficiently motivated actor with a specific target in mind might be able to exploit it.<p>So, patch your systems, governments!</p>",
-          "translationStatus": "translated",
-          "contentHash": "d5cd234f5b0fbdb3f55451f4798f8cb80a6b9d3e5844eedd51975780ba60bd4a",
-          "children": [
-            {
-              "id": 50542758,
-              "commentKey": "hackernews-50542758",
-              "parentId": 50539828,
-              "author": "brunoborges",
-              "publishedAt": "2026-11-18T06:55:39.000Z",
-              "level": 3,
-              "hnUrl": "https://news.ycombinator.com/item?id=50542758",
-              "sourceUrl": "https://news.ycombinator.com/item?id=50542758",
-              "textRawHtml": "[flagged]",
-              "textZhHtml": "[flagged]",
-              "translationStatus": "translated",
-              "contentHash": "8aaafe6e059f7d3340a60f8e7e730811696e5368d220a89cbd4c02d621f78ae4",
-              "children": [],
-              "isDeleted": true
-            },
-            {
-              "id": 50540656,
-              "commentKey": "hackernews-50540656",
-              "parentId": 50539828,
-              "author": "hinkley",
-              "publishedAt": "2026-11-18T01:20:28.000Z",
-              "level": 3,
-              "hnUrl": "https://news.ycombinator.com/item?id=50540656",
-              "sourceUrl": "https://news.ycombinator.com/item?id=50540656",
-              "textRawHtml": "I’m sure they’re all working late on a Tuesday doing just that. /s",
-              "textZhHtml": "I’m sure they’re all working late on a Tuesday doing just that. /s",
-              "translationStatus": "translated",
-              "contentHash": "08a09dd3767311edec0657c11af964a39192d0ad2df1806beb1f6a28575554f4",
               "children": [],
               "isDeleted": false
             }

@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude 真的吹过头了吗？实测下来很多场景还不如 GPT | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-20/">返回日报</a>
+      <div class="source-chip">V2EX #3</div>
+      <h1>Claude 真的吹过头了吗？实测下来很多场景还不如 GPT</h1>
+      <p class="original-title">Claude 真的吹过头了吗？实测下来很多场景还不如 GPT</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 takemefly</span>
+        <span>热度 59</span>
+        <span>回复 59</span>
+        <span>2026/11/20 10:01</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1258440" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1258440.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近在项目里折腾了一圈，感觉网传 Claude 强到没边的说法有点滤镜了，不少场景下甚至觉得还不如 GPT。</li><li>模型与稳定性：项目里用 6 astra、6.1 sol 大多数时候还行，但切到 opus5.5/fable 5.2 反而偶尔冒出些 bug 得回头修；新出的 6.2 sol 体验也挺让人失望的，功能做到一半就歇菜了。GPT 不上 200 元的套餐就不耐用。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近在项目里折腾了一圈，感觉网传 Claude 强到没边的说法有点滤镜了，不少场景下甚至觉得还不如 GPT。</p>
+<p>说说几个直观感受：</p>
+<p>模型与稳定性：项目里用 6 astra、6.1 sol 大多数时候还行，但切到 opus5.5/fable 5.2 反而偶尔冒出些 bug 得回头修；新出的 6.2 sol 体验也挺让人失望的，功能做到一半就歇菜了。GPT 不上 200 元的套餐就不耐用。</p>
+<p>前端与审美：之前看不少人说 Claude 写前端强，拿它重构了一版官网，结果出来的黑+棕绿色调并没有多惊艳，审美上甚至不如之前用 5.6 再靠 6 astra 慢慢磨出来的版本。GPT 那边则是文案和代码风格经常偏“糙”，但底子能力其实不差。</p>
+<p>交互与工作流：工具层面 Claude Code 确实挺讨喜，每干完一段活会给个确认/提交的交互，点一下就能顺着往下走，这点在 Codex 里我还没怎么见到类似体验。</p>
+<p>整体给我的感觉有点像 Claude 偏精致路线（类比于 Apple)、GPT 偏重型/硬核路线(类比于 Google)，但真用到复杂任务和稳定性上，未必像吹得那么神。大家日常主力用哪家</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近在项目里折腾了一圈，感觉网传 Claude 强到没边的说法有点滤镜了，不少场景下甚至觉得还不如 GPT。</p>
+<p>说说几个直观感受：</p>
+<p>模型与稳定性：项目里用 6 astra、6.1 sol 大多数时候还行，但切到 opus5.5/fable 5.2 反而偶尔冒出些 bug 得回头修；新出的 6.2 sol 体验也挺让人失望的，功能做到一半就歇菜了。GPT 不上 200 元的套餐就不耐用。</p>
+<p>前端与审美：之前看不少人说 Claude 写前端强，拿它重构了一版官网，结果出来的黑+棕绿色调并没有多惊艳，审美上甚至不如之前用 5.6 再靠 6 astra 慢慢磨出来的版本。GPT 那边则是文案和代码风格经常偏“糙”，但底子能力其实不差。</p>
+<p>交互与工作流：工具层面 Claude Code 确实挺讨喜，每干完一段活会给个确认/提交的交互，点一下就能顺着往下走，这点在 Codex 里我还没怎么见到类似体验。</p>
+<p>整体给我的感觉有点像 Claude 偏精致路线（类比于 Apple)、GPT 偏重型/硬核路线(类比于 Google)，但真用到复杂任务和稳定性上，未必像吹得那么神。大家日常主力用哪家</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zed1018</span>
+        <span>#1</span>
+        <span>2026/11/20 10:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">1. 要考虑 <a href="http://AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> 等设置对 Agent 的负面影响。<br />2. claude 的模型输出要快一大截这个应该是很增强体验的，反正我最近偶尔用一下 /ultrafast 确实很爽。<br />3. GPT 本来也不差，毕竟御二家之一。<br />4. 不易得的东西总是要高贵一些。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18309982">1. 要考虑 <a href="http://AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> 等设置对 Agent 的负面影响。<br />2. claude 的模型输出要快一大截这个应该是很增强体验的，反正我最近偶尔用一下 /ultrafast 确实很爽。<br />3. GPT 本来也不差，毕竟御二家之一。<br />4. 不易得的东西总是要高贵一些。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18309982">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18309982" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tianmenshan</span>
+        <span>#2</span>
+        <span>2026/11/20 10:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">楼主，用的是中转，还是订阅？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18309988">楼主，用的是中转，还是订阅？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18309988">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18309988" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">takemefly</span>
+        <span>#3</span>
+        <span>2026/11/20 10:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">订阅，绝不走中转。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310003">订阅，绝不走中转。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310003">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310003" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">leegradyllljjjj</span>
+        <span>#4</span>
+        <span>2026/11/20 10:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Claude 确实好用，尤其是长任务，算力足 数据面足 后端优化的也很好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310005">Claude 确实好用，尤其是长任务，算力足 数据面足 后端优化的也很好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310005">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310005" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">phrack</span>
+        <span>#5</span>
+        <span>2026/11/20 10:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">我在美国，公司提供 Claude，chatgpt 订阅，公司的任务就用这俩<br /><br />但是个人项目我都是用 DeepSeek v4.1 flash 配上 pi，个人体感比这俩好用，pi 也比 Claude code 和 codex 好用。。。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310047">我在美国，公司提供 Claude，chatgpt 订阅，公司的任务就用这俩<br /><br />但是个人项目我都是用 DeepSeek v4.1 flash 配上 pi，个人体感比这俩好用，pi 也比 Claude code 和 codex 好用。。。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310047">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310047" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tanrenye</span>
+        <span>#6</span>
+        <span>2026/11/20 10:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">后端开发，主力一直都是 gpt，Claude 用过几次，复杂任务基本都有遗漏，不是 bug，是提的内容有遗漏，后来就没怎么用，现在主要用 Claude 写前端，要说代码精致度，那确实 Claude 的好看，像人写的，gpt 的代码很啰嗦，不过无所谓，最终还是看软件质量，网上都说 Claude 强是因为太多个人开发者了，甚至很多原来都不是开发者，他们都是以许愿为主，而不是企业复杂工程，如果纯许愿出一个不错的玩具，那 Claude 确实要强，基础审美比 gpt 好</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310170">后端开发，主力一直都是 gpt，Claude 用过几次，复杂任务基本都有遗漏，不是 bug，是提的内容有遗漏，后来就没怎么用，现在主要用 Claude 写前端，要说代码精致度，那确实 Claude 的好看，像人写的，gpt 的代码很啰嗦，不过无所谓，最终还是看软件质量，网上都说 Claude 强是因为太多个人开发者了，甚至很多原来都不是开发者，他们都是以许愿为主，而不是企业复杂工程，如果纯许愿出一个不错的玩具，那 Claude 确实要强，基础审美比 gpt 好</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310170">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310170" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ttkit</span>
+        <span>#7</span>
+        <span>2026/11/20 10:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/phrack" target="_blank" rel="noopener noreferrer">phrack</a> 的确是这样的，现在开源模型和闭源模型，在真实的工作能力上差距已经很小了，很大一批程序员看了一些华而不实的 demo，觉得这种能力会在真实的工作上碾压其他模型本来就是错误的。<br /><br />把模型放到真实工作里，而不是公开的跑分里，否则永远被那些公司收割。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310209">@<a href="/member/phrack" target="_blank" rel="noopener noreferrer">phrack</a> 的确是这样的，现在开源模型和闭源模型，在真实的工作能力上差距已经很小了，很大一批程序员看了一些华而不实的 demo，觉得这种能力会在真实的工作上碾压其他模型本来就是错误的。<br /><br />把模型放到真实工作里，而不是公开的跑分里，否则永远被那些公司收割。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310209">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310209" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">sakurawzt</span>
+        <span>#8</span>
+        <span>2026/11/20 10:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tanrenye" target="_blank" rel="noopener noreferrer">tanrenye</a> #6 中肯的，一针见血的</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310305">@<a href="/member/tanrenye" target="_blank" rel="noopener noreferrer">tanrenye</a> #6 中肯的，一针见血的</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310305">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310305" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">www12222</span>
+        <span>#9</span>
+        <span>2026/11/20 10:59</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">主要是 20$的 claude 产出比 gpt 多几倍吧，模型我感觉没差</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310375">主要是 20$的 claude 产出比 gpt 多几倍吧，模型我感觉没差</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310375">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310375" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jiang312890225</span>
+        <span>#10</span>
+        <span>2026/11/20 11:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">多用用复杂任务再去评价</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310390">多用用复杂任务再去评价</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310390">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310390" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jkfadsljlasdgs</span>
+        <span>#11</span>
+        <span>2026/11/20 11:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Claude 目前断档领先，至少 0.5 代</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310391">Claude 目前断档领先，至少 0.5 代</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310391">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310391" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kkadmin</span>
+        <span>#12</span>
+        <span>2026/11/20 11:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">gpt,gemini,claude 越来越觉的差距不大了，opus5.5， neon,  astra, 感觉差不多，carbon 和 fable 感觉差不多</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310415">gpt,gemini,claude 越来越觉的差距不大了，opus5.5， neon,  astra, 感觉差不多，carbon 和 fable 感觉差不多</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310415">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310415" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kimiarchangell</span>
+        <span>#13</span>
+        <span>2026/11/20 11:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">推上经常有人尬吹什么 claude 断崖领先，我怀疑他们平常都写什么类项目，以我后端来说，gpt 至少保证代码质量是没有错误的，测试充分边界清晰，opus 从来都是漏东漏西，而且没有任何和你讨论 plan 的耐心</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310447">推上经常有人尬吹什么 claude 断崖领先，我怀疑他们平常都写什么类项目，以我后端来说，gpt 至少保证代码质量是没有错误的，测试充分边界清晰，opus 从来都是漏东漏西，而且没有任何和你讨论 plan 的耐心</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310447">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310447" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tinkerer</span>
+        <span>#14</span>
+        <span>2026/11/20 11:11</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/tanrenye" target="_blank" rel="noopener noreferrer">tanrenye</a> 终于有人跟我的感受雷同了, 太多新加入的纯许愿式 vibe coding 玩家在吹 claude, 我平时不敢吱声, 我自己干活都用 GPT, Claude 有时候一个事情干着停不下来, 可能是为了迎合许愿的人吧.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310488">@<a href="/member/tanrenye" target="_blank" rel="noopener noreferrer">tanrenye</a> 终于有人跟我的感受雷同了, 太多新加入的纯许愿式 vibe coding 玩家在吹 claude, 我平时不敢吱声, 我自己干活都用 GPT, Claude 有时候一个事情干着停不下来, 可能是为了迎合许愿的人吧.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310488">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310488" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cheng6563</span>
+        <span>#15</span>
+        <span>2026/11/20 11:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">其实 GPT 问题就在不说人话以及不听人话上面。<br />在专注度上 GPT 是比 Claude 好的，也就是你的提示词不能那么许愿随意。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310529">其实 GPT 问题就在不说人话以及不听人话上面。<br />在专注度上 GPT 是比 Claude 好的，也就是你的提示词不能那么许愿随意。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310529">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310529" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Yuunie</span>
+        <span>#16</span>
+        <span>2026/11/20 11:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">如果需要找一个 AI 成为朋友的话 我会选择 Claude，其他的都是工具</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310637">如果需要找一个 AI 成为朋友的话 我会选择 Claude，其他的都是工具</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310637">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310637" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Anarchy</span>
+        <span>#17</span>
+        <span>2026/11/20 11:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">现在不光吹 Claude 还要吹 Gemini，这样还觉得 GPT 自己没问题的话，有没有可能只是在你的舒适区？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310666">现在不光吹 Claude 还要吹 Gemini，这样还觉得 GPT 自己没问题的话，有没有可能只是在你的舒适区？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310666">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310666" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">kloudmuka</span>
+        <span>#18</span>
+        <span>2026/11/20 11:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">claude fable 用来出方案，gpt astra 审核方案，sol 执行，另外 claude 这段时间降智严重，干活全是错漏。opus 5.5 很多人吹主要是 one shot 很惊艳，外加 pro 档比较耐用，但长程任务和架构比较重的项目实测不如 gpt，甚至不如最近的哈基米</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310685">claude fable 用来出方案，gpt astra 审核方案，sol 执行，另外 claude 这段时间降智严重，干活全是错漏。opus 5.5 很多人吹主要是 one shot 很惊艳，外加 pro 档比较耐用，但长程任务和架构比较重的项目实测不如 gpt，甚至不如最近的哈基米</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310685">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310685" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">undefine2020</span>
+        <span>#19</span>
+        <span>2026/11/20 11:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">GPT 现在这防御点满的情况很适合当审核者，其他活都干不了。</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310798">GPT 现在这防御点满的情况很适合当审核者，其他活都干不了。</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310798">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310798" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">shilianmlxg</span>
+        <span>#20</span>
+        <span>2026/11/20 11:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">@<a href="/member/phrack" target="_blank" rel="noopener noreferrer">phrack</a> #5<br /><br />佬，pi 有推荐哪些插件吗？为什么不要 Deepseek Harness 呢？不是说这个是专武吗？</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18310857">@<a href="/member/phrack" target="_blank" rel="noopener noreferrer">phrack</a> #5<br /><br />佬，pi 有推荐哪些插件吗？为什么不要 Deepseek Harness 呢？不是说这个是专武吗？</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18310857">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1258440#reply18310857" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
