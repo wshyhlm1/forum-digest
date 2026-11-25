@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多个 AGENT 项目怎么跟踪管理 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-24/">返回日报</a>
+      <div class="source-chip">V2EX #9</div>
+      <h1>多个 AGENT 项目怎么跟踪管理</h1>
+      <p class="original-title">多个 AGENT 项目怎么跟踪管理</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 oneyenp</span>
+        <span>热度 12</span>
+        <span>回复 12</span>
+        <span>2026/11/24 21:27</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1259555" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1259555.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>比如同时在处理 10 个 AGENT 项目（或者是简单的处理一些分析任务），10 个对话是不同的方向，输出了不同的项目资料、研究内容等等。这个时候怎么管理呢……</li><li>有时候可能都忘了自己这些任务在哪里处理过了…</li></ul>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>比如同时在处理 10 个 AGENT 项目（或者是简单的处理一些分析任务），10 个对话是不同的方向，输出了不同的项目资料、研究内容等等。这个时候怎么管理呢……</p>
+<p>有时候可能都忘了自己这些任务在哪里处理过了…</p>
+<p>是需要一个 obisidian 表单之类的来维护这些项目/对话的状态和结果吗？还是需要怎么维护呢，有什么建议吗。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>比如同时在处理 10 个 AGENT 项目（或者是简单的处理一些分析任务），10 个对话是不同的方向，输出了不同的项目资料、研究内容等等。这个时候怎么管理呢……</p>
+<p>有时候可能都忘了自己这些任务在哪里处理过了…</p>
+<p>是需要一个 obisidian 表单之类的来维护这些项目/对话的状态和结果吗？还是需要怎么维护呢，有什么建议吗。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">12</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">evilgod528</span>
+        <span>#1</span>
+        <span>2026/11/24 22:30</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>提供一个思路，类似总管 bot 的理念，你只在一个总管项目下处理，其它项目登记到这里，你只和当前项目下的 agent 沟通，涉及各个项目开发，让它派活到各项目下去处理，好了汇报到这里。</p>
+<p>落地的话，我现在是使用 t3code，也用过 herdr app(听过但还没接触过 orca bots），利用这些 agent 编排工具自带的 agent 通信和委派能力，可以做到通信和协调。以前都是在一个个项目下开对话，还要自己整理资料汇总，现在利用钩子和定时任务，可以自动上报，以及定时收集补漏。然后在主控目录下，做数据收集，记忆整理。并且主控模型强的话，你可以让他帮你盯着各个项目下的多个 agent 开发。</p>
+<p>其实，更简单的话，应该直接试试看 openmausbot 这样工具，我发现它就是这么玩的，因为现在我自己也用着顺手，所以还没切这些上。</p>
+<p>以上，是我的浅见，分享思路</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323917"><p>提供一个思路，类似总管 bot 的理念，你只在一个总管项目下处理，其它项目登记到这里，你只和当前项目下的 agent 沟通，涉及各个项目开发，让它派活到各项目下去处理，好了汇报到这里。</p>
+<p>落地的话，我现在是使用 t3code，也用过 herdr app(听过但还没接触过 orca bots），利用这些 agent 编排工具自带的 agent 通信和委派能力，可以做到通信和协调。以前都是在一个个项目下开对话，还要自己整理资料汇总，现在利用钩子和定时任务，可以自动上报，以及定时收集补漏。然后在主控目录下，做数据收集，记忆整理。并且主控模型强的话，你可以让他帮你盯着各个项目下的多个 agent 开发。</p>
+<p>其实，更简单的话，应该直接试试看 openmausbot 这样工具，我发现它就是这么玩的，因为现在我自己也用着顺手，所以还没切这些上。</p>
+<p>以上，是我的浅见，分享思路</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323917">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323917" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">tchqiq</span>
+        <span>#2</span>
+        <span>2026/11/24 22:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>试试 grok bot 做 agent 编排</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323935"><p>试试 grok bot 做 agent 编排</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323935">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323935" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">oneyenp</span>
+        <span>#3</span>
+        <span>2026/11/24 23:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/tchqiq" target="_blank" rel="noopener noreferrer">tchqiq</a> grok bot 做编排，也是委派任务的思路吧</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323952"><p>@<a href="/member/tchqiq" target="_blank" rel="noopener noreferrer">tchqiq</a> grok bot 做编排，也是委派任务的思路吧</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323952">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323952" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">oneyenp</span>
+        <span>#4</span>
+        <span>2026/11/24 23:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/evilgod528" target="_blank" rel="noopener noreferrer">evilgod528</a> 感觉我现在就是在一个个项目下开会话的阶段，用 herdr 开了一堆对话，现在想归集结果和管理可太难受了</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323953"><p>@<a href="/member/evilgod528" target="_blank" rel="noopener noreferrer">evilgod528</a> 感觉我现在就是在一个个项目下开会话的阶段，用 herdr 开了一堆对话，现在想归集结果和管理可太难受了</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323953">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323953" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zisen</span>
+        <span>#5</span>
+        <span>2026/11/24 23:29</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>如果这些任务都需要你盯着干的话，建议还是维持多会话的模式，如果是那种可以丢出去干很久，最后才告诉你的，可以用上面的主管 Agent 思路</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323974"><p>如果这些任务都需要你盯着干的话，建议还是维持多会话的模式，如果是那种可以丢出去干很久，最后才告诉你的，可以用上面的主管 Agent 思路</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">BreakTheBank</span>
+        <span>#6</span>
+        <span>2026/11/24 23:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>简单点：就在一个会话里进行，然后每个任务用提示词告诉 agent 在新会话进行。一般都会有会话间收发消息的机制。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323981"><p>简单点：就在一个会话里进行，然后每个任务用提示词告诉 agent 在新会话进行。一般都会有会话间收发消息的机制。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323981">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323981" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lesismal</span>
+        <span>#7</span>
+        <span>2026/11/25 00:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>让 AI 先写 roadmap、dev-plan 之类的规划文档和进度文档，做过的都更新到进度里。<br />
+类似这种：<br />
+<a href="https://github.com/lesismal/fit/blob/main/docs/roadmap.zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/lesismal/fit/blob/main/docs/roadmap.zh-CN.md</a><br />
+<a href="https://github.com/lesismal/fit/blob/main/docs/dev-plan.zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/lesismal/fit/blob/main/docs/dev-plan.zh-CN.md</a></p>
+<p><a href="http://claude.md/agent.md" target="_blank" rel="noopener noreferrer">claude.md/agent.md</a> 要求它按照这些规划和进度进行<br />
+<a href="https://github.com/lesismal/fit/blob/main/CLAUDE.md" target="_blank" rel="noopener noreferrer">https://github.com/lesismal/fit/blob/main/CLAUDE.md</a></p>
+<p>然后每次继续，它就自己去翻文档继续了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18323999"><p>让 AI 先写 roadmap、dev-plan 之类的规划文档和进度文档，做过的都更新到进度里。<br />
+类似这种：<br />
+<a href="https://github.com/lesismal/fit/blob/main/docs/roadmap.zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/lesismal/fit/blob/main/docs/roadmap.zh-CN.md</a><br />
+<a href="https://github.com/lesismal/fit/blob/main/docs/dev-plan.zh-CN.md" target="_blank" rel="noopener noreferrer">https://github.com/lesismal/fit/blob/main/docs/dev-plan.zh-CN.md</a></p>
+<p><a href="http://claude.md/agent.md" target="_blank" rel="noopener noreferrer">claude.md/agent.md</a> 要求它按照这些规划和进度进行<br />
+<a href="https://github.com/lesismal/fit/blob/main/CLAUDE.md" target="_blank" rel="noopener noreferrer">https://github.com/lesismal/fit/blob/main/CLAUDE.md</a></p>
+<p>然后每次继续，它就自己去翻文档继续了。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18323999">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18323999" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lesismal</span>
+        <span>#8</span>
+        <span>2026/11/25 00:07</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/lesismal" target="_blank" rel="noopener noreferrer">lesismal</a> #7 </p>
+<p>根据每个项目细化。</p>
+<p>也可以做成 skill/harness/command，还可以全局安装给所有/制定的 AI Agent。</p>
+<p>而且，这种问题，本身就可以问 AI、让它做成工具，要有递归思维，没必要问人类了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18324002"><p>@<a href="/member/lesismal" target="_blank" rel="noopener noreferrer">lesismal</a> #7 </p>
+<p>根据每个项目细化。</p>
+<p>也可以做成 skill/harness/command，还可以全局安装给所有/制定的 AI Agent。</p>
+<p>而且，这种问题，本身就可以问 AI、让它做成工具，要有递归思维，没必要问人类了。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18324002">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18324002" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">oopc</span>
+        <span>#9</span>
+        <span>2026/11/25 00:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>claude code 自带 agent view 视图, 我一般在对话页面按 ← 进入, 或者命令行 <code>claude agent</code> 直接进入. 按照官方的说法, 它是 "Agent view, opened with <code>claude agents</code>, is one screen for all your background sessions: what’s running, what needs your input, and what’s done."</p>
+<p><a href="https://code.claude.com/docs/en/agent-view" target="_blank" rel="noopener noreferrer">https://code.claude.com/docs/en/agent-view</a></p>
+<p>也顺便推荐我刚发的帖子 <a href="/t/1259539" target="_blank" rel="noopener noreferrer">/t/1259539</a> , 配合 rex 进行管理</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18324022"><p>claude code 自带 agent view 视图, 我一般在对话页面按 ← 进入, 或者命令行 <code>claude agent</code> 直接进入. 按照官方的说法, 它是 "Agent view, opened with <code>claude agents</code>, is one screen for all your background sessions: what’s running, what needs your input, and what’s done."</p>
+<p><a href="https://code.claude.com/docs/en/agent-view" target="_blank" rel="noopener noreferrer">https://code.claude.com/docs/en/agent-view</a></p>
+<p>也顺便推荐我刚发的帖子 <a href="/t/1259539" target="_blank" rel="noopener noreferrer">/t/1259539</a> , 配合 rex 进行管理</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18324022">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18324022" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">oneyenp</span>
+        <span>#10</span>
+        <span>2026/11/25 01:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/zisen" target="_blank" rel="noopener noreferrer">zisen</a> 我能接受现在盯着干活的成本，我只是现在 session 一多容易把工作目录、工作进展给忘了，以及输出的报告等没有归档。<br />
+感觉是缺了归档项目、进展，和成果的这么一个东西。<br />
+用主管 AGENT 应该也能帮我归档这些，只不过如果因为任务可能不是同类型需要我监管起来比较麻烦。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18324045"><p>@<a href="/member/zisen" target="_blank" rel="noopener noreferrer">zisen</a> 我能接受现在盯着干活的成本，我只是现在 session 一多容易把工作目录、工作进展给忘了，以及输出的报告等没有归档。<br />
+感觉是缺了归档项目、进展，和成果的这么一个东西。<br />
+用主管 AGENT 应该也能帮我归档这些，只不过如果因为任务可能不是同类型需要我监管起来比较麻烦。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18324045">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18324045" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">oneyenp</span>
+        <span>#11</span>
+        <span>2026/11/25 01:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/lesismal" target="_blank" rel="noopener noreferrer">lesismal</a> 已经跟 AI 聊过了，没确认出最终的实施方案，想跟大家取取经。<br />
+按这个思路，我应该可以给这些比较小的项目，整一个公共的方法流，也把进展给同步到某些地方去存着。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18324047"><p>@<a href="/member/lesismal" target="_blank" rel="noopener noreferrer">lesismal</a> 已经跟 AI 聊过了，没确认出最终的实施方案，想跟大家取取经。<br />
+按这个思路，我应该可以给这些比较小的项目，整一个公共的方法流，也把进展给同步到某些地方去存着。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18324047">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18324047" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">oneyenp</span>
+        <span>#12</span>
+        <span>2026/11/25 01:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/oopc" target="_blank" rel="noopener noreferrer">oopc</a> 这个 claude 自带的页面看过，但是只是多 session 切换的作用吧，没有看到信息整合提取的这么个功能。<br />
+你这个 rex，倒是要看看了解下。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18324049"><p>@<a href="/member/oopc" target="_blank" rel="noopener noreferrer">oopc</a> 这个 claude 自带的页面看过，但是只是多 session 切换的作用吧，没有看到信息整合提取的这么个功能。<br />
+你这个 rex，倒是要看看了解下。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18324049">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259555#reply18324049" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
