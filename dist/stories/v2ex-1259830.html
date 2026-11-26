@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cc_task: 用 C 语言写 async/await 协程，还有闭包 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-25/">返回日报</a>
+      <div class="source-chip">V2EX #8</div>
+      <h1>cc_task: 用 C 语言写 async/await 协程，还有闭包</h1>
+      <p class="original-title">cc_task: 用 C 语言写 async/await 协程，还有闭包</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 ivan_wl</span>
+        <span>热度 5</span>
+        <span>回复 5</span>
+        <span>2026/11/25 22:05</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1259830" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1259830.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>https://github.com/ivan7wl/cc_task</li><li>cc_task 是一个 C 语言协程库,用 async/await 的方式写协程，还可以用闭包。</li></ul>
+      
+      <p class="reason">命中 2 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p><a href="https://github.com/ivan7wl/cc_task" target="_blank" rel="noopener noreferrer">https://github.com/ivan7wl/cc_task</a></p>
+<p>cc_task 是一个 C 语言协程库,用 async/await 的方式写协程，还可以用闭包。</p>
+<p>协程是无栈的，跨恢复点的变量保存在闭包中，非常的轻量，大部分场景下一条 64B CPU cache line 就能放得下。同时也支持有栈协程。</p>
+<pre><code>#include "cc_task.h"
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int c = 10; // task_b captures c and uses it as task state
+    cc_task_t *task_b = cc_task_new(CC_TASK(t)
+    {
+        CC_BEGIN(t);
+        printf("B: c = %d\n", ++$(c));
+        CC_YIELD(t);
+        printf("B: c = %d\n", ++$(c));
+        CC_END(t, c);
+    });
+
+    cc_task_t *task_a = cc_task_new(CC_TASK(t)
+    {
+        CC_BEGIN(t);
+        printf("A: await B ...\n");
+
+        cc_uintptr code;
+        CC_AWAIT(t, task_b, code);
+        printf("A: B end, code = %llu\n", (unsigned long long)code);
+        CC_END(t);
+    });
+
+    c = 0; // modifying c does not change the copy captured by task_b
+    cc_task_t *t = task_a;
+    cc_tr_e ret;
+    do
+    {
+        ret = cc_task_resume(&amp;t);
+    }
+    while (ret != cc_tr_end);
+
+    return 0;
+}
+</code></pre>
+<p>由于这个协程非常的简单，代码实际上都没几条，性能也是非常的高，比 C++ 的协程还高。</p>
+<p>列表是实现了一个 TCP echo server/client，与 C++ 实现的做对比。</p>
+
+
+
+指标
+C 服务端
+C++ 服务端
+C 客户端
+C++ 客户端
+C++ / C（服务端 / 客户端）
+
+
+
+
+空闲 RSS
+960 KiB
+1,880 KiB
+960 KiB
+1,880 KiB
+1.96x / 1.96x
+
+
+64 B 每连接新增 RSS
+4.68 KiB
+5.25 KiB
+0.67 KiB
+1.29 KiB
+1.12x / 1.93x
+
+
+16 KiB 每连接新增 RSS
+16.49 KiB
+17.11 KiB
+16.59 KiB
+17.12 KiB
+1.04x / 1.03x
+
+
+64 B、1024 连接总 RSS
+5.62 MiB
+7.09 MiB
+1.61 MiB
+3.13 MiB
+1.26x / 1.94x
+
+
+16 KiB、1024 连接总 RSS
+17.43 MiB
+18.95 MiB
+17.53 MiB
+18.96 MiB
+1.09x / 1.08x
+
+
+每 64 B 消息用户态指令数
+401
+593
+439
+979
+1.48x / 2.23x
+
+
+每 16 KiB 消息用户态指令数
+721
+778
+518
+1,166
+1.08x / 2.25x
+
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p><a href="https://github.com/ivan7wl/cc_task" target="_blank" rel="noopener noreferrer">https://github.com/ivan7wl/cc_task</a></p>
+<p>cc_task 是一个 C 语言协程库,用 async/await 的方式写协程，还可以用闭包。</p>
+<p>协程是无栈的，跨恢复点的变量保存在闭包中，非常的轻量，大部分场景下一条 64B CPU cache line 就能放得下。同时也支持有栈协程。</p>
+<pre><code>#include "cc_task.h"
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    int c = 10; // task_b captures c and uses it as task state
+    cc_task_t *task_b = cc_task_new(CC_TASK(t)
+    {
+        CC_BEGIN(t);
+        printf("B: c = %d\n", ++$(c));
+        CC_YIELD(t);
+        printf("B: c = %d\n", ++$(c));
+        CC_END(t, c);
+    });
+
+    cc_task_t *task_a = cc_task_new(CC_TASK(t)
+    {
+        CC_BEGIN(t);
+        printf("A: await B ...\n");
+
+        cc_uintptr code;
+        CC_AWAIT(t, task_b, code);
+        printf("A: B end, code = %llu\n", (unsigned long long)code);
+        CC_END(t);
+    });
+
+    c = 0; // modifying c does not change the copy captured by task_b
+    cc_task_t *t = task_a;
+    cc_tr_e ret;
+    do
+    {
+        ret = cc_task_resume(&amp;t);
+    }
+    while (ret != cc_tr_end);
+
+    return 0;
+}
+</code></pre>
+<p>由于这个协程非常的简单，代码实际上都没几条，性能也是非常的高，比 C++ 的协程还高。</p>
+<p>列表是实现了一个 TCP echo server/client，与 C++ 实现的做对比。</p>
+
+
+
+指标
+C 服务端
+C++ 服务端
+C 客户端
+C++ 客户端
+C++ / C（服务端 / 客户端）
+
+
+
+
+空闲 RSS
+960 KiB
+1,880 KiB
+960 KiB
+1,880 KiB
+1.96x / 1.96x
+
+
+64 B 每连接新增 RSS
+4.68 KiB
+5.25 KiB
+0.67 KiB
+1.29 KiB
+1.12x / 1.93x
+
+
+16 KiB 每连接新增 RSS
+16.49 KiB
+17.11 KiB
+16.59 KiB
+17.12 KiB
+1.04x / 1.03x
+
+
+64 B、1024 连接总 RSS
+5.62 MiB
+7.09 MiB
+1.61 MiB
+3.13 MiB
+1.26x / 1.94x
+
+
+16 KiB、1024 连接总 RSS
+17.43 MiB
+18.95 MiB
+17.53 MiB
+18.96 MiB
+1.09x / 1.08x
+
+
+每 64 B 消息用户态指令数
+401
+593
+439
+979
+1.48x / 2.23x
+
+
+每 16 KiB 消息用户态指令数
+721
+778
+518
+1,166
+1.08x / 2.25x
+
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">6</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jinglaef</span>
+        <span>#1</span>
+        <span>2026/11/25 22:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>帮顶，非常硬核的项目！在 C 语言里纯靠宏实现无栈协程 + 闭包（async/await 风格）非常难得。<br />
+而且 Benchmark 数据确实很漂亮，不仅内存占用（RSS）比 C++ 协程低很多，连用户态指令数都少这么多，说明底层的状态机和上下文切换逻辑写得非常精简高效。<br />
+看了下代码片段，有几个技术细节想请教一下：<br />
+闭包捕获机制：像 $(c) 这种捕获，底层是通过宏生成一个匿名的结构体来保存跨恢复点的变量吗？如果捕获的变量很多，有没有大小限制？<br />
+内存管理：无栈协程的 task 是直接 malloc 出来的吗？库内部有没有自带内存池（Arena/Pool）来进一步降低频繁申请释放的开销？<br />
+底层上下文切换：跨平台支持做得怎么样？底层是用 ucontext、裸汇编（如各个架构的 switch 汇编），还是支持了 Windows 的 Fiber？<br />
+调试体验：这种重度依赖宏的实现，如果在业务里断点调试或者发生崩溃，GDB/LLDB 里的堆栈信息可读性如何？<br />
+另外，TCP echo server 里遇到慢连接导致背压（backpressure）时，await 的处理逻辑是怎么样的？<br />
+已经去 GitHub 点了 Star，感谢分享如此优秀的轮子！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327651"><p>帮顶，非常硬核的项目！在 C 语言里纯靠宏实现无栈协程 + 闭包（async/await 风格）非常难得。<br />
+而且 Benchmark 数据确实很漂亮，不仅内存占用（RSS）比 C++ 协程低很多，连用户态指令数都少这么多，说明底层的状态机和上下文切换逻辑写得非常精简高效。<br />
+看了下代码片段，有几个技术细节想请教一下：<br />
+闭包捕获机制：像 $(c) 这种捕获，底层是通过宏生成一个匿名的结构体来保存跨恢复点的变量吗？如果捕获的变量很多，有没有大小限制？<br />
+内存管理：无栈协程的 task 是直接 malloc 出来的吗？库内部有没有自带内存池（Arena/Pool）来进一步降低频繁申请释放的开销？<br />
+底层上下文切换：跨平台支持做得怎么样？底层是用 ucontext、裸汇编（如各个架构的 switch 汇编），还是支持了 Windows 的 Fiber？<br />
+调试体验：这种重度依赖宏的实现，如果在业务里断点调试或者发生崩溃，GDB/LLDB 里的堆栈信息可读性如何？<br />
+另外，TCP echo server 里遇到慢连接导致背压（backpressure）时，await 的处理逻辑是怎么样的？<br />
+已经去 GitHub 点了 Star，感谢分享如此优秀的轮子！</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327651">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259830#reply18327651" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ivan_wl</span>
+        <span>#2</span>
+        <span>2026/11/25 22:34</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/jinglaef" target="_blank" rel="noopener noreferrer">jinglaef</a> 老哥你这是 AI 回复的吗……<br />
+闭包捕获就是依赖 clang 生成 block，cc_task_new()只是 malloc 了内存，把闭包提升到堆上，task 结束后自动 free。可以自定义 alloc/free 函数，或使用 cc_task_init()，自己传内存做参数。有栈协程的切换都在 cc_swap.h 里，其实 readme 里写的都很详细了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327659"><p>@<a href="/member/jinglaef" target="_blank" rel="noopener noreferrer">jinglaef</a> 老哥你这是 AI 回复的吗……<br />
+闭包捕获就是依赖 clang 生成 block，cc_task_new()只是 malloc 了内存，把闭包提升到堆上，task 结束后自动 free。可以自定义 alloc/free 函数，或使用 cc_task_init()，自己传内存做参数。有栈协程的切换都在 cc_swap.h 里，其实 readme 里写的都很详细了。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327659">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259830#reply18327659" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">Mozalic</span>
+        <span>#3</span>
+        <span>2026/11/26 01:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>哈哈好怀念，当年本科毕设做的就是基于宏的 c 语言协程</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327835"><p>哈哈好怀念，当年本科毕设做的就是基于宏的 c 语言协程</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327835">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259830#reply18327835" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ToBeHacker</span>
+        <span>#4</span>
+        <span>2026/11/26 02:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>太复杂了。</p>
+<p>其实只需要一个 uint16_t 存储 <strong>LINE</strong> 作为恢复标志就可以了。手动压缩状态机可以直接做到单字节单字节。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327846"><p>太复杂了。</p>
+<p>其实只需要一个 uint16_t 存储 <strong>LINE</strong> 作为恢复标志就可以了。手动压缩状态机可以直接做到单字节单字节。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327846">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259830#reply18327846" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">XProxyAi</span>
+        <span>#5</span>
+        <span>2026/11/26 06:16</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/ivan_wl" target="_blank" rel="noopener noreferrer">ivan_wl</a> 🤣但凡多烧点 token 也不至于这样提问了</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327870"><p>@<a href="/member/ivan_wl" target="_blank" rel="noopener noreferrer">ivan_wl</a> 🤣但凡多烧点 token 也不至于这样提问了</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327870">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259830#reply18327870" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ivan_wl</span>
+        <span>#6</span>
+        <span>2026/11/26 08:18</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/ToBeHacker" target="_blank" rel="noopener noreferrer">ToBeHacker</a> 先看下代码或文档呢？cc_task 的恢复标志比 protothread 的 <strong>LINE</strong> 和你的手动写序号更强，它是自动生成 0 1 2 3... 递增的恢复标志，编译器可以充分优化，还不用手动维护。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327922"><p>@<a href="/member/ToBeHacker" target="_blank" rel="noopener noreferrer">ToBeHacker</a> 先看下代码或文档呢？cc_task 的恢复标志比 protothread 的 <strong>LINE</strong> 和你的手动写序号更强，它是自动生成 0 1 2 3... 递增的恢复标志，编译器可以充分优化，还不用手动维护。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327922">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259830#reply18327922" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

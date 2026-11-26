@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>如何保质量下减少 token 消耗 | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-25/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>如何保质量下减少 token 消耗</h1>
+      <p class="original-title">如何保质量下减少 token 消耗</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 jeffsun</span>
+        <span>热度 7</span>
+        <span>回复 7</span>
+        <span>2026/11/25 22:35</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1259833" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1259833.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>最近在使用 AI Coding 从零开始开发一个中型项目，涉及前后端、数据库、第三方系统集成。</li><li>目前手上有 Google AI Pro 和 OpenCode Go 订阅，但 Antigravity 的 Pro 额度消耗太快，单独使用很难支撑持续开发。</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>最近在使用 AI Coding 从零开始开发一个中型项目，涉及前后端、数据库、第三方系统集成。</p>
+<p>目前手上有 Google AI Pro 和 OpenCode Go 订阅，但 Antigravity 的 Pro 额度消耗太快，单独使用很难支撑持续开发。</p>
+<p>初步想法是：</p>
+<p>Antigravity 负责需求分析、架构设计、复杂功能开发、疑难问题处理和代码审查。</p>
+<p>OpenCode Go 主要使用 DeepSeek 等模型，负责常规功能开发、代码重构、测试和 Bug 修复。</p>
+<p>想请教一下是以 Antigravity 为主调用 OpenCode，还是以 OpenCode 为主，遇到复杂任务再交给 Antigravity？</p>
+<p>如何实现两个工具之间的任务分发、上下文共享和开发进度同步，尽量减少人工介入？</p>
+<p>对于从零开始开发的中型项目，使用桌面客户端还是 CLI + WSL 的方式更合适？</p>
+<p>保证最终交付的软件质量和可维护性，同时降低 Token 消耗及订阅成本。</p>
+<p>希望有类似实践的 V 友分享一下经验。</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>最近在使用 AI Coding 从零开始开发一个中型项目，涉及前后端、数据库、第三方系统集成。</p>
+<p>目前手上有 Google AI Pro 和 OpenCode Go 订阅，但 Antigravity 的 Pro 额度消耗太快，单独使用很难支撑持续开发。</p>
+<p>初步想法是：</p>
+<p>Antigravity 负责需求分析、架构设计、复杂功能开发、疑难问题处理和代码审查。</p>
+<p>OpenCode Go 主要使用 DeepSeek 等模型，负责常规功能开发、代码重构、测试和 Bug 修复。</p>
+<p>想请教一下是以 Antigravity 为主调用 OpenCode，还是以 OpenCode 为主，遇到复杂任务再交给 Antigravity？</p>
+<p>如何实现两个工具之间的任务分发、上下文共享和开发进度同步，尽量减少人工介入？</p>
+<p>对于从零开始开发的中型项目，使用桌面客户端还是 CLI + WSL 的方式更合适？</p>
+<p>保证最终交付的软件质量和可维护性，同时降低 Token 消耗及订阅成本。</p>
+<p>希望有类似实践的 V 友分享一下经验。</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">7</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">poxiaohy</span>
+        <span>#1</span>
+        <span>2026/11/25 22:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>一般说法是强带弱。然后你可以考虑下 ponytail</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327671"><p>一般说法是强带弱。然后你可以考虑下 ponytail</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327671">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327671" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">dnfQzjPBXtWmML</span>
+        <span>#2</span>
+        <span>2026/11/25 22:51</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>Human in the loop：制订方案再人工评审、创建代码 skeleton 再人工评审、再完整实现。 会拖慢速度而且读代码方案的工作量巨大。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327677"><p>Human in the loop：制订方案再人工评审、创建代码 skeleton 再人工评审、再完整实现。 会拖慢速度而且读代码方案的工作量巨大。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327677">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327677" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhou00</span>
+        <span>#3</span>
+        <span>2026/11/26 00:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>昨天刚看到一个多代理编排插件 oh-my-opencode-slim，可以直接在 opencode 里给子代理配置 gemini 模型或者 opencode go 的模型，可以参考下</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327780"><p>昨天刚看到一个多代理编排插件 oh-my-opencode-slim，可以直接在 opencode 里给子代理配置 gemini 模型或者 opencode go 的模型，可以参考下</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327780">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327780" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">hydraegret</span>
+        <span>#4</span>
+        <span>2026/11/26 01:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>自荐一下 用于节省上下文的 MCP，我在维护自己的 gitea/Forgejo，把能复用的代码和文档（可以做成类似 skill 的规范）让 agent 快速找到 实测能节省时间和 token 开销。<br />
+<a href="https://github.com/offzen/gitea-search-mcp" target="_blank" rel="noopener noreferrer">https://github.com/offzen/gitea-search-mcp</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327807"><p>自荐一下 用于节省上下文的 MCP，我在维护自己的 gitea/Forgejo，把能复用的代码和文档（可以做成类似 skill 的规范）让 agent 快速找到 实测能节省时间和 token 开销。<br />
+<a href="https://github.com/offzen/gitea-search-mcp" target="_blank" rel="noopener noreferrer">https://github.com/offzen/gitea-search-mcp</a></p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327807">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327807" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhenghuiy</span>
+        <span>#5</span>
+        <span>2026/11/26 01:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>gemini 200 刀 的量多到蹬不完。。一个月一千四不到，很超值。。比你浪费很多奇淫巧技省 token 的 ROI 高太多了。。</p>
+<p>多出来的时间干点其他事把多花的一千块钱赚回来。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327815"><p>gemini 200 刀 的量多到蹬不完。。一个月一千四不到，很超值。。比你浪费很多奇淫巧技省 token 的 ROI 高太多了。。</p>
+<p>多出来的时间干点其他事把多花的一千块钱赚回来。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327815">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327815" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">star2024</span>
+        <span>#6</span>
+        <span>2026/11/26 01:31</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/zhenghuiy" target="_blank" rel="noopener noreferrer">zhenghuiy</a> 赞同！</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327816"><p>@<a href="/member/zhenghuiy" target="_blank" rel="noopener noreferrer">zhenghuiy</a> 赞同！</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327816">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327816" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chouvel</span>
+        <span>#7</span>
+        <span>2026/11/26 01:36</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/zhenghuiy" target="_blank" rel="noopener noreferrer">zhenghuiy</a> 太对了</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18327820"><p>@<a href="/member/zhenghuiy" target="_blank" rel="noopener noreferrer">zhenghuiy</a> 太对了</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18327820">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259833#reply18327820" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

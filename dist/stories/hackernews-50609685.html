@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GLM-5.4: Toward generalized coding with our first loop transformer | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-25/">返回日报</a>
+      <div class="source-chip">Hacker News #5</div>
+      <h1>GLM-5.4: Toward generalized coding with our first loop transformer</h1>
+      <p class="original-title">GLM-5.4: Toward generalized coding with our first loop transformer</p>
+      <div class="meta-line">
+        <span>AI</span>
+        <span>作者 foohis</span>
+        <span>热度 1173</span>
+        <span>回复 382</span>
+        <span>2026/11/23 18:06</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50609685" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://z.ai/blog/glm-5.4" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50609685.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <p class="muted">暂无摘要</p>
+      
+      <p class="reason">命中 1 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/11/23 21:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I love the transparency, or at least given technical details, that Zhipu provide - a refreshing change from the locked-down approach of the western companies, and an interesting glimpse into the direction of SOTA LLMs.<p>Looped Transformers are an obvious direction even if there are still problems to be worked out. The original Transformer is a bit like an unrolled for loop, and rather unnaturally pairs different sets of weights, both for attention and feed forward (knowledge) with different "layers" (aka loop iterations). Far more natural is to strive for something more like our brain's thalamo-cortical loop and association cortex, where "thought" is iterative and there are no restrictions as to what patterns/knowledge get applied when.</p><p>A similar idea has been explored before ("Universal Transformer", 2019), seemingly going nowhere, but perhaps "necessity is the mother of invention" and compute-starved Chinese companies are finding a way to make it work.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50611040">I love the transparency, or at least given technical details, that Zhipu provide - a refreshing change from the locked-down approach of the western companies, and an interesting glimpse into the direction of SOTA LLMs.<p>Looped Transformers are an obvious direction even if there are still problems to be worked out. The original Transformer is a bit like an unrolled for loop, and rather unnaturally pairs different sets of weights, both for attention and feed forward (knowledge) with different "layers" (aka loop iterations). Far more natural is to strive for something more like our brain's thalamo-cortical loop and association cortex, where "thought" is iterative and there are no restrictions as to what patterns/knowledge get applied when.</p><p>A similar idea has been explored before ("Universal Transformer", 2019), seemingly going nowhere, but perhaps "necessity is the mother of invention" and compute-starved Chinese companies are finding a way to make it work.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50611040">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50611040" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/11/24 00:00</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; a refreshing change from the locked-down approach of the western companies, and an interesting glimpse into the direction of SOTA LLMs<p>If you haven’t seen it, Thinking Machines released an interesting looped model, open weights, last week with some interesting writeups:</p><p><a href="https://thinkingmachines.ai/news/inkling-2-mini/" target="_blank" rel="noopener noreferrer">https://thinkingmachines.ai/news/inkling-2-mini/</a></p><p>To be honest, I’m getting a little tired of the “eastern vs western” discourse seeping in to so much of the LLM discourse, especially when the east versus west distinction doesn’t exist as much as implied. In this case, looped model research came out of “the west” and a “western” lab was first to release an open looped model. Can we drop the whole east versus west thing and just appreciate the progress and research?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50614011">&gt; a refreshing change from the locked-down approach of the western companies, and an interesting glimpse into the direction of SOTA LLMs<p>If you haven’t seen it, Thinking Machines released an interesting looped model, open weights, last week with some interesting writeups:</p><p><a href="https://thinkingmachines.ai/news/inkling-2-mini/" target="_blank" rel="noopener noreferrer">https://thinkingmachines.ai/news/inkling-2-mini/</a></p><p>To be honest, I’m getting a little tired of the “eastern vs western” discourse seeping in to so much of the LLM discourse, especially when the east versus west distinction doesn’t exist as much as implied. In this case, looped model research came out of “the west” and a “western” lab was first to release an open looped model. Can we drop the whole east versus west thing and just appreciate the progress and research?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50614011">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50614011" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">WASDx</span>
+        
+        <span>2026/11/24 18:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">We should just call it open vs proprietary.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50626350">We should just call it open vs proprietary.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50626350">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50626350" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">HarHarVeryFunny</span>
+        
+        <span>2026/11/24 00:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I was really referring to the open discussion/disclosure of architecture, rather than who's innovating, although some ideas may be obvious as a concept yet require considerable expertise to actually make work (as was the case with the Transformer itself).<p>In any case, it's well known that all neural network architectures, present and future, were originated by Schmidhuber :) In this case there is some truth to it given that his LSTMs were the first to tame RNNs and make them practical.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50614489">I was really referring to the open discussion/disclosure of architecture, rather than who's innovating, although some ideas may be obvious as a concept yet require considerable expertise to actually make work (as was the case with the Transformer itself).<p>In any case, it's well known that all neural network architectures, present and future, were originated by Schmidhuber :) In this case there is some truth to it given that his LSTMs were the first to tame RNNs and make them practical.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50614489">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50614489" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">Aurornis</span>
+        
+        <span>2026/11/24 03:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; I was really referring to the open discussion/disclosure of architecture<p>So was I. This "west versus east" division you're drawing on this topic doesn't make sense if you've been reading the architecture discussions from around the world.</p><p>This was last week from a "western" lab also discussing their looped model's architecture: <a href="https://huggingface.co/blog/inkling2mini" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/inkling2mini</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50617229">&gt; I was really referring to the open discussion/disclosure of architecture<p>So was I. This "west versus east" division you're drawing on this topic doesn't make sense if you've been reading the architecture discussions from around the world.</p><p>This was last week from a "western" lab also discussing their looped model's architecture: <a href="https://huggingface.co/blog/inkling2mini" target="_blank" rel="noopener noreferrer">https://huggingface.co/blog/inkling2mini</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50617229">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50617229" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">KerrAvon</span>
+        
+        <span>2026/11/24 04:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I have been following this space, and corporately Inkling seems pretty unique. Can you name another?<p>I'm not trolling; I'm trying to come up with another western company as forthcoming, and having trouble. Is Poolside one?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50618622">I have been following this space, and corporately Inkling seems pretty unique. Can you name another?<p>I'm not trolling; I'm trying to come up with another western company as forthcoming, and having trouble. Is Poolside one?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50618622">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50618622" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">matt_d</span>
+        
+        <span>2026/11/24 06:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">NVIDIA Megatron has been pretty open:<p>- <a href="https://github.com/NVIDIA/Megatron-LM" target="_blank" rel="noopener noreferrer">https://github.com/NVIDIA/Megatron-LM</a></p><p>- <a href="https://github.com/NVIDIA-NeMo/Megatron-Bridge/" target="_blank" rel="noopener noreferrer">https://github.com/NVIDIA-NeMo/Megatron-Bridge/</a></p><p>Over the past few years they've been releasing papers that have been foundational for how TP and SP are being done today:</p><p>- Megatron-LM, <a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/1909.08053</a></p><p>- Reducing Activation Recomputation, <a href="https://arxiv.org/abs/2205.05198" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2205.05198</a></p><p>and there's new ones, too, e.g., Scalable Training of Mixture-of-Experts Models with Megatron Core, <a href="https://arxiv.org/abs/2603.07685" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2603.07685</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50620082">NVIDIA Megatron has been pretty open:<p>- <a href="https://github.com/NVIDIA/Megatron-LM" target="_blank" rel="noopener noreferrer">https://github.com/NVIDIA/Megatron-LM</a></p><p>- <a href="https://github.com/NVIDIA-NeMo/Megatron-Bridge/" target="_blank" rel="noopener noreferrer">https://github.com/NVIDIA-NeMo/Megatron-Bridge/</a></p><p>Over the past few years they've been releasing papers that have been foundational for how TP and SP are being done today:</p><p>- Megatron-LM, <a href="https://arxiv.org/abs/1909.08053" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/1909.08053</a></p><p>- Reducing Activation Recomputation, <a href="https://arxiv.org/abs/2205.05198" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2205.05198</a></p><p>and there's new ones, too, e.g., Scalable Training of Mixture-of-Experts Models with Megatron Core, <a href="https://arxiv.org/abs/2603.07685" target="_blank" rel="noopener noreferrer">https://arxiv.org/abs/2603.07685</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50620082">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50620082" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">willy_k</span>
+        
+        <span>2026/11/24 13:15</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Fwiw, Nvidia is clearly not free of eastern influence.. /s</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50624064">Fwiw, Nvidia is clearly not free of eastern influence.. /s</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50624064">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50624064" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">nl</span>
+        
+        <span>2026/11/24 13:55</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Major US Labs that have been very open with research publications and open models:<p>* Nvidia</p><p>* Thinking Machines (Inkling)</p><p>* Google (Gemma models are consistently second-to-Qwen for their weight class)</p><p>* Meta (who are publishing and releasing models again now)</p><p>* Reflection AI</p><p>* Arcee AI</p><p>* Allen AI</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50624294">Major US Labs that have been very open with research publications and open models:<p>* Nvidia</p><p>* Thinking Machines (Inkling)</p><p>* Google (Gemma models are consistently second-to-Qwen for their weight class)</p><p>* Meta (who are publishing and releasing models again now)</p><p>* Reflection AI</p><p>* Arcee AI</p><p>* Allen AI</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50624294">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50624294" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">aktenlage</span>
+        
+        <span>2026/11/24 06:14</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Aleph Alpha with their Kolibri 1 comes to mind.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50620158">Aleph Alpha with their Kolibri 1 comes to mind.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50620158">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50620158" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">piokoch</span>
+        
+        <span>2026/11/24 18:06</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I’m getting a little tired of the “eastern vs western” discourse<p>Well, those kept in Chinese concentration camps probably would not support that. You can surely be tired, as long as you don't care about Chinese mass surveillance system, dystopian social credit system, lack of free speech, censorship.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50626094">I’m getting a little tired of the “eastern vs western” discourse<p>Well, those kept in Chinese concentration camps probably would not support that. You can surely be tired, as long as you don't care about Chinese mass surveillance system, dystopian social credit system, lack of free speech, censorship.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50626094">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50626094" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">exoverito</span>
+        
+        <span>2026/11/24 23:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The dichotomy you list is also getting tired. Western governments broadly support Israel's genocide of Gaza, which is effectively an open air concentration camp. America obviously already has a mass surveillance system going back to the NSA, and has now built out a vast network of Flock cameras, much like the UK. There's already a literal credit score system and debanking of dissidents (Truckers' protest in Canada, critics of the Ukraine war in the EU like Jacques Baud). Most American 'liberals' and leftists do not support free speech, especially on college campuses where they seek to deplatform and cancel those outside their ideology. The UK and Germany have arrested thousands of citizens for social media posts that criticize mass migration. Censorship is widespread on social media, Reddit is the most notorious example of this since it started out as the free speech platform. The forced buyout of Tiktok was a Zionist project, to prevent the site was serving so much anti-Israel content to the youth, which Larry Ellison has since expanded in his purchasing of Paramount and Warner Bros. Even Musk's twitter censors content that is too perceptively anti-Zionist.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50629336">The dichotomy you list is also getting tired. Western governments broadly support Israel's genocide of Gaza, which is effectively an open air concentration camp. America obviously already has a mass surveillance system going back to the NSA, and has now built out a vast network of Flock cameras, much like the UK. There's already a literal credit score system and debanking of dissidents (Truckers' protest in Canada, critics of the Ukraine war in the EU like Jacques Baud). Most American 'liberals' and leftists do not support free speech, especially on college campuses where they seek to deplatform and cancel those outside their ideology. The UK and Germany have arrested thousands of citizens for social media posts that criticize mass migration. Censorship is widespread on social media, Reddit is the most notorious example of this since it started out as the free speech platform. The forced buyout of Tiktok was a Zionist project, to prevent the site was serving so much anti-Israel content to the youth, which Larry Ellison has since expanded in his purchasing of Paramount and Warner Bros. Even Musk's twitter censors content that is too perceptively anti-Zionist.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50629336">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50629336" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">ge3fan</span>
+        
+        <span>2026/11/24 23:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; an open air concentration camp<p>Israel very happily lets anyone out. The problem is that not a single country in the world - including the ones accusing Israel of genocide - are letting them in.</p><p>Jordan has a program that allows a limited number of Gazans to come for medical treatment, on the condition that they go back to Gaza when they’re done - and they send them back.</p><p>See for example: <a href="https://www.bbc.co.uk/news/articles/crk22xm831ko" target="_blank" rel="noopener noreferrer">https://www.bbc.co.uk/news/articles/crk22xm831ko</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50630062">&gt; an open air concentration camp<p>Israel very happily lets anyone out. The problem is that not a single country in the world - including the ones accusing Israel of genocide - are letting them in.</p><p>Jordan has a program that allows a limited number of Gazans to come for medical treatment, on the condition that they go back to Gaza when they’re done - and they send them back.</p><p>See for example: <a href="https://www.bbc.co.uk/news/articles/crk22xm831ko" target="_blank" rel="noopener noreferrer">https://www.bbc.co.uk/news/articles/crk22xm831ko</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50630062">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50630062" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">abixb</span>
+        
+        <span>2026/11/23 21:26</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">For those who are in computing but <i>not</i> in AI, looped transformers are like chain-of-thought but for every token during every forward pass (based on the number of loops as spec'd in the model architecture), correct?<p>Does this mean we're opening up a whole new space of efficiency and performance gains even while keeping model sizes (chinchilla-optimal models) constant?</p><p>This is mind-blowing, though. Reality (the universe) just keeps on giving to our newfound tech tree branch of artificial neural networks.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50611245">For those who are in computing but <i>not</i> in AI, looped transformers are like chain-of-thought but for every token during every forward pass (based on the number of loops as spec'd in the model architecture), correct?<p>Does this mean we're opening up a whole new space of efficiency and performance gains even while keeping model sizes (chinchilla-optimal models) constant?</p><p>This is mind-blowing, though. Reality (the universe) just keeps on giving to our newfound tech tree branch of artificial neural networks.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50611245">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50611245" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">noddybear</span>
+        
+        <span>2026/11/23 22:37</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">A normal transformer has N layers, all of which are run forward for each token. A looped transformer is a bit different. Instead of N layers, it has K. These K layers are then looped, such that the output (not a token) of the first run of these K are fed back into the start of the K layer block. This looping happens until a fixed-point is achieved (i.e another loop results in a noop). At that point, a token is sampled. This means that tokens get different amounts of compute, depending on how challenging they are.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50612423">A normal transformer has N layers, all of which are run forward for each token. A looped transformer is a bit different. Instead of N layers, it has K. These K layers are then looped, such that the output (not a token) of the first run of these K are fed back into the start of the K layer block. This looping happens until a fixed-point is achieved (i.e another loop results in a noop). At that point, a token is sampled. This means that tokens get different amounts of compute, depending on how challenging they are.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50612423">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50612423" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">eab-</span>
+        
+        <span>2026/11/23 23:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; This looping happens until a fixed-point is achieved (i.e another loop results in a noop).<p>This is not true; in the article it is made abundantly clear that it runs 2x of 28 of its layers.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50613330">&gt; This looping happens until a fixed-point is achieved (i.e another loop results in a noop).<p>This is not true; in the article it is made abundantly clear that it runs 2x of 28 of its layers.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50613330">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50613330" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sorokod</span>
+        
+        <span>2026/11/24 03:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">What guarantees an existence of a fixed point?</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50617224">What guarantees an existence of a fixed point?</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50617224">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50617224" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">codebje</span>
+        
+        <span>2026/11/24 09:40</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Nothing does, see <a href="https://arxiv.org/html/2604.11791v2" target="_blank" rel="noopener noreferrer">https://arxiv.org/html/2604.11791v2</a> for gory details. Many models converge almost all the time, models can be designed to be more likely to converge, but I don't think we understand how to guarantee it or verify that it's guaranteed yet.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50622386">Nothing does, see <a href="https://arxiv.org/html/2604.11791v2" target="_blank" rel="noopener noreferrer">https://arxiv.org/html/2604.11791v2</a> for gory details. Many models converge almost all the time, models can be designed to be more likely to converge, but I don't think we understand how to guarantee it or verify that it's guaranteed yet.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50622386">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50622386" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">drakythe</span>
+        
+        <span>2026/11/23 23:28</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The 2x is arbitrary and in this particular case, is the fixed-point. I've seen models that do 3x loops for 3/4s of their layers. I suspect we'll see see loop counts increase as this becomes a more popular technique and may reach a point where one of the big labs is confident in their model's ability to loop "indefinitely" without becoming bogged down, reaching some logically measured point.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50613460">The 2x is arbitrary and in this particular case, is the fixed-point. I've seen models that do 3x loops for 3/4s of their layers. I suspect we'll see see loop counts increase as this becomes a more popular technique and may reach a point where one of the big labs is confident in their model's ability to loop "indefinitely" without becoming bogged down, reaching some logically measured point.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50613460">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50613460" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">smallmancontrov</span>
+        
+        <span>2026/11/24 01:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">"Fixed point" in the context of iterative algorithms usually means "repeat a variable number of times until the output doesn't change." This is in stark contrast to the idea of repeating a fixed number of times. The looped models appear to repeat a fixed number of times.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50616082">"Fixed point" in the context of iterative algorithms usually means "repeat a variable number of times until the output doesn't change." This is in stark contrast to the idea of repeating a fixed number of times. The looped models appear to repeat a fixed number of times.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50616082">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50616082" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
