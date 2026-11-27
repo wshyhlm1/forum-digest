@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一个完全用 AI coding 开发的数据库 MyDB：兼容 MySQL，性能提升 5 倍以上，累计消耗 5000 亿 token | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-26/">返回日报</a>
+      <div class="source-chip">V2EX #1</div>
+      <h1>一个完全用 AI coding 开发的数据库 MyDB：兼容 MySQL，性能提升 5 倍以上，累计消耗 5000 亿 token</h1>
+      <p class="original-title">一个完全用 AI coding 开发的数据库 MyDB：兼容 MySQL，性能提升 5 倍以上，累计消耗 5000 亿 token</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 zlw14270</span>
+        <span>热度 65</span>
+        <span>回复 65</span>
+        <span>2026/11/26 09:53</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1259897" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1259897.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>标题：分享一个完全用 AI coding 开发的数据库 MyDB：兼容 MySQL，累计消耗 5000 亿 token</li><li>我是一名数据库爱好者，最近做了一个新数据库 MyDB，想在这里分享一下，也邀请大家试用、提意见。</li></ul>
+      
+      <p class="reason">命中 5 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p><strong>标题：分享一个完全用 AI coding 开发的数据库 MyDB：兼容 MySQL，累计消耗 5000 亿 token</strong></p>
+<p>我是一名数据库爱好者，最近做了一个新数据库 MyDB，想在这里分享一下，也邀请大家试用、提意见。</p>
+<p>MySQL 有广泛的用户和成熟的生态。随着 AI Agent 的发展，我想探索：在保留熟悉的 MySQL 接口和使用方式的基础上，能否把事务处理、分析查询和向量检索放到一个引擎里，让应用和 Agent 更方便地访问同一份业务数据。</p>
+<p>于是有了 MyDB。它使用 Rust 实现，<strong>整个项目完全通过 AI coding 开发，开发过程中累计消耗了 5000 亿 token。</strong></p>
+<p>目前主要做了这些事情：</p>
+<ul>
+<li><strong>MySQL 兼容</strong>：兼容 MySQL 协议和常用 SQL，可以使用现有的 MySQL 客户端和驱动。</li>
+<li><strong>HTAP</strong>：在同一个引擎中支持事务和分析查询，实现了并行执行、向量化执行和自动 Zone Map 数据跳过，性能大幅超越 mysql。</li>
+<li><strong>面向 AI Agent 的能力</strong>：原生向量类型、HNSW/IVF 向量索引、全文检索，以及 REST 和 MCP 接口。</li>
+<li><strong>数据库基础能力</strong>：事务、WAL 恢复、备份和原生主备复制等。</li>
+</ul>
+<p>目前 MyDB 已开源。</p>
+<p>项目地址：<a href="https://github.com/yzsind/mydb" target="_blank" rel="noopener noreferrer">https://github.com/yzsind/mydb</a></p>
+<p>仓库里有预编译包、Docker 启动方式、使用文档和性能测试报告，欢迎下载体验。如果遇到安装问题、SQL 不兼容、结果异常或性能问题，都欢迎在 GitHub 提 Issue，尽量附上环境和复现步骤，方便排查。</p>
+<p>也特别想听听正在做 AI Agent 的朋友：</p>
+<ul>
+<li>你们目前用什么数据库，遇到了哪些实际问题？</li>
+<li>业务数据、全文检索和向量检索放在一起，对你有没有价值？</li>
+<li>Agent 访问数据库时，最需要哪些接口、权限控制或诊断能力？</li>
+</ul>
+<p>对完全使用 AI coding 开发数据库这件事感兴趣的，也欢迎交流。谢谢大家！</p>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p><strong>标题：分享一个完全用 AI coding 开发的数据库 MyDB：兼容 MySQL，累计消耗 5000 亿 token</strong></p>
+<p>我是一名数据库爱好者，最近做了一个新数据库 MyDB，想在这里分享一下，也邀请大家试用、提意见。</p>
+<p>MySQL 有广泛的用户和成熟的生态。随着 AI Agent 的发展，我想探索：在保留熟悉的 MySQL 接口和使用方式的基础上，能否把事务处理、分析查询和向量检索放到一个引擎里，让应用和 Agent 更方便地访问同一份业务数据。</p>
+<p>于是有了 MyDB。它使用 Rust 实现，<strong>整个项目完全通过 AI coding 开发，开发过程中累计消耗了 5000 亿 token。</strong></p>
+<p>目前主要做了这些事情：</p>
+<ul>
+<li><strong>MySQL 兼容</strong>：兼容 MySQL 协议和常用 SQL，可以使用现有的 MySQL 客户端和驱动。</li>
+<li><strong>HTAP</strong>：在同一个引擎中支持事务和分析查询，实现了并行执行、向量化执行和自动 Zone Map 数据跳过，性能大幅超越 mysql。</li>
+<li><strong>面向 AI Agent 的能力</strong>：原生向量类型、HNSW/IVF 向量索引、全文检索，以及 REST 和 MCP 接口。</li>
+<li><strong>数据库基础能力</strong>：事务、WAL 恢复、备份和原生主备复制等。</li>
+</ul>
+<p>目前 MyDB 已开源。</p>
+<p>项目地址：<a href="https://github.com/yzsind/mydb" target="_blank" rel="noopener noreferrer">https://github.com/yzsind/mydb</a></p>
+<p>仓库里有预编译包、Docker 启动方式、使用文档和性能测试报告，欢迎下载体验。如果遇到安装问题、SQL 不兼容、结果异常或性能问题，都欢迎在 GitHub 提 Issue，尽量附上环境和复现步骤，方便排查。</p>
+<p>也特别想听听正在做 AI Agent 的朋友：</p>
+<ul>
+<li>你们目前用什么数据库，遇到了哪些实际问题？</li>
+<li>业务数据、全文检索和向量检索放在一起，对你有没有价值？</li>
+<li>Agent 访问数据库时，最需要哪些接口、权限控制或诊断能力？</li>
+</ul>
+<p>对完全使用 AI coding 开发数据库这件事感兴趣的，也欢迎交流。谢谢大家！</p>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">huruiqing001122</span>
+        <span>#1</span>
+        <span>2026/11/26 09:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>收藏了</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328325"><p>收藏了</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328325">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328325" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ajaxfunction</span>
+        <span>#2</span>
+        <span>2026/11/26 09:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>看起来诱惑力很大。想试试</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328339"><p>看起来诱惑力很大。想试试</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328339">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328339" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlw14270</span>
+        <span>#3</span>
+        <span>2026/11/26 09:58</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>mysql 发展太慢了，所以研发 mydb，全部是用 rust 开发。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328352"><p>mysql 发展太慢了，所以研发 mydb，全部是用 rust 开发。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328352">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328352" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">chijiao</span>
+        <span>#4</span>
+        <span>2026/11/26 10:05</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>NB</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328405"><p>NB</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328405">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328405" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jtjing</span>
+        <span>#5</span>
+        <span>2026/11/26 10:13</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>虽然用的 PostgreSql 数据库，但是楼主能花大量时间为开源社区贡献还是值得 respect 的! 🫡</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328443"><p>虽然用的 PostgreSql 数据库，但是楼主能花大量时间为开源社区贡献还是值得 respect 的! 🫡</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328443">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328443" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlw14270</span>
+        <span>#6</span>
+        <span>2026/11/26 10:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>传统数据库都不是为 ai agent 构建的。比如向量现在还是辅助的数据类型，mysql 社区版没有提供检索能力，postgres 需要使用 pgvector 插件，没有混合检索，性能无法满足大规模知识库。<br />
+ai agent 访问数据库，sql 是非常灵活，需要高性能支持 oltp+olap，还需要支持没有索引的场景也能高性能，这些对于 mysql 和 pg 都挑战很大。<br />
+mydb 从 0 开始开发，上面这些特性都是做原生的支持。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328533"><p>传统数据库都不是为 ai agent 构建的。比如向量现在还是辅助的数据类型，mysql 社区版没有提供检索能力，postgres 需要使用 pgvector 插件，没有混合检索，性能无法满足大规模知识库。<br />
+ai agent 访问数据库，sql 是非常灵活，需要高性能支持 oltp+olap，还需要支持没有索引的场景也能高性能，这些对于 mysql 和 pg 都挑战很大。<br />
+mydb 从 0 开始开发，上面这些特性都是做原生的支持。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328533">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328533" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlw14270</span>
+        <span>#7</span>
+        <span>2026/11/26 10:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>现在产品刚刚开源，欢迎大家多提建议</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328538"><p>现在产品刚刚开源，欢迎大家多提建议</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328538">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328538" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zlw14270</span>
+        <span>#8</span>
+        <span>2026/11/26 10:43</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>顺便问问，大家开发 AI 应用，都使用什么数据库呢？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328664"><p>顺便问问，大家开发 AI 应用，都使用什么数据库呢？</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328664">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328664" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhangqian99</span>
+        <span>#9</span>
+        <span>2026/11/26 10:50</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p><a href="https://github.com/t8y2/dbx" target="_blank" rel="noopener noreferrer">https://github.com/t8y2/dbx</a> 看看这个比你的功能多不？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328713"><p><a href="https://github.com/t8y2/dbx" target="_blank" rel="noopener noreferrer">https://github.com/t8y2/dbx</a> 看看这个比你的功能多不？</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328713">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328713" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">holyzhou</span>
+        <span>#10</span>
+        <span>2026/11/26 10:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/zhangqian99" target="_blank" rel="noopener noreferrer">zhangqian99</a> 哥 你看了吗？ 人家一个客户端，一个服务端 这俩怎么比。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328733"><p>@<a href="/member/zhangqian99" target="_blank" rel="noopener noreferrer">zhangqian99</a> 哥 你看了吗？ 人家一个客户端，一个服务端 这俩怎么比。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328733">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328733" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">zhangqian99</span>
+        <span>#11</span>
+        <span>2026/11/26 11:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>操，看错了，这是数据库，我以为是客户端</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328795"><p>操，看错了，这是数据库，我以为是客户端</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328795">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328795" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">xiaoshouchen</span>
+        <span>#12</span>
+        <span>2026/11/26 11:09</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>数据库没人敢用一个纯 AI 生成的项目吧，风险也太高了。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328821"><p>数据库没人敢用一个纯 AI 生成的项目吧，风险也太高了。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328821">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328821" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">alsas</span>
+        <span>#13</span>
+        <span>2026/11/26 11:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>牛逼</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328873"><p>牛逼</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328873">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328873" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">geniushui</span>
+        <span>#14</span>
+        <span>2026/11/26 11:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>有理想，有抱负！已点 Star</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328901"><p>有理想，有抱负！已点 Star</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328901">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328901" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">jko123</span>
+        <span>#15</span>
+        <span>2026/11/26 11:23</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>基础产品最重要的还是持续维护..</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18328908"><p>基础产品最重要的还是持续维护..</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18328908">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18328908" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">CouleurApp</span>
+        <span>#16</span>
+        <span>2026/11/26 11:44</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/xiaoshouchen" target="_blank" rel="noopener noreferrer">xiaoshouchen</a> +1</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18329022"><p>@<a href="/member/xiaoshouchen" target="_blank" rel="noopener noreferrer">xiaoshouchen</a> +1</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18329022">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18329022" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">timnotom</span>
+        <span>#17</span>
+        <span>2026/11/26 11:48</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>我不是在抖音上刷到过吗😂</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18329053"><p>我不是在抖音上刷到过吗😂</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18329053">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18329053" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">lizhenda</span>
+        <span>#18</span>
+        <span>2026/11/26 11:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>支持！建议可以搞个官网出来，宣传起来更方便</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18329084"><p>支持！建议可以搞个官网出来，宣传起来更方便</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18329084">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18329084" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">nebulabox</span>
+        <span>#19</span>
+        <span>2026/11/26 11:56</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>作为爱好开发值得称赞，如果闲着没事儿免费写着玩玩还可以。浪费 4000 亿 token，估计你还是需要回报，那就可能会失望了。<br />
+数据库最担心的是稳定可靠性，其次才是性能。<br />
+新产品还是 AI 开发的，生产环境估计很少有人敢用。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18329085"><p>作为爱好开发值得称赞，如果闲着没事儿免费写着玩玩还可以。浪费 4000 亿 token，估计你还是需要回报，那就可能会失望了。<br />
+数据库最担心的是稳定可靠性，其次才是性能。<br />
+新产品还是 AI 开发的，生产环境估计很少有人敢用。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18329085">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18329085" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">WispZhan</span>
+        <span>#20</span>
+        <span>2026/11/26 12:21</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>不怕被信创的拿去白嫖了吗？</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18329157"><p>不怕被信创的拿去白嫖了吗？</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18329157">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1259897#reply18329157" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>

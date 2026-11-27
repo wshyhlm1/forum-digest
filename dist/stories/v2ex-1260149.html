@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>在 2026 年手搓 C 语言链表并击败 Linux 内核链表 list_head | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-26/">返回日报</a>
+      <div class="source-chip">V2EX #2</div>
+      <h1>在 2026 年手搓 C 语言链表并击败 Linux 内核链表 list_head</h1>
+      <p class="original-title">在 2026 年手搓 C 语言链表并击败 Linux 内核链表 list_head</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 ivan_wl</span>
+        <span>热度 3</span>
+        <span>回复 3</span>
+        <span>2026/11/26 22:33</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://www.v2ex.com/t/1260149" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/v2ex-1260149.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>前情提要 cc_task https://www.v2ex.com/t/1259830 是让你像用 js C# 一样在 C 语言里写 async/await 的协程库。</li><li>在开发 cc_task 的任务并发支持时，需要一个链表。 一般这种情况就无脑抄 Linux 内核的 list_head 就完了，经典的侵入式链表，container_of offsetof 什么的都讲滥了,技巧就是拿到链表节点，container_of 一下，就得到包含节点的实际结构体了。 但是毕竟 cc_task 打算做个体面的开源项目，直接抄 GPL 代码也不太方便，于是就自己手搓一个，叫 cc_list 吧。</li></ul>
+      
+      <p class="reason">命中 4 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>前情提要<br />
+cc_task <a href="https://www.v2ex.com/t/1259830" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1259830</a> 是让你像用 js C# 一样在 C 语言里写 async/await 的协程库。</p>
+<p>在开发 cc_task 的任务并发支持时，需要一个链表。<br />
+一般这种情况就无脑抄 Linux 内核的 list_head 就完了，经典的侵入式链表，container_of offsetof 什么的都讲滥了,技巧就是拿到链表节点，container_of 一下，就得到包含节点的实际结构体了。<br />
+但是毕竟 cc_task 打算做个体面的开源项目，直接抄 GPL 代码也不太方便，于是就自己手搓一个，叫 cc_list 吧。</p>
+<p><a href="https://github.com/ivan7wl/cc_task/blob/main/cc_task/cc_list.h" target="_blank" rel="noopener noreferrer">https://github.com/ivan7wl/cc_task/blob/main/cc_task/cc_list.h</a></p>
+<p>cc_list 是范型风格的 C 语言侵入式双向链表，但是它的 next prev 指针不是指向链表节点，而是直接指向包含链表节点的 container。<br />
+这样一来遍历时 container_of 也不用做了，直接少了一条减法指令，性能比 Linux 内核链表 list_head 更快！使用起来基本与 list_head 一样。</p>
+<p>cc_list 的精髓就是，next 直接指向节点的 container 而不是节点，但是头节点只有节点，没有实际 container 怎么办呢？<br />
+没关系，我们就假定头节点也有 container，初始化时头节点指针不是指向节点，而是根据节点地址，用 container_of 算出它对应的影子 container。<br />
+影子 container 只是用虚拟容器的地址值表示是头节点，并不会真正访问 container 的内容，因此不会有问题。</p>
+<p>2026 年了，古老的 C 语言和 Linux 内核的潜力仍然没有被挖掘完，还是有进步（整活）空间的！<br />
+Make C Great Again!</p>
+<p>以防有些同学没有理解，专门画了个示意图：</p>
+<pre><code>┌─────────────────────────────────────────────┐
+└►........... ┌─►┌─────────┐ ┌─►┌─────────┐   │
+  :  shadow : │  │container│ │  │container│   │
+  :         : │  │         │ │  │         │   │
+  :         : │  │         │ │  │         │   │
+  ├─────────┤ │  ├─────────┤ │  ├─────────┤   │
+  │   head  ├─┘  │   node  │─┘  │   node  │───┘
+  ├─────────┤    ├─────────┤    ├─────────┤
+  ...........    └─────────┘    └─────────┘
+
+</code></pre>
+</div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>前情提要<br />
+cc_task <a href="https://www.v2ex.com/t/1259830" target="_blank" rel="noopener noreferrer">https://www.v2ex.com/t/1259830</a> 是让你像用 js C# 一样在 C 语言里写 async/await 的协程库。</p>
+<p>在开发 cc_task 的任务并发支持时，需要一个链表。<br />
+一般这种情况就无脑抄 Linux 内核的 list_head 就完了，经典的侵入式链表，container_of offsetof 什么的都讲滥了,技巧就是拿到链表节点，container_of 一下，就得到包含节点的实际结构体了。<br />
+但是毕竟 cc_task 打算做个体面的开源项目，直接抄 GPL 代码也不太方便，于是就自己手搓一个，叫 cc_list 吧。</p>
+<p><a href="https://github.com/ivan7wl/cc_task/blob/main/cc_task/cc_list.h" target="_blank" rel="noopener noreferrer">https://github.com/ivan7wl/cc_task/blob/main/cc_task/cc_list.h</a></p>
+<p>cc_list 是范型风格的 C 语言侵入式双向链表，但是它的 next prev 指针不是指向链表节点，而是直接指向包含链表节点的 container。<br />
+这样一来遍历时 container_of 也不用做了，直接少了一条减法指令，性能比 Linux 内核链表 list_head 更快！使用起来基本与 list_head 一样。</p>
+<p>cc_list 的精髓就是，next 直接指向节点的 container 而不是节点，但是头节点只有节点，没有实际 container 怎么办呢？<br />
+没关系，我们就假定头节点也有 container，初始化时头节点指针不是指向节点，而是根据节点地址，用 container_of 算出它对应的影子 container。<br />
+影子 container 只是用虚拟容器的地址值表示是头节点，并不会真正访问 container 的内容，因此不会有问题。</p>
+<p>2026 年了，古老的 C 语言和 Linux 内核的潜力仍然没有被挖掘完，还是有进步（整活）空间的！<br />
+Make C Great Again!</p>
+<p>以防有些同学没有理解，专门画了个示意图：</p>
+<pre><code>┌─────────────────────────────────────────────┐
+└►........... ┌─►┌─────────┐ ┌─►┌─────────┐   │
+  :  shadow : │  │container│ │  │container│   │
+  :         : │  │         │ │  │         │   │
+  :         : │  │         │ │  │         │   │
+  ├─────────┤ │  ├─────────┤ │  ├─────────┤   │
+  │   head  ├─┘  │   node  │─┘  │   node  │───┘
+  ├─────────┤    ├─────────┤    ├─────────┤
+  ...........    └─────────┘    └─────────┘
+
+</code></pre>
+</div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">3</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">levelworm</span>
+        <span>#1</span>
+        <span>2026/11/27 00:04</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>多谢。我之前看过内核的代码，没记错的话，我的理解是 Linux 的做法是需要做指针运算的，你这个不用，但是为何 Linux 的链表没有采取这个办法呢？多谢🙏</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18331679"><p>多谢。我之前看过内核的代码，没记错的话，我的理解是 Linux 的做法是需要做指针运算的，你这个不用，但是为何 Linux 的链表没有采取这个办法呢？多谢🙏</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18331679">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1260149#reply18331679" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">ivan_wl</span>
+        <span>#2</span>
+        <span>2026/11/27 00:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/levelworm" target="_blank" rel="noopener noreferrer">levelworm</a> Linux 内核可能一开始就这么写了也很稳定，效率也不是瓶颈，也就没动力改了；也可以看一下 BSD 的 TAILQ，它的正向遍历也是直接指向容器的，跟 cc_list 效率是一样的，但是 TAILQ 反向遍历就特别的别扭，非常的别扭，不是一般的别扭，这么多年了也没改。</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18331684"><p>@<a href="/member/levelworm" target="_blank" rel="noopener noreferrer">levelworm</a> Linux 内核可能一开始就这么写了也很稳定，效率也不是瓶颈，也就没动力改了；也可以看一下 BSD 的 TAILQ，它的正向遍历也是直接指向容器的，跟 cc_list 效率是一样的，但是 TAILQ 反向遍历就特别的别扭，非常的别扭，不是一般的别扭，这么多年了也没改。</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18331684">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1260149#reply18331684" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">levelworm</span>
+        <span>#3</span>
+        <span>2026/11/27 02:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh"><p>@<a href="/member/ivan_wl" target="_blank" rel="noopener noreferrer">ivan_wl</a> 多谢大佬🙏</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="v2ex-18331773"><p>@<a href="/member/ivan_wl" target="_blank" rel="noopener noreferrer">ivan_wl</a> 多谢大佬🙏</p>
+</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="v2ex-18331773">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://www.v2ex.com/t/1260149#reply18331773" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
