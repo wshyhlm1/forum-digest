@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI made self-hosting fun again | AI/科技论坛日报</title>
+  <style>
+  :root {
+    --bg: #f6f7f4;
+    --paper: #ffffff;
+    --ink: #202124;
+    --muted: #687076;
+    --line: #d9ded8;
+    --accent: #c24f18;
+    --accent-soft: #fff1e8;
+    --blue: #255f85;
+    --green: #276749;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 1.62;
+  }
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 18px 14px 72px;
+  }
+  .topbar, .section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .subtitle, .original-title, .muted, .reason {
+    color: var(--muted);
+  }
+  .subtitle, .original-title {
+    margin: 6px 0 0;
+  }
+  .source-chip {
+    display: inline-block;
+    margin-bottom: 8px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .meta-line, .card-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 7px 11px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.2;
+  }
+  .btn.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .source-section {
+    margin-top: 18px;
+  }
+  .source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+  }
+  .source-header h2, .section h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+  }
+  .section h3 {
+    margin: 14px 0 6px;
+    font-size: 1rem;
+  }
+  .story-list {
+    display: grid;
+    gap: 10px;
+  }
+  .story-card {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .rank {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .story-card h3 {
+    margin: 4px 0 0;
+    font-size: 1.04rem;
+    line-height: 1.35;
+  }
+  .story-card h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .story-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .summary-preview {
+    margin: 8px 0 0;
+  }
+  .compact-list ul, .section ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .compact-list li + li, .section li + li {
+    margin-top: 4px;
+  }
+  .post-body, .comment-text {
+    overflow-wrap: anywhere;
+  }
+  .post-body code, .comment-text code {
+    background: #eef1ef;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .post-body pre, .comment-text pre {
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: #202124;
+    color: #f6f7f4;
+  }
+  .comment-tree {
+    display: grid;
+    gap: 8px;
+  }
+  .comment-node {
+    border-left: 2px solid var(--line);
+    padding-left: 10px;
+  }
+  .comment-node.depth-2 { border-left-color: #adc7ba; }
+  .comment-node.depth-3, .comment-node.depth-4 { border-left-color: #95afc0; }
+  .comment-node > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .comment-body {
+    padding: 8px 0 4px;
+  }
+  .comment-children {
+    display: grid;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .badge, .count {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 7px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .empty-source {
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .is-hidden { display: none; }
+  .redirect-page {
+    min-height: 65vh;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .story-card {
+      grid-template-columns: 1fr;
+    }
+    .rank {
+      margin-bottom: -4px;
+    }
+  }
+  </style>
+</head>
+<body data-page="story">
+  <main class="page story-page">
+    <header class="topbar">
+      <a class="back-link" href="https://wshyhlm1.github.io/forum-digest/batches/2026-11-27/">返回日报</a>
+      <div class="source-chip">Hacker News #10</div>
+      <h1>AI made self-hosting fun again</h1>
+      <p class="original-title">AI made self-hosting fun again</p>
+      <div class="meta-line">
+        <span>开发工具</span>
+        <span>作者 jlelse</span>
+        <span>热度 701</span>
+        <span>回复 347</span>
+        <span>2026/11/27 05:47</span>
+      </div>
+      <div class="actions">
+        <a class="btn" href="https://news.ycombinator.com/item?id=50660180" target="_blank" rel="noopener noreferrer">打开原帖</a>
+        <a class="btn" href="https://janlukas.blog/posts/ai-self-hosting" target="_blank" rel="noopener noreferrer">打开外部链接</a>
+        <a class="btn secondary" href="https://wshyhlm1.github.io/forum-digest/stories/hackernews-50660180.json">JSON</a>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>摘要</h2>
+      <ul><li>I’ve been self-hosting things for many years. There were times when I was quite enthusiastic about it, constantly trying out new software and tinkering with my infrastructure. But at some point, that enthusiasm faded a bit.I never really stopped self-hosting, but I became less inclined to experiment with new things. Maintaining what I already had running was enough for me.Over the last few months, however, I’ve found myself getting increasingly excited about self-hosting again. And, somewhat ironically, AI is a big reason for that.Less frictionMost of my infrastructure configuration lives in Git repositories, mainly in the form of Docker Compose files, scripts, and other configuration files. This makes it possible to use AI coding agents to work on my infrastructure in much the same way as they would work on any other software project.Whenever I want to try a new service, adjust an existing configuration, or automate something, I can now do so with considerably less effort.In the past, I would sometimes put off certain changes simply because I didn’t feel like spending an evening reading changelogs and documentation or troubleshooting issues. It’s not that I couldn’t have done these things before. But often, the amount of effort required just wasn’t worth it to me.Now, even relatively spontaneous ideas often end up becoming reality.Trying things I always found interestingThere are also technologies that I’ve always found interesting but never felt knowledgeable enough about to really make use of them.NixOS is a good example. I’ve always liked the idea of declaratively configuring an entire system; I even used it on my laptop during my Linux honeymoon phase. But getting everything configured the way I wanted was quite a hurdle. With the help of AI, I’m now making much more extensive use of NixOS on my home server.For my VPS infrastructure, I’ve also started building my own Debian-based bootc image (after thinking about it for some time).Having my entire operating system configuration defined in a Git repository and automatically building a bootable container image from it is something I find really cool. But it’s also something I probably wouldn’t have invested enough time in to get working on my own before. Even with the help of AI, it still took me half a day when I set it up a few months ago. Without AI, it would probably have taken me at least a week.AI makes experimenting with unfamiliar technologies much more approachable. I don’t necessarily need to understand every little detail before I can get started. I can learn about things along the way, ask questions, and gradually improve my configurations.Automating almost everythingSomething I’ve also finally managed to do is automate most of the build, update, and deployment processes for my infrastructure.A lot of the work involved in self-hosting isn’t particularly exciting. Keeping track of new releases, updating container image tags, building images, and deploying configuration changes are all things that need to be done regularly.I still remember what updating a service used to look like: bumping the version and adjusting the Docker Compose file on my laptop, pushing the changes to the Git remote, SSHing into the server, pulling the changes, and finally deploying them. Now, a single Git push is enough. If a push is even necessary.With Renovate, I no longer need to actively keep track of most software updates. It creates pull requests for me, and often, all I need to do is review and merge them. I can even do that on my phone while sitting on the sofa.Pushing changes or merging a pull request triggers the corresponding GitHub Actions or Forgejo Actions workflows, which take care of building and deploying everything.Of course, there’s nothing particularly groundbreaking about any of this. DevOps has been around for a long time, and none of these automation tools require AI. But AI has helped me put all these pieces together in a way that I previously never quite got around to doing.And the nice thing about automating these tasks is that the benefits extend well beyond the initial setup. I now have less tedious work to do every time I want to change something or update a service.Back to more powerful hardwareAs I’ve started hosting more things again, I’ve also moved more of my services from my VPS to my home server.For a while, I was using an HP t640 thin client as my home server. However, with more things I wanted to run, I decided to switch back to my ASRock DeskMini A300, which had been sitting unused for some time. I’m thinking about repurposing the t640 as a “router on a stick”, though.I even took the opportunity to upgrade its CPU from an AMD Ryzen 5 2400G to a Ryzen 5 PRO 4650G and replaced the stock AMD cooler with a quieter Noctua cooler. Noise was the main reason I switched to the t640 in the first place.It’s nice to put some hardware I already owned back to use rather than buying an entirely new machine. I also managed to get both the CPU and the cooler for a good price through a classifieds site.Having some additional computing power available gives me more room to experiment. And there’s something quite satisfying about having a small box at home running a growing collection of services that I use in my everyday life.Building my own toolsBut it’s not just about self-hosting existing software. AI has also changed how I approach problems for which there isn’t an existing piece of software that does exactly what I want.Previously, I would often spend quite some time searching for a suitable open-source project, comparing different alternatives, and figuring out how to make one of them work for my particular use case.These days, for smaller problems, building my own solution has become a much more attractive option.I’ve recently built tools to automatically download invoices, e-papers or Linux ISOs.I can build (or have AI build) these tools in Go, my preferred programming language, and tailor them to my exact needs.They don’t need to support every possible use case, have an elaborate user interface, or be particularly interesting to anyone other than me. I don’t need to turn every little tool into a proper open-source project with extensive documentation and support for other people’s use cases. They just need to solve my problem.What I particularly enjoy is how well this complements my increasingly automated infrastructure. Building a small tool has become easier, and so has building a container image for it, deploying it, and keeping it running.The entire process, from having an idea to having something actually running on my home server, requires much less effort than it used to.Just because I can doesn’t mean I shouldOf course, there are downsides to all of this.Every additional service is another thing that needs to be maintained. AI-generated software isn’t exempt from bugs, security issues, or technical debt. And having an AI agent make changes to my infrastructure doesn’t absolve me of the responsibility of understanding those changes.There’s also the temptation to build or deploy things simply because I can. When implementing an idea becomes so easy, it’s perhaps more important than ever to occasionally ask myself whether it’s actually worth implementing in the first place.On the other hand, self-hosting is a hobby for me. Not everything I do needs to be economically sensible or particularly useful. Sometimes, experimenting with something new is the whole point.And with much of the routine maintenance automated, adding another service doesn’t necessarily mean adding as much recurring work as it used to.A somewhat ironic development?I find it somewhat ironic that AI, a technology largely dominated by big tech companies, is helping me become a little less dependent on those very companies in other areas of my digital life.I’m aware that this also creates a new kind of dependency. But the software and infrastructure configurations I create with the help of AI can continue to exist independently of the AI services I used to create them. And since I mostly use open-weight models, I have a wide range of providers to choose from.What I appreciate most, however, isn’t necessarily the time I’m saving. It’s that I’m more inclined to actually pursue the little ideas I have.I’m trying out technologies I’ve been curious about for years. I’m automating things that I’ve wanted to automate for a long time. I’m building little tools for myself. I’m tinkering with hardware again.AI hasn’t fundamentally changed why I like self-hosting. I still enjoy having control over my digital life, learning new things, and tinkering with technology.It’s just removed a lot of the friction that made me lose some of my enthusiasm for it over the years.And now, I’m having a lot of fun with it again.</li></ul>
+      
+      <p class="reason">命中 3 个 AI/科技关键词。</p>
+    </section>
+
+    <section class="section">
+      <h2>正文翻译</h2>
+      <div class="post-body" data-role="story-zh"><p>暂无正文</p></div>
+      <div class="post-body is-hidden" data-role="story-raw"><p>暂无原文</p></div>
+      <button type="button" class="btn secondary" data-action="toggle-story-raw">原文</button>
+    </section>
+
+    <section class="section comments">
+      <h2>回复翻译 <span class="count">20</span></h2>
+      <div class="comment-tree">
+        
+    <details class="comment-node depth-1">
+      <summary>
+        <span class="meta-author">cliche</span>
+        
+        <span>2026/11/27 07:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; <i>When implementing an idea becomes so easy, it’s perhaps more important than ever to occasionally ask myself whether it’s actually worth implementing in the first place.</i><p>Wish I had this restraint. I’ve been vibing everything I can think of. It’s got to the point I made a small platform on top of k3s so that the agent can yolo deploy into a homeserver behind Tailscale. Once deployed it becomes natural selection for which vibes live and which die.</p><p>Solo vibey self hosting llm usage - bliss.</p><p>Corporate agentic engineering working with others - soul crushing.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50660901">&gt; <i>When implementing an idea becomes so easy, it’s perhaps more important than ever to occasionally ask myself whether it’s actually worth implementing in the first place.</i><p>Wish I had this restraint. I’ve been vibing everything I can think of. It’s got to the point I made a small platform on top of k3s so that the agent can yolo deploy into a homeserver behind Tailscale. Once deployed it becomes natural selection for which vibes live and which die.</p><p>Solo vibey self hosting llm usage - bliss.</p><p>Corporate agentic engineering working with others - soul crushing.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50660901">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50660901" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-2">
+      <summary>
+        <span class="meta-author">indigodaddy</span>
+        
+        <span>2026/11/27 07:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, I've been doing everything I've ever wanted, it's been amazing.. a seeded procedural unlimited lode runner web game, scrabble on the living room TV controlled by phones, a web remake of an old PC game from 1996 called WSOP Deluxe Casino Pak, my own CF JF-compatible frontend/management/pipeline to my videos living on cheap PHP storage (to name just a few).<p>Whatever I've always wanted to do, I just do it.</p><p>Incredible times to have been a kid at the dawn of the personal computer, and now to also be living through this LLM age, probably the single best generation for tech imo.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50660974">Yeah, I've been doing everything I've ever wanted, it's been amazing.. a seeded procedural unlimited lode runner web game, scrabble on the living room TV controlled by phones, a web remake of an old PC game from 1996 called WSOP Deluxe Casino Pak, my own CF JF-compatible frontend/management/pipeline to my videos living on cheap PHP storage (to name just a few).<p>Whatever I've always wanted to do, I just do it.</p><p>Incredible times to have been a kid at the dawn of the personal computer, and now to also be living through this LLM age, probably the single best generation for tech imo.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50660974">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50660974" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">egeozcan</span>
+        
+        <span>2026/11/27 17:17</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">This is a very similar feeling to first connecting to the internet and witnessing content appearing on the computer screen.<p>I remember how my mind was blown to discover that I could download images and make them my wallpaper.</p><p>I also remember thinking "wow I'll never get bored ever in my life again".</p><p><i>So many years later</i>... Me doomscrolling, depressingly bored, in a waiting room somewhere.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50664678">This is a very similar feeling to first connecting to the internet and witnessing content appearing on the computer screen.<p>I remember how my mind was blown to discover that I could download images and make them my wallpaper.</p><p>I also remember thinking "wow I'll never get bored ever in my life again".</p><p><i>So many years later</i>... Me doomscrolling, depressingly bored, in a waiting room somewhere.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50664678">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50664678" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">suncemoje</span>
+        
+        <span>2026/11/27 18:47</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">- Doomscrolling is worse than smoking. If you come to the conclusion that it sucks more energy than it gives, delete the worst app.<p>- Boredom I currently also have to fight with as projects and engineering challenges I was looking forward to tackling - which gave me great energy - became simple prompts.</p><p>If you have a great idea, it's amazing that in this era you can reach your goal faster than ever. I currently don't have a great idea or project I'm excited about. Pls fix?</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50665340">- Doomscrolling is worse than smoking. If you come to the conclusion that it sucks more energy than it gives, delete the worst app.<p>- Boredom I currently also have to fight with as projects and engineering challenges I was looking forward to tackling - which gave me great energy - became simple prompts.</p><p>If you have a great idea, it's amazing that in this era you can reach your goal faster than ever. I currently don't have a great idea or project I'm excited about. Pls fix?</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50665340">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50665340" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">RicoElectrico</span>
+        
+        <span>2026/11/27 19:32</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; Doomscrolling is worse than smoking.<p>A hyperbole. But, there's a reasonable solution to doomscrolling. We'll never run of books to read, so buy a micro reader (preferably one that supports Crosspoint) and load it up with epubs from Anna's Archive ;)
+Micro reader is easy to always carry with you, can even be attached using MagSafe. So great for killing time in small increments.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50665662">&gt; Doomscrolling is worse than smoking.<p>A hyperbole. But, there's a reasonable solution to doomscrolling. We'll never run of books to read, so buy a micro reader (preferably one that supports Crosspoint) and load it up with epubs from Anna's Archive ;)
+Micro reader is easy to always carry with you, can even be attached using MagSafe. So great for killing time in small increments.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50665662">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50665662" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">DanielHB</span>
+        
+        <span>2026/11/27 21:39</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">The problem with this kind of advice is that sometimes you just want to _relax_ instead of _engage_. Doomscrolling is a low-effort activity that can't (always) be replaced by a high mental effort activity.<p>The dangerous thing of doomscrolling is that it is very engaging both when you are in low-energy mode (exausted afterwork for example) and when you are in high-energy mode (just woken up in the morning). I argue that doomscrolling is not harmful if you are low energy. However because of its highly engaging nature, it bleeds into your high energy time too.</p><p>So, for example, listening to music is a better alternative to low-energy doomscrolling, while a book is a better alternative to high-energy doomscrolling.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50666814">The problem with this kind of advice is that sometimes you just want to _relax_ instead of _engage_. Doomscrolling is a low-effort activity that can't (always) be replaced by a high mental effort activity.<p>The dangerous thing of doomscrolling is that it is very engaging both when you are in low-energy mode (exausted afterwork for example) and when you are in high-energy mode (just woken up in the morning). I argue that doomscrolling is not harmful if you are low energy. However because of its highly engaging nature, it bleeds into your high energy time too.</p><p>So, for example, listening to music is a better alternative to low-energy doomscrolling, while a book is a better alternative to high-energy doomscrolling.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50666814">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50666814" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">akho</span>
+        
+        <span>2026/11/28 03:02</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">There are low-energy books. The shortest of the short stories; some poetry collections.<p>(I think the main energy sink is context you need to keep in mind and update; hence why doomscrolling works so well, and why I think short pieces work as replacement)</p><p>Anki review may work, too.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50670469">There are low-energy books. The shortest of the short stories; some poetry collections.<p>(I think the main energy sink is context you need to keep in mind and update; hence why doomscrolling works so well, and why I think short pieces work as replacement)</p><p>Anki review may work, too.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50670469">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50670469" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">benterix</span>
+        
+        <span>2026/11/27 20:52</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">+1 for micro reader, but I don't think "Doomscrolling is worse than smoking" - mental health is as important as physical health.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50666355">+1 for micro reader, but I don't think "Doomscrolling is worse than smoking" - mental health is as important as physical health.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50666355">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50666355" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">skydhash</span>
+        
+        <span>2026/11/27 21:24</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Even a slightly bigger ereader are easy to carry. My previous kindle fitted in my backpocket, and my current libra is also very light. Both can hold an enormous amount of epub. I bring my ereader wherever I had the slightest chance of being asked to wait.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50666671">Even a slightly bigger ereader are easy to carry. My previous kindle fitted in my backpocket, and my current libra is also very light. Both can hold an enormous amount of epub. I bring my ereader wherever I had the slightest chance of being asked to wait.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50666671">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50666671" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">froggit</span>
+        
+        <span>2026/11/28 05:33</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">&gt; - Boredom I currently also have to fight with as projects and engineering challenges I was looking forward to tackling - which gave me great energy - became simple prompts.<p>&gt; If you have a great idea, it's amazing that in this era you can reach your goal faster than ever. I currently don't have a great idea or project I'm excited about. Pls fix?</p><p>Have you considered, i dunno, actually tackling those projects and challenges yourself instead of turning them into simple prompts? Do you remember how to do that? Or that doing so is even an option?</p><p>Yeah, it'll take longer, but that's the whole point. It's a lot easier to get bored when you instantly finish everything exciting than it is when spending a long time finishing one exciting thing.</p><p>When fighting boredom you're ultimately just trying to kill time in an enjoyable way. Taking a slow yet fun journey is far more effective than reaching your destination with the fastest, lowest effort route.</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50671891">&gt; - Boredom I currently also have to fight with as projects and engineering challenges I was looking forward to tackling - which gave me great energy - became simple prompts.<p>&gt; If you have a great idea, it's amazing that in this era you can reach your goal faster than ever. I currently don't have a great idea or project I'm excited about. Pls fix?</p><p>Have you considered, i dunno, actually tackling those projects and challenges yourself instead of turning them into simple prompts? Do you remember how to do that? Or that doing so is even an option?</p><p>Yeah, it'll take longer, but that's the whole point. It's a lot easier to get bored when you instantly finish everything exciting than it is when spending a long time finishing one exciting thing.</p><p>When fighting boredom you're ultimately just trying to kill time in an enjoyable way. Taking a slow yet fun journey is far more effective than reaching your destination with the fastest, lowest effort route.</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50671891">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50671891" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">swat535</span>
+        
+        <span>2026/11/28 02:03</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">My biggest worry is that just like the Internet, this era will also be regulated, locked down and restricted.<p>Open source models are actively under threat by Anthropic, OpenAI and others since it poses great danger to their bottom line.</p><p>The magic will eventually be killed the corporation, marketing, law makers and bean counters. I hope I am wrong but I've grown to be pessimistic over my long career in CS..</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50669790">My biggest worry is that just like the Internet, this era will also be regulated, locked down and restricted.<p>Open source models are actively under threat by Anthropic, OpenAI and others since it poses great danger to their bottom line.</p><p>The magic will eventually be killed the corporation, marketing, law makers and bean counters. I hope I am wrong but I've grown to be pessimistic over my long career in CS..</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50669790">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50669790" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">cpill</span>
+        
+        <span>2026/11/28 02:57</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">really, anthropic are going to shut down China's open weights models (there are very few open source models). never going to happen. it's China's long game. as soon as the pressure on the hardware market drops, self housing becomes viable, AI bubble bursts, and the US/Global economy crashes. And I'll finally be able to buy another raspberry pi :D</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50670415">really, anthropic are going to shut down China's open weights models (there are very few open source models). never going to happen. it's China's long game. as soon as the pressure on the hardware market drops, self housing becomes viable, AI bubble bursts, and the US/Global economy crashes. And I'll finally be able to buy another raspberry pi :D</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50670415">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50670415" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">spullara</span>
+        
+        <span>2026/11/27 08:22</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">using LLMs to look at my 8th grade Commodore 128 code is just insane. it found a few bugs but they were pretty extreme edge cases :)</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50661329">using LLMs to look at my 8th grade Commodore 128 code is just insane. it found a few bugs but they were pretty extreme edge cases :)</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50661329">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50661329" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">sneurlax</span>
+        
+        <span>2026/11/27 21:54</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">yep, agents found <i>21 year old code</i> of mine I had posted under monikers long-forgotten</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50666967">yep, agents found <i>21 year old code</i> of mine I had posted under monikers long-forgotten</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50666967">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50666967" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">spullara</span>
+        
+        <span>2026/11/28 03:01</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">the last code for this was written in 1987!<p><a href="https://github.com/spullara/pcterm128" target="_blank" rel="noopener noreferrer">https://github.com/spullara/pcterm128</a></p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50670464">the last code for this was written in 1987!<p><a href="https://github.com/spullara/pcterm128" target="_blank" rel="noopener noreferrer">https://github.com/spullara/pcterm128</a></p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50670464">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50670464" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">dbetteridge</span>
+        
+        <span>2026/11/27 10:42</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">I also made a self hosted scrabble , scrabble go shits me with the number of ads and the notification spam.<p>Mostly play it with my granny and I swear she's gotten more than one virus from those ads</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50662144">I also made a self hosted scrabble , scrabble go shits me with the number of ads and the notification spam.<p>Mostly play it with my granny and I swear she's gotten more than one virus from those ads</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50662144">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50662144" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">r34</span>
+        
+        <span>2026/11/27 14:46</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Try woogles.io, it's a proffesional scrabble platform, no ads.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50663606">Try woogles.io, it's a proffesional scrabble platform, no ads.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50663606">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50663606" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">indigodaddy</span>
+        
+        <span>2026/11/27 15:12</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yep, mine uses the Macondo libraries.. woogles-tv.exe.xyz</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50663791">Yep, mine uses the Macondo libraries.. woogles-tv.exe.xyz</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50663791">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50663791" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+    <details class="comment-node depth-3">
+      <summary>
+        <span class="meta-author">pmarreck</span>
+        
+        <span>2026/11/27 09:45</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Same exact feels. I mean, I can just vibe out a browser submarine game? On the side? And it's actually fun?? Just because I had a hankering for some Gato/Silent Service feels?? (dates me, but I don't care, I've seen some shit)<p><a href="https://pmarreck.github.io/quiet_depths/" target="_blank" rel="noopener noreferrer">https://pmarreck.github.io/quiet_depths/</a></p><p>(source @ <a href="https://github.com/pmarreck/quiet_depths" target="_blank" rel="noopener noreferrer">https://github.com/pmarreck/quiet_depths</a>)</p><p>Not to mention the countless config enhancements it's helped me make for my various machines and dev environments</p><p>Of course there's some slop to deal with here and there (it helps if you have good controls and test methodology), but I just don't understand the negativity. I enjoyed coding as much as the next guy, but apparently I enjoyed CREATING things MORE. And I get to do SO MUCH MORE of that now!</p><p>EDIT: <a href="https://www.youtube.com/watch?v=Mt_8AlXr_dg" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=Mt_8AlXr_dg</a> (GATO gameplay on the Mac) <a href="https://www.youtube.com/watch?v=3I8NVD6esNE" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=3I8NVD6esNE</a> (Silent Service 2)</p></div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50661840">Same exact feels. I mean, I can just vibe out a browser submarine game? On the side? And it's actually fun?? Just because I had a hankering for some Gato/Silent Service feels?? (dates me, but I don't care, I've seen some shit)<p><a href="https://pmarreck.github.io/quiet_depths/" target="_blank" rel="noopener noreferrer">https://pmarreck.github.io/quiet_depths/</a></p><p>(source @ <a href="https://github.com/pmarreck/quiet_depths" target="_blank" rel="noopener noreferrer">https://github.com/pmarreck/quiet_depths</a>)</p><p>Not to mention the countless config enhancements it's helped me make for my various machines and dev environments</p><p>Of course there's some slop to deal with here and there (it helps if you have good controls and test methodology), but I just don't understand the negativity. I enjoyed coding as much as the next guy, but apparently I enjoyed CREATING things MORE. And I get to do SO MUCH MORE of that now!</p><p>EDIT: <a href="https://www.youtube.com/watch?v=Mt_8AlXr_dg" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=Mt_8AlXr_dg</a> (GATO gameplay on the Mac) <a href="https://www.youtube.com/watch?v=3I8NVD6esNE" target="_blank" rel="noopener noreferrer">https://www.youtube.com/watch?v=3I8NVD6esNE</a> (Silent Service 2)</p></div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50661840">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50661840" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        <div class="comment-children">
+    <details class="comment-node depth-4">
+      <summary>
+        <span class="meta-author">slohr</span>
+        
+        <span>2026/11/28 02:20</span>
+        
+      </summary>
+      <div class="comment-body">
+        <div class="comment-text" data-role="comment-zh">Yeah, the CREATING sentiment is spot on for me. I did enjoy slinging code and would even choose languages that I felt more "creative" with but now that I can vibe whatever I want it's total bliss. I didn't realize how deep my backlog of "I wish I had this but ugh all of the boilerplate." And for the "work" part I feel more like a woodworker where I cook up highly specialized tools to help me with a specific task (think custom jigs etc.). Before I'd do without, but now I'll vibe up a tiny tool, solve the problem and then move on. No intention of marketing that tool but wow does it save me a ton of time. just absolute bliss.</div>
+        <div class="comment-text is-hidden" data-role="comment-raw" data-comment-key="hackernews-50669996">Yeah, the CREATING sentiment is spot on for me. I did enjoy slinging code and would even choose languages that I felt more "creative" with but now that I can vibe whatever I want it's total bliss. I didn't realize how deep my backlog of "I wish I had this but ugh all of the boilerplate." And for the "work" part I feel more like a woodworker where I cook up highly specialized tools to help me with a specific task (think custom jigs etc.). Before I'd do without, but now I'll vibe up a tiny tool, solve the problem and then move on. No intention of marketing that tool but wow does it save me a ton of time. just absolute bliss.</div>
+        <div class="actions">
+          <button type="button" class="btn secondary" data-action="toggle-raw" data-comment-key="hackernews-50669996">原文</button>
+          <button type="button" class="btn secondary" data-action="toggle-expand">展开</button>
+          <a class="btn secondary" href="https://news.ycombinator.com/item?id=50669996" target="_blank" rel="noopener noreferrer">楼层</a>
+        </div>
+        
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  </div>
+      </div>
+    </details>
+  
+      </div>
+    </section>
+  </main>
+  <script>
+    
+  (() => {
+    function togglePair(primary, secondary, button, primaryLabel, secondaryLabel) {
+      const showSecondary = secondary.classList.contains("is-hidden");
+      primary.classList.toggle("is-hidden", showSecondary);
+      secondary.classList.toggle("is-hidden", !showSecondary);
+      button.textContent = showSecondary ? primaryLabel : secondaryLabel;
+    }
+
+    document.querySelectorAll('[data-action="toggle-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const card = button.closest(".comment-body");
+        const zh = card?.querySelector('[data-role="comment-zh"]');
+        const raw = card?.querySelector('[data-role="comment-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-expand"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const details = button.closest("details");
+        if (details) {
+          details.open = !details.open;
+          button.textContent = details.open ? "收起" : "展开";
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-action="toggle-story-raw"]').forEach((button) => {
+      button.addEventListener("click", () => {
+        const zh = document.querySelector('[data-role="story-zh"]');
+        const raw = document.querySelector('[data-role="story-raw"]');
+        if (zh && raw) {
+          togglePair(zh, raw, button, "译文", "原文");
+        }
+      });
+    });
+  })();
+  
+  </script>
+</body>
+</html>
